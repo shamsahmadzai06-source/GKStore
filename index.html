@@ -2516,7 +2516,7 @@
 
     <script>
         // PWA Variables
-        let deferredPrompt;
+        let deferredPrompt = null;
         let isStandalone = false;
 
         // App State Management
@@ -2980,60 +2980,18 @@
                 showInstallButton();
             }
             
-            // Register service worker (inline)
+            // Register service worker
             if ('serviceWorker' in navigator) {
                 console.log('Registering service worker...');
                 
-                // Create inline service worker
-                const serviceWorkerScript = `
-                self.addEventListener('install', event => {
-                    console.log('Service Worker installing...');
-                    self.skipWaiting();
+                // Use a simple service worker
+                navigator.serviceWorker.register('/GkStore/sw.js').then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                }).catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                    // If no service worker file exists, create inline one
+                    registerInlineServiceWorker();
                 });
-                
-                self.addEventListener('activate', event => {
-                    console.log('Service Worker activating...');
-                    return self.clients.claim();
-                });
-                
-                self.addEventListener('fetch', event => {
-                    // Network-first strategy for better UX
-                    event.respondWith(
-                        fetch(event.request)
-                            .then(response => {
-                                // Cache the response for future use
-                                const responseClone = response.clone();
-                                caches.open('gk-store-v1').then(cache => {
-                                    cache.put(event.request, responseClone);
-                                });
-                                return response;
-                            })
-                            .catch(() => {
-                                // If network fails, try cache
-                                return caches.match(event.request);
-                            })
-                    );
-                });
-                
-                // Listen for beforeinstallprompt event
-                self.addEventListener('beforeinstallprompt', (e) => {
-                    console.log('beforeinstallprompt event in service worker');
-                    e.preventDefault();
-                    self.deferredPrompt = e;
-                });
-                `;
-                
-                const blob = new Blob([serviceWorkerScript], { type: 'application/javascript' });
-                const serviceWorkerUrl = URL.createObjectURL(blob);
-                
-                navigator.serviceWorker.register(serviceWorkerUrl)
-                    .then(registration => {
-                        console.log('Service Worker registered with scope:', registration.scope);
-                        URL.revokeObjectURL(serviceWorkerUrl);
-                    })
-                    .catch(error => {
-                        console.log('Service Worker registration failed:', error);
-                    });
             } else {
                 console.log('Service workers not supported');
             }
@@ -3081,6 +3039,46 @@
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
             updateOnlineStatus();
+        }
+
+        // Register inline service worker
+        function registerInlineServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                const serviceWorkerScript = `
+                self.addEventListener('install', event => {
+                    console.log('Service Worker installing...');
+                    self.skipWaiting();
+                });
+                
+                self.addEventListener('activate', event => {
+                    console.log('Service Worker activating...');
+                    return self.clients.claim();
+                });
+                
+                self.addEventListener('fetch', event => {
+                    // Network-first strategy
+                    event.respondWith(
+                        fetch(event.request)
+                            .catch(() => {
+                                // If network fails, return offline page
+                                return caches.match(event.request);
+                            })
+                    );
+                });
+                `;
+                
+                const blob = new Blob([serviceWorkerScript], { type: 'application/javascript' });
+                const serviceWorkerUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(serviceWorkerUrl)
+                    .then(registration => {
+                        console.log('Inline Service Worker registered with scope:', registration.scope);
+                        URL.revokeObjectURL(serviceWorkerUrl);
+                    })
+                    .catch(error => {
+                        console.log('Inline Service Worker registration failed:', error);
+                    });
+            }
         }
 
         // Show install button
@@ -3472,12 +3470,18 @@
                 });
             }
             
-            // Fix for form submission
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', function(e) {
+            // Fix for form submission - prevent default for signup links
+            document.querySelectorAll('a[href="#signup"]').forEach(link => {
+                link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    console.log('Form submission prevented for debugging');
-                    // Let individual form handlers handle submission
+                    showSignupForm();
+                });
+            });
+            
+            document.querySelectorAll('a[href="#login"]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showLoginForm();
                 });
             });
         }
