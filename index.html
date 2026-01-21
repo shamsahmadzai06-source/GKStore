@@ -11,15 +11,15 @@
     
     <title>GK Store - Video Marketplace</title>
     
-    <!-- Fixed: Correct icon paths -->
-    <link rel="icon" type="image/png" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png">
-    <link rel="apple-touch-icon" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png">
+    <!-- FIXED: Using your android-launchericon-192-192.png as favicon -->
+    <link rel="icon" type="image/png" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png">
+    <link rel="apple-touch-icon" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png">
     
     <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GK Store">
-    <link rel="apple-touch-startup-image" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png">
+    <link rel="apple-touch-startup-image" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 引入 Supabase 客户端库 -->
@@ -113,13 +113,13 @@
             to { transform: rotate(360deg); }
         }
 
-        /* PWA Install Button - FIXED: Always visible by default */
+        /* PWA Install Button */
         .pwa-install-btn {
             position: fixed;
             left: 1rem;
             bottom: 9rem;
-            width: 3.5rem;
-            height: 3.5rem;
+            width: 3rem;
+            height: 3rem;
             border-radius: 50%;
             background: var(--gradient);
             color: white;
@@ -127,16 +127,11 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            z-index: 1000;
+            z-index: 100;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             border: none;
             animation: pulse 2s infinite;
-        }
-
-        .pwa-install-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
         }
 
         .pwa-install-btn.hidden {
@@ -144,7 +139,7 @@
         }
 
         .pwa-install-btn i {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
         }
 
         /* Offline Indicator */
@@ -370,7 +365,7 @@
             border-top: 1px solid var(--border);
         }
 
-        /* Forms - FIXED: Added form button styles */
+        /* Forms */
         .input-group {
             margin-bottom: 1.5rem;
         }
@@ -845,7 +840,7 @@
         .shadow-xl { box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); }
 
         /* Display & Visibility */
-        .hidden { display: none !important; }
+        .hidden { display: none; }
         .block { display: block; }
         .inline-block { display: inline-block; }
         .inline { display: inline; }
@@ -1129,7 +1124,7 @@
             .modal { margin: 1rem; }
             .video-container { height: calc(100vh - 120px); }
             .video-top-actions { top: 40%; }
-            .pwa-install-btn { left: 0.5rem; bottom: 8rem; width: 3rem; height: 3rem; }
+            .pwa-install-btn { left: 0.5rem; bottom: 8rem; }
         }
 
         @media (max-width: 480px) {
@@ -1138,7 +1133,7 @@
             .nav-item { min-width: 3rem; }
             .video-top-actions { top: 35%; right: 0.5rem; }
             .video-right-actions { right: 0.5rem; }
-            .pwa-install-btn { left: 0.5rem; bottom: 7rem; width: 2.5rem; height: 2.5rem; }
+            .pwa-install-btn { left: 0.5rem; bottom: 7rem; }
         }
 
         /* Dark/Light Mode (Future Enhancement) */
@@ -1498,8 +1493,8 @@
         <i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be limited.
     </div>
 
-    <!-- PWA Install Button - FIXED: Not hidden by default -->
-    <button id="pwa-install-btn" class="pwa-install-btn" onclick="showPWAInstallPrompt()">
+    <!-- PWA Install Button -->
+    <button id="pwa-install-btn" class="pwa-install-btn hidden" onclick="showPWAInstallPrompt()">
         <i class="fas fa-download"></i>
     </button>
 
@@ -2516,12 +2511,12 @@
 
     <script>
         // PWA Variables
-        let deferredPrompt = null;
+        let deferredPrompt;
         let isStandalone = false;
 
         // App State Management
         const appState = {
-            currentPage: 'auth',
+            currentPage: 'welcome',
             currentVideoIndex: 0,
             videos: [],
             accounts: [],
@@ -2855,8 +2850,6 @@
 
         // Initialize App
         function initApp() {
-            console.log('Initializing GK Store App...');
-            
             loadPreferences();
             loadSampleData();
             setupEventListeners();
@@ -2884,29 +2877,43 @@
                     document.getElementById('welcome-modal').classList.remove('hidden');
                 }
             } else {
-                // Show auth page for new users
-                showPage('auth');
+                // Show welcome modal for new users
+                document.getElementById('welcome-modal').classList.remove('hidden');
             }
+            
+            // Hide all pages initially except auth
+            const pages = document.querySelectorAll('[id$="-page"]');
+            pages.forEach(p => p.classList.add('hidden'));
         }
 
-        // Setup manifest
+        // Setup manifest - FIXED: Using only the icons that exist in your repository
         function setupManifest() {
-            console.log('Setting up manifest...');
-            
             const manifest = {
                 "name": "GK Store",
                 "short_name": "GK Store",
                 "description": "Exclusive Video Marketplace",
-                "start_url": "https://shamsahmadzai06.github.io/GkStore/",
-                "scope": "/GkStore/",
+                "start_url": ".",
+                "scope": ".",
                 "display": "standalone",
                 "background_color": "#000000",
                 "theme_color": "#ec4899",
                 "orientation": "portrait",
                 "icons": [
                     {
-                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png",
-                        "sizes": "48x48",
+                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-72-72.png",
+                        "sizes": "72x72",
+                        "type": "image/png",
+                        "purpose": "any maskable"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-96-96.png",
+                        "sizes": "96x96",
+                        "type": "image/png",
+                        "purpose": "any maskable"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-144-144.png",
+                        "sizes": "144x144",
                         "type": "image/png",
                         "purpose": "any maskable"
                     },
@@ -2931,8 +2938,8 @@
                         "description": "Browse premium video content",
                         "url": "./#home",
                         "icons": [{
-                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png",
-                            "sizes": "48x48"
+                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-96-96.png",
+                            "sizes": "96x96"
                         }]
                     },
                     {
@@ -2941,8 +2948,8 @@
                         "description": "Browse premium accounts",
                         "url": "./#accounts",
                         "icons": [{
-                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png",
-                            "sizes": "48x48"
+                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-96-96.png",
+                            "sizes": "96x96"
                         }]
                     }
                 ]
@@ -2953,47 +2960,66 @@
             manifestLink.rel = 'manifest';
             manifestLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
             document.head.appendChild(manifestLink);
-            
-            console.log('Manifest created successfully');
         }
 
         // Close welcome modal and show login
         function closeWelcomeModal() {
-            console.log('Closing welcome modal');
             document.getElementById('welcome-modal').classList.add('hidden');
             showPage('auth');
         }
 
         // Initialize PWA
         function initPWA() {
-            console.log('Initializing PWA...');
-            
             // Check if app is running in standalone mode
             isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                           window.navigator.standalone || 
                           document.referrer.includes('android-app://');
             
-            console.log('Is standalone?', isStandalone);
-            
-            // Show install button if not in standalone mode
-            if (!isStandalone) {
-                showInstallButton();
-            }
-            
-            // Register service worker
+            // Register service worker (inline)
             if ('serviceWorker' in navigator) {
-                console.log('Registering service worker...');
-                
-                // Use a simple service worker
-                navigator.serviceWorker.register('/GkStore/sw.js').then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                }).catch(error => {
-                    console.log('Service Worker registration failed:', error);
-                    // If no service worker file exists, create inline one
-                    registerInlineServiceWorker();
+                // Create inline service worker
+                const serviceWorkerScript = `
+                self.addEventListener('install', event => {
+                    console.log('Service Worker installing...');
+                    self.skipWaiting();
                 });
-            } else {
-                console.log('Service workers not supported');
+                
+                self.addEventListener('activate', event => {
+                    console.log('Service Worker activating...');
+                    return self.clients.claim();
+                });
+                
+                self.addEventListener('fetch', event => {
+                    // Network-first strategy for better UX
+                    event.respondWith(
+                        fetch(event.request)
+                            .then(response => {
+                                // Cache the response for future use
+                                const responseClone = response.clone();
+                                caches.open('gk-store-v1').then(cache => {
+                                    cache.put(event.request, responseClone);
+                                });
+                                return response;
+                            })
+                            .catch(() => {
+                                // If network fails, try cache
+                                return caches.match(event.request);
+                            })
+                    );
+                });
+                `;
+                
+                const blob = new Blob([serviceWorkerScript], { type: 'application/javascript' });
+                const serviceWorkerUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(serviceWorkerUrl)
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                        URL.revokeObjectURL(serviceWorkerUrl);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
             }
             
             // Listen for beforeinstallprompt event
@@ -3009,14 +3035,14 @@
                     showInstallButton();
                 }
                 
-                // Auto show install prompt after 5 seconds if user hasn't installed
+                // Auto show install prompt after 3 seconds if user hasn't installed
                 setTimeout(() => {
                     if (deferredPrompt && !isStandalone && localStorage.getItem('pwaInstallShown') !== 'true') {
                         console.log('Auto-showing install prompt');
                         showPWAInstallPrompt();
                         localStorage.setItem('pwaInstallShown', 'true');
                     }
-                }, 5000);
+                }, 3000);
             });
             
             // Listen for appinstalled event
@@ -3041,50 +3067,10 @@
             updateOnlineStatus();
         }
 
-        // Register inline service worker
-        function registerInlineServiceWorker() {
-            if ('serviceWorker' in navigator) {
-                const serviceWorkerScript = `
-                self.addEventListener('install', event => {
-                    console.log('Service Worker installing...');
-                    self.skipWaiting();
-                });
-                
-                self.addEventListener('activate', event => {
-                    console.log('Service Worker activating...');
-                    return self.clients.claim();
-                });
-                
-                self.addEventListener('fetch', event => {
-                    // Network-first strategy
-                    event.respondWith(
-                        fetch(event.request)
-                            .catch(() => {
-                                // If network fails, return offline page
-                                return caches.match(event.request);
-                            })
-                    );
-                });
-                `;
-                
-                const blob = new Blob([serviceWorkerScript], { type: 'application/javascript' });
-                const serviceWorkerUrl = URL.createObjectURL(blob);
-                
-                navigator.serviceWorker.register(serviceWorkerUrl)
-                    .then(registration => {
-                        console.log('Inline Service Worker registered with scope:', registration.scope);
-                        URL.revokeObjectURL(serviceWorkerUrl);
-                    })
-                    .catch(error => {
-                        console.log('Inline Service Worker registration failed:', error);
-                    });
-            }
-        }
-
         // Show install button
         function showInstallButton() {
             const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn) {
+            if (installBtn && !isStandalone) {
                 installBtn.classList.remove('hidden');
                 console.log('Install button shown');
             }
@@ -3179,7 +3165,6 @@
 
         // Apply language translations
         function applyLanguage(lang) {
-            console.log('Applying language:', lang);
             const langTranslations = translations[lang] || translations.en;
             
             for (const key in langTranslations) {
@@ -3212,8 +3197,6 @@
 
         // Load sample data
         function loadSampleData() {
-            console.log('Loading sample data...');
-            
             // Sample videos
             appState.videos = [
                 {
@@ -3275,33 +3258,8 @@
                 }
             ];
 
-            // Sample accounts
-            appState.accounts = [
-                {
-                    id: 1,
-                    title: "Premium Plus",
-                    description: "Full access to premium features",
-                    tier: "big",
-                    price: 5000,
-                    sold: false
-                },
-                {
-                    id: 2,
-                    title: "VIP Access",
-                    description: "VIP level access with special perks",
-                    tier: "medium",
-                    price: 2500,
-                    sold: false
-                },
-                {
-                    id: 3,
-                    title: "Exclusive Pro",
-                    description: "Professional exclusive account",
-                    tier: "small",
-                    price: 1200,
-                    sold: false
-                }
-            ];
+            // Initialize with empty accounts array
+            appState.accounts = [];
 
             // Sample book requests
             appState.bookRequests = [
@@ -3383,8 +3341,6 @@
 
         // Set up event listeners
         function setupEventListeners() {
-            console.log('Setting up event listeners...');
-            
             document.addEventListener('keydown', (e) => {
                 if (appState.currentPage === 'home') {
                     switch(e.key) {
@@ -3469,37 +3425,18 @@
                     }
                 });
             }
-            
-            // Fix for form submission - prevent default for signup links
-            document.querySelectorAll('a[href="#signup"]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showSignupForm();
-                });
-            });
-            
-            document.querySelectorAll('a[href="#login"]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showLoginForm();
-                });
-            });
         }
 
         // Show page
         function showPage(page) {
-            console.log('Showing page:', page);
-            
             // If not logged in and trying to access protected pages, redirect to auth
             const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
             if (protectedPages.includes(page) && !appState.isLoggedIn) {
-                console.log('Redirecting to auth page (not logged in)');
                 page = 'auth';
             }
             
             // If logged in and trying to access auth, redirect to home
             if (page === 'auth' && appState.isLoggedIn) {
-                console.log('Redirecting to home page (already logged in)');
                 page = 'home';
             }
             
@@ -3543,7 +3480,6 @@
 
         // Load home page content
         function loadHomeContent() {
-            console.log('Loading home content...');
             if (appState.videos.length > 0) {
                 loadVideo(appState.currentVideoIndex);
             }
@@ -4664,45 +4600,37 @@
             showPage('auth');
         }
 
-        // Auth Functions - FIXED: These are now properly connected
+        // Auth Functions
         function showLoginForm() {
-            console.log('Showing login form');
             document.getElementById('login-form-container').classList.remove('hidden');
             document.getElementById('signup-form-container').classList.add('hidden');
             document.getElementById('forgot-password-container').classList.add('hidden');
         }
 
         function showSignupForm() {
-            console.log('Showing signup form');
             document.getElementById('login-form-container').classList.add('hidden');
             document.getElementById('signup-form-container').classList.remove('hidden');
             document.getElementById('forgot-password-container').classList.add('hidden');
         }
 
         function showForgotPassword() {
-            console.log('Showing forgot password form');
             document.getElementById('login-form-container').classList.add('hidden');
             document.getElementById('signup-form-container').classList.add('hidden');
             document.getElementById('forgot-password-container').classList.remove('hidden');
         }
 
-        // Login function - FIXED: Now properly connected
+        // Login function
         function login(event) {
             event.preventDefault();
-            console.log('Login attempt...');
             
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const rememberMe = document.getElementById('remember-me').checked;
             
-            console.log('Email:', email, 'Password:', password);
-            
             // Find user
             const user = appState.users.find(u => u.email === email && u.password === password);
             
             if (user) {
-                console.log('User found:', user);
-                
                 // Update last login
                 user.lastLogin = new Date().toISOString();
                 
@@ -4732,22 +4660,18 @@
                 // Reset form
                 document.getElementById('login-form').reset();
             } else {
-                console.log('User not found or password incorrect');
                 showToast('error', 'Login Failed', 'Invalid email or password');
             }
         }
 
-        // Signup function - FIXED: Now properly connected
+        // Signup function
         function signup(event) {
             event.preventDefault();
-            console.log('Signup attempt...');
             
             const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
-            
-            console.log('Signup data:', { name, email, password, confirmPassword });
             
             // Validation
             if (password !== confirmPassword) {
@@ -4806,10 +4730,9 @@
             document.getElementById('signup-form').reset();
         }
 
-        // Reset password function - FIXED: Now properly connected
+        // Reset password function
         function resetPassword(event) {
             event.preventDefault();
-            console.log('Reset password attempt...');
             
             const email = document.getElementById('reset-email').value;
             
@@ -4831,8 +4754,6 @@
 
         // Social login function
         function socialLogin(provider) {
-            console.log('Social login with:', provider);
-            
             // In a real app, this would integrate with actual OAuth providers
             // For demo, create a mock user
             const mockUser = {
@@ -4888,10 +4809,7 @@
         }
 
         // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM fully loaded, initializing app...');
-            initApp();
-        });
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
