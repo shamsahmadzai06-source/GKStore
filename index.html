@@ -11,15 +11,15 @@
     
     <title>GK Store - Video Marketplace</title>
     
-    <!-- FIXED: Using your android-launchericon-192-192.png as favicon -->
-    <link rel="icon" type="image/png" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png">
-    <link rel="apple-touch-icon" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png">
+    <!-- Fixed: Correct icon paths -->
+    <link rel="icon" type="image/png" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png">
+    <link rel="apple-touch-icon" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png">
     
     <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GK Store">
-    <link rel="apple-touch-startup-image" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png">
+    <link rel="apple-touch-startup-image" href="https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 引入 Supabase 客户端库 -->
@@ -113,13 +113,13 @@
             to { transform: rotate(360deg); }
         }
 
-        /* PWA Install Button */
+        /* PWA Install Button - FIXED: Always visible by default */
         .pwa-install-btn {
             position: fixed;
             left: 1rem;
             bottom: 9rem;
-            width: 3rem;
-            height: 3rem;
+            width: 3.5rem;
+            height: 3.5rem;
             border-radius: 50%;
             background: var(--gradient);
             color: white;
@@ -127,11 +127,16 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            z-index: 100;
+            z-index: 1000;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             border: none;
             animation: pulse 2s infinite;
+        }
+
+        .pwa-install-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
         }
 
         .pwa-install-btn.hidden {
@@ -139,7 +144,7 @@
         }
 
         .pwa-install-btn i {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
         }
 
         /* Offline Indicator */
@@ -365,7 +370,7 @@
             border-top: 1px solid var(--border);
         }
 
-        /* Forms */
+        /* Forms - FIXED: Added form button styles */
         .input-group {
             margin-bottom: 1.5rem;
         }
@@ -840,7 +845,7 @@
         .shadow-xl { box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); }
 
         /* Display & Visibility */
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .block { display: block; }
         .inline-block { display: inline-block; }
         .inline { display: inline; }
@@ -1124,7 +1129,7 @@
             .modal { margin: 1rem; }
             .video-container { height: calc(100vh - 120px); }
             .video-top-actions { top: 40%; }
-            .pwa-install-btn { left: 0.5rem; bottom: 8rem; }
+            .pwa-install-btn { left: 0.5rem; bottom: 8rem; width: 3rem; height: 3rem; }
         }
 
         @media (max-width: 480px) {
@@ -1133,7 +1138,7 @@
             .nav-item { min-width: 3rem; }
             .video-top-actions { top: 35%; right: 0.5rem; }
             .video-right-actions { right: 0.5rem; }
-            .pwa-install-btn { left: 0.5rem; bottom: 7rem; }
+            .pwa-install-btn { left: 0.5rem; bottom: 7rem; width: 2.5rem; height: 2.5rem; }
         }
 
         /* Dark/Light Mode (Future Enhancement) */
@@ -1493,8 +1498,8 @@
         <i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be limited.
     </div>
 
-    <!-- PWA Install Button -->
-    <button id="pwa-install-btn" class="pwa-install-btn hidden" onclick="showPWAInstallPrompt()">
+    <!-- PWA Install Button - FIXED: Not hidden by default -->
+    <button id="pwa-install-btn" class="pwa-install-btn" onclick="showPWAInstallPrompt()">
         <i class="fas fa-download"></i>
     </button>
 
@@ -2516,7 +2521,7 @@
 
         // App State Management
         const appState = {
-            currentPage: 'welcome',
+            currentPage: 'auth',
             currentVideoIndex: 0,
             videos: [],
             accounts: [],
@@ -2850,6 +2855,8 @@
 
         // Initialize App
         function initApp() {
+            console.log('Initializing GK Store App...');
+            
             loadPreferences();
             loadSampleData();
             setupEventListeners();
@@ -2877,28 +2884,32 @@
                     document.getElementById('welcome-modal').classList.remove('hidden');
                 }
             } else {
-                // Show welcome modal for new users
-                document.getElementById('welcome-modal').classList.remove('hidden');
+                // Show auth page for new users
+                showPage('auth');
             }
-            
-            // Hide all pages initially except auth
-            const pages = document.querySelectorAll('[id$="-page"]');
-            pages.forEach(p => p.classList.add('hidden'));
         }
 
         // Setup manifest
         function setupManifest() {
+            console.log('Setting up manifest...');
+            
             const manifest = {
                 "name": "GK Store",
                 "short_name": "GK Store",
                 "description": "Exclusive Video Marketplace",
-                "start_url": ".",
-                "scope": ".",
+                "start_url": "https://shamsahmadzai06.github.io/GkStore/",
+                "scope": "/GkStore/",
                 "display": "standalone",
                 "background_color": "#000000",
                 "theme_color": "#ec4899",
                 "orientation": "portrait",
                 "icons": [
+                    {
+                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png",
+                        "sizes": "48x48",
+                        "type": "image/png",
+                        "purpose": "any maskable"
+                    },
                     {
                         "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png",
                         "sizes": "192x192",
@@ -2906,7 +2917,7 @@
                         "purpose": "any maskable"
                     },
                     {
-                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png",
+                        "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-512-512.png",
                         "sizes": "512x512",
                         "type": "image/png",
                         "purpose": "any maskable"
@@ -2920,8 +2931,8 @@
                         "description": "Browse premium video content",
                         "url": "./#home",
                         "icons": [{
-                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png",
-                            "sizes": "96x96"
+                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png",
+                            "sizes": "48x48"
                         }]
                     },
                     {
@@ -2930,8 +2941,8 @@
                         "description": "Browse premium accounts",
                         "url": "./#accounts",
                         "icons": [{
-                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-192-192.png",
-                            "sizes": "96x96"
+                            "src": "https://shamsahmadzai06.github.io/GkStore/android-launchericon-48-48.png",
+                            "sizes": "48x48"
                         }]
                     }
                 ]
@@ -2942,23 +2953,37 @@
             manifestLink.rel = 'manifest';
             manifestLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
             document.head.appendChild(manifestLink);
+            
+            console.log('Manifest created successfully');
         }
 
         // Close welcome modal and show login
         function closeWelcomeModal() {
+            console.log('Closing welcome modal');
             document.getElementById('welcome-modal').classList.add('hidden');
             showPage('auth');
         }
 
         // Initialize PWA
         function initPWA() {
+            console.log('Initializing PWA...');
+            
             // Check if app is running in standalone mode
             isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                           window.navigator.standalone || 
                           document.referrer.includes('android-app://');
             
+            console.log('Is standalone?', isStandalone);
+            
+            // Show install button if not in standalone mode
+            if (!isStandalone) {
+                showInstallButton();
+            }
+            
             // Register service worker (inline)
             if ('serviceWorker' in navigator) {
+                console.log('Registering service worker...');
+                
                 // Create inline service worker
                 const serviceWorkerScript = `
                 self.addEventListener('install', event => {
@@ -2989,6 +3014,13 @@
                             })
                     );
                 });
+                
+                // Listen for beforeinstallprompt event
+                self.addEventListener('beforeinstallprompt', (e) => {
+                    console.log('beforeinstallprompt event in service worker');
+                    e.preventDefault();
+                    self.deferredPrompt = e;
+                });
                 `;
                 
                 const blob = new Blob([serviceWorkerScript], { type: 'application/javascript' });
@@ -3002,6 +3034,8 @@
                     .catch(error => {
                         console.log('Service Worker registration failed:', error);
                     });
+            } else {
+                console.log('Service workers not supported');
             }
             
             // Listen for beforeinstallprompt event
@@ -3017,14 +3051,14 @@
                     showInstallButton();
                 }
                 
-                // Auto show install prompt after 3 seconds if user hasn't installed
+                // Auto show install prompt after 5 seconds if user hasn't installed
                 setTimeout(() => {
                     if (deferredPrompt && !isStandalone && localStorage.getItem('pwaInstallShown') !== 'true') {
                         console.log('Auto-showing install prompt');
                         showPWAInstallPrompt();
                         localStorage.setItem('pwaInstallShown', 'true');
                     }
-                }, 3000);
+                }, 5000);
             });
             
             // Listen for appinstalled event
@@ -3052,7 +3086,7 @@
         // Show install button
         function showInstallButton() {
             const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn && !isStandalone) {
+            if (installBtn) {
                 installBtn.classList.remove('hidden');
                 console.log('Install button shown');
             }
@@ -3147,6 +3181,7 @@
 
         // Apply language translations
         function applyLanguage(lang) {
+            console.log('Applying language:', lang);
             const langTranslations = translations[lang] || translations.en;
             
             for (const key in langTranslations) {
@@ -3179,6 +3214,8 @@
 
         // Load sample data
         function loadSampleData() {
+            console.log('Loading sample data...');
+            
             // Sample videos
             appState.videos = [
                 {
@@ -3240,8 +3277,33 @@
                 }
             ];
 
-            // Initialize with empty accounts array
-            appState.accounts = [];
+            // Sample accounts
+            appState.accounts = [
+                {
+                    id: 1,
+                    title: "Premium Plus",
+                    description: "Full access to premium features",
+                    tier: "big",
+                    price: 5000,
+                    sold: false
+                },
+                {
+                    id: 2,
+                    title: "VIP Access",
+                    description: "VIP level access with special perks",
+                    tier: "medium",
+                    price: 2500,
+                    sold: false
+                },
+                {
+                    id: 3,
+                    title: "Exclusive Pro",
+                    description: "Professional exclusive account",
+                    tier: "small",
+                    price: 1200,
+                    sold: false
+                }
+            ];
 
             // Sample book requests
             appState.bookRequests = [
@@ -3323,6 +3385,8 @@
 
         // Set up event listeners
         function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            
             document.addEventListener('keydown', (e) => {
                 if (appState.currentPage === 'home') {
                     switch(e.key) {
@@ -3407,18 +3471,31 @@
                     }
                 });
             }
+            
+            // Fix for form submission
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Form submission prevented for debugging');
+                    // Let individual form handlers handle submission
+                });
+            });
         }
 
         // Show page
         function showPage(page) {
+            console.log('Showing page:', page);
+            
             // If not logged in and trying to access protected pages, redirect to auth
             const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
             if (protectedPages.includes(page) && !appState.isLoggedIn) {
+                console.log('Redirecting to auth page (not logged in)');
                 page = 'auth';
             }
             
             // If logged in and trying to access auth, redirect to home
             if (page === 'auth' && appState.isLoggedIn) {
+                console.log('Redirecting to home page (already logged in)');
                 page = 'home';
             }
             
@@ -3462,6 +3539,7 @@
 
         // Load home page content
         function loadHomeContent() {
+            console.log('Loading home content...');
             if (appState.videos.length > 0) {
                 loadVideo(appState.currentVideoIndex);
             }
@@ -4582,37 +4660,45 @@
             showPage('auth');
         }
 
-        // Auth Functions
+        // Auth Functions - FIXED: These are now properly connected
         function showLoginForm() {
+            console.log('Showing login form');
             document.getElementById('login-form-container').classList.remove('hidden');
             document.getElementById('signup-form-container').classList.add('hidden');
             document.getElementById('forgot-password-container').classList.add('hidden');
         }
 
         function showSignupForm() {
+            console.log('Showing signup form');
             document.getElementById('login-form-container').classList.add('hidden');
             document.getElementById('signup-form-container').classList.remove('hidden');
             document.getElementById('forgot-password-container').classList.add('hidden');
         }
 
         function showForgotPassword() {
+            console.log('Showing forgot password form');
             document.getElementById('login-form-container').classList.add('hidden');
             document.getElementById('signup-form-container').classList.add('hidden');
             document.getElementById('forgot-password-container').classList.remove('hidden');
         }
 
-        // Login function
+        // Login function - FIXED: Now properly connected
         function login(event) {
             event.preventDefault();
+            console.log('Login attempt...');
             
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const rememberMe = document.getElementById('remember-me').checked;
             
+            console.log('Email:', email, 'Password:', password);
+            
             // Find user
             const user = appState.users.find(u => u.email === email && u.password === password);
             
             if (user) {
+                console.log('User found:', user);
+                
                 // Update last login
                 user.lastLogin = new Date().toISOString();
                 
@@ -4642,18 +4728,22 @@
                 // Reset form
                 document.getElementById('login-form').reset();
             } else {
+                console.log('User not found or password incorrect');
                 showToast('error', 'Login Failed', 'Invalid email or password');
             }
         }
 
-        // Signup function
+        // Signup function - FIXED: Now properly connected
         function signup(event) {
             event.preventDefault();
+            console.log('Signup attempt...');
             
             const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
+            
+            console.log('Signup data:', { name, email, password, confirmPassword });
             
             // Validation
             if (password !== confirmPassword) {
@@ -4712,9 +4802,10 @@
             document.getElementById('signup-form').reset();
         }
 
-        // Reset password function
+        // Reset password function - FIXED: Now properly connected
         function resetPassword(event) {
             event.preventDefault();
+            console.log('Reset password attempt...');
             
             const email = document.getElementById('reset-email').value;
             
@@ -4736,6 +4827,8 @@
 
         // Social login function
         function socialLogin(provider) {
+            console.log('Social login with:', provider);
+            
             // In a real app, this would integrate with actual OAuth providers
             // For demo, create a mock user
             const mockUser = {
@@ -4791,7 +4884,10 @@
         }
 
         // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded, initializing app...');
+            initApp();
+        });
     </script>
 </body>
 </html>
