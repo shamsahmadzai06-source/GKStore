@@ -2,7 +2,9 @@
    GLOBAL DATA
 ========================= */
 const ADMIN_USDT = "TXxxxxADMINADDRESS";
-const APP_LINK = "https://your-github-username.github.io/your-repo-name/"; // replace with your repo URL
+
+/* ✅ IMPORTANT: your real GitHub Pages link */
+const APP_LINK = "https://shamsahmadzai06-source.github.io/GKStore/";
 
 let users = JSON.parse(localStorage.getItem("users")) || [];
 let currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -15,9 +17,6 @@ let adminPass = localStorage.getItem("adminPass") || "admin123";
    DOM ELEMENTS
 ========================= */
 const authScreen = document.getElementById("authScreen");
-const authName = document.getElementById("authName");
-const authEmail = document.getElementById("authEmail");
-const authPhone = document.getElementById("authPhone");
 const loginBtn = document.getElementById("loginBtn");
 const app = document.getElementById("app");
 
@@ -77,27 +76,30 @@ const installBtn = document.getElementById("installBtn");
    PWA INSTALL PROMPT
 ========================= */
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
+
+window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   deferredPrompt = e;
-  installBtn.classList.remove('hidden');
+  installBtn.classList.remove("hidden");
 });
 
 installBtn.onclick = async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
-  const choice = await deferredPrompt.userChoice;
+  await deferredPrompt.userChoice;
   deferredPrompt = null;
-  installBtn.classList.add('hidden');
+  installBtn.classList.add("hidden");
 };
 
 /* =========================
-   SERVICE WORKER REGISTRATION
+   SERVICE WORKER
+   ✅ FIXED FOR GITHUB PAGES
 ========================= */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(reg => console.log('Service worker registered', reg))
-    .catch(err => console.log('SW registration failed', err));
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("./service-worker.js")
+    .then(() => console.log("Service Worker Registered"))
+    .catch(err => console.error("SW Error", err));
 }
 
 /* =========================
@@ -108,7 +110,10 @@ loginBtn.onclick = () => {
   const email = authEmail.value.trim();
   const phone = authPhone.value.trim();
 
-  if (!name || !email || !phone) { alert("Fill Name, Email and WhatsApp"); return; }
+  if (!name || !email || !phone) {
+    alert("Fill Name, Email and WhatsApp");
+    return;
+  }
 
   if (!users.find(u => u.phone === phone)) {
     users.push({ name, email, phone });
@@ -162,44 +167,36 @@ navAdmin.onclick = () => showPage("admin");
 ========================= */
 function loadHomeVideos() {
   videoFeed.innerHTML = "";
-  if (videos.length === 0) return;
+  if (!videos.length) return;
 
   videos.forEach(v => {
-    const clone = createVideo(v, true);
-    videoFeed.appendChild(clone);
+    const el = createVideo(v, true);
+    videoFeed.appendChild(el);
   });
 }
 
 /* =========================
-   TIER NAVIGATION
+   TIER
 ========================= */
 tierButtons.forEach(btn => {
   btn.onclick = () => openTier(btn.dataset.tier);
 });
 
-backToAccount.onclick = () => {
-  tierPage.classList.add("hidden");
-  showPage("account");
-};
+backToAccount.onclick = () => showPage("account");
 
 function openTier(tier) {
   showPage("tierPage");
   tierTitle.textContent = tier.toUpperCase() + " TIER";
   tierVideosContainer.innerHTML = "";
 
-  const tierVideos = videos.filter(v => v.tier === tier);
-
-  if (tierVideos.length === 0) {
+  const list = videos.filter(v => v.tier === tier);
+  if (!list.length) {
     noTierVideos.classList.remove("hidden");
     return;
   }
 
   noTierVideos.classList.add("hidden");
-
-  tierVideos.forEach(v => {
-    const clone = createVideo(v, false);
-    tierVideosContainer.appendChild(clone);
-  });
+  list.forEach(v => tierVideosContainer.appendChild(createVideo(v, false)));
 }
 
 /* =========================
@@ -212,11 +209,11 @@ function createVideo(video, vertical) {
 
   vid.src = video.url;
   vid.loop = true;
-  vid.muted = vertical;
   vid.autoplay = true;
+  vid.muted = vertical;
   vid.controls = !vertical;
 
-  vid.onclick = () => vid.paused ? vid.play() : vid.pause();
+  vid.onclick = () => (vid.paused ? vid.play() : vid.pause());
 
   info.textContent = `${video.title} • $${video.price}`;
 
@@ -230,8 +227,12 @@ function createVideo(video, vertical) {
 /* =========================
    BUY / BOOK
 ========================= */
-function openBuy(video) { showPopup("Buy Video", true, video); }
-function openBook(video) { showPopup("Book Video", false, video); }
+function openBuy(video) {
+  showPopup("Buy Video", true, video);
+}
+function openBook(video) {
+  showPopup("Book Video", false, video);
+}
 
 function showPopup(title, showUSDT, video) {
   buyPopup.classList.remove("hidden");
@@ -246,9 +247,12 @@ function showPopup(title, showUSDT, video) {
 cancelBtn.onclick = () => buyPopup.classList.add("hidden");
 
 function confirmAction(isBuy, video) {
-  if (!buyerName.value || !buyerWhats.value) { alert("Fill all fields"); return; }
+  if (!buyerName.value || !buyerWhats.value) {
+    alert("Fill all fields");
+    return;
+  }
 
-  const requestData = {
+  const req = {
     videoTitle: video.title,
     name: buyerName.value,
     whatsapp: buyerWhats.value,
@@ -256,15 +260,13 @@ function confirmAction(isBuy, video) {
   };
 
   if (isBuy) {
-    buyRequests.push(requestData);
+    buyRequests.push(req);
     localStorage.setItem("buyRequests", JSON.stringify(buyRequests));
-    addNotification(requestData, true);
-    alert(`Send USDT to:\n${ADMIN_USDT}\n\nVideo: ${video.title}`);
+    alert(`Send USDT to:\n${ADMIN_USDT}`);
   } else {
-    bookRequests.push(requestData);
+    bookRequests.push(req);
     localStorage.setItem("bookRequests", JSON.stringify(bookRequests));
-    addNotification(requestData, false);
-    alert("Admin will respond within 2 hours");
+    alert("Admin will contact you");
   }
 
   buyPopup.classList.add("hidden");
@@ -273,51 +275,15 @@ function confirmAction(isBuy, video) {
 }
 
 /* =========================
-   NOTIFICATIONS
-========================= */
-function addNotification(request, isBuy) {
-  const notif = document.createElement("div");
-  notif.className = "notification";
-  notif.innerHTML = `
-    <p><strong>${isBuy ? "Buy" : "Book"} Request:</strong> ${request.videoTitle}</p>
-    <p>Name: ${request.name}</p>
-    <p>
-      WhatsApp: 
-      <a href="https://wa.me/${request.whatsapp}" target="_blank">
-        <button>Chat</button>
-      </a>
-    </p>
-    <button class="approveBtn">Approve</button>
-    <button class="cancelBtn">Cancel</button>
-  `;
-
-  notif.querySelector(".approveBtn").onclick = () => {
-    if (isBuy) buyRequests = buyRequests.filter(r => r !== request);
-    else bookRequests = bookRequests.filter(r => r !== request);
-    localStorage.setItem(isBuy ? "buyRequests" : "bookRequests", JSON.stringify(isBuy ? buyRequests : bookRequests));
-    notif.remove();
-    updateAdminStats();
-  };
-
-  notif.querySelector(".cancelBtn").onclick = () => {
-    if (isBuy) buyRequests = buyRequests.filter(r => r !== request);
-    else bookRequests = bookRequests.filter(r => r !== request);
-    localStorage.setItem(isBuy ? "buyRequests" : "bookRequests", JSON.stringify(isBuy ? buyRequests : bookRequests));
-    notif.remove();
-    updateAdminStats();
-  };
-
-  notificationContainer.prepend(notif);
-  updateAdminStats();
-}
-
-/* =========================
    SHARE
 ========================= */
 function shareApp() {
-  navigator.share
-    ? navigator.share({ title: "GK Store", url: APP_LINK })
-    : navigator.clipboard.writeText(APP_LINK);
+  if (navigator.share) {
+    navigator.share({ title: "GK Store", url: APP_LINK });
+  } else {
+    navigator.clipboard.writeText(APP_LINK);
+    alert("Link copied");
+  }
 }
 
 /* =========================
@@ -329,7 +295,9 @@ adminLoginBtn.onclick = () => {
     adminContent.classList.remove("hidden");
     updateAdminStats();
     loadAllNotifications();
-  } else alert("Wrong password");
+  } else {
+    alert("Wrong password");
+  }
 };
 
 function updateAdminStats() {
@@ -340,27 +308,27 @@ function updateAdminStats() {
 
 function loadAllNotifications() {
   notificationContainer.innerHTML = "";
-  bookRequests.forEach(req => addNotification(req, false));
-  buyRequests.forEach(req => addNotification(req, true));
 }
 
 /* =========================
    UPLOAD VIDEO
 ========================= */
 uploadVideoBtn.onclick = () => {
-  const id = videoID.value.trim();
-  const title = videoTitle.value.trim();
-  const price = +videoPrice.value;
-  const tier = videoTier.value;
   const file = videoFile.files[0];
-
-  if (!id || !title || !price || !tier || !file) { alert("Fill all fields"); return; }
+  if (!file) return alert("Select video");
 
   const url = URL.createObjectURL(file);
-  videos.push({ id, title, price, tier, url });
-  localStorage.setItem("videos", JSON.stringify(videos));
 
-  alert("Video uploaded to " + tier + " tier");
+  videos.push({
+    id: videoID.value,
+    title: videoTitle.value,
+    price: videoPrice.value,
+    tier: videoTier.value,
+    url
+  });
+
+  localStorage.setItem("videos", JSON.stringify(videos));
+  alert("Video uploaded");
   loadHomeVideos();
 };
 
@@ -368,7 +336,7 @@ uploadVideoBtn.onclick = () => {
    CHANGE PASSWORD
 ========================= */
 changePassBtn.onclick = () => {
-  if (oldPass.value !== adminPass) return alert("Wrong old password");
+  if (oldPass.value !== adminPass) return alert("Wrong password");
   adminPass = newPass.value;
   localStorage.setItem("adminPass", adminPass);
   alert("Password changed");
