@@ -15,19 +15,15 @@ let adminPass = localStorage.getItem("adminPass") || "admin123";
    DOM ELEMENTS
 ========================= */
 const authScreen = document.getElementById("authScreen");
+const app = document.getElementById("app");
+
+// LOGIN / SIGNUP
 const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
-const tabLogin = document.getElementById("tabLogin");
-const tabSignup = document.getElementById("tabSignup");
-const loginForm = document.getElementById("loginForm");
-const signupForm = document.getElementById("signupForm");
-
-const loginPhone = document.getElementById("loginPhone");
-const signupName = document.getElementById("signupName");
-const signupEmail = document.getElementById("signupEmail");
-const signupPhone = document.getElementById("signupPhone");
-
-const app = document.getElementById("app");
+const authName = document.getElementById("authName");
+const authEmail = document.getElementById("authEmail");
+const authPhone = document.getElementById("authPhone");
+const authPhoneLogin = document.getElementById("authPhoneLogin");
 
 const videoFeed = document.getElementById("videoFeed");
 const videoTemplate = document.getElementById("videoTemplate");
@@ -100,52 +96,27 @@ if ("serviceWorker" in navigator) {
 }
 
 /* =========================
-   LOGIN / SIGNUP TABS
-========================= */
-tabLogin.onclick = () => {
-  tabLogin.classList.add("active");
-  tabSignup.classList.remove("active");
-  loginForm.classList.remove("hidden");
-  signupForm.classList.add("hidden");
-};
-
-tabSignup.onclick = () => {
-  tabSignup.classList.add("active");
-  tabLogin.classList.remove("active");
-  signupForm.classList.remove("hidden");
-  loginForm.classList.add("hidden");
-};
-
-/* =========================
-   LOGIN
+   LOGIN / SIGNUP
 ========================= */
 loginBtn.onclick = () => {
-  const phone = loginPhone.value.trim();
-  if (!phone) return alert("Enter WhatsApp Number");
+  const phone = authPhoneLogin.value.trim();
+  if (!phone) return alert("Enter your WhatsApp number");
 
   const user = users.find(u => u.phone === phone);
-  if (!user) return alert("User not found, please signup");
+  if (!user) return alert("User not found. Please signup first.");
 
   currentUser = user;
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
-
-  authScreen.classList.add("hidden");
-  app.classList.remove("hidden");
-
-  updateProfile();
-  loadHomeVideos();
-  updateAdminStats();
+  openApp();
 };
 
-/* =========================
-   SIGNUP
-========================= */
 signupBtn.onclick = () => {
-  const name = signupName.value.trim();
-  const email = signupEmail.value.trim();
-  const phone = signupPhone.value.trim();
+  const name = authName.value.trim();
+  const email = authEmail.value.trim();
+  const phone = authPhone.value.trim();
 
   if (!name || !email || !phone) return alert("Fill all fields");
+
   if (users.find(u => u.phone === phone)) return alert("User already exists");
 
   const newUser = { name, email, phone };
@@ -155,13 +126,17 @@ signupBtn.onclick = () => {
   currentUser = newUser;
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
+  openApp();
+};
+
+// Open main app after login/signup
+function openApp() {
   authScreen.classList.add("hidden");
   app.classList.remove("hidden");
-
   updateProfile();
   loadHomeVideos();
   updateAdminStats();
-};
+}
 
 /* =========================
    PROFILE
@@ -204,7 +179,7 @@ function loadHomeVideos() {
 }
 
 /* =========================
-   TIER PAGES
+   TIER
 ========================= */
 tierButtons.forEach(btn => {
   btn.onclick = () => openTier(btn.dataset.tier);
@@ -240,76 +215,78 @@ function createVideo(video, vertical) {
   vid.autoplay = true;
   vid.muted = vertical;
   vid.controls = !vertical;
-
   vid.onclick = () => (vid.paused ? vid.play() : vid.pause());
 
   info.textContent = `${video.title} • $${video.price}`;
 
-  clone.querySelector(".btn-buy").onclick = () => openBuy(video);
-  clone.querySelector(".btn-book").onclick = () => openBook(video);
-  clone.querySelector(".btn-share").onclick = shareApp;
+  const btnBuy = clone.querySelector(".btn-buy");
+  const btnBook = clone.querySelector(".btn-book");
+  const btnShare = clone.querySelector(".btn-share");
+
+  btnBuy.onclick = () => openBuy(video);
+  btnBook.onclick = () => openBook(video);
+  btnShare.onclick = shareApp;
 
   return clone;
 }
 
 /* =========================
-   BUY / BOOK POPUPS
+   BUY / BOOK
 ========================= */
-function openBuy(video) {
-  showPopup("Buy Video", true, video);
-}
-function openBook(video) {
-  showPopup("Book Video", false, video);
-}
+function openBuy(video) { showPopup("Buy Video", true, video); }
+function openBook(video) { showPopup("Book Video", false, video); }
 
 function showPopup(title, showUSDT, video) {
-  let buyPopup = document.getElementById("buyPopup");
-  if (!buyPopup) {
-    buyPopup = document.createElement("div");
-    buyPopup.id = "buyPopup";
-    buyPopup.className = "popup hidden";
-    buyPopup.innerHTML = `
+  let popup = document.getElementById("buyPopup");
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "buyPopup";
+    popup.className = "popup hidden";
+    popup.innerHTML = `
       <div class="popup-box">
         <h3 id="popupTitle">${title}</h3>
-        <div id="usdtText">Send USDT:</div>
-        <div id="usdtAddress">${ADMIN_USDT}</div>
         <input id="buyerName" placeholder="Your Name">
         <input id="buyerWhats" placeholder="WhatsApp Number">
+        <div id="usdtText">Send USDT:</div>
+        <input id="usdtAddress" value="${ADMIN_USDT}" readonly>
+        <button id="copyUSDT">Copy</button>
         <button id="confirmBtn">Confirm</button>
         <button id="cancelBtn">Cancel</button>
-      </div>`;
-    document.body.appendChild(buyPopup);
-    document.getElementById("cancelBtn").onclick = () => buyPopup.classList.add("hidden");
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("cancelBtn").onclick = () => popup.classList.add("hidden");
+    document.getElementById("copyUSDT").onclick = () => {
+      navigator.clipboard.writeText(ADMIN_USDT);
+      alert("USDT address copied!");
+    };
   }
 
-  buyPopup.classList.remove("hidden");
+  popup.classList.remove("hidden");
   document.getElementById("popupTitle").textContent = title;
   document.getElementById("usdtText").style.display = showUSDT ? "block" : "none";
   document.getElementById("usdtAddress").style.display = showUSDT ? "block" : "none";
 
-  document.getElementById("confirmBtn").onclick = () => confirmAction(showUSDT, video);
-}
+  document.getElementById("confirmBtn").onclick = () => {
+    const buyerName = document.getElementById("buyerName").value.trim();
+    const buyerWhats = document.getElementById("buyerWhats").value.trim();
+    if (!buyerName || !buyerWhats) return alert("Fill all fields");
 
-function confirmAction(isBuy, video) {
-  const name = document.getElementById("buyerName").value.trim();
-  const whatsapp = document.getElementById("buyerWhats").value.trim();
-  if (!name || !whatsapp) return alert("Fill all fields");
-
-  const req = { videoTitle: video.title, name, whatsapp, date: Date.now() };
-
-  if (isBuy) {
-    buyRequests.push(req);
-    localStorage.setItem("buyRequests", JSON.stringify(buyRequests));
-    alert(`Send USDT to:\n${ADMIN_USDT}`);
-  } else {
-    bookRequests.push(req);
-    localStorage.setItem("bookRequests", JSON.stringify(bookRequests));
-    alert("Admin will contact you");
-  }
-
-  document.getElementById("buyPopup").classList.add("hidden");
-  document.getElementById("buyerName").value = "";
-  document.getElementById("buyerWhats").value = "";
+    const req = { videoTitle: video.title, name: buyerName, whatsapp: buyerWhats, date: Date.now() };
+    if (showUSDT) {
+      buyRequests.push(req);
+      localStorage.setItem("buyRequests", JSON.stringify(buyRequests));
+      alert(`Send USDT to:\n${ADMIN_USDT}`);
+    } else {
+      bookRequests.push(req);
+      localStorage.setItem("bookRequests", JSON.stringify(bookRequests));
+      alert("Admin will contact you");
+    }
+    popup.classList.add("hidden");
+    document.getElementById("buyerName").value = "";
+    document.getElementById("buyerWhats").value = "";
+  };
 }
 
 /* =========================
@@ -320,22 +297,19 @@ function shareApp() {
     navigator.share({ title: "GK Store", url: APP_LINK });
   } else {
     navigator.clipboard.writeText(APP_LINK);
-    alert("Link copied");
+    alert("Link copied!");
   }
 }
 
 /* =========================
-   ADMIN PANEL
+   ADMIN
 ========================= */
 adminLoginBtn.onclick = () => {
   if (adminPassInput.value === adminPass) {
     adminLoginBox.classList.add("hidden");
     adminContent.classList.remove("hidden");
     updateAdminStats();
-    loadAllNotifications();
-  } else {
-    alert("Wrong password");
-  }
+  } else alert("Wrong password");
 };
 
 function updateAdminStats() {
@@ -344,17 +318,12 @@ function updateAdminStats() {
   onlineCount.textContent = currentUser ? 1 : 0;
 }
 
-function loadAllNotifications() {
-  notificationContainer.innerHTML = "";
-}
-
 /* =========================
    UPLOAD VIDEO
 ========================= */
 uploadVideoBtn.onclick = () => {
   const file = videoFile.files[0];
   if (!file) return alert("Select video");
-
   const url = URL.createObjectURL(file);
 
   videos.push({
