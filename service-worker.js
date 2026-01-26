@@ -1,11 +1,11 @@
-const CACHE_NAME = "gk-store-v10";
-const APP_SHELL = [
+const CACHE = "gkstore-v1";
+
+const FILES = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./manifest.json",
-  "./android-launchericon-48-48.png",
   "./android-launchericon-72-72.png",
   "./android-launchericon-96-96.png",
   "./android-launchericon-144-144.png",
@@ -13,73 +13,21 @@ const APP_SHELL = [
   "./android-launchericon-512-512.png"
 ];
 
-const VIDEO_CACHE = "gk-store-videos-v10";
-
-/* =========================
-   INSTALL
-========================= */
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
-  );
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
   self.skipWaiting();
 });
 
-/* =========================
-   ACTIVATE
-========================= */
-self.addEventListener("activate", event => {
-  event.waitUntil(
+self.addEventListener("activate", e => {
+  e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (![CACHE_NAME, VIDEO_CACHE].includes(key)) {
-            return caches.delete(key);
-          }
-        })
-      )
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-/* =========================
-   FETCH
-========================= */
-self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
-
-  const { request } = event;
-
-  // Video requests → network-first then cache
-  if (request.destination === "video") {
-    event.respondWith(
-      fetch(request)
-        .then(res => {
-          const clone = res.clone();
-          caches.open(VIDEO_CACHE).then(cache => cache.put(request, clone));
-          return res;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  // App shell → cache-first
-  event.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) return cached;
-
-      return fetch(request).then(res => {
-        if (!res || res.status !== 200) return res;
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-        return res;
-      }).catch(() => {
-        if (request.destination === "document") {
-          return caches.match("./index.html");
-        }
-      });
-    })
-  );
+self.addEventListener("fetch", e => {
+  if (e.request.method !== "GET") return;
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
