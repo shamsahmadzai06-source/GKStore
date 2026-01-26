@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1a1a2e" />
 
-  <link rel="manifest" href="manifest.json">
+  <!-- Link manifest correctly -->
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
   <!-- LOGIN / SIGNUP SCREEN -->
   <section id="authScreen" class="auth-screen">
@@ -134,41 +134,10 @@
       <button id="navAdmin">Admin</button>
     </div>
 
-    <!-- INSTALL BUTTON -->
-    <button class="install-btn">Install App</button>
+    <!-- INSTALL BUTTON (PWA) -->
+    <button id="installBtn" class="install-btn hidden">Install App</button>
   </div>
 
   <script src="app.js"></script>
-  <script>
-    // =========================
-    // PWA INSTALL PROMPT
-    // =========================
-    let deferredPrompt;
-    const installBtn = document.querySelector(".install-btn");
-
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = "block";
-    });
-
-    installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log("User choice:", outcome);
-      deferredPrompt = null;
-      installBtn.style.display = "none";
-    });
-
-    // =========================
-    // REGISTER SERVICE WORKER
-    // =========================
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(reg => console.log("SW registered", reg))
-        .catch(err => console.error("SW failed", err));
-    }
-  </script>
 </body>
 </html>
