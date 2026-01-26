@@ -2,7 +2,7 @@
    GLOBAL DATA
 ========================= */
 const ADMIN_USDT = "TXxxxxADMINADDRESS";
-const APP_LINK = "https://your-app-link.example";
+const APP_LINK = "https://your-github-username.github.io/your-repo-name/";
 
 let users = JSON.parse(localStorage.getItem("users")) || [];
 let currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -68,6 +68,39 @@ const newPass = document.getElementById("newPass");
 const changePassBtn = document.getElementById("changePassBtn");
 
 const notificationContainer = document.getElementById("notificationContainer");
+const installBtn = document.getElementById("installBtn");
+
+/* =========================
+   PWA INSTALL PROMPT
+========================= */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.classList.remove('hidden');
+});
+
+installBtn.onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  if (choice.outcome === 'accepted') {
+    console.log('User accepted the install prompt');
+  } else {
+    console.log('User dismissed the install prompt');
+  }
+  deferredPrompt = null;
+  installBtn.classList.add('hidden');
+};
+
+/* =========================
+   SERVICE WORKER REGISTRATION
+========================= */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(reg => console.log('Service worker registered', reg))
+    .catch(err => console.log('SW registration failed', err));
+}
 
 /* =========================
    LOGIN
@@ -137,11 +170,6 @@ function loadHomeVideos() {
   if (videos.length === 0) return;
 
   videos.forEach(v => {
-    // Ensure video URL is valid (use GitHub raw or hosted link)
-    if (!v.url.startsWith("http")) {
-      console.warn("Invalid video URL, skipping:", v.url);
-      return;
-    }
     const clone = createVideo(v, true);
     videoFeed.appendChild(clone);
   });
@@ -174,7 +202,6 @@ function openTier(tier) {
   noTierVideos.classList.add("hidden");
 
   tierVideos.forEach(v => {
-    if (!v.url.startsWith("http")) return;
     const clone = createVideo(v, false);
     tierVideosContainer.appendChild(clone);
   });
@@ -208,13 +235,8 @@ function createVideo(video, vertical) {
 /* =========================
    BUY / BOOK
 ========================= */
-function openBuy(video) {
-  showPopup("Buy Video", true, video);
-}
-
-function openBook(video) {
-  showPopup("Book Video", false, video);
-}
+function openBuy(video) { showPopup("Buy Video", true, video); }
+function openBook(video) { showPopup("Book Video", false, video); }
 
 function showPopup(title, showUSDT, video) {
   buyPopup.classList.remove("hidden");
@@ -229,10 +251,7 @@ function showPopup(title, showUSDT, video) {
 cancelBtn.onclick = () => buyPopup.classList.add("hidden");
 
 function confirmAction(isBuy, video) {
-  if (!buyerName.value || !buyerWhats.value) {
-    alert("Fill all fields");
-    return;
-  }
+  if (!buyerName.value || !buyerWhats.value) { alert("Fill all fields"); return; }
 
   const requestData = {
     videoTitle: video.title,
@@ -264,7 +283,6 @@ function confirmAction(isBuy, video) {
 function addNotification(request, isBuy) {
   const notif = document.createElement("div");
   notif.className = "notification";
-
   notif.innerHTML = `
     <p><strong>${isBuy ? "Buy" : "Book"} Request:</strong> ${request.videoTitle}</p>
     <p>Name: ${request.name}</p>
@@ -341,12 +359,8 @@ uploadVideoBtn.onclick = () => {
   const tier = videoTier.value;
   const file = videoFile.files[0];
 
-  if (!id || !title || !price || !tier || !file) {
-    alert("Fill all fields");
-    return;
-  }
+  if (!id || !title || !price || !tier || !file) { alert("Fill all fields"); return; }
 
-  // Convert to Object URL for local preview
   const url = URL.createObjectURL(file);
   videos.push({ id, title, price, tier, url });
   localStorage.setItem("videos", JSON.stringify(videos));
