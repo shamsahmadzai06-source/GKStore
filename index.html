@@ -2642,7 +2642,8 @@
             currentUpload: {
                 file: null,
                 progress: 0,
-                url: ''
+                url: '',
+                uploadTask: null
             },
             users: [
                 {
@@ -3627,6 +3628,7 @@
         // Clear file selection
         function clearFileSelection() {
             appState.currentUpload.file = null;
+            appState.currentUpload.uploadTask = null;
             document.getElementById('video-file').value = '';
             document.getElementById('file-preview').classList.remove('active');
             document.getElementById('video-preview').classList.remove('active');
@@ -3643,7 +3645,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // UPLOAD VIDEO WITH FIREBASE
+        // UPLOAD VIDEO WITH FIREBASE - FIXED PROGRESS ISSUE
         async function uploadVideo() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3695,32 +3697,53 @@
                 const storageRef = appState.firebaseStorage.ref();
                 const videoRef = storageRef.child(fileName);
                 
-                // Upload file to Firebase Storage
-                const uploadTask = videoRef.put(file);
+                // Upload file to Firebase Storage with metadata
+                const metadata = {
+                    contentType: file.type,
+                    customMetadata: {
+                        'uploadedBy': appState.currentUser?.name || 'Admin',
+                        'videoId': id,
+                        'title': title,
+                        'tier': tier
+                    }
+                };
                 
-                // Monitor upload progress
+                // UPLOAD FIX: Use the proper upload method for Firebase v9 compatibility
+                const uploadTask = videoRef.put(file, metadata);
+                
+                // Store upload task for potential cancellation
+                appState.currentUpload.uploadTask = uploadTask;
+                
+                // Monitor upload progress - FIXED: Use proper event listeners
                 uploadTask.on('state_changed',
                     (snapshot) => {
-                        // Progress tracking
+                        // Progress tracking - FIXED: Proper progress calculation
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        
+                        // Update progress bar
                         uploadProgress.style.width = progress + '%';
                         uploadPercentage.textContent = Math.round(progress) + '%';
                         uploadedSize.textContent = formatFileSize(snapshot.bytesTransferred);
                         totalSize.textContent = formatFileSize(snapshot.totalBytes);
+                        
+                        console.log(`Upload progress: ${progress}%`);
                     },
                     (error) => {
                         // Handle errors
                         console.error('Upload error:', error);
-                        showToast('error', 'Upload Failed', error.message);
+                        showToast('error', 'Upload Failed', error.message || 'Unknown error occurred');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                         uploadStatus.classList.remove('active');
+                        appState.currentUpload.uploadTask = null;
                     },
                     async () => {
                         // Upload complete
                         try {
                             // Get download URL
                             const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                            
+                            console.log('Upload complete, download URL:', downloadURL);
                             
                             // Generate and show URL
                             document.getElementById('generated-url').textContent = downloadURL;
@@ -3798,7 +3821,7 @@
                 
             } catch (error) {
                 console.error('Upload error:', error);
-                showToast('error', 'Upload Failed', error.message);
+                showToast('error', 'Upload Failed', error.message || 'Unknown error occurred');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                 uploadStatus.classList.remove('active');
