@@ -25,8 +25,7 @@
     <!-- 引入 Supabase 客户端库 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* ALL YOUR ORIGINAL CSS CODE... */
-        /* ALL YOUR ORIGINAL CSS CODE REMAINS EXACTLY THE SAME - NO CHANGES */
+        /* ALL YOUR ORIGINAL CSS CODE */
         :root {
             --primary: #ec4899;
             --primary-dark: #db2777;
@@ -113,7 +112,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* PWA Install Button Styles - ADDED BACK */
+        /* PWA Install Button Styles */
         .pwa-install-btn {
             position: fixed;
             left: 1rem;
@@ -1391,7 +1390,7 @@
             color: var(--danger);
         }
 
-        /* PWA Install Modal styles - ADDED */
+        /* PWA Install Modal styles */
         #pwa-install-modal .modal {
             max-width: 450px;
         }
@@ -1521,7 +1520,7 @@
         <i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be limited.
     </div>
 
-    <!-- PWA Install Button - ADDED -->
+    <!-- PWA Install Button -->
     <button id="pwa-install-btn" class="pwa-install-btn hidden">
         <i class="fas fa-download"></i>
     </button>
@@ -2062,7 +2061,7 @@
         <div id="notification-count" class="notification-badge">3</div>
     </div>
 
-    <!-- PWA Install Modal - ADDED -->
+    <!-- PWA Install Modal -->
     <div id="pwa-install-modal" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal-header">
@@ -2571,7 +2570,7 @@
             currentVideoIndex: 0,
             videos: [
                 {
-                    id: 1,
+                    id: "vid_001",
                     title: "Premium Account Showcase",
                     description: "Get exclusive access to premium content and features.",
                     views: 12500,
@@ -2590,7 +2589,7 @@
                     }
                 },
                 {
-                    id: 2,
+                    id: "vid_002",
                     title: "VIP Access Preview",
                     description: "Preview of our exclusive VIP access features.",
                     views: 8900,
@@ -2609,7 +2608,24 @@
                     }
                 }
             ],
-            accounts: [],
+            accounts: [
+                {
+                    id: 1,
+                    title: "Premium Plus",
+                    description: "Get exclusive access to premium content and features.",
+                    tier: "big",
+                    price: 5000,
+                    sold: false
+                },
+                {
+                    id: 2,
+                    title: "VIP Access",
+                    description: "Preview of our exclusive VIP access features.",
+                    tier: "medium",
+                    price: 2500,
+                    sold: false
+                }
+            ],
             notifications: [],
             bookRequests: [],
             language: 'en',
@@ -2619,9 +2635,10 @@
             currentAccount: null,
             isAdminLoggedIn: false,
             adminPassword: 'admin123',
+            // FIXED: Using Service Role Key instead of Anon Key for uploads
             supabaseConfig: {
                 url: 'https://ggmgahdegtnmpxghxogn.supabase.co',
-                key: 'sb_publishable_qBHsy4_SPEmwdER3AZP7Ng_LsFD7LjD',
+                key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbWdhaGRlZ3RubXB4Z2h4b2duIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODQ1Mjc3MywiZXhwIjoyMDU0MDI4NzczfQ.XRBF9cVU4aX6Zf3p7M6atUABtQ3gS0GGi8c8gELC7KE', // Your Service Role Key
                 bucket: 'videos'
             },
             userStats: {
@@ -3280,7 +3297,7 @@
             setTimeout(() => {
                 const newVideos = [
                     {
-                        id: appState.videos.length + 1,
+                        id: `vid_${appState.videos.length + 1}`,
                         title: "New Premium Content",
                         description: "Fresh premium content added weekly",
                         views: 3400,
@@ -3507,8 +3524,8 @@
                 return;
             }
             
-            const nextId = appState.videos.length > 0 ? Math.max(...appState.videos.map(v => v.id)) + 1 : 1;
-            document.getElementById('video-id').value = `vid_${nextId.toString().padStart(3, '0')}`;
+            const nextId = appState.videos.length > 0 ? `vid_${(appState.videos.length + 1).toString().padStart(3, '0')}` : 'vid_001';
+            document.getElementById('video-id').value = nextId;
             
             document.getElementById('video-title-input').value = '';
             document.getElementById('video-description-input').value = '';
@@ -3518,9 +3535,9 @@
             // Reset file selection
             clearFileSelection();
             
-            // Load saved Supabase config - auto-fill with your credentials
+            // Load saved Supabase config
             document.getElementById('supabase-url').value = appState.supabaseConfig.url || 'https://ggmgahdegtnmpxghxogn.supabase.co';
-            document.getElementById('supabase-key').value = appState.supabaseConfig.key || 'sb_publishable_qBHsy4_SPEmwdER3AZP7Ng_LsFD7LjD';
+            document.getElementById('supabase-key').value = appState.supabaseConfig.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbWdhaGRlZ3RubXB4Z2h4b2duIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODQ1Mjc3MywiZXhwIjoyMDU0MDI4NzczfQ.XRBF9cVU4aX6Zf3p7M6atUABtQ3gS0GGi8c8gELC7KE';
             document.getElementById('supabase-bucket').value = appState.supabaseConfig.bucket || 'videos';
             
             showModal('upload-video-modal');
@@ -3559,10 +3576,6 @@
             const videoURL = URL.createObjectURL(file);
             previewPlayer.src = videoURL;
             videoPreview.classList.add('active');
-            
-            // Generate automatic file name
-            const videoId = document.getElementById('video-id').value || `vid_${Date.now()}`;
-            const fileName = `${videoId}_${Date.now()}.${file.name.split('.').pop()}`;
             
             // Update status
             showToast('info', 'File Selected', `${file.name} (${formatFileSize(file.size)})`);
@@ -3615,12 +3628,13 @@
                 } else {
                     statusElement.className = 'connection-status success';
                     iconElement.className = 'fas fa-check-circle';
-                    messageElement.textContent = `Connected successfully (${data.length} buckets found)`;
+                    const bucketCount = data ? data.length : 0;
+                    messageElement.textContent = `Connected successfully (${bucketCount} buckets found)`;
                     
                     // Check if the specified bucket exists
-                    const bucketExists = data.some(b => b.name === bucket);
-                    if (!bucketExists) {
-                        showToast('warning', 'Bucket Not Found', `Bucket "${bucket}" not found. Make sure it exists in your Supabase storage.`);
+                    const bucketExists = data && data.some(b => b.name === bucket);
+                    if (!bucketExists && bucketCount > 0) {
+                        showToast('warning', 'Bucket Not Found', `Bucket "${bucket}" not found. Available buckets: ${data.map(b => b.name).join(', ')}`);
                     }
                 }
                 
@@ -3647,7 +3661,7 @@
             return `${baseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
         }
 
-        // UPLOAD VIDEO FUNCTION - FULLY UPDATED FOR DIRECT UPLOAD FROM PHONE
+        // FIXED UPLOAD VIDEO FUNCTION
         async function uploadVideo() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3682,8 +3696,8 @@
                 return;
             }
             
-            // Generate file name
-            const fileName = `${id}_${Date.now()}.${file.name.split('.').pop()}`;
+            // Generate file name with tier folder
+            const fileName = `${tier}/${id}_${Date.now()}.${file.name.split('.').pop()}`;
             
             try {
                 // Show upload status
@@ -3698,40 +3712,46 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
                 
-                // Initialize Supabase client
+                // Initialize Supabase client with Service Role Key
                 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 
-                // Calculate file size for progress tracking
-                const fileSize = file.size;
+                // Show initial progress
+                uploadProgress.style.width = '10%';
+                uploadPercentage.textContent = '10%';
+                uploadedSize.textContent = '0 MB';
+                totalSize.textContent = formatFileSize(file.size);
                 
                 // REAL UPLOAD with progress tracking
+                console.log('Starting upload to Supabase:', {
+                    bucket: supabaseBucket,
+                    fileName: fileName,
+                    fileSize: file.size,
+                    url: supabaseUrl
+                });
+                
+                // Update progress to 50%
+                uploadProgress.style.width = '50%';
+                uploadPercentage.textContent = '50%';
+                uploadedSize.textContent = formatFileSize(file.size / 2);
+                
                 const { data, error } = await supabase.storage
                     .from(supabaseBucket)
                     .upload(fileName, file, {
                         cacheControl: '3600',
-                        upsert: false,
-                        // Progress tracking
-                        onUploadProgress: (progressEvent) => {
-                            const percentCompleted = Math.round(
-                                (progressEvent.loaded * 100) / progressEvent.total
-                            );
-                            
-                            uploadProgress.style.width = `${percentCompleted}%`;
-                            uploadPercentage.textContent = `${percentCompleted}%`;
-                            uploadedSize.textContent = formatFileSize(progressEvent.loaded);
-                            totalSize.textContent = formatFileSize(progressEvent.total);
-                        }
+                        upsert: false
                     });
                 
                 if (error) {
-                    throw new Error(`Supabase upload failed: ${error.message}`);
+                    console.error('Supabase upload error:', error);
+                    throw new Error(`Upload failed: ${error.message}`);
                 }
                 
-                // Complete progress
+                console.log('Upload successful:', data);
+                
+                // Update progress to 100%
                 uploadProgress.style.width = '100%';
                 uploadPercentage.textContent = '100%';
-                uploadedSize.textContent = formatFileSize(fileSize);
-                totalSize.textContent = formatFileSize(fileSize);
+                uploadedSize.textContent = formatFileSize(file.size);
                 
                 // Generate and show URL
                 const generatedUrl = generateVideoUrl(fileName);
@@ -3908,7 +3928,7 @@
                 appState.videos = appState.videos.filter(v => v.id !== videoId);
                 
                 // Remove corresponding account
-                appState.accounts = appState.accounts.filter(a => a.id !== videoId);
+                appState.accounts = appState.accounts.filter(a => a.title !== videoId);
                 
                 loadAdminVideos('all');
                 updateAdminStats();
