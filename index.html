@@ -2620,8 +2620,8 @@
             isAdminLoggedIn: false,
             adminPassword: 'admin123',
             supabaseConfig: {
-                url: '',
-                key: '',
+                url: 'https://ggmgahdegtnmpxghxogn.supabase.co',
+                key: 'sb_publishable_qBHsy4_SPEmwdER3AZP7Ng_LsFD7LjD',
                 bucket: 'videos'
             },
             userStats: {
@@ -2953,6 +2953,9 @@
                 } catch (e) {
                     console.error('Error loading Supabase config:', e);
                 }
+            } else {
+                // Save default config to localStorage
+                localStorage.setItem('supabaseConfig', JSON.stringify(appState.supabaseConfig));
             }
             
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -3515,9 +3518,9 @@
             // Reset file selection
             clearFileSelection();
             
-            // Load saved Supabase config
-            document.getElementById('supabase-url').value = appState.supabaseConfig.url || '';
-            document.getElementById('supabase-key').value = appState.supabaseConfig.key || '';
+            // Load saved Supabase config - auto-fill with your credentials
+            document.getElementById('supabase-url').value = appState.supabaseConfig.url || 'https://ggmgahdegtnmpxghxogn.supabase.co';
+            document.getElementById('supabase-key').value = appState.supabaseConfig.key || 'sb_publishable_qBHsy4_SPEmwdER3AZP7Ng_LsFD7LjD';
             document.getElementById('supabase-bucket').value = appState.supabaseConfig.bucket || 'videos';
             
             showModal('upload-video-modal');
@@ -3644,7 +3647,7 @@
             return `${baseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
         }
 
-        // Upload video function
+        // UPLOAD VIDEO FUNCTION - FULLY UPDATED FOR DIRECT UPLOAD FROM PHONE
         async function uploadVideo() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3695,94 +3698,106 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
                 
-                // Simulate upload progress
-                let progress = 0;
-                const progressInterval = setInterval(() => {
-                    progress += 10;
-                    if (progress > 90) {
-                        clearInterval(progressInterval);
-                        progress = 90;
-                    }
-                    
-                    uploadProgress.style.width = `${progress}%`;
-                    uploadPercentage.textContent = `${progress}%`;
-                    uploadedSize.textContent = formatFileSize((file.size * progress) / 100);
-                    totalSize.textContent = formatFileSize(file.size);
-                }, 200);
+                // Initialize Supabase client
+                const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 
-                setTimeout(() => {
-                    // Complete progress
-                    clearInterval(progressInterval);
-                    uploadProgress.style.width = '100%';
-                    uploadPercentage.textContent = '100%';
-                    uploadedSize.textContent = formatFileSize(file.size);
-                    
-                    // Generate and show URL
-                    const generatedUrl = generateVideoUrl(fileName);
-                    document.getElementById('generated-url').textContent = generatedUrl;
-                    document.getElementById('url-generator').classList.add('active');
-                    
-                    // Create new video object
-                    const newVideo = {
-                        id: id,
-                        title: title,
-                        description: description || 'No description available',
-                        views: 0,
-                        likes: 0,
-                        shares: 0,
-                        duration: "2:30",
-                        thumbnail: "",
-                        url: generatedUrl,
-                        account: {
-                            id: appState.accounts.length + 1,
-                            title: title,
-                            tier: tier,
-                            price: price,
-                            followers: 0,
-                            thumbnail: ""
+                // Calculate file size for progress tracking
+                const fileSize = file.size;
+                
+                // REAL UPLOAD with progress tracking
+                const { data, error } = await supabase.storage
+                    .from(supabaseBucket)
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        // Progress tracking
+                        onUploadProgress: (progressEvent) => {
+                            const percentCompleted = Math.round(
+                                (progressEvent.loaded * 100) / progressEvent.total
+                            );
+                            
+                            uploadProgress.style.width = `${percentCompleted}%`;
+                            uploadPercentage.textContent = `${percentCompleted}%`;
+                            uploadedSize.textContent = formatFileSize(progressEvent.loaded);
+                            totalSize.textContent = formatFileSize(progressEvent.total);
                         }
-                    };
+                    });
+                
+                if (error) {
+                    throw new Error(`Supabase upload failed: ${error.message}`);
+                }
+                
+                // Complete progress
+                uploadProgress.style.width = '100%';
+                uploadPercentage.textContent = '100%';
+                uploadedSize.textContent = formatFileSize(fileSize);
+                totalSize.textContent = formatFileSize(fileSize);
+                
+                // Generate and show URL
+                const generatedUrl = generateVideoUrl(fileName);
+                document.getElementById('generated-url').textContent = generatedUrl;
+                document.getElementById('url-generator').classList.add('active');
+                
+                // Create new video object
+                const newVideo = {
+                    id: id,
+                    title: title,
+                    description: description || 'No description available',
+                    views: 0,
+                    likes: 0,
+                    shares: 0,
+                    duration: "2:30",
+                    thumbnail: "",
+                    url: generatedUrl,
+                    account: {
+                        id: appState.accounts.length + 1,
+                        title: title,
+                        tier: tier,
+                        price: price,
+                        followers: 0,
+                        thumbnail: ""
+                    }
+                };
+                
+                // Add to videos array
+                appState.videos.unshift(newVideo);
+                
+                // Create corresponding account and add to accounts array
+                const newAccount = {
+                    id: newVideo.account.id,
+                    title: newVideo.account.title,
+                    description: newVideo.description,
+                    tier: newVideo.account.tier,
+                    price: newVideo.account.price,
+                    sold: false
+                };
+                
+                appState.accounts.unshift(newAccount);
+                
+                appState.currentVideoIndex = 0;
+                
+                // Update UI
+                loadHomeContent();
+                updateAdminStats();
+                
+                // Reset form
+                setTimeout(() => {
+                    document.getElementById('upload-video-form').reset();
+                    clearFileSelection();
+                    uploadStatus.classList.remove('active');
+                    document.getElementById('url-generator').classList.remove('active');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                     
-                    // Add to videos array
-                    appState.videos.unshift(newVideo);
+                    showToast('success', 'Upload Successful', `Video "${title}" has been uploaded and added to ${tier} tier accounts`);
                     
-                    // Create corresponding account and add to accounts array
-                    const newAccount = {
-                        id: newVideo.account.id,
-                        title: newVideo.account.title,
-                        description: newVideo.description,
-                        tier: newVideo.account.tier,
-                        price: newVideo.account.price,
-                        sold: false
-                    };
-                    
-                    appState.accounts.unshift(newAccount);
-                    
-                    appState.currentVideoIndex = 0;
-                    
-                    // Update UI
-                    loadHomeContent();
-                    updateAdminStats();
-                    
-                    // Reset form
-                    setTimeout(() => {
-                        document.getElementById('upload-video-form').reset();
-                        clearFileSelection();
-                        uploadStatus.classList.remove('active');
-                        document.getElementById('url-generator').classList.remove('active');
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
-                        
-                        showToast('success', 'Upload Successful', `Video "${title}" has been uploaded and added to ${tier} tier accounts`);
-                        
-                        // Load the new video
-                        loadVideo(0);
-                        
-                    }, 2000);
+                    // Load the new video
+                    loadVideo(0);
                     
                 }, 2000);
                 
             } catch (error) {
+                console.error('Upload error:', error);
                 showToast('error', 'Upload Failed', error.message);
                 const submitBtn = document.querySelector('#upload-video-form button[type="button"]');
                 submitBtn.disabled = false;
