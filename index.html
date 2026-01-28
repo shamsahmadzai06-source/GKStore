@@ -3348,7 +3348,7 @@
             loadVideoGrid();
         }
 
-        // Load video
+        // Load video - FIXED: Action buttons are now properly placed
         function loadVideo(index) {
             const video = appState.videos[index];
             if (!video) return;
@@ -3381,13 +3381,80 @@
             videoSection.style.backgroundSize = 'cover';
             videoSection.style.backgroundPosition = 'center';
             
+            // Clear previous video
+            videoSection.innerHTML = '';
+            
             // If video has URL, create video element
             if (video.url && video.url !== '') {
+                const videoElement = document.createElement('video');
+                videoElement.className = 'video-player';
+                videoElement.controls = true;
+                videoElement.autoplay = true;
+                videoElement.muted = true;
+                
+                const source = document.createElement('source');
+                source.src = video.url;
+                source.type = 'video/mp4';
+                videoElement.appendChild(source);
+                videoElement.appendChild(document.createTextNode('Your browser does not support the video tag.'));
+                
+                videoSection.appendChild(videoElement);
+                
+                // Create overlay with action buttons
+                const overlay = document.createElement('div');
+                overlay.className = 'video-overlay';
+                overlay.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 id="video-title" class="video-title">${video.title}</h2>
+                            <p id="video-description" class="video-description">${video.description}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Top action buttons (Book and Buy Now) -->
+                    <div class="video-top-actions">
+                        <div class="flex flex-col items-center">
+                            <button class="action-button" onclick="bookAccount()">
+                                <i class="fas fa-bookmark text-white"></i>
+                            </button>
+                            <div class="action-label">Book</div>
+                        </div>
+                        
+                        <div class="flex flex-col items-center">
+                            <button class="action-button" onclick="buyNow()">
+                                <i class="fas fa-shopping-bag text-white"></i>
+                            </button>
+                            <div class="action-label">Buy</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Share button at bottom -->
+                    <div class="video-share-action">
+                        <div class="flex flex-col items-center">
+                            <button class="action-button" onclick="shareVideo()">
+                                <i class="fas fa-share text-white"></i>
+                            </button>
+                            <div class="action-label">Share</div>
+                        </div>
+                    </div>
+                    
+                    <div class="video-controls">
+                        <div class="flex justify-between items-center">
+                            <div id="video-stats" class="video-stats">
+                                <span>${video.views ? video.views.toLocaleString() : '0'} views</span>
+                                <span>•</span>
+                                <span>${video.likes ? video.likes.toLocaleString() : '0'} likes</span>
+                                <span>•</span>
+                                <span>${video.duration || '2:30'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                videoSection.appendChild(overlay);
+            } else {
+                // Show gradient background with action buttons
                 videoSection.innerHTML = `
-                    <video class="video-player" controls autoplay muted>
-                        <source src="${video.url}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
                     <div class="video-overlay">
                         <div class="flex justify-between items-start">
                             <div>
@@ -3436,8 +3503,6 @@
                         </div>
                     </div>
                 `;
-                // Re-attach event listeners
-                setupEventListeners();
             }
         }
 
@@ -3904,7 +3969,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // UPLOAD VIDEO WITH FIREBASE
+        // FIXED UPLOAD VIDEO FUNCTION - Now shows proper progress
         async function uploadVideo() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3947,6 +4012,7 @@
             uploadStatus.classList.add('active');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
+            totalSize.textContent = formatFileSize(file.size);
             
             try {
                 // Generate unique file name
@@ -3970,28 +4036,31 @@
                 // Upload the file
                 const uploadTask = videoRef.put(file, metadata);
                 
-                // Monitor upload progress
+                // Store upload task
+                appState.currentUpload.uploadTask = uploadTask;
+                
+                // Listen for state changes
                 uploadTask.on('state_changed',
+                    // Progress function
                     (snapshot) => {
-                        // Progress tracking
+                        // Calculate progress percentage
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                         
                         // Update progress bar
                         uploadProgress.style.width = progress + '%';
                         uploadPercentage.textContent = Math.round(progress) + '%';
                         uploadedSize.textContent = formatFileSize(snapshot.bytesTransferred);
-                        totalSize.textContent = formatFileSize(snapshot.totalBytes);
                     },
+                    // Error function
                     (error) => {
-                        // Handle errors
                         console.error('Upload error:', error);
                         showToast('error', 'Upload Failed', error.message || 'Unknown error occurred');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                         uploadStatus.classList.remove('active');
                     },
+                    // Complete function
                     async () => {
-                        // Upload complete
                         try {
                             // Get download URL
                             const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
@@ -4038,11 +4107,9 @@
                             
                             // Save to Firestore
                             const db = appState.firebaseFirestore;
-                            const batch = db.batch();
                             
                             // Add video to Firestore
-                            const videoRef = db.collection('videos').doc(id);
-                            batch.set(videoRef, {
+                            await db.collection('videos').doc(id).set({
                                 title: title,
                                 description: description || 'No description available',
                                 price: price,
@@ -4057,8 +4124,7 @@
                             });
                             
                             // Add account to Firestore
-                            const accountRef = db.collection('accounts').doc(id);
-                            batch.set(accountRef, {
+                            await db.collection('accounts').doc(id).set({
                                 title: title,
                                 description: description || 'No description available',
                                 tier: tier,
@@ -4067,8 +4133,6 @@
                                 videoId: id,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
-                            
-                            await batch.commit();
                             
                             // Add to local state
                             appState.videos.unshift(newVideo);
@@ -4482,11 +4546,24 @@
         // Account actions
         function bookAccount() {
             if (!appState.currentAccount) return;
+            
+            // Set modal content
+            document.getElementById('book-account-name').textContent = appState.currentAccount.title;
+            document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
+            document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
+            
             showModal('book-modal');
         }
 
         function buyNow() {
             if (!appState.currentAccount) return;
+            
+            // Set modal content
+            document.getElementById('buy-account-name').textContent = appState.currentAccount.title;
+            document.getElementById('buy-account-tier').textContent = appState.currentAccount.tier;
+            document.getElementById('buy-account-price').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
+            document.getElementById('payment-amount').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
+            
             showModal('buy-modal');
         }
 
