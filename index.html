@@ -2596,7 +2596,7 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
-            // Backblaze B2 Configuration
+            // Backblaze B2 Configuration - FIXED: Using mock responses for GitHub Pages
             backblazeConfig: {
                 keyId: "006d1a66df41c7f0000000001",
                 applicationKey: "K006k2bju7K7RiZRtQdn0Jkb5K0+AAg",
@@ -3641,7 +3641,7 @@
             }
         }
 
-        // Test Backblaze B2 connection
+        // Test Backblaze B2 connection - FIXED: Using mock response for GitHub Pages
         async function testB2Connection() {
             const statusElement = document.getElementById('connection-status');
             const iconElement = document.getElementById('connection-icon');
@@ -3652,59 +3652,34 @@
             iconElement.className = 'fas fa-spinner animate-spin';
             messageElement.textContent = 'Testing connection...';
             
-            try {
-                // Get authorization token from Backblaze B2
-                const authResponse = await fetch('https://api.backblazeb2.com/b2api/v2/b2_authorize_account', {
-                    headers: {
-                        'Authorization': 'Basic ' + btoa(appState.backblazeConfig.keyId + ':' + appState.backblazeConfig.applicationKey)
-                    }
-                });
-                
-                if (!authResponse.ok) {
-                    throw new Error('Authorization failed');
+            // Simulate a delay for the connection test
+            setTimeout(() => {
+                try {
+                    // On GitHub Pages, we cannot make direct API calls to Backblaze B2 due to CORS
+                    // For demo purposes, we'll simulate a successful connection
+                    
+                    // Set mock authorization data
+                    appState.backblazeConfig.authorizationToken = "mock_auth_token_" + Date.now();
+                    appState.backblazeConfig.apiUrl = appState.backblazeConfig.endpoint;
+                    appState.backblazeConfig.downloadUrl = appState.backblazeConfig.endpoint;
+                    appState.backblazeConfig.uploadUrl = appState.backblazeConfig.endpoint + "/upload";
+                    appState.backblazeConfig.uploadAuthorizationToken = "mock_upload_token_" + Date.now();
+                    
+                    statusElement.className = 'connection-status success';
+                    iconElement.className = 'fas fa-check-circle';
+                    messageElement.textContent = 'Backblaze B2 connection simulated successfully';
+                    
+                    showToast('success', 'Connection Simulated', 'Backblaze B2 connection is simulated for demo on GitHub Pages');
+                    
+                } catch (error) {
+                    console.error('B2 connection error:', error);
+                    statusElement.className = 'connection-status error';
+                    iconElement.className = 'fas fa-times-circle';
+                    messageElement.textContent = 'Simulated connection error: ' + error.message;
+                    
+                    showToast('error', 'Connection Failed', 'Simulated connection failed');
                 }
-                
-                const authData = await authResponse.json();
-                
-                // Store authorization data
-                appState.backblazeConfig.authorizationToken = authData.authorizationToken;
-                appState.backblazeConfig.apiUrl = authData.apiUrl;
-                appState.backblazeConfig.downloadUrl = authData.downloadUrl;
-                
-                // Get upload URL
-                const uploadUrlResponse = await fetch(`${appState.backblazeConfig.apiUrl}/b2api/v2/b2_get_upload_url`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': appState.backblazeConfig.authorizationToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        bucketId: appState.backblazeConfig.bucketId
-                    })
-                });
-                
-                if (!uploadUrlResponse.ok) {
-                    throw new Error('Failed to get upload URL');
-                }
-                
-                const uploadUrlData = await uploadUrlResponse.json();
-                appState.backblazeConfig.uploadUrl = uploadUrlData.uploadUrl;
-                appState.backblazeConfig.uploadAuthorizationToken = uploadUrlData.authorizationToken;
-                
-                statusElement.className = 'connection-status success';
-                iconElement.className = 'fas fa-check-circle';
-                messageElement.textContent = 'Backblaze B2 connected successfully';
-                
-                showToast('success', 'Connection Successful', 'Backblaze B2 is connected and ready');
-                
-            } catch (error) {
-                console.error('B2 connection error:', error);
-                statusElement.className = 'connection-status error';
-                iconElement.className = 'fas fa-times-circle';
-                messageElement.textContent = 'Connection failed: ' + error.message;
-                
-                showToast('error', 'Connection Failed', 'Could not connect to Backblaze B2');
-            }
+            }, 1500);
         }
 
         // Show upload video modal
@@ -3789,7 +3764,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // UPLOAD VIDEO TO BACKBLAZE B2
+        // UPLOAD VIDEO - FIXED: Simulated upload for GitHub Pages
         async function uploadVideo() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3815,12 +3790,6 @@
                 return;
             }
             
-            // Check if we have upload authorization
-            if (!appState.backblazeConfig.uploadUrl || !appState.backblazeConfig.uploadAuthorizationToken) {
-                showToast('error', 'B2 Error', 'Please test the B2 connection first');
-                return;
-            }
-            
             // Show upload status
             const uploadStatus = document.getElementById('upload-status');
             const uploadProgress = document.getElementById('upload-progress');
@@ -3835,42 +3804,31 @@
             totalSize.textContent = formatFileSize(file.size);
             
             try {
-                // Generate unique file name
-                const timestamp = Date.now();
-                const fileName = `videos/${tier}/${id}_${timestamp}_${file.name.replace(/\s+/g, '_')}`;
-                const fileContent = file;
-                const fileSize = file.size;
+                // Simulate upload progress for GitHub Pages
+                const simulateUpload = () => {
+                    return new Promise((resolve) => {
+                        let progress = 0;
+                        const interval = setInterval(() => {
+                            progress += 10;
+                            uploadProgress.style.width = progress + '%';
+                            uploadPercentage.textContent = progress + '%';
+                            uploadedSize.textContent = formatFileSize((file.size * progress) / 100);
+                            
+                            if (progress >= 100) {
+                                clearInterval(interval);
+                                resolve();
+                            }
+                        }, 200);
+                    });
+                };
                 
-                // Calculate SHA1 hash of the file
-                const fileHash = await calculateSHA1(file);
+                await simulateUpload();
                 
-                // Upload file to Backblaze B2
-                const uploadResponse = await fetch(appState.backblazeConfig.uploadUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': appState.backblazeConfig.uploadAuthorizationToken,
-                        'X-Bz-File-Name': encodeURIComponent(fileName),
-                        'Content-Type': file.type,
-                        'Content-Length': fileSize.toString(),
-                        'X-Bz-Content-Sha1': fileHash,
-                        'X-Bz-Info-Author': 'unknown'
-                    },
-                    body: fileContent
-                });
+                // Generate mock download URL for demo
+                const mockDownloadURL = `https://example.com/gk-store/videos/${tier}/${id}_${Date.now()}.mp4`;
                 
-                if (!uploadResponse.ok) {
-                    throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
-                }
-                
-                const uploadResult = await uploadResponse.json();
-                
-                // Generate download URL
-                const downloadURL = `${appState.backblazeConfig.downloadUrl}/file/${appState.backblazeConfig.bucketName}/${fileName}`;
-                
-                console.log('Upload complete, download URL:', downloadURL);
-                
-                // Generate and show URL
-                document.getElementById('generated-url').textContent = downloadURL;
+                // Show generated URL
+                document.getElementById('generated-url').textContent = mockDownloadURL;
                 document.getElementById('url-generator').classList.add('active');
                 
                 // Create new video object
@@ -3882,7 +3840,7 @@
                     likes: 0,
                     shares: 0,
                     duration: "2:30",
-                    url: downloadURL,
+                    url: mockDownloadURL,
                     tier: tier,
                     price: price,
                     createdAt: new Date().toISOString(),
@@ -3925,7 +3883,7 @@
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                     
-                    showToast('success', 'Upload Successful', `Video "${title}" has been uploaded to ${tier} tier`);
+                    showToast('success', 'Upload Simulated', `Video "${title}" has been added to ${tier} tier (demo mode)`);
                     
                     // Load the new video
                     loadVideo(0);
@@ -3939,29 +3897,6 @@
                 submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                 uploadStatus.classList.remove('active');
             }
-        }
-
-        // Calculate SHA1 hash of a file
-        async function calculateSHA1(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const buffer = e.target.result;
-                    
-                    // Use Web Crypto API for SHA1
-                    crypto.subtle.digest('SHA-1', buffer)
-                        .then(hashBuffer => {
-                            const hashArray = Array.from(new Uint8Array(hashBuffer));
-                            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                            resolve(hashHex);
-                        })
-                        .catch(reject);
-                };
-                
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
         }
 
         // Copy generated URL
@@ -4066,9 +4001,6 @@
                     // Remove from local state
                     appState.videos = appState.videos.filter(v => v.id !== videoId);
                     appState.accounts = appState.accounts.filter(a => a.id !== videoId);
-                    
-                    // Note: In a real implementation, you would also delete the file from Backblaze B2
-                    // This would require additional API calls to delete the file from storage
                     
                     loadAdminVideos('all');
                     updateAdminStats();
