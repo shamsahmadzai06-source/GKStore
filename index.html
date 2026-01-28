@@ -2518,14 +2518,12 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
-            // Backblaze B2 Configuration
+            // Backblaze B2 Configuration - FIXED
             backblazeConfig: {
-                applicationKeyId: '005b4c9b6d5c7a90000000001', // Replace with your actual key ID
-                applicationKey: 'K005WbeAFJxWY/cOCx6e8G8v4CJL0xQ', // Replace with your actual key
-                bucketId: 'f7cf8c33e8f2c17d570c0c17', // Replace with your bucket ID
-                bucketName: 'gkstore-videos', // Your bucket name
-                uploadUrl: '', // Will be fetched dynamically
-                authorizationToken: '', // Will be fetched dynamically
+                applicationKeyId: '005b4c9b6d5c7a90000000001',
+                applicationKey: 'K005WbeAFJxWY/cOCx6e8G8v4CJL0xQ',
+                bucketId: 'f7cf8c33e8f2c17d570c0c17',
+                bucketName: 'gkstore-videos',
                 apiUrl: 'https://api.backblazeb2.com/b2api/v2'
             },
             adminCredentials: {
@@ -3003,7 +3001,7 @@
             loadVideoGrid();
         }
 
-        // Load video with TikTok-style playback
+        // Load video with TikTok-style playback - FIXED
         function loadVideo(index) {
             const video = appState.videos[index];
             if (!video) return;
@@ -3022,7 +3020,7 @@
             videoElement.controls = false; // TikTok style - no controls
             videoElement.playsInline = true; // Essential for iOS
             videoElement.webkitPlaysInline = true; // For older iOS
-            videoElement.muted = true; // TikTok style - starts muted
+            videoElement.muted = false; // Start with sound (users can mute)
             videoElement.loop = true; // TikTok style - loop videos
             videoElement.autoplay = true; // TikTok style - autoplay
             videoElement.preload = 'auto';
@@ -3053,17 +3051,37 @@
                 
                 // Add double tap for like
                 let tapCount = 0;
+                let tapTimer;
                 videoElement.addEventListener('touchstart', (e) => {
                     tapCount++;
-                    setTimeout(() => {
-                        if (tapCount === 2) {
-                            // Double tap detected - like video
-                            likeVideo();
+                    if (tapCount === 1) {
+                        tapTimer = setTimeout(() => {
                             tapCount = 0;
-                        } else if (tapCount > 2) {
-                            tapCount = 0;
-                        }
-                    }, 300);
+                        }, 300);
+                    } else if (tapCount === 2) {
+                        clearTimeout(tapTimer);
+                        // Double tap detected - like video
+                        likeVideo();
+                        tapCount = 0;
+                        
+                        // Show heart animation at tap position
+                        const rect = videoElement.getBoundingClientRect();
+                        const x = e.touches[0].clientX - rect.left;
+                        const y = e.touches[0].clientY - rect.top;
+                        
+                        const heart = document.createElement('div');
+                        heart.innerHTML = '<i class="fas fa-heart text-red-500 text-6xl"></i>';
+                        heart.style.position = 'absolute';
+                        heart.style.top = y + 'px';
+                        heart.style.left = x + 'px';
+                        heart.style.transform = 'translate(-50%, -50%)';
+                        heart.style.zIndex = '1000';
+                        heart.style.opacity = '0';
+                        heart.style.animation = 'fadeIn 0.3s ease-out, fadeOut 0.3s ease-out 0.7s forwards';
+                        
+                        videoSection.appendChild(heart);
+                        setTimeout(() => heart.remove(), 1000);
+                    }
                 });
                 
                 // Try to play video
@@ -3078,6 +3096,15 @@
                 // Set current account
                 appState.currentAccount = video.account;
                 
+                // Auto-play with sound if user has interacted before
+                setTimeout(() => {
+                    videoElement.play().catch(e => {
+                        console.log('Auto-play prevented:', e);
+                        // Show instruction for user
+                        showToast('info', 'Tap to Play', 'Tap the video to start playback');
+                    });
+                }, 500);
+                
             } else {
                 // No video URL, show thumbnail
                 showVideoThumbnail(video);
@@ -3085,7 +3112,7 @@
             }
         }
 
-        // Show video overlay (TikTok style)
+        // Show video overlay (TikTok style) - FIXED
         function showVideoOverlay(video) {
             const videoSection = document.getElementById('video-section');
             
@@ -3127,7 +3154,7 @@
                         <button class="action-button" onclick="likeVideo()">
                             <i class="fas fa-heart text-white"></i>
                         </button>
-                        <div class="action-label">${video.likes.toLocaleString()}</div>
+                        <div class="action-label" id="like-count-${video.id}">${video.likes.toLocaleString()}</div>
                     </div>
                     
                     <div class="flex flex-col items-center">
@@ -3139,9 +3166,9 @@
                     
                     <div class="flex flex-col items-center">
                         <button class="action-button" onclick="toggleVideoPlayback()">
-                            <i class="fas fa-pause text-white"></i>
+                            <i class="fas fa-pause text-white" id="play-pause-icon"></i>
                         </button>
-                        <div class="action-label">Pause</div>
+                        <div class="action-label" id="play-pause-label">Pause</div>
                     </div>
                 </div>
             `;
@@ -3235,17 +3262,23 @@
                     });
                     // Update button icon
                     const pauseBtn = document.querySelector('.video-right-actions .action-button:nth-child(3) i');
+                    const pauseLabel = document.querySelector('.video-right-actions .action-button:nth-child(3) + .action-label');
                     if (pauseBtn) {
                         pauseBtn.className = 'fas fa-pause text-white';
-                        document.querySelector('.video-right-actions .action-button:nth-child(3) + .action-label').textContent = 'Pause';
+                    }
+                    if (pauseLabel) {
+                        pauseLabel.textContent = 'Pause';
                     }
                 } else {
                     videoPlayer.pause();
                     // Update button icon
                     const pauseBtn = document.querySelector('.video-right-actions .action-button:nth-child(3) i');
+                    const pauseLabel = document.querySelector('.video-right-actions .action-button:nth-child(3) + .action-label');
                     if (pauseBtn) {
                         pauseBtn.className = 'fas fa-play text-white';
-                        document.querySelector('.video-right-actions .action-button:nth-child(3) + .action-label').textContent = 'Play';
+                    }
+                    if (pauseLabel) {
+                        pauseLabel.textContent = 'Play';
                     }
                 }
             }
@@ -3258,7 +3291,7 @@
                 currentVideo.likes++;
                 
                 // Update UI
-                const likeCountElement = document.querySelector('.video-right-actions .action-button:nth-child(1) + .action-label');
+                const likeCountElement = document.querySelector(`#like-count-${currentVideo.id}`);
                 if (likeCountElement) {
                     likeCountElement.textContent = currentVideo.likes.toLocaleString();
                 }
@@ -3328,7 +3361,7 @@
             }
         }
 
-        // Load accounts page content
+        // Load accounts page content - UPDATED: Show video-based accounts only
         function loadAccountsContent() {
             const grid = document.getElementById('accounts-grid');
             if (!grid) return;
@@ -3340,7 +3373,7 @@
                 grid.innerHTML = `
                     <div class="col-span-3 text-center py-12">
                         <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h2>
+                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
                         <p class="text-zinc-400 mb-4">No accounts have been uploaded yet.</p>
                         ${appState.isAdminLoggedIn ? `
                             <button class="btn btn-primary" onclick="showUploadVideo()">
@@ -3356,7 +3389,11 @@
                 return;
             }
             
+            // Display accounts (which are actually video accounts)
             appState.accounts.forEach(account => {
+                // Find corresponding video
+                const video = appState.videos.find(v => v.id === account.videoId);
+                
                 const accountCard = document.createElement('div');
                 accountCard.className = 'account-card';
                 
@@ -3385,18 +3422,38 @@
                         </span>
                     </div>
                     <p class="text-zinc-400 text-sm mb-4">${account.description || 'No description available'}</p>
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center mb-3">
                         <span class="text-2xl font-bold gradient-text">$${account.price ? account.price.toLocaleString() : '0'}</span>
-                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
+                        ${video ? `<span class="text-sm text-zinc-400"><i class="fas fa-play-circle"></i> Video available</span>` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'} flex-1" 
                                 onclick="viewAccount('${account.id}')" 
                                 ${account.sold ? 'disabled' : ''}>
                             ${account.sold ? 'Sold' : 'View Details'}
                         </button>
+                        ${video ? `
+                            <button class="btn btn-sm btn-secondary" onclick="playVideoFromAccount('${video.id}')">
+                                <i class="fas fa-play"></i> Play
+                            </button>
+                        ` : ''}
                     </div>
                 `;
                 
                 grid.appendChild(accountCard);
             });
+        }
+
+        // Play video from account
+        function playVideoFromAccount(videoId) {
+            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                appState.currentVideoIndex = videoIndex;
+                showPage('home');
+                setTimeout(() => {
+                    loadVideo(videoIndex);
+                }, 100);
+            }
         }
 
         // Filter accounts by tier
@@ -3433,6 +3490,9 @@
             }
             
             filteredAccounts.forEach(account => {
+                // Find corresponding video
+                const video = appState.videos.find(v => v.id === account.videoId);
+                
                 const accountCard = document.createElement('div');
                 accountCard.className = 'account-card';
                 
@@ -3460,13 +3520,21 @@
                         </span>
                     </div>
                     <p class="text-zinc-400 text-sm mb-4">${account.description || 'No description available'}</p>
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center mb-3">
                         <span class="text-2xl font-bold gradient-text">$${account.price ? account.price.toLocaleString() : '0'}</span>
-                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
+                        ${video ? `<span class="text-sm text-zinc-400"><i class="fas fa-play-circle"></i> Video available</span>` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'} flex-1" 
                                 onclick="viewAccount('${account.id}')" 
                                 ${account.sold ? 'disabled' : ''}>
                             ${account.sold ? 'Sold' : 'View Details'}
                         </button>
+                        ${video ? `
+                            <button class="btn btn-sm btn-secondary" onclick="playVideoFromAccount('${video.id}')">
+                                <i class="fas fa-play"></i> Play
+                            </button>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -3620,7 +3688,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Upload video to Backblaze B2
+        // Upload video to Backblaze B2 - FIXED
         async function uploadVideoToBackblaze() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3668,14 +3736,15 @@
                 }
                 
                 const authData = await authResponse.json();
-                appState.backblazeConfig.uploadUrl = authData.apiUrl + '/b2api/v2/b2_get_upload_url';
-                appState.backblazeConfig.authorizationToken = authData.authorizationToken;
+                const apiUrl = authData.apiUrl;
+                const authorizationToken = authData.authorizationToken;
                 
                 // Step 2: Get upload URL
-                const uploadUrlResponse = await fetch(appState.backblazeConfig.uploadUrl, {
+                const uploadUrlResponse = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': appState.backblazeConfig.authorizationToken
+                        'Authorization': authorizationToken,
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         bucketId: appState.backblazeConfig.bucketId
@@ -3736,7 +3805,7 @@
                 const uploadResult = await uploadPromise;
                 
                 // Step 5: Create video URL
-                const videoUrl = `https://f002.backblazeb2.com/file/${appState.backblazeConfig.bucketName}/${fileName}`;
+                const videoUrl = `${authData.downloadUrl}/file/${appState.backblazeConfig.bucketName}/${fileName}`;
                 
                 // Step 6: Create video object
                 const videoId = `vid_${Date.now()}`;
@@ -3747,7 +3816,7 @@
                     views: 0,
                     likes: 0,
                     shares: 0,
-                    duration: "2:30", // In real app, you would calculate this
+                    duration: "2:30",
                     url: videoUrl,
                     tier: tier,
                     price: price,
