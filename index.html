@@ -493,14 +493,13 @@
             font-weight: 500;
         }
 
-        /* TikTok Style Video Player - FIXED: Action buttons are now properly positioned */
+        /* TikTok Style Video Player */
         .video-container {
             position: relative;
             width: 100%;
-            height: calc(100vh - 140px);
+            height: 100vh;
             overflow: hidden;
             background: #000;
-            margin-bottom: 0.5rem;
         }
 
         .video-player {
@@ -523,6 +522,7 @@
             flex-direction: column;
             justify-content: space-between;
             padding: 2rem;
+            pointer-events: none;
         }
 
         .video-controls {
@@ -533,6 +533,7 @@
 
         .video-info {
             max-width: 600px;
+            pointer-events: auto;
         }
 
         .video-title {
@@ -561,7 +562,7 @@
             margin-top: 1rem;
         }
 
-        /* Action Buttons on Video - FIXED: Ensured buttons are visible and properly positioned */
+        /* Action Buttons on Video */
         .video-right-actions {
             position: absolute;
             right: 1rem;
@@ -570,6 +571,7 @@
             flex-direction: column;
             gap: 1.5rem;
             z-index: 100;
+            pointer-events: auto;
         }
 
         .video-right-actions .action-button {
@@ -585,6 +587,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
         }
 
         .video-right-actions .action-button:hover {
@@ -596,7 +599,7 @@
             font-size: 1.25rem;
         }
 
-        /* Book and Buy Now Buttons Container - FIXED: Properly positioned */
+        /* Book and Buy Now Buttons Container */
         .video-top-actions {
             position: absolute;
             right: 1rem;
@@ -605,6 +608,7 @@
             flex-direction: column;
             gap: 1.5rem;
             z-index: 100;
+            pointer-events: auto;
         }
 
         .video-top-actions .action-button {
@@ -620,6 +624,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
         }
 
         .video-top-actions .action-button:hover {
@@ -639,7 +644,7 @@
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
 
-        /* Share Button Container - FIXED: Added for consistency */
+        /* Share Button Container */
         .video-share-action {
             position: absolute;
             right: 1rem;
@@ -648,6 +653,7 @@
             flex-direction: column;
             align-items: center;
             z-index: 100;
+            pointer-events: auto;
         }
 
         /* Modals */
@@ -1154,8 +1160,9 @@
             .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
             .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
             .modal { margin: 1rem; }
-            .video-container { height: calc(100vh - 120px); }
+            .video-container { height: 100vh; }
             .video-top-actions { top: 20%; }
+            .video-right-actions { bottom: 5rem; }
         }
 
         @media (max-width: 480px) {
@@ -1545,7 +1552,7 @@
         .video-player-fixed {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             background: #000;
         }
 
@@ -2326,12 +2333,6 @@
             </div>
             <div class="modal-body">
                 <form id="upload-video-form">
-                    <!-- Video ID -->
-                    <div class="input-group">
-                        <label class="input-label">Video ID <span class="text-danger">*</span></label>
-                        <input type="text" class="input" id="video-id" placeholder="Unique ID (e.g., vid_001)" required>
-                    </div>
-                    
                     <!-- Video Title -->
                     <div class="input-group">
                         <label class="input-label">Video Title <span class="text-danger">*</span></label>
@@ -2361,21 +2362,14 @@
                         </select>
                     </div>
                     
-                    <!-- Video URL -->
+                    <!-- File Upload Section -->
                     <div class="input-group">
-                        <label class="input-label">Video URL <span class="text-danger">*</span></label>
-                        <input type="url" class="input" id="video-url-input" placeholder="https://example.com/video.mp4" required>
-                        <p class="text-xs text-zinc-400 mt-1">Enter direct URL to video file (MP4 format recommended)</p>
-                    </div>
-                    
-                    <!-- File Upload Section (Alternative) -->
-                    <div class="input-group">
-                        <label class="input-label">Or Upload Video File <span class="text-zinc-400">(Alternative)</span></label>
+                        <label class="input-label">Upload Video File <span class="text-danger">*</span></label>
                         <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('video-file').click()">
                             <i class="fas fa-cloud-upload-alt text-3xl text-primary mb-2"></i>
                             <p class="font-medium">Click to select video</p>
                             <p class="text-sm text-zinc-400 mt-1">MP4 format recommended (max 100MB)</p>
-                            <input type="file" id="video-file" accept="video/*" class="hidden" onchange="handleFileSelect(event)">
+                            <input type="file" id="video-file" accept="video/mp4,video/quicktime" class="hidden" onchange="handleFileSelect(event)" required>
                         </div>
                     </div>
                     
@@ -2394,8 +2388,8 @@
                         </div>
                     </div>
                     
-                    <button type="button" class="btn btn-primary w-full" onclick="uploadVideo()">
-                        <i class="fas fa-upload"></i> Add Video
+                    <button type="button" class="btn btn-primary w-full" onclick="uploadVideoToBackblaze()">
+                        <i class="fas fa-upload"></i> Upload Video
                     </button>
                 </form>
             </div>
@@ -2524,8 +2518,16 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
-            // Using localStorage for cross-device data sharing
-            storageKey: 'gkStoreData',
+            // Backblaze B2 Configuration
+            backblazeConfig: {
+                applicationKeyId: '005b4c9b6d5c7a90000000001', // Replace with your actual key ID
+                applicationKey: 'K005WbeAFJxWY/cOCx6e8G8v4CJL0xQ', // Replace with your actual key
+                bucketId: 'f7cf8c33e8f2c17d570c0c17', // Replace with your bucket ID
+                bucketName: 'gkstore-videos', // Your bucket name
+                uploadUrl: '', // Will be fetched dynamically
+                authorizationToken: '', // Will be fetched dynamically
+                apiUrl: 'https://api.backblazeb2.com/b2api/v2'
+            },
             adminCredentials: {
                 email: 'admin@gkstore.com',
                 password: 'admin123'
@@ -2581,7 +2583,7 @@
         // Load app data from localStorage
         function loadAppData() {
             try {
-                const savedData = localStorage.getItem(appState.storageKey);
+                const savedData = localStorage.getItem('gkStoreData');
                 if (savedData) {
                     const data = JSON.parse(savedData);
                     appState.videos = data.videos || [];
@@ -2591,18 +2593,26 @@
                     
                     // Initialize if empty
                     if (appState.videos.length === 0) {
-                        initializeWithDemoData();
+                        // Start fresh - no demo data
+                        appState.videos = [];
+                        appState.accounts = [];
+                        saveAppData();
                     }
                 } else {
-                    initializeWithDemoData();
+                    // Start fresh - no demo data
+                    appState.videos = [];
+                    appState.accounts = [];
+                    saveAppData();
                 }
             } catch (e) {
                 console.error('Error loading app data:', e);
-                initializeWithDemoData();
+                // Start fresh on error
+                appState.videos = [];
+                appState.accounts = [];
             }
         }
 
-        // Save app data to localStorage
+        // Save app data to localStorage and sync across devices
         function saveAppData() {
             try {
                 const data = {
@@ -2612,9 +2622,9 @@
                     userStats: appState.userStats,
                     lastUpdated: new Date().toISOString()
                 };
-                localStorage.setItem(appState.storageKey, JSON.stringify(data));
+                localStorage.setItem('gkStoreData', JSON.stringify(data));
                 
-                // Also sync across devices using broadcast
+                // Sync across devices using broadcast
                 if ('BroadcastChannel' in window) {
                     const channel = new BroadcastChannel('gkStoreSync');
                     channel.postMessage({ type: 'dataUpdated', data: data });
@@ -2633,77 +2643,16 @@
                     appState.videos = event.data.data.videos || appState.videos;
                     appState.accounts = event.data.data.accounts || appState.accounts;
                     
-                    // Refresh UI if needed
+                    // Refresh UI
                     if (appState.currentPage === 'home') {
                         loadHomeContent();
                     } else if (appState.currentPage === 'accounts') {
                         loadAccountsContent();
                     }
                     
-                    showToast('info', 'Data Updated', 'New content available');
+                    showToast('info', 'Data Synced', 'New content available');
                 }
             };
-        }
-
-        // Initialize with demo data if empty
-        function initializeWithDemoData() {
-            // Only add demo data if there's no data at all
-            if (appState.videos.length === 0) {
-                appState.videos = [
-                    {
-                        id: 'demo_001',
-                        title: 'Welcome to GK Store',
-                        description: 'Get started with premium accounts marketplace',
-                        views: 150,
-                        likes: 45,
-                        shares: 12,
-                        duration: '1:30',
-                        url: 'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-blue-tit-1257-large.mp4',
-                        tier: 'small',
-                        price: 199,
-                        createdAt: new Date().toISOString(),
-                        account: {
-                            id: 'demo_001',
-                            title: 'Demo Account',
-                            tier: 'small',
-                            price: 199,
-                            followers: 10000
-                        }
-                    }
-                ];
-                
-                appState.accounts = [
-                    {
-                        id: 'demo_001',
-                        title: 'Demo Account',
-                        description: 'Get started with premium accounts',
-                        tier: 'small',
-                        price: 199,
-                        sold: false,
-                        videoId: 'demo_001',
-                        createdAt: new Date().toISOString()
-                    }
-                ];
-                
-                appState.notifications = [
-                    {
-                        id: 'notif_001',
-                        title: 'Welcome to GK Store',
-                        message: 'Start exploring premium video content',
-                        icon: 'fas fa-play-circle',
-                        color: 'primary',
-                        time: 'Just now',
-                        read: false
-                    }
-                ];
-                
-                appState.userStats = {
-                    registeredUsers: 1,
-                    onlineUsers: 1
-                };
-                
-                saveAppData();
-            }
         }
 
         // Load initial data
@@ -2888,6 +2837,7 @@
 
         // Set up event listeners
         function setupEventListeners() {
+            // Keyboard navigation for videos
             document.addEventListener('keydown', (e) => {
                 if (appState.currentPage === 'home') {
                     switch(e.key) {
@@ -2907,6 +2857,7 @@
                 }
             });
 
+            // Swipe gestures for TikTok-style navigation
             let touchStartY = 0;
             const videoSection = document.getElementById('video-section');
             
@@ -2929,6 +2880,7 @@
                 });
             }
 
+            // Infinite scroll for videos
             window.addEventListener('scroll', () => {
                 if (appState.currentPage === 'home') {
                     const scrollTop = window.pageYOffset;
@@ -2941,7 +2893,7 @@
                 }
             });
 
-            // File upload
+            // File upload drag and drop
             const fileUploadArea = document.getElementById('file-upload-area');
             if (fileUploadArea) {
                 fileUploadArea.addEventListener('dragover', (e) => {
@@ -2964,7 +2916,7 @@
                 });
             }
 
-            // Network status
+            // Network status monitoring
             window.addEventListener('online', () => {
                 document.getElementById('offline-indicator').classList.remove('show');
                 showToast('success', 'Back Online', 'Connection restored');
@@ -3051,7 +3003,7 @@
             loadVideoGrid();
         }
 
-        // Load video - FIXED for mobile playback
+        // Load video with TikTok-style playback
         function loadVideo(index) {
             const video = appState.videos[index];
             if (!video) return;
@@ -3064,22 +3016,19 @@
             // Clear previous content
             videoSection.innerHTML = '';
             
-            // Create video element with proper mobile attributes
+            // Create video element with TikTok-style attributes
             const videoElement = document.createElement('video');
             videoElement.className = 'video-player-fixed';
-            videoElement.controls = true;
+            videoElement.controls = false; // TikTok style - no controls
             videoElement.playsInline = true; // Essential for iOS
             videoElement.webkitPlaysInline = true; // For older iOS
-            videoElement.muted = true; // Autoplay requires muted on most browsers
+            videoElement.muted = true; // TikTok style - starts muted
+            videoElement.loop = true; // TikTok style - loop videos
+            videoElement.autoplay = true; // TikTok style - autoplay
             videoElement.preload = 'auto';
             
-            // Handle different video sources
+            // Handle video source
             let videoSource = video.url;
-            
-            // If no URL but we have a file, create object URL
-            if (!videoSource && appState.currentUpload.file) {
-                videoSource = URL.createObjectURL(appState.currentUpload.file);
-            }
             
             if (videoSource) {
                 const source = document.createElement('source');
@@ -3093,60 +3042,29 @@
                 // Add error handling
                 videoElement.onerror = function() {
                     console.error('Error loading video:', videoSource);
-                    showToast('error', 'Video Error', 'Could not load video. Please check the URL.');
+                    showToast('error', 'Video Error', 'Could not load video.');
                     
                     // Show thumbnail instead
-                    videoSection.innerHTML = `
-                        <div class="video-thumbnail">
-                            <i class="fas fa-play-circle"></i>
-                        </div>
-                        <div class="video-overlay">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h2 class="video-title">${video.title}</h2>
-                                    <p class="video-description">${video.description}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="video-top-actions">
-                                <div class="flex flex-col items-center">
-                                    <button class="action-button" onclick="bookAccount()">
-                                        <i class="fas fa-bookmark text-white"></i>
-                                    </button>
-                                    <div class="action-label">Book</div>
-                                </div>
-                                
-                                <div class="flex flex-col items-center">
-                                    <button class="action-button" onclick="buyNow()">
-                                        <i class="fas fa-shopping-bag text-white"></i>
-                                    </button>
-                                    <div class="action-label">Buy</div>
-                                </div>
-                            </div>
-                            
-                            <div class="video-share-action">
-                                <div class="flex flex-col items-center">
-                                    <button class="action-button" onclick="shareVideo()">
-                                        <i class="fas fa-share text-white"></i>
-                                    </button>
-                                    <div class="action-label">Share</div>
-                                </div>
-                            </div>
-                            
-                            <div class="video-controls">
-                                <div class="flex justify-between items-center">
-                                    <div class="video-stats">
-                                        <span>${video.views.toLocaleString()} views</span>
-                                        <span>•</span>
-                                        <span>${video.likes.toLocaleString()} likes</span>
-                                        <span>•</span>
-                                        <span>${video.duration}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    showVideoThumbnail(video);
                 };
+                
+                // Add click to play/pause
+                videoElement.addEventListener('click', toggleVideoPlayback);
+                
+                // Add double tap for like
+                let tapCount = 0;
+                videoElement.addEventListener('touchstart', (e) => {
+                    tapCount++;
+                    setTimeout(() => {
+                        if (tapCount === 2) {
+                            // Double tap detected - like video
+                            likeVideo();
+                            tapCount = 0;
+                        } else if (tapCount > 2) {
+                            tapCount = 0;
+                        }
+                    }, 300);
+                });
                 
                 // Try to play video
                 videoElement.load();
@@ -3154,14 +3072,102 @@
                 // Add to section
                 videoSection.appendChild(videoElement);
                 
-                // Create overlay
-                const overlay = document.createElement('div');
-                overlay.className = 'video-overlay';
-                overlay.innerHTML = `
+                // Create overlay with TikTok-style UI
+                showVideoOverlay(video);
+                
+                // Set current account
+                appState.currentAccount = video.account;
+                
+            } else {
+                // No video URL, show thumbnail
+                showVideoThumbnail(video);
+                appState.currentAccount = video.account;
+            }
+        }
+
+        // Show video overlay (TikTok style)
+        function showVideoOverlay(video) {
+            const videoSection = document.getElementById('video-section');
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'video-overlay';
+            overlay.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="video-info">
+                        <h2 class="video-title">${video.title}</h2>
+                        <p class="video-description">${video.description}</p>
+                        <div class="video-stats">
+                            <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()} views</span>
+                            <span>•</span>
+                            <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()} likes</span>
+                            <span>•</span>
+                            <span><i class="fas fa-clock"></i> ${video.duration}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="video-top-actions">
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="bookAccount()">
+                            <i class="fas fa-bookmark text-white"></i>
+                        </button>
+                        <div class="action-label">Book</div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="buyNow()">
+                            <i class="fas fa-shopping-bag text-white"></i>
+                        </button>
+                        <div class="action-label">Buy</div>
+                    </div>
+                </div>
+                
+                <div class="video-right-actions">
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="likeVideo()">
+                            <i class="fas fa-heart text-white"></i>
+                        </button>
+                        <div class="action-label">${video.likes.toLocaleString()}</div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="shareVideo()">
+                            <i class="fas fa-share text-white"></i>
+                        </button>
+                        <div class="action-label">Share</div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="toggleVideoPlayback()">
+                            <i class="fas fa-pause text-white"></i>
+                        </button>
+                        <div class="action-label">Pause</div>
+                    </div>
+                </div>
+            `;
+            
+            videoSection.appendChild(overlay);
+        }
+
+        // Show video thumbnail (fallback)
+        function showVideoThumbnail(video) {
+            const videoSection = document.getElementById('video-section');
+            videoSection.innerHTML = `
+                <div class="video-thumbnail">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="video-overlay">
                     <div class="flex justify-between items-start">
-                        <div>
+                        <div class="video-info">
                             <h2 class="video-title">${video.title}</h2>
                             <p class="video-description">${video.description}</p>
+                            <div class="video-stats">
+                                <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()} views</span>
+                                <span>•</span>
+                                <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()} likes</span>
+                                <span>•</span>
+                                <span><i class="fas fa-clock"></i> ${video.duration}</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -3181,7 +3187,14 @@
                         </div>
                     </div>
                     
-                    <div class="video-share-action">
+                    <div class="video-right-actions">
+                        <div class="flex flex-col items-center">
+                            <button class="action-button" onclick="likeVideo()">
+                                <i class="fas fa-heart text-white"></i>
+                            </button>
+                            <div class="action-label">${video.likes.toLocaleString()}</div>
+                        </div>
+                        
                         <div class="flex flex-col items-center">
                             <button class="action-button" onclick="shareVideo()">
                                 <i class="fas fa-share text-white"></i>
@@ -3189,90 +3202,25 @@
                             <div class="action-label">Share</div>
                         </div>
                     </div>
-                    
-                    <div class="video-controls">
-                        <div class="flex justify-between items-center">
-                            <div class="video-stats">
-                                <span>${video.views.toLocaleString()} views</span>
-                                <span>•</span>
-                                <span>${video.likes.toLocaleString()} likes</span>
-                                <span>•</span>
-                                <span>${video.duration}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                videoSection.appendChild(overlay);
-                
-                // Set current account
-                appState.currentAccount = video.account;
-                
-            } else {
-                // No video URL, show thumbnail
-                videoSection.innerHTML = `
-                    <div class="video-thumbnail">
-                        <i class="fas fa-play-circle"></i>
-                    </div>
-                    <div class="video-overlay">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h2 class="video-title">${video.title}</h2>
-                                <p class="video-description">${video.description}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="video-top-actions">
-                            <div class="flex flex-col items-center">
-                                <button class="action-button" onclick="bookAccount()">
-                                    <i class="fas fa-bookmark text-white"></i>
-                                </button>
-                                <div class="action-label">Book</div>
-                            </div>
-                            
-                            <div class="flex flex-col items-center">
-                                <button class="action-button" onclick="buyNow()">
-                                    <i class="fas fa-shopping-bag text-white"></i>
-                                </button>
-                                <div class="action-label">Buy</div>
-                            </div>
-                        </div>
-                        
-                        <div class="video-share-action">
-                            <div class="flex flex-col items-center">
-                                <button class="action-button" onclick="shareVideo()">
-                                    <i class="fas fa-share text-white"></i>
-                                </button>
-                                <div class="action-label">Share</div>
-                            </div>
-                        </div>
-                        
-                        <div class="video-controls">
-                            <div class="flex justify-between items-center">
-                                <div class="video-stats">
-                                    <span>${video.views.toLocaleString()} views</span>
-                                    <span>•</span>
-                                    <span>${video.likes.toLocaleString()} likes</span>
-                                    <span>•</span>
-                                    <span>${video.duration}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                appState.currentAccount = video.account;
-            }
+                </div>
+            `;
         }
 
-        // Navigate videos
+        // Navigate videos (TikTok style)
         function navigateVideo(direction) {
             if (direction === 'prev' && appState.currentVideoIndex > 0) {
                 appState.currentVideoIndex--;
                 loadVideo(appState.currentVideoIndex);
+                showToast('info', '', `Video ${appState.currentVideoIndex + 1} of ${appState.videos.length}`);
             } else if (direction === 'next' && appState.currentVideoIndex < appState.videos.length - 1) {
                 appState.currentVideoIndex++;
                 loadVideo(appState.currentVideoIndex);
+                showToast('info', '', `Video ${appState.currentVideoIndex + 1} of ${appState.videos.length}`);
+            } else if (direction === 'next') {
+                // Loop back to first video
+                appState.currentVideoIndex = 0;
+                loadVideo(appState.currentVideoIndex);
+                showToast('info', '', 'Back to first video');
             }
         }
 
@@ -3285,9 +3233,54 @@
                         console.log('Auto-play prevented:', e);
                         showToast('info', 'Tap to Play', 'Tap the video to start playback');
                     });
+                    // Update button icon
+                    const pauseBtn = document.querySelector('.video-right-actions .action-button:nth-child(3) i');
+                    if (pauseBtn) {
+                        pauseBtn.className = 'fas fa-pause text-white';
+                        document.querySelector('.video-right-actions .action-button:nth-child(3) + .action-label').textContent = 'Pause';
+                    }
                 } else {
                     videoPlayer.pause();
+                    // Update button icon
+                    const pauseBtn = document.querySelector('.video-right-actions .action-button:nth-child(3) i');
+                    if (pauseBtn) {
+                        pauseBtn.className = 'fas fa-play text-white';
+                        document.querySelector('.video-right-actions .action-button:nth-child(3) + .action-label').textContent = 'Play';
+                    }
                 }
+            }
+        }
+
+        // Like video
+        function likeVideo() {
+            const currentVideo = appState.videos[appState.currentVideoIndex];
+            if (currentVideo) {
+                currentVideo.likes++;
+                
+                // Update UI
+                const likeCountElement = document.querySelector('.video-right-actions .action-button:nth-child(1) + .action-label');
+                if (likeCountElement) {
+                    likeCountElement.textContent = currentVideo.likes.toLocaleString();
+                }
+                
+                // Show heart animation
+                const videoSection = document.getElementById('video-section');
+                const heart = document.createElement('div');
+                heart.innerHTML = '<i class="fas fa-heart text-red-500 text-6xl"></i>';
+                heart.style.position = 'absolute';
+                heart.style.top = '50%';
+                heart.style.left = '50%';
+                heart.style.transform = 'translate(-50%, -50%)';
+                heart.style.zIndex = '1000';
+                heart.style.opacity = '0';
+                heart.style.animation = 'fadeIn 0.3s ease-out, fadeOut 0.3s ease-out 0.7s forwards';
+                
+                videoSection.appendChild(heart);
+                setTimeout(() => heart.remove(), 1000);
+                
+                // Save data
+                saveAppData();
+                showToast('success', 'Liked', 'Video liked!');
             }
         }
 
@@ -3310,7 +3303,7 @@
                         <div class="video-item-stats">
                             <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
                             <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
-                            <span>${video.duration}</span>
+                            <span><i class="fas fa-clock"></i> ${video.duration}</span>
                         </div>
                     </div>
                 `;
@@ -3318,6 +3311,8 @@
                 videoItem.addEventListener('click', () => {
                     appState.currentVideoIndex = index;
                     loadVideo(index);
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
                 
                 grid.appendChild(videoItem);
@@ -3326,7 +3321,11 @@
 
         // Load more videos
         function loadMoreVideos() {
-            showToast('info', 'No More Videos', 'All videos are loaded');
+            // In a real app, you would fetch more videos from server
+            // For now, we'll just show a message
+            if (appState.videos.length > 10) {
+                showToast('info', 'No More Videos', 'All videos are loaded');
+            }
         }
 
         // Load accounts page content
@@ -3341,8 +3340,8 @@
                 grid.innerHTML = `
                     <div class="col-span-3 text-center py-12">
                         <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
-                        <p class="text-zinc-400 mb-4">Upload videos from the admin section to see accounts here.</p>
+                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h2>
+                        <p class="text-zinc-400 mb-4">No accounts have been uploaded yet.</p>
                         ${appState.isAdminLoggedIn ? `
                             <button class="btn btn-primary" onclick="showUploadVideo()">
                                 <i class="fas fa-upload"></i> Upload First Video
@@ -3553,14 +3552,12 @@
                 return;
             }
             
-            const nextId = appState.videos.length > 0 ? `vid_${(appState.videos.length + 1).toString().padStart(3, '0')}` : 'vid_001';
-            document.getElementById('video-id').value = nextId;
-            
+            // Reset form
             document.getElementById('video-title-input').value = '';
             document.getElementById('video-description-input').value = '';
             document.getElementById('video-price').value = '';
             document.getElementById('video-tier').value = '';
-            document.getElementById('video-url-input').value = '';
+            document.getElementById('video-file').value = '';
             
             // Reset file selection
             clearFileSelection();
@@ -3573,23 +3570,29 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            const maxSize = 100 * 1024 * 1024;
+            const maxSize = 100 * 1024 * 1024; // 100MB
             if (file.size > maxSize) {
                 showToast('error', 'File Too Large', 'Please select a video file smaller than 100MB');
                 return;
             }
             
-            const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+            const validTypes = ['video/mp4', 'video/quicktime'];
             if (!validTypes.includes(file.type)) {
-                showToast('error', 'Invalid File Type', 'Please select a valid video file (MP4, MOV, AVI, MKV)');
+                showToast('error', 'Invalid File Type', 'Please select a valid video file (MP4, MOV)');
                 return;
             }
             
             appState.currentUpload.file = file;
             
-            // Create object URL for preview (not uploaded yet)
-            const videoURL = URL.createObjectURL(file);
-            document.getElementById('video-url-input').value = videoURL;
+            // Show file info
+            const fileUploadArea = document.getElementById('file-upload-area');
+            if (fileUploadArea) {
+                fileUploadArea.innerHTML = `
+                    <i class="fas fa-file-video text-3xl text-primary mb-2"></i>
+                    <p class="font-medium">${file.name}</p>
+                    <p class="text-sm text-zinc-400 mt-1">${formatFileSize(file.size)} • Ready to upload</p>
+                `;
+            }
             
             showToast('info', 'File Selected', `${file.name} (${formatFileSize(file.size)})`);
         }
@@ -3597,7 +3600,14 @@
         // Clear file selection
         function clearFileSelection() {
             appState.currentUpload.file = null;
-            document.getElementById('video-file').value = '';
+            const fileUploadArea = document.getElementById('file-upload-area');
+            if (fileUploadArea) {
+                fileUploadArea.innerHTML = `
+                    <i class="fas fa-cloud-upload-alt text-3xl text-primary mb-2"></i>
+                    <p class="font-medium">Click to select video</p>
+                    <p class="text-sm text-zinc-400 mt-1">MP4 format recommended (max 100MB)</p>
+                `;
+            }
             document.getElementById('upload-status').classList.remove('active');
         }
 
@@ -3610,28 +3620,22 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Upload video - SIMPLIFIED for GitHub Pages
-        async function uploadVideo() {
+        // Upload video to Backblaze B2
+        async function uploadVideoToBackblaze() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
             }
             
-            const id = document.getElementById('video-id').value;
             const title = document.getElementById('video-title-input').value;
             const description = document.getElementById('video-description-input').value;
             const price = parseFloat(document.getElementById('video-price').value);
             const tier = document.getElementById('video-tier').value;
-            let videoUrl = document.getElementById('video-url-input').value;
+            const file = appState.currentUpload.file;
             
             // Validation
-            if (!id || !title || !price || !tier || !videoUrl) {
+            if (!title || !price || !tier || !file) {
                 showToast('error', 'Validation Error', 'Please fill all required fields');
-                return;
-            }
-            
-            if (appState.videos.some(v => v.id === id)) {
-                showToast('error', 'Duplicate ID', 'Video ID already exists. Please use a unique ID.');
                 return;
             }
             
@@ -3639,43 +3643,117 @@
             const uploadStatus = document.getElementById('upload-status');
             const uploadProgress = document.getElementById('upload-progress');
             const uploadPercentage = document.getElementById('upload-percentage');
+            const uploadedSize = document.getElementById('uploaded-size');
+            const totalSize = document.getElementById('total-size');
             const submitBtn = document.querySelector('#upload-video-form button[type="button"]');
             
             uploadStatus.classList.add('active');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Adding Video...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
+            
+            totalSize.textContent = formatFileSize(file.size);
             
             try {
-                // Simulate upload progress
-                await new Promise(resolve => {
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                        progress += 10;
-                        uploadProgress.style.width = progress + '%';
-                        uploadPercentage.textContent = progress + '%';
-                        
-                        if (progress >= 100) {
-                            clearInterval(interval);
-                            resolve();
-                        }
-                    }, 100);
+                // Step 1: Get authorization token
+                showToast('info', 'Upload', 'Connecting to Backblaze B2...');
+                
+                const authResponse = await fetch(`${appState.backblazeConfig.apiUrl}/b2_authorize_account`, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${appState.backblazeConfig.applicationKeyId}:${appState.backblazeConfig.applicationKey}`)
+                    }
                 });
                 
-                // Create new video object
+                if (!authResponse.ok) {
+                    throw new Error('Failed to authenticate with Backblaze B2');
+                }
+                
+                const authData = await authResponse.json();
+                appState.backblazeConfig.uploadUrl = authData.apiUrl + '/b2api/v2/b2_get_upload_url';
+                appState.backblazeConfig.authorizationToken = authData.authorizationToken;
+                
+                // Step 2: Get upload URL
+                const uploadUrlResponse = await fetch(appState.backblazeConfig.uploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': appState.backblazeConfig.authorizationToken
+                    },
+                    body: JSON.stringify({
+                        bucketId: appState.backblazeConfig.bucketId
+                    })
+                });
+                
+                if (!uploadUrlResponse.ok) {
+                    throw new Error('Failed to get upload URL');
+                }
+                
+                const uploadUrlData = await uploadUrlResponse.json();
+                const uploadUrl = uploadUrlData.uploadUrl;
+                const uploadAuthToken = uploadUrlData.authorizationToken;
+                
+                // Step 3: Prepare file for upload
+                const fileName = `videos/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+                const fileType = file.type;
+                
+                // Step 4: Upload file with progress tracking
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const progress = (event.loaded / event.total) * 100;
+                        uploadProgress.style.width = progress + '%';
+                        uploadPercentage.textContent = Math.round(progress) + '%';
+                        uploadedSize.textContent = formatFileSize(event.loaded);
+                        
+                        // Update progress every 10%
+                        if (Math.round(progress) % 10 === 0) {
+                            showToast('info', 'Uploading', `${Math.round(progress)}% complete`);
+                        }
+                    }
+                });
+                
+                // Create promise for XHR
+                const uploadPromise = new Promise((resolve, reject) => {
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(JSON.parse(xhr.responseText));
+                        } else {
+                            reject(new Error(`Upload failed: ${xhr.statusText}`));
+                        }
+                    };
+                    
+                    xhr.onerror = () => reject(new Error('Network error during upload'));
+                    
+                    xhr.open('POST', uploadUrl);
+                    xhr.setRequestHeader('Authorization', uploadAuthToken);
+                    xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
+                    xhr.setRequestHeader('Content-Type', fileType);
+                    xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
+                    
+                    xhr.send(file);
+                });
+                
+                // Wait for upload to complete
+                const uploadResult = await uploadPromise;
+                
+                // Step 5: Create video URL
+                const videoUrl = `https://f002.backblazeb2.com/file/${appState.backblazeConfig.bucketName}/${fileName}`;
+                
+                // Step 6: Create video object
+                const videoId = `vid_${Date.now()}`;
                 const newVideo = {
-                    id: id,
+                    id: videoId,
                     title: title,
                     description: description || 'No description available',
                     views: 0,
                     likes: 0,
                     shares: 0,
-                    duration: "2:30",
+                    duration: "2:30", // In real app, you would calculate this
                     url: videoUrl,
                     tier: tier,
                     price: price,
                     createdAt: new Date().toISOString(),
                     account: {
-                        id: id,
+                        id: videoId,
                         title: title,
                         tier: tier,
                         price: price,
@@ -3685,13 +3763,13 @@
                 
                 // Create corresponding account
                 const newAccount = {
-                    id: id,
+                    id: videoId,
                     title: title,
                     description: description || 'No description available',
                     tier: tier,
                     price: price,
                     sold: false,
-                    videoId: id,
+                    videoId: videoId,
                     createdAt: new Date().toISOString()
                 };
                 
@@ -3700,7 +3778,7 @@
                 appState.accounts.unshift(newAccount);
                 appState.currentVideoIndex = 0;
                 
-                // Save to localStorage
+                // Save to localStorage and sync
                 saveAppData();
                 
                 // Update UI
@@ -3713,9 +3791,9 @@
                     clearFileSelection();
                     uploadStatus.classList.remove('active');
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-upload"></i> Add Video';
+                    submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                     
-                    showToast('success', 'Video Added', `"${title}" has been added to ${tier} tier`);
+                    showToast('success', 'Upload Complete', `"${title}" uploaded successfully!`);
                     closeModal('upload-video-modal');
                     
                     // Load the new video
@@ -3727,7 +3805,7 @@
                 console.error('Upload error:', error);
                 showToast('error', 'Upload Failed', error.message || 'Unknown error occurred');
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-upload"></i> Add Video';
+                submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
                 uploadStatus.classList.remove('active');
             }
         }
