@@ -2601,68 +2601,8 @@
         const appState = {
             currentPage: 'auth',
             currentVideoIndex: 0,
-            videos: [
-                {
-                    id: "vid_001",
-                    title: "Premium Account Showcase",
-                    description: "Get exclusive access to premium content and features.",
-                    views: 12500,
-                    likes: 850,
-                    shares: 120,
-                    duration: "2:45",
-                    thumbnail: "",
-                    url: "",
-                    videoFile: null,
-                    account: {
-                        id: 1,
-                        title: "Premium Plus",
-                        tier: "big",
-                        price: 5000,
-                        followers: 15000,
-                        thumbnail: ""
-                    }
-                },
-                {
-                    id: "vid_002",
-                    title: "VIP Access Preview",
-                    description: "Preview of our exclusive VIP access features.",
-                    views: 8900,
-                    likes: 620,
-                    shares: 85,
-                    duration: "3:20",
-                    thumbnail: "",
-                    url: "",
-                    videoFile: null,
-                    account: {
-                        id: 2,
-                        title: "VIP Access",
-                        tier: "medium",
-                        price: 2500,
-                        followers: 8500,
-                        thumbnail: ""
-                    }
-                }
-            ],
-            accounts: [
-                {
-                    id: 1,
-                    title: "Premium Plus",
-                    description: "Get exclusive access to premium content and features.",
-                    tier: "big",
-                    price: 5000,
-                    sold: false,
-                    videoId: "vid_001"
-                },
-                {
-                    id: 2,
-                    title: "VIP Access",
-                    description: "Preview of our exclusive VIP access features.",
-                    tier: "medium",
-                    price: 2500,
-                    sold: false,
-                    videoId: "vid_002"
-                }
-            ],
+            videos: [],
+            accounts: [],
             notifications: [],
             bookRequests: [],
             language: 'en',
@@ -2671,36 +2611,17 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
-            adminPassword: 'admin123',
+            adminPassword: 'GK@2024!AdminSecure', // SECURE ADMIN PASSWORD - CHANGE THIS IN PRODUCTION
             userStats: {
-                registeredUsers: 48,
-                onlineUsers: 5
+                registeredUsers: 0,
+                onlineUsers: 0
             },
             currentUpload: {
                 file: null,
                 progress: 0,
                 url: ''
             },
-            users: [
-                {
-                    id: 1,
-                    email: 'admin@gkstore.com',
-                    password: 'admin123',
-                    name: 'Admin User',
-                    role: 'admin',
-                    createdAt: '2024-01-01',
-                    lastLogin: new Date().toISOString()
-                },
-                {
-                    id: 2,
-                    email: 'user@example.com',
-                    password: 'password123',
-                    name: 'John Doe',
-                    role: 'user',
-                    createdAt: '2024-01-15',
-                    lastLogin: new Date().toISOString()
-                }
-            ],
+            users: [],
             localVideos: [] // Store local video files
         };
 
@@ -2720,8 +2641,7 @@
             setupPWAInstall();
             
             // Load data from localStorage
-            loadVideosFromLocalStorage();
-            loadAccountsFromLocalStorage();
+            loadAllDataFromLocalStorage();
             
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
@@ -2739,57 +2659,119 @@
             }
         }
 
-        // Load videos from localStorage
-        function loadVideosFromLocalStorage() {
-            try {
-                const savedVideos = localStorage.getItem('gkStoreVideos');
-                if (savedVideos) {
-                    const videos = JSON.parse(savedVideos);
-                    appState.videos = videos.map(video => ({
-                        ...video,
-                        // Restore blob URLs if they exist
-                        url: video.url && video.url.startsWith('blob:') ? video.url : ''
-                    }));
-                }
-            } catch (error) {
-                console.error('Error loading videos from localStorage:', error);
+        // Secure data storage functions
+        function secureHash(str) {
+            // Simple hash function for demo purposes
+            // In production, use a proper cryptographic library
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
             }
+            return hash.toString(36);
         }
 
-        // Load accounts from localStorage
-        function loadAccountsFromLocalStorage() {
+        // Load all data from localStorage
+        function loadAllDataFromLocalStorage() {
             try {
+                // Load videos
+                const savedVideos = localStorage.getItem('gkStoreVideos');
+                if (savedVideos) {
+                    appState.videos = JSON.parse(savedVideos);
+                }
+                
+                // Load accounts
                 const savedAccounts = localStorage.getItem('gkStoreAccounts');
                 if (savedAccounts) {
                     appState.accounts = JSON.parse(savedAccounts);
                 }
+                
+                // Load users
+                const savedUsers = localStorage.getItem('gkStoreUsers');
+                if (savedUsers) {
+                    appState.users = JSON.parse(savedUsers);
+                } else {
+                    // Create default admin user if none exists
+                    createDefaultUsers();
+                }
+                
+                // Load book requests
+                const savedBookRequests = localStorage.getItem('gkStoreBookRequests');
+                if (savedBookRequests) {
+                    appState.bookRequests = JSON.parse(savedBookRequests);
+                }
+                
+                // Load notifications
+                const savedNotifications = localStorage.getItem('gkStoreNotifications');
+                if (savedNotifications) {
+                    appState.notifications = JSON.parse(savedNotifications);
+                }
+                
+                // Load user stats
+                const savedStats = localStorage.getItem('gkStoreStats');
+                if (savedStats) {
+                    appState.userStats = JSON.parse(savedStats);
+                }
+                
             } catch (error) {
-                console.error('Error loading accounts from localStorage:', error);
+                console.error('Error loading data from localStorage:', error);
+                createDefaultUsers();
             }
         }
 
-        // Save videos to localStorage
-        function saveVideosToLocalStorage() {
+        // Create default users (admin and test user)
+        function createDefaultUsers() {
+            // Create admin user with secure password
+            const adminUser = {
+                id: 1,
+                email: 'admin@gkstore.com',
+                password: secureHash('GK@2024!AdminSecure'), // Store hashed password
+                name: 'Admin User',
+                role: 'admin',
+                createdAt: new Date().toISOString().split('T')[0],
+                lastLogin: new Date().toISOString()
+            };
+            
+            // Create test user
+            const testUser = {
+                id: 2,
+                email: 'user@example.com',
+                password: secureHash('password123'), // Store hashed password
+                name: 'Test User',
+                role: 'user',
+                createdAt: '2024-01-15',
+                lastLogin: new Date().toISOString()
+            };
+            
+            appState.users = [adminUser, testUser];
+            appState.userStats = {
+                registeredUsers: 2,
+                onlineUsers: 0
+            };
+            
+            // Save to localStorage
+            saveDataToLocalStorage('gkStoreUsers', appState.users);
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
+        }
+
+        // Save data to localStorage
+        function saveDataToLocalStorage(key, data) {
             try {
-                // Save videos without blob URLs (they can't be serialized)
-                const videosToSave = appState.videos.map(video => ({
-                    ...video,
-                    url: '', // Don't save blob URLs
-                    videoFile: null // Don't save file objects
-                }));
-                localStorage.setItem('gkStoreVideos', JSON.stringify(videosToSave));
+                localStorage.setItem(key, JSON.stringify(data));
             } catch (error) {
-                console.error('Error saving videos to localStorage:', error);
+                console.error(`Error saving ${key} to localStorage:`, error);
             }
         }
 
-        // Save accounts to localStorage
-        function saveAccountsToLocalStorage() {
-            try {
-                localStorage.setItem('gkStoreAccounts', JSON.stringify(appState.accounts));
-            } catch (error) {
-                console.error('Error saving accounts to localStorage:', error);
-            }
+        // Save all data to localStorage
+        function saveAllDataToLocalStorage() {
+            saveDataToLocalStorage('gkStoreVideos', appState.videos);
+            saveDataToLocalStorage('gkStoreAccounts', appState.accounts);
+            saveDataToLocalStorage('gkStoreUsers', appState.users);
+            saveDataToLocalStorage('gkStoreBookRequests', appState.bookRequests);
+            saveDataToLocalStorage('gkStoreNotifications', appState.notifications);
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
         }
 
         // Setup PWA Install
@@ -2882,32 +2864,40 @@
         // Register Service Worker
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                // Create inline service worker
+                // Service Worker code as inline string
                 const serviceWorkerCode = `
-                    const CACHE_NAME = 'gk-store-v1';
+                    const CACHE_NAME = 'gk-store-v2';
                     const urlsToCache = [
                         '/',
-                        '/index.html',
+                        './index.html',
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png',
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png',
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png',
                         'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
                     ];
 
-                    self.addEventListener('install', event => {
+                    // Install event
+                    self.addEventListener('install', (event) => {
+                        console.log('Service Worker installing...');
                         event.waitUntil(
                             caches.open(CACHE_NAME)
-                                .then(cache => cache.addAll(urlsToCache))
+                                .then((cache) => {
+                                    console.log('Opened cache');
+                                    return cache.addAll(urlsToCache);
+                                })
                                 .then(() => self.skipWaiting())
                         );
                     });
 
-                    self.addEventListener('activate', event => {
+                    // Activate event
+                    self.addEventListener('activate', (event) => {
+                        console.log('Service Worker activating...');
                         event.waitUntil(
-                            caches.keys().then(cacheNames => {
+                            caches.keys().then((cacheNames) => {
                                 return Promise.all(
-                                    cacheNames.map(cacheName => {
+                                    cacheNames.map((cacheName) => {
                                         if (cacheName !== CACHE_NAME) {
+                                            console.log('Deleting old cache:', cacheName);
                                             return caches.delete(cacheName);
                                         }
                                     })
@@ -2916,32 +2906,59 @@
                         );
                     });
 
-                    self.addEventListener('fetch', event => {
+                    // Fetch event with network-first strategy
+                    self.addEventListener('fetch', (event) => {
+                        // Skip non-GET requests
+                        if (event.request.method !== 'GET') return;
+
+                        // Skip chrome-extension requests
+                        if (event.request.url.startsWith('chrome-extension://')) return;
+
                         event.respondWith(
-                            caches.match(event.request)
-                                .then(response => {
-                                    if (response) {
-                                        return response;
+                            fetch(event.request)
+                                .then((response) => {
+                                    // Cache the response if it's valid
+                                    if (response.status === 200) {
+                                        const responseToCache = response.clone();
+                                        caches.open(CACHE_NAME)
+                                            .then((cache) => {
+                                                cache.put(event.request, responseToCache);
+                                            });
                                     }
-                                    return fetch(event.request);
+                                    return response;
+                                })
+                                .catch(() => {
+                                    // If network fails, try cache
+                                    return caches.match(event.request)
+                                        .then((cachedResponse) => {
+                                            if (cachedResponse) {
+                                                return cachedResponse;
+                                            }
+                                            // Return offline page or fallback
+                                            return new Response('You are offline. Please check your connection.');
+                                        });
                                 })
                         );
                     });
 
-                    self.addEventListener('message', event => {
+                    // Message event
+                    self.addEventListener('message', (event) => {
                         if (event.data === 'skipWaiting') {
                             self.skipWaiting();
                         }
                     });
                 `;
 
+                // Convert the string to a Blob
                 const blob = new Blob([serviceWorkerCode], { type: 'application/javascript' });
                 const serviceWorkerUrl = URL.createObjectURL(blob);
 
+                // Register the service worker
                 navigator.serviceWorker.register(serviceWorkerUrl)
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    .then((registration) => {
+                        console.log('ServiceWorker registration successful with scope:', registration.scope);
                         
+                        // Check for updates
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             console.log('Service Worker update found!');
@@ -2951,13 +2968,16 @@
                                     if (navigator.serviceWorker.controller) {
                                         // New content available
                                         showToast('info', 'Update Available', 'New version available. Refresh to update.');
+                                    } else {
+                                        // First install
+                                        console.log('Service Worker installed for the first time');
                                     }
                                 }
                             });
                         });
                     })
-                    .catch(error => {
-                        console.log('ServiceWorker registration failed: ', error);
+                    .catch((error) => {
+                        console.log('ServiceWorker registration failed:', error);
                     });
             }
         }
@@ -2981,32 +3001,111 @@
 
         // Load sample data
         function loadSampleData() {
-            appState.bookRequests = [
-                {
-                    id: 1,
-                    accountId: 1,
-                    accountTitle: "Premium Plus",
-                    accountTier: "big",
-                    accountPrice: 5000,
-                    userName: "John Smith",
-                    whatsappNumber: "+93 793066322",
-                    notes: "Interested in full access",
-                    timestamp: "2024-01-15 14:30",
-                    status: "pending"
-                }
-            ];
+            // Create sample videos if none exist
+            if (appState.videos.length === 0) {
+                appState.videos = [
+                    {
+                        id: "vid_001",
+                        title: "Premium Account Showcase",
+                        description: "Get exclusive access to premium content and features.",
+                        views: 12500,
+                        likes: 850,
+                        shares: 120,
+                        duration: "2:45",
+                        thumbnail: "",
+                        url: "",
+                        videoFile: null,
+                        account: {
+                            id: 1,
+                            title: "Premium Plus",
+                            tier: "big",
+                            price: 5000,
+                            followers: 15000,
+                            thumbnail: ""
+                        }
+                    },
+                    {
+                        id: "vid_002",
+                        title: "VIP Access Preview",
+                        description: "Preview of our exclusive VIP access features.",
+                        views: 8900,
+                        likes: 620,
+                        shares: 85,
+                        duration: "3:20",
+                        thumbnail: "",
+                        url: "",
+                        videoFile: null,
+                        account: {
+                            id: 2,
+                            title: "VIP Access",
+                            tier: "medium",
+                            price: 2500,
+                            followers: 8500,
+                            thumbnail: ""
+                        }
+                    }
+                ];
+                
+                // Create sample accounts
+                appState.accounts = [
+                    {
+                        id: 1,
+                        title: "Premium Plus",
+                        description: "Get exclusive access to premium content and features.",
+                        tier: "big",
+                        price: 5000,
+                        sold: false,
+                        videoId: "vid_001"
+                    },
+                    {
+                        id: 2,
+                        title: "VIP Access",
+                        description: "Preview of our exclusive VIP access features.",
+                        tier: "medium",
+                        price: 2500,
+                        sold: false,
+                        videoId: "vid_002"
+                    }
+                ];
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+            }
 
-            appState.notifications = [
-                {
-                    id: 1,
-                    title: "New Video Uploaded",
-                    message: "Check out the latest premium account showcase",
-                    time: "2 hours ago",
-                    read: false,
-                    icon: "fas fa-video",
-                    color: "primary"
-                }
-            ];
+            // Create sample notifications if none exist
+            if (appState.notifications.length === 0) {
+                appState.notifications = [
+                    {
+                        id: 1,
+                        title: "New Video Uploaded",
+                        message: "Check out the latest premium account showcase",
+                        time: "2 hours ago",
+                        read: false,
+                        icon: "fas fa-video",
+                        color: "primary"
+                    }
+                ];
+                saveDataToLocalStorage('gkStoreNotifications', appState.notifications);
+            }
+
+            // Create sample book requests if none exist
+            if (appState.bookRequests.length === 0) {
+                appState.bookRequests = [
+                    {
+                        id: 1,
+                        accountId: 1,
+                        accountTitle: "Premium Plus",
+                        accountTier: "big",
+                        accountPrice: 5000,
+                        userName: "John Smith",
+                        whatsappNumber: "+93 793066322",
+                        notes: "Interested in full access",
+                        timestamp: "2024-01-15 14:30",
+                        status: "pending"
+                    }
+                ];
+                saveDataToLocalStorage('gkStoreBookRequests', appState.bookRequests);
+            }
 
             updateNotificationCount();
             updateAdminStats();
@@ -3202,6 +3301,24 @@
         function loadHomeContent() {
             if (appState.videos.length > 0) {
                 loadVideo(appState.currentVideoIndex);
+            } else {
+                // Show empty state
+                const videoSection = document.getElementById('video-section');
+                const videoPlaceholder = document.getElementById('video-placeholder');
+                if (videoSection && videoPlaceholder) {
+                    videoPlaceholder.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                            <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
+                            <p class="text-zinc-400">Upload videos from the admin section to see content here.</p>
+                            ${appState.currentUser?.role === 'admin' ? 
+                                `<button class="btn btn-primary mt-4" onclick="showUploadVideo()">
+                                    <i class="fas fa-upload"></i> Upload First Video
+                                </button>` : ''}
+                        </div>
+                    `;
+                    videoPlaceholder.classList.remove('hidden');
+                }
             }
             
             loadVideoGrid();
@@ -3345,6 +3462,17 @@
             
             grid.innerHTML = '';
             
+            if (appState.videos.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-4 text-center py-12">
+                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
+                        <p class="text-zinc-400">Upload videos to see them here.</p>
+                    </div>
+                `;
+                return;
+            }
+            
             appState.videos.forEach((video, index) => {
                 const videoItem = document.createElement('div');
                 videoItem.className = 'video-item';
@@ -3377,32 +3505,9 @@
             if (loadingMore) loadingMore.classList.remove('hidden');
             
             setTimeout(() => {
-                const newVideos = [
-                    {
-                        id: `vid_${appState.videos.length + 1}`,
-                        title: "New Premium Content",
-                        description: "Fresh premium content added weekly",
-                        views: 3400,
-                        likes: 210,
-                        shares: 45,
-                        duration: "3:45",
-                        thumbnail: "",
-                        url: "",
-                        account: {
-                            id: 4,
-                            title: "Content Plus",
-                            tier: "medium",
-                            price: 1800,
-                            followers: 6200,
-                            thumbnail: ""
-                        }
-                    }
-                ];
-                
-                appState.videos.push(...newVideos);
-                loadVideoGrid();
-                
+                const loadingMore = document.getElementById('loading-more');
                 if (loadingMore) loadingMore.classList.add('hidden');
+                showToast('info', 'No More Videos', 'All videos loaded');
             }, 1000);
         }
 
@@ -3420,9 +3525,13 @@
                         <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
                         <p class="text-zinc-400 mb-4">Upload videos from the admin section to see accounts here.</p>
-                        <button class="btn btn-primary" onclick="showPage('home')">
-                            <i class="fas fa-video"></i> Browse Videos
-                        </button>
+                        ${appState.currentUser?.role === 'admin' ? 
+                            `<button class="btn btn-primary" onclick="showUploadVideo()">
+                                <i class="fas fa-upload"></i> Upload First Video
+                            </button>` : 
+                            `<button class="btn btn-primary" onclick="showPage('home')">
+                                <i class="fas fa-video"></i> Browse Videos
+                            </button>`}
                     </div>
                 `;
                 return;
@@ -3697,7 +3806,11 @@
             const passwordInput = document.getElementById('admin-password');
             const password = passwordInput.value;
             
-            if (password === appState.adminPassword) {
+            // SECURE: Check hashed password
+            const hashedPassword = secureHash(password);
+            const adminUser = appState.users.find(u => u.role === 'admin');
+            
+            if (adminUser && hashedPassword === adminUser.password) {
                 appState.isAdminLoggedIn = true;
                 const adminDashboard = document.getElementById('admin-dashboard');
                 if (adminDashboard) {
@@ -3847,16 +3960,16 @@
                 return;
             }
             
-            const id = document.getElementById('video-id').value;
-            const title = document.getElementById('video-title-input').value;
-            const description = document.getElementById('video-description-input').value;
+            const id = document.getElementById('video-id').value.trim();
+            const title = document.getElementById('video-title-input').value.trim();
+            const description = document.getElementById('video-description-input').value.trim();
             const price = parseFloat(document.getElementById('video-price').value);
             const tier = document.getElementById('video-tier').value;
             
             const file = appState.currentUpload.file;
             
             // Validation
-            if (!id || !title || !price || !tier || !file) {
+            if (!id || !title || isNaN(price) || price < 0 || !tier || !file) {
                 showToast('error', 'Validation Error', 'Please fill all required fields and select a video file');
                 return;
             }
@@ -3890,7 +4003,7 @@
                     views: 0,
                     likes: 0,
                     shares: 0,
-                    duration: "2:30",
+                    duration: "2:30", // This could be extracted from the video file in a real app
                     thumbnail: "",
                     url: videoURL,
                     videoFile: {
@@ -3939,8 +4052,7 @@
                         appState.currentVideoIndex = 0;
                         
                         // Save to localStorage
-                        saveVideosToLocalStorage();
-                        saveAccountsToLocalStorage();
+                        saveAllDataToLocalStorage();
                         
                         // Update UI
                         loadHomeContent();
@@ -4107,16 +4219,16 @@
                     appState.accounts.splice(accountIndex, 1);
                 }
                 
-                // Save to localStorage
-                saveVideosToLocalStorage();
-                saveAccountsToLocalStorage();
-                
                 // Update current video index if needed
                 if (appState.currentVideoIndex >= appState.videos.length) {
                     appState.currentVideoIndex = Math.max(0, appState.videos.length - 1);
                 }
                 
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
                 loadAdminVideos('all');
+                loadHomeContent();
                 updateAdminStats();
                 
                 showToast('success', 'Video Deleted', 'Video and corresponding account have been removed');
@@ -4210,6 +4322,9 @@
                     account.sold = true;
                 }
                 
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
                 loadAdminBookRequests();
                 updateAdminStats();
                 showToast('success', 'Request Approved', `Book request approved for ${request.userName}`);
@@ -4221,6 +4336,10 @@
             const request = appState.bookRequests.find(r => r.id === requestId);
             if (request) {
                 request.status = 'rejected';
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
                 loadAdminBookRequests();
                 updateAdminStats();
                 showToast('success', 'Request Rejected', `Book request rejected for ${request.userName}`);
@@ -4248,12 +4367,22 @@
             const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
             
             if (newPassword && newPassword.length >= 6) {
-                appState.adminPassword = newPassword;
+                // SECURE: Update admin password hash
+                const adminUser = appState.users.find(u => u.role === 'admin');
+                if (adminUser) {
+                    adminUser.password = secureHash(newPassword);
+                    saveDataToLocalStorage('gkStoreUsers', appState.users);
+                }
             }
             
             if (newUsdtAddress) {
                 document.getElementById('usdt-address').textContent = newUsdtAddress;
                 document.getElementById('payment-address').textContent = newUsdtAddress;
+            }
+            
+            if (newWhatsappNumber) {
+                // Update WhatsApp number in localStorage
+                localStorage.setItem('gkStoreWhatsApp', newWhatsappNumber);
             }
             
             showToast('success', 'Settings Saved', 'Admin settings have been updated');
@@ -4301,6 +4430,7 @@
                 notificationItem.addEventListener('click', () => {
                     notification.read = true;
                     updateNotificationCount();
+                    saveDataToLocalStorage('gkStoreNotifications', appState.notifications);
                     loadNotificationsContent();
                 });
                 
@@ -4496,6 +4626,9 @@
             
             appState.bookRequests.push(bookRequest);
             
+            // Save to localStorage
+            saveDataToLocalStorage('gkStoreBookRequests', appState.bookRequests);
+            
             showToast('success', 'Request Submitted', 'We will contact you shortly on WhatsApp');
             closeModal('book-modal');
             
@@ -4581,6 +4714,12 @@
                 }
             });
             
+            // Decrease online users count
+            if (appState.userStats.onlineUsers > 0) {
+                appState.userStats.onlineUsers--;
+                saveDataToLocalStorage('gkStoreStats', appState.userStats);
+            }
+            
             appState.isLoggedIn = false;
             appState.currentUser = null;
             appState.isAdminLoggedIn = false;
@@ -4612,14 +4751,13 @@
         function login(event) {
             event.preventDefault();
             
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             const rememberMe = document.getElementById('remember-me').checked;
             
-            console.log('Login attempt:', { email, password });
-            
             // Find user
-            const user = appState.users.find(u => u.email === email && u.password === password);
+            const hashedPassword = secureHash(password);
+            const user = appState.users.find(u => u.email === email && u.password === hashedPassword);
             
             if (user) {
                 // Update last login
@@ -4629,13 +4767,14 @@
                 appState.currentUser = user;
                 appState.isLoggedIn = true;
                 
+                // Update online users count
+                appState.userStats.onlineUsers++;
+                saveDataToLocalStorage('gkStoreStats', appState.userStats);
+                
                 // Save to localStorage if remember me is checked
                 if (rememberMe) {
                     localStorage.setItem('gkStoreUser', JSON.stringify(user));
                 }
-                
-                // Update user stats
-                appState.userStats.onlineUsers++;
                 
                 // Update profile page
                 document.getElementById('user-name').textContent = user.name;
@@ -4662,12 +4801,10 @@
         function signup(event) {
             event.preventDefault();
             
-            const name = document.getElementById('signup-name').value;
-            const email = document.getElementById('signup-email').value;
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
-            
-            console.log('Signup attempt:', { name, email, password, confirmPassword });
             
             // Validation
             if (password !== confirmPassword) {
@@ -4686,11 +4823,11 @@
                 return;
             }
             
-            // Create new user
+            // Create new user with hashed password
             const newUser = {
                 id: appState.users.length + 1,
                 email: email,
-                password: password,
+                password: secureHash(password), // Store hashed password
                 name: name,
                 role: 'user',
                 createdAt: new Date().toISOString().split('T')[0],
@@ -4703,6 +4840,10 @@
             // Update stats
             appState.userStats.registeredUsers++;
             appState.userStats.onlineUsers++;
+            
+            // Save to localStorage
+            saveDataToLocalStorage('gkStoreUsers', appState.users);
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
             
             // Set current user
             appState.currentUser = newUser;
@@ -4732,7 +4873,7 @@
         function resetPassword(event) {
             event.preventDefault();
             
-            const email = document.getElementById('reset-email').value;
+            const email = document.getElementById('reset-email').value.trim();
             
             // Check if user exists
             const user = appState.users.find(u => u.email === email);
@@ -4754,7 +4895,7 @@
             const mockUser = {
                 id: appState.users.length + 1,
                 email: `user_${Date.now()}@${provider}.com`,
-                password: 'social_auth',
+                password: secureHash('social_auth'), // Store hashed password
                 name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
                 role: 'user',
                 createdAt: new Date().toISOString().split('T')[0],
@@ -4768,11 +4909,13 @@
                 // Add new user
                 appState.users.push(mockUser);
                 appState.userStats.registeredUsers++;
+                saveDataToLocalStorage('gkStoreUsers', appState.users);
                 existingUser = mockUser;
             }
             
             // Update stats
             appState.userStats.onlineUsers++;
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
             
             // Set current user
             appState.currentUser = existingUser;
