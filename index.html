@@ -15,6 +15,9 @@
     <!-- Web App Manifest -->
     <link rel="manifest" href="https://shamsahmadzai06-source.github.io/GKStore/manifest.json" id="app-manifest">
     
+    <!-- AWS SDK for Filebase -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1432.0.min.js"></script>
+    
     <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2390,13 +2393,13 @@
                         </select>
                     </div>
                     
-                    <!-- File Upload Section (Local Storage Only) -->
+                    <!-- File Upload Section (Filebase Storage) -->
                     <div class="input-group">
                         <label class="input-label">Choose Video File <span class="text-danger">*</span></label>
                         <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('video-file').click()">
                             <i class="fas fa-cloud-upload-alt text-3xl text-primary mb-2"></i>
                             <p class="font-medium">Click to select video or drag & drop</p>
-                            <p class="text-sm text-zinc-400 mt-1">Supported: MP4, MOV, AVI, MKV (max 50MB)</p>
+                            <p class="text-sm text-zinc-400 mt-1">Supported: MP4, MOV, AVI, MKV (max 200MB)</p>
                             <input type="file" id="video-file" accept="video/*" class="hidden" onchange="handleFileSelect(event)">
                         </div>
                         
@@ -2425,7 +2428,7 @@
                     <!-- Upload Status -->
                     <div id="upload-status" class="upload-status">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="font-medium">Uploading...</span>
+                            <span class="font-medium">Uploading to Filebase...</span>
                             <span id="upload-percentage">0%</span>
                         </div>
                         <div class="progress-bar">
@@ -2439,10 +2442,10 @@
                     
                     <!-- Generated URL -->
                     <div id="url-generator" class="url-generator">
-                        <label class="input-label">Local Video Preview</label>
-                        <div class="url-display" id="generated-url">Video will be stored locally on your device</div>
+                        <label class="input-label">Filebase Storage</label>
+                        <div class="url-display" id="generated-url">Video will be stored on Filebase IPFS</div>
                         <div class="flex gap-2 mt-2">
-                            <button type="button" class="btn btn-sm btn-secondary flex-1" onclick="showToast('info', 'Local Storage', 'Video stored in browser memory')">
+                            <button type="button" class="btn btn-sm btn-secondary flex-1" onclick="showToast('info', 'Filebase Storage', 'Video stored on decentralized IPFS network')">
                                 <i class="fas fa-info-circle"></i> Info
                             </button>
                             <button type="button" class="btn btn-sm btn-primary flex-1" onclick="testVideoUrl()">
@@ -2453,13 +2456,13 @@
                     
                     <!-- Storage Information -->
                     <div class="card glass-effect p-4 mb-4">
-                        <h4 class="font-semibold mb-2">Local Storage Information</h4>
-                        <p class="text-sm text-zinc-400 mb-3">Videos are stored locally in your browser's IndexedDB</p>
+                        <h4 class="font-semibold mb-2">Filebase Storage Information</h4>
+                        <p class="text-sm text-zinc-400 mb-3">Videos are stored on Filebase IPFS network for permanent decentralized storage</p>
                         
                         <!-- Storage Status -->
                         <div class="test-connection mb-3">
-                            <button type="button" class="btn btn-sm btn-secondary w-full" onclick="checkLocalStorage()">
-                                <i class="fas fa-database"></i> Check Storage Status
+                            <button type="button" class="btn btn-sm btn-secondary w-full" onclick="checkFilebaseConnection()">
+                                <i class="fas fa-plug"></i> Test Filebase Connection
                             </button>
                             <div id="connection-status" class="connection-status hidden">
                                 <i id="connection-icon" class="fas"></i>
@@ -2468,8 +2471,8 @@
                         </div>
                     </div>
                     
-                    <button type="button" class="btn btn-primary w-full" onclick="uploadVideoLocal()">
-                        <i class="fas fa-upload"></i> Upload Video
+                    <button type="button" class="btn btn-primary w-full" onclick="uploadVideoToFilebase()">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload to Filebase
                     </button>
                 </form>
             </div>
@@ -2616,7 +2619,17 @@
                 url: ''
             },
             users: [],
-            localVideos: [] // Store local video files
+            
+            // Filebase Configuration
+            filebaseConfig: {
+                accessKeyId: '33B0D768699F462BDFC1',
+                secretAccessKey: 'Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC',
+                endpoint: 'https://s3.filebase.com',
+                bucketName: 'gk-store-videos',
+                region: 'us-east-1',
+                s3ForcePathStyle: true,
+                signatureVersion: 'v4'
+            }
         };
 
         // PWA Variables
@@ -2650,6 +2663,24 @@
                 }
             } else {
                 showPage('auth');
+            }
+            
+            // Initialize AWS S3 for Filebase
+            initializeFilebase();
+        }
+
+        // Initialize Filebase
+        function initializeFilebase() {
+            if (typeof AWS !== 'undefined') {
+                AWS.config.update({
+                    accessKeyId: appState.filebaseConfig.accessKeyId,
+                    secretAccessKey: appState.filebaseConfig.secretAccessKey,
+                    region: appState.filebaseConfig.region,
+                    s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
+                    signatureVersion: appState.filebaseConfig.signatureVersion
+                });
+                
+                console.log('Filebase initialized successfully');
             }
         }
 
@@ -2877,7 +2908,8 @@
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png',
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png',
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png',
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                        'https://sdk.amazonaws.com/js/aws-sdk-2.1432.0.min.js'
                     ];
 
                     // Install event
@@ -3834,51 +3866,49 @@
             }
         }
 
-        // Check Local Storage
-        function checkLocalStorage() {
+        // Check Filebase Connection
+        function checkFilebaseConnection() {
             const statusElement = document.getElementById('connection-status');
             const iconElement = document.getElementById('connection-icon');
             const messageElement = document.getElementById('connection-message');
             
-            try {
-                // Check if localStorage is available
-                if (!window.localStorage) {
-                    throw new Error('LocalStorage not supported');
-                }
-                
-                // Check available storage
-                let storageEstimate;
-                if ('storage' in navigator && 'estimate' in navigator.storage) {
-                    navigator.storage.estimate().then(estimate => {
-                        const used = (estimate.usage / (1024 * 1024)).toFixed(2);
-                        const total = (estimate.quota / (1024 * 1024 * 1024)).toFixed(2);
-                        
-                        statusElement.className = 'connection-status success';
-                        iconElement.className = 'fas fa-check-circle';
-                        messageElement.textContent = `Local storage available: ${used}MB used of ${total}GB`;
-                        statusElement.classList.remove('hidden');
-                    }).catch(() => {
-                        statusElement.className = 'connection-status success';
-                        iconElement.className = 'fas fa-check-circle';
-                        messageElement.textContent = 'Local storage available';
-                        statusElement.classList.remove('hidden');
-                    });
-                } else {
+            statusElement.className = 'connection-status';
+            statusElement.classList.remove('hidden');
+            iconElement.className = 'fas fa-spinner animate-spin';
+            messageElement.textContent = 'Testing Filebase connection...';
+            
+            // Create a simple S3 instance to test connection
+            const s3 = new AWS.S3({
+                endpoint: appState.filebaseConfig.endpoint,
+                s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
+                signatureVersion: appState.filebaseConfig.signatureVersion
+            });
+            
+            // List buckets to test connection
+            s3.listBuckets().promise()
+                .then((data) => {
                     statusElement.className = 'connection-status success';
                     iconElement.className = 'fas fa-check-circle';
-                    messageElement.textContent = 'Local storage available';
-                    statusElement.classList.remove('hidden');
-                }
-                
-                showToast('success', 'Storage Check', 'Local storage is working properly');
-            } catch (error) {
-                statusElement.className = 'connection-status error';
-                iconElement.className = 'fas fa-times-circle';
-                messageElement.textContent = 'Local storage error: ' + error.message;
-                statusElement.classList.remove('hidden');
-                
-                showToast('error', 'Storage Error', 'Could not access local storage');
-            }
+                    messageElement.textContent = 'Filebase connection successful!';
+                    
+                    // Check if our bucket exists
+                    const bucketExists = data.Buckets.some(bucket => bucket.Name === appState.filebaseConfig.bucketName);
+                    if (bucketExists) {
+                        messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" found.`;
+                    } else {
+                        messageElement.textContent += ` Warning: Bucket "${appState.filebaseConfig.bucketName}" not found.`;
+                        showToast('warning', 'Bucket Missing', `Bucket "${appState.filebaseConfig.bucketName}" not found. Please create it in Filebase dashboard.`);
+                    }
+                    
+                    showToast('success', 'Filebase Connected', 'Successfully connected to Filebase storage');
+                })
+                .catch((error) => {
+                    statusElement.className = 'connection-status error';
+                    iconElement.className = 'fas fa-times-circle';
+                    messageElement.textContent = 'Filebase connection failed: ' + error.message;
+                    
+                    showToast('error', 'Connection Failed', 'Could not connect to Filebase. Check your credentials.');
+                });
         }
 
         // Show upload video modal
@@ -3910,10 +3940,10 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            // Check file size (max 50MB for local storage)
-            const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+            // Check file size (max 200MB for Filebase)
+            const maxSize = 200 * 1024 * 1024; // 200MB in bytes
             if (file.size > maxSize) {
-                showToast('error', 'File Too Large', 'Please select a video file smaller than 50MB for local storage');
+                showToast('error', 'File Too Large', 'Please select a video file smaller than 200MB');
                 return;
             }
             
@@ -3962,8 +3992,8 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // UPLOAD VIDEO TO LOCAL STORAGE
-        async function uploadVideoLocal() {
+        // UPLOAD VIDEO TO FILEBASE
+        async function uploadVideoToFilebase() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
@@ -3998,11 +4028,54 @@
             
             uploadStatus.classList.add('active');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading to Filebase...';
             
             try {
-                // Create object URL for the file
-                const videoURL = URL.createObjectURL(file);
+                // Create S3 instance for Filebase
+                const s3 = new AWS.S3({
+                    endpoint: appState.filebaseConfig.endpoint,
+                    s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
+                    signatureVersion: appState.filebaseConfig.signatureVersion
+                });
+                
+                // Create unique filename with timestamp to avoid collisions
+                const timestamp = Date.now();
+                const fileExtension = file.name.split('.').pop();
+                const fileName = `videos/${id}_${timestamp}.${fileExtension}`;
+                
+                // Prepare upload parameters
+                const params = {
+                    Bucket: appState.filebaseConfig.bucketName,
+                    Key: fileName,
+                    Body: file,
+                    ContentType: file.type,
+                    Metadata: {
+                        'video-id': id,
+                        'title': title,
+                        'description': description,
+                        'tier': tier,
+                        'price': price.toString(),
+                        'upload-date': new Date().toISOString()
+                    }
+                };
+                
+                // Start the upload
+                const upload = s3.upload(params);
+                
+                // Track upload progress
+                upload.on('httpUploadProgress', (progress) => {
+                    const percentage = Math.round((progress.loaded / progress.total) * 100);
+                    uploadProgress.style.width = percentage + '%';
+                    uploadPercentage.textContent = percentage + '%';
+                    uploadedSize.textContent = formatFileSize(progress.loaded);
+                    totalSize.textContent = formatFileSize(progress.total);
+                });
+                
+                // Execute upload
+                const data = await upload.promise();
+                
+                // Get the URL from the upload response
+                const videoUrl = data.Location;
                 
                 // Create new video object
                 const newVideo = {
@@ -4014,13 +4087,10 @@
                     shares: 0,
                     duration: "2:30", // This could be extracted from the video file in a real app
                     thumbnail: "",
-                    url: videoURL,
-                    videoFile: {
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        lastModified: file.lastModified
-                    },
+                    url: videoUrl, // Filebase URL
+                    filebaseUrl: videoUrl,
+                    filebaseKey: fileName,
+                    uploadDate: new Date().toISOString(),
                     account: {
                         id: appState.accounts.length + 1,
                         title: title,
@@ -4042,71 +4112,47 @@
                     videoId: id
                 };
                 
-                // Simulate upload progress
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 10;
-                    uploadProgress.style.width = progress + '%';
-                    uploadPercentage.textContent = progress + '%';
-                    uploadedSize.textContent = formatFileSize((file.size * progress) / 100);
+                // Add to videos array
+                appState.videos.unshift(newVideo);
+                
+                // Add to accounts array
+                appState.accounts.unshift(newAccount);
+                appState.currentVideoIndex = 0;
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
+                // Update UI
+                loadHomeContent();
+                updateAdminStats();
+                
+                // Show generated URL section
+                document.getElementById('generated-url').textContent = videoUrl;
+                document.getElementById('url-generator').classList.add('active');
+                
+                // Show success message
+                showToast('success', 'Upload Successful', `Video "${title}" uploaded to Filebase`);
+                
+                // Reset form
+                setTimeout(() => {
+                    document.getElementById('upload-video-form').reset();
+                    clearFileSelection();
+                    uploadStatus.classList.remove('active');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload to Filebase';
                     
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        
-                        // Add to videos array
-                        appState.videos.unshift(newVideo);
-                        
-                        // Add to accounts array
-                        appState.accounts.unshift(newAccount);
-                        appState.currentVideoIndex = 0;
-                        
-                        // Save to localStorage
-                        saveAllDataToLocalStorage();
-                        
-                        // Update UI
-                        loadHomeContent();
-                        updateAdminStats();
-                        
-                        // Show generated URL section
-                        document.getElementById('generated-url').textContent = `Video stored locally: ${file.name}`;
-                        document.getElementById('url-generator').classList.add('active');
-                        
-                        // Reset form
-                        setTimeout(() => {
-                            document.getElementById('upload-video-form').reset();
-                            clearFileSelection();
-                            uploadStatus.classList.remove('active');
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
-                            
-                            showToast('success', 'Upload Successful', `Video "${title}" has been uploaded to ${tier} tier`);
-                            
-                            // Load the new video
-                            loadVideo(0);
-                            
-                        }, 1000);
-                    }
-                }, 100);
+                    // Load the new video
+                    loadVideo(0);
+                    
+                }, 1000);
                 
             } catch (error) {
-                console.error('Upload error:', error);
+                console.error('Filebase upload error:', error);
                 showToast('error', 'Upload Failed', error.message);
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
+                submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload to Filebase';
                 uploadStatus.classList.remove('active');
             }
-        }
-
-        // Copy generated URL
-        function copyGeneratedUrl() {
-            const text = "Video stored locally in browser memory";
-            navigator.clipboard.writeText(text)
-                .then(() => {
-                    showToast('success', 'Info Copied', 'Video storage information copied to clipboard');
-                })
-                .catch(() => {
-                    showToast('error', 'Copy Failed', 'Could not copy information');
-                });
         }
 
         // Test video URL
@@ -4228,6 +4274,19 @@
                 updateAdminStats();
                 
                 showToast('success', 'Video Deleted', 'Video and corresponding account have been removed');
+            }
+        }
+
+        // Play video now
+        function playVideoNow(videoId) {
+            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                closeModal('manage-videos-modal');
+                showPage('home');
+                setTimeout(() => {
+                    appState.currentVideoIndex = videoIndex;
+                    loadVideo(videoIndex);
+                }, 300);
             }
         }
 
