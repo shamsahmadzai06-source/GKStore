@@ -4184,19 +4184,6 @@
             });
         }
 
-        // Play video immediately
-        function playVideoNow(videoId) {
-            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
-            if (videoIndex !== -1) {
-                closeModal('manage-videos-modal');
-                showPage('home');
-                setTimeout(() => {
-                    appState.currentVideoIndex = videoIndex;
-                    loadVideo(videoIndex);
-                }, 300);
-            }
-        }
-
         // Filter admin videos
         function adminFilterVideos(tier) {
             document.querySelectorAll('#manage-videos-modal .tab-item').forEach(tab => {
@@ -4958,6 +4945,62 @@
 
         // Initialize app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
+
+        // Create and inject manifest JSON
+        function createManifest() {
+            const manifest = {
+                "name": "GK Store",
+                "short_name": "GK Store",
+                "description": "Exclusive Video Marketplace",
+                "start_url": "https://shamsahmadzai06-source.github.io/GKStore/",
+                "display": "standalone",
+                "background_color": "#000000",
+                "theme_color": "#ec4899",
+                "orientation": "portrait-primary",
+                "scope": "/GKStore/",
+                "lang": "en",
+                "icons": [
+                    {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png",
+                        "sizes": "72x72",
+                        "type": "image/png"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png",
+                        "sizes": "96x96",
+                        "type": "image/png"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png",
+                        "sizes": "144x144",
+                        "type": "image/png"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png",
+                        "sizes": "192x192",
+                        "type": "image/png"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png",
+                        "sizes": "512x512",
+                        "type": "image/png"
+                    }
+                ]
+            };
+
+            // Create a Blob with the manifest content
+            const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(blob);
+            
+            // Update the manifest link
+            const manifestLink = document.getElementById('app-manifest');
+            if (manifestLink) {
+                manifestLink.href = manifestUrl;
+            }
+        }
+
+        // Call createManifest when the page loads
+        document.addEventListener('DOMContentLoaded', createManifest);
 
     </script>
 </body>
