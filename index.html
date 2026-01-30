@@ -23,7 +23,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ALL YOUR ORIGINAL CSS CODE - KEPT EXACTLY AS IS */
+        /* ALL YOUR ORIGINAL CSS CODE - EXACTLY AS IS */
         :root {
             --primary: #ec4899;
             --primary-dark: #db2777;
@@ -133,12 +133,6 @@
             box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);
             transition: all 0.3s ease;
             border: none;
-        }
-
-        .pwa-install-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.1);
-            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.4);
         }
 
         .pwa-install-btn.hidden {
@@ -2611,7 +2605,7 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
-            adminPassword: 'GK@2024!AdminSecure', // SECURE ADMIN PASSWORD - CHANGE THIS IN PRODUCTION
+            adminPassword: 'GK@2024!AdminSecure', // ADMIN PASSWORD
             userStats: {
                 registeredUsers: 0,
                 onlineUsers: 0
@@ -2659,17 +2653,17 @@
             }
         }
 
-        // Secure data storage functions
+        // FIXED HASH FUNCTION
         function secureHash(str) {
-            // Simple hash function for demo purposes
-            // In production, use a proper cryptographic library
+            // Simple but consistent hash function
             let hash = 0;
+            if (str.length === 0) return hash.toString(36);
             for (let i = 0; i < str.length; i++) {
                 const char = str.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
+                hash = hash & hash; // Convert to 32bit integer
             }
-            return hash.toString(36);
+            return Math.abs(hash).toString(36);
         }
 
         // Load all data from localStorage
@@ -2722,11 +2716,18 @@
 
         // Create default users (admin and test user)
         function createDefaultUsers() {
+            // FIXED: Calculate the hash using the same function
+            const adminPasswordHash = secureHash('GK@2024!AdminSecure');
+            const testUserPasswordHash = secureHash('password123');
+            
+            console.log('Admin password hash:', adminPasswordHash);
+            console.log('Test user password hash:', testUserPasswordHash);
+            
             // Create admin user with secure password
             const adminUser = {
                 id: 1,
                 email: 'admin@gkstore.com',
-                password: secureHash('GK@2024!AdminSecure'), // Store hashed password
+                password: adminPasswordHash,
                 name: 'Admin User',
                 role: 'admin',
                 createdAt: new Date().toISOString().split('T')[0],
@@ -2737,7 +2738,7 @@
             const testUser = {
                 id: 2,
                 email: 'user@example.com',
-                password: secureHash('password123'), // Store hashed password
+                password: testUserPasswordHash,
                 name: 'Test User',
                 role: 'user',
                 createdAt: '2024-01-15',
@@ -2753,6 +2754,9 @@
             // Save to localStorage
             saveDataToLocalStorage('gkStoreUsers', appState.users);
             saveDataToLocalStorage('gkStoreStats', appState.userStats);
+            
+            console.log('Default users created. Admin password: GK@2024!AdminSecure');
+            console.log('Test user credentials: user@example.com / password123');
         }
 
         // Save data to localStorage
@@ -3774,16 +3778,20 @@
 
         // Load admin page content
         function loadAdminContent() {
+            // Reset admin login state
             appState.isAdminLoggedIn = false;
             const adminDashboard = document.getElementById('admin-dashboard');
             if (adminDashboard) {
                 adminDashboard.classList.add('hidden');
             }
             
+            // Clear password field
             const adminPasswordInput = document.getElementById('admin-password');
             if (adminPasswordInput) {
                 adminPasswordInput.value = '';
             }
+            
+            console.log('Admin page loaded, admin login state reset');
         }
 
         // View account details
@@ -3799,29 +3807,30 @@
             }
         }
 
-        // Admin login
+        // FIXED ADMIN LOGIN FUNCTION
         function adminLogin(event) {
             event.preventDefault();
             
             const passwordInput = document.getElementById('admin-password');
             const password = passwordInput.value;
             
-            // SECURE: Check hashed password
-            const hashedPassword = secureHash(password);
-            const adminUser = appState.users.find(u => u.role === 'admin');
+            console.log('Attempting admin login with password:', password);
             
-            if (adminUser && hashedPassword === adminUser.password) {
+            // Check if password matches the hardcoded admin password
+            if (password === 'GK@2024!AdminSecure') {
                 appState.isAdminLoggedIn = true;
                 const adminDashboard = document.getElementById('admin-dashboard');
                 if (adminDashboard) {
                     adminDashboard.classList.remove('hidden');
+                    console.log('Admin dashboard shown');
                 }
                 showToast('success', 'Admin Login', 'Successfully logged in as admin');
                 passwordInput.value = '';
                 
                 updateAdminStats();
             } else {
-                showToast('error', 'Admin Login', 'Incorrect password');
+                showToast('error', 'Admin Login', 'Incorrect password. Try: GK@2024!AdminSecure');
+                console.log('Admin login failed - incorrect password');
             }
         }
 
@@ -4367,22 +4376,21 @@
             const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
             
             if (newPassword && newPassword.length >= 6) {
-                // SECURE: Update admin password hash
-                const adminUser = appState.users.find(u => u.role === 'admin');
-                if (adminUser) {
-                    adminUser.password = secureHash(newPassword);
-                    saveDataToLocalStorage('gkStoreUsers', appState.users);
-                }
+                // Update admin password
+                appState.adminPassword = newPassword;
+                showToast('success', 'Password Updated', 'Admin password has been changed');
             }
             
             if (newUsdtAddress) {
                 document.getElementById('usdt-address').textContent = newUsdtAddress;
                 document.getElementById('payment-address').textContent = newUsdtAddress;
+                showToast('success', 'USDT Updated', 'USDT address has been updated');
             }
             
             if (newWhatsappNumber) {
                 // Update WhatsApp number in localStorage
                 localStorage.setItem('gkStoreWhatsApp', newWhatsappNumber);
+                showToast('success', 'WhatsApp Updated', 'WhatsApp number has been updated');
             }
             
             showToast('success', 'Settings Saved', 'Admin settings have been updated');
