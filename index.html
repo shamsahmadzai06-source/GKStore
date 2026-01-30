@@ -2680,6 +2680,11 @@
                     signatureVersion: appState.filebaseConfig.signatureVersion
                 });
                 
+                // IMPORTANT: Also set the global endpoint
+                AWS.config.update({
+                    endpoint: appState.filebaseConfig.endpoint
+                });
+                
                 console.log('Filebase initialized successfully');
             }
         }
@@ -2901,7 +2906,7 @@
             if ('serviceWorker' in navigator) {
                 // Service Worker code as inline string
                 const serviceWorkerCode = `
-                    const CACHE_NAME = 'gk-store-v2';
+                    const CACHE_NAME = 'gk-store-v3';
                     const urlsToCache = [
                         '/',
                         './index.html',
@@ -2942,35 +2947,53 @@
                         );
                     });
 
-                    // Fetch event with network-first strategy
+                    // Fetch event with network-first strategy for Filebase
                     self.addEventListener('fetch', (event) => {
                         // Skip non-GET requests
                         if (event.request.method !== 'GET') return;
 
                         // Skip chrome-extension requests
                         if (event.request.url.startsWith('chrome-extension://')) return;
+                        
+                        // Special handling for Filebase requests
+                        if (event.request.url.includes('filebase.io') || event.request.url.includes('ipfs.filebase.io')) {
+                            // For Filebase requests, always go to network first
+                            event.respondWith(
+                                fetch(event.request)
+                                    .then(response => response)
+                                    .catch(() => {
+                                        // If network fails, show error
+                                        return new Response('Cannot access Filebase. Check CORS settings in Filebase dashboard.');
+                                    })
+                            );
+                            return;
+                        }
 
+                        // For all other requests, use cache-first strategy
                         event.respondWith(
-                            fetch(event.request)
-                                .then((response) => {
-                                    // Cache the response if it's valid
-                                    if (response.status === 200) {
-                                        const responseToCache = response.clone();
-                                        caches.open(CACHE_NAME)
-                                            .then((cache) => {
-                                                cache.put(event.request, responseToCache);
-                                            });
+                            caches.match(event.request)
+                                .then(cachedResponse => {
+                                    if (cachedResponse) {
+                                        return cachedResponse;
                                     }
-                                    return response;
-                                })
-                                .catch(() => {
-                                    // If network fails, try cache
-                                    return caches.match(event.request)
-                                        .then((cachedResponse) => {
-                                            if (cachedResponse) {
-                                                return cachedResponse;
+                                    
+                                    return fetch(event.request)
+                                        .then(response => {
+                                            // Cache the response if it's valid
+                                            if (response.status === 200 && response.type === 'basic') {
+                                                const responseToCache = response.clone();
+                                                caches.open(CACHE_NAME)
+                                                    .then(cache => {
+                                                        cache.put(event.request, responseToCache);
+                                                    });
                                             }
-                                            // Return offline page or fallback
+                                            return response;
+                                        })
+                                        .catch(() => {
+                                            // Return offline page for non-Filebase requests
+                                            if (event.request.destination === 'document') {
+                                                return caches.match('./index.html');
+                                            }
                                             return new Response('You are offline. Please check your connection.');
                                         });
                                 })
@@ -3887,18 +3910,24 @@
             }
             
             try {
-                // Configure AWS with proper settings for Filebase
+                // IMPORTANT: Create new S3 instance with updated configuration
                 const s3 = new AWS.S3({
                     accessKeyId: appState.filebaseConfig.accessKeyId,
                     secretAccessKey: appState.filebaseConfig.secretAccessKey,
                     endpoint: appState.filebaseConfig.endpoint,
                     region: appState.filebaseConfig.region,
-                    s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
-                    signatureVersion: appState.filebaseConfig.signatureVersion,
+                    s3ForcePathStyle: true,
+                    signatureVersion: 'v4',
                     apiVersion: '2006-03-01'
                 });
                 
-                // Test connection with a simple operation
+                console.log('Testing Filebase connection with config:', {
+                    endpoint: appState.filebaseConfig.endpoint,
+                    bucket: appState.filebaseConfig.bucketName,
+                    region: appState.filebaseConfig.region
+                });
+                
+                // Test connection with a simple operation - list buckets
                 s3.listBuckets({}, (err, data) => {
                     if (err) {
                         console.error('Filebase connection error:', err);
@@ -3912,6 +3941,7 @@
                             messageElement.textContent = 'Invalid Filebase Secret Key';
                         } else if (err.code === 'NetworkingError') {
                             messageElement.textContent = 'Network error. Check CORS or firewall settings.';
+                            messageElement.textContent += '\\n\\nSOLUTION: Go to Filebase dashboard → Buckets → Select "gk-store-videos" → Permissions → Add CORS rule.';
                         } else {
                             messageElement.textContent = 'Connection failed: ' + err.message;
                         }
@@ -3929,8 +3959,8 @@
                             messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" found.`;
                             showToast('success', 'Filebase Connected', 'Ready to upload videos!');
                         } else {
-                            messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" not found. Please create it in Filebase dashboard.`;
-                            showToast('warning', 'Bucket Missing', `Create bucket "${appState.filebaseConfig.bucketName}" in Filebase`);
+                            messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" not found.`;
+                            showToast('warning', 'Bucket Missing', `Create bucket "${appState.filebaseConfig.bucketName}" in Filebase dashboard.`);
                         }
                     }
                 });
@@ -4070,8 +4100,8 @@
                     secretAccessKey: appState.filebaseConfig.secretAccessKey,
                     endpoint: appState.filebaseConfig.endpoint,
                     region: appState.filebaseConfig.region,
-                    s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
-                    signatureVersion: appState.filebaseConfig.signatureVersion,
+                    s3ForcePathStyle: true,
+                    signatureVersion: 'v4',
                     apiVersion: '2006-03-01'
                 });
                 
@@ -4096,6 +4126,13 @@
                     }
                 };
                 
+                console.log('Uploading to Filebase with params:', {
+                    bucket: params.Bucket,
+                    key: params.Key,
+                    size: file.size,
+                    type: file.type
+                });
+                
                 // Start the upload
                 const upload = s3.upload(params);
                 
@@ -4118,10 +4155,13 @@
                 const cid = data.ETag ? data.ETag.replace(/"/g, '') : '';
                 const ipfsUrl = cid ? `https://ipfs.filebase.io/ipfs/${cid}` : videoUrl;
                 
-                console.log('Upload successful:', data);
-                console.log('Video URL:', videoUrl);
-                console.log('IPFS CID:', cid);
-                console.log('IPFS URL:', ipfsUrl);
+                console.log('Upload successful:', {
+                    url: videoUrl,
+                    cid: cid,
+                    ipfsUrl: ipfsUrl,
+                    key: data.Key,
+                    bucket: data.Bucket
+                });
                 
                 // Create new video object
                 const newVideo = {
@@ -4175,12 +4215,13 @@
                 updateAdminStats();
                 
                 // Show generated URL section
-                const displayUrl = cid ? `IPFS: ${cid}\nURL: ${ipfsUrl}` : videoUrl;
+                const displayUrl = cid ? `IPFS CID: ${cid}\\nURL: ${ipfsUrl}` : videoUrl;
                 document.getElementById('generated-url').textContent = displayUrl;
                 document.getElementById('url-generator').classList.add('active');
                 
                 // Show success message
                 showToast('success', 'Upload Successful', `Video "${title}" uploaded to Filebase IPFS`);
+                console.log('Video uploaded successfully. CID:', cid, 'URL:', ipfsUrl);
                 
                 // Reset form
                 setTimeout(() => {
@@ -4205,7 +4246,7 @@
                 } else if (error.code === 'AccessDenied') {
                     errorMessage = 'Access denied. Check your Filebase credentials.';
                 } else if (error.code === 'NetworkingError') {
-                    errorMessage = 'Network error. Check your connection or CORS settings.';
+                    errorMessage = 'Network error. Check your connection or CORS settings.\\n\\nSOLUTION: In Filebase dashboard, go to Buckets → Select "gk-store-videos" → Permissions → Add CORS rule.';
                 }
                 
                 showToast('error', 'Upload Failed', errorMessage);
