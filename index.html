@@ -3516,7 +3516,7 @@
             }
         }
 
-        // Load video grid
+        // Load video grid - FIXED: Show videos by tier
         function loadVideoGrid() {
             const grid = document.getElementById('video-grid');
             if (!grid) return;
@@ -3534,7 +3534,11 @@
                 return;
             }
             
+            // Show all videos in grid
             appState.videos.forEach((video, index) => {
+                const tierBadgeClass = video.account.tier === 'big' ? 'badge-primary' : 
+                                      video.account.tier === 'medium' ? 'badge-secondary' : 'badge-warning';
+                
                 const videoItem = document.createElement('div');
                 videoItem.className = 'video-item';
                 videoItem.innerHTML = `
@@ -3546,6 +3550,7 @@
                         <div class="video-item-stats">
                             <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
                             <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
+                            <span class="badge ${tierBadgeClass} text-xs">${video.account.tier}</span>
                             <span>${video.duration}</span>
                         </div>
                     </div>
@@ -3572,100 +3577,15 @@
             }, 1000);
         }
 
-        // Load accounts page content
+        // Load accounts page content - FIXED: Show accounts by tier
         function loadAccountsContent() {
             const grid = document.getElementById('accounts-grid');
             if (!grid) return;
             
             grid.innerHTML = '';
             
-            // Show empty message if no accounts
-            if (appState.accounts.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-3 text-center py-12">
-                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
-                        <p class="text-zinc-400 mb-4">Upload videos from the admin section to see accounts here.</p>
-                        ${appState.currentUser?.role === 'admin' ? 
-                            `<button class="btn btn-primary" onclick="showUploadVideo()">
-                                <i class="fas fa-upload"></i> Upload First Video
-                            </button>` : 
-                            `<button class="btn btn-primary" onclick="showPage('home')">
-                                <i class="fas fa-video"></i> Browse Videos
-                            </button>`}
-                    </div>
-                `;
-                return;
-            }
-            
-            appState.accounts.forEach(account => {
-                const accountCard = document.createElement('div');
-                accountCard.className = 'account-card';
-                
-                // Determine icon class based on tier
-                let iconClass = 'account-icon ';
-                let iconText = '';
-                if (account.tier === 'small') {
-                    iconClass += 'small';
-                    iconText = '<i class="fas fa-user"></i>';
-                } else if (account.tier === 'medium') {
-                    iconClass += 'medium';
-                    iconText = '<i class="fas fa-user-tie"></i>';
-                } else {
-                    iconClass += 'big';
-                    iconText = '<i class="fas fa-crown"></i>';
-                }
-                
-                // Find associated video for this account
-                const associatedVideo = appState.videos.find(v => v.id === account.videoId);
-                
-                accountCard.innerHTML = `
-                    <div class="${iconClass}">
-                        ${iconText}
-                    </div>
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-semibold">${account.title}</h3>
-                        <span class="badge ${account.tier === 'big' ? 'badge-primary' : account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
-                            ${account.tier}
-                        </span>
-                    </div>
-                    <p class="text-zinc-400 text-sm mb-4">${account.description}</p>
-                    
-                    <!-- Video Preview Area -->
-                    <div class="mb-4">
-                        <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
-                             style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
-                             onclick="playAccountVideo('${account.videoId}')">
-                            <i class="fas fa-play-circle text-white text-3xl"></i>
-                        </div>
-                        <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex gap-2 mb-3">
-                        <button class="btn btn-sm btn-primary flex-1" onclick="bookAccountById(${account.id})">
-                            <i class="fas fa-bookmark"></i> Book
-                        </button>
-                        <button class="btn btn-sm btn-success flex-1" onclick="buyAccountById(${account.id})">
-                            <i class="fas fa-shopping-bag"></i> Buy Now
-                        </button>
-                        <button class="btn btn-sm btn-secondary flex-1" onclick="shareAccount(${account.id})">
-                            <i class="fas fa-share"></i> Share
-                        </button>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-2xl font-bold gradient-text">$${account.price.toLocaleString()}</span>
-                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
-                                onclick="viewAccount(${account.id})" 
-                                ${account.sold ? 'disabled' : ''}>
-                            ${account.sold ? 'Sold' : 'View Details'}
-                        </button>
-                    </div>
-                `;
-                
-                grid.appendChild(accountCard);
-            });
+            // Show all accounts initially
+            filterAccounts('all');
         }
 
         // Play account video
@@ -3727,7 +3647,7 @@
             }
         }
 
-        // Filter accounts by tier
+        // Filter accounts by tier - FIXED: Proper filtering
         function filterAccounts(tier) {
             document.querySelectorAll('.tab-item').forEach(tab => {
                 tab.classList.remove('active');
@@ -3830,7 +3750,7 @@
                 grid.appendChild(accountCard);
             });
             
-            showToast('info', 'Filter Applied', `${tier} accounts`);
+            showToast('info', 'Filter Applied', `${tier} accounts (${filteredAccounts.length} found)`);
         }
 
         // Load admin page content
@@ -4056,7 +3976,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // UPLOAD VIDEO TO FILEBASE - FIXED VERSION
+        // UPLOAD VIDEO TO FILEBASE - FIXED VERSION WITH TIER FOLDERS
         async function uploadVideoToFilebase() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -4107,10 +4027,11 @@
                     )
                 });
                 
-                // Create unique filename
+                // Create unique filename - FIXED: Use tier-based folder structure
                 const timestamp = Date.now();
                 const fileExtension = file.name.split('.').pop();
-                const fileName = `videos/${id}_${timestamp}.${fileExtension}`;
+                // Store in tier-based folder: {tier}/{video_id}.{ext}
+                const fileName = `${tier}/${id}_${timestamp}.${fileExtension}`;
                 
                 // Prepare upload parameters
                 const params = {
@@ -4132,7 +4053,8 @@
                     bucket: params.Bucket,
                     key: params.Key,
                     size: file.size,
-                    type: file.type
+                    type: file.type,
+                    tier: tier
                 });
                 
                 // Start the upload
@@ -4162,10 +4084,12 @@
                     cid: cid,
                     ipfsUrl: ipfsUrl,
                     key: data.Key,
-                    bucket: data.Bucket
+                    bucket: data.Bucket,
+                    tier: tier,
+                    folder: tier + '/'
                 });
                 
-                // Create new video object
+                // Create new video object with tier information
                 const newVideo = {
                     id: id,
                     title: title,
@@ -4181,6 +4105,7 @@
                     ipfsCid: cid,
                     ipfsUrl: ipfsUrl,
                     uploadDate: new Date().toISOString(),
+                    tier: tier, // Store tier information
                     account: {
                         id: appState.accounts.length + 1,
                         title: title,
@@ -4191,7 +4116,7 @@
                     }
                 };
                 
-                // Create corresponding account
+                // Create corresponding account with tier
                 const newAccount = {
                     id: newVideo.account.id,
                     title: newVideo.account.title,
@@ -4217,13 +4142,13 @@
                 updateAdminStats();
                 
                 // Show generated URL section
-                const displayUrl = cid ? `IPFS CID: ${cid}\nURL: ${ipfsUrl}` : videoUrl;
+                const displayUrl = cid ? `IPFS CID: ${cid}\nURL: ${ipfsUrl}\nTier: ${tier}\nFolder: ${tier}/` : videoUrl;
                 document.getElementById('generated-url').textContent = displayUrl;
                 document.getElementById('url-generator').classList.add('active');
                 
-                // Show success message
-                showToast('success', 'Upload Successful', `Video "${title}" uploaded to Filebase IPFS`);
-                console.log('Video uploaded successfully. CID:', cid, 'URL:', ipfsUrl);
+                // Show success message with tier information
+                showToast('success', 'Upload Successful', `Video "${title}" uploaded to ${tier} tier on Filebase IPFS`);
+                console.log('Video uploaded successfully. CID:', cid, 'URL:', ipfsUrl, 'Tier:', tier);
                 
                 // Reset form
                 setTimeout(() => {
@@ -4286,7 +4211,7 @@
             showModal('manage-videos-modal');
         }
 
-        // Load admin videos
+        // Load admin videos - FIXED: Show tier information
         function loadAdminVideos(filter = 'all') {
             const videosList = document.getElementById('admin-videos-list');
             if (!videosList) return;
@@ -4295,7 +4220,7 @@
             
             const filteredVideos = filter === 'all' 
                 ? appState.videos 
-                : appState.videos.filter(video => video.account.tier === filter);
+                : appState.videos.filter(video => video.tier === filter);
             
             if (filteredVideos.length === 0) {
                 videosList.innerHTML = `
@@ -4315,8 +4240,8 @@
                     <div>
                         <div class="flex items-center gap-2 mb-1">
                             <span class="font-medium">${video.title}</span>
-                            <span class="badge ${video.account.tier === 'big' ? 'badge-primary' : video.account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
-                                ${video.account.tier}
+                            <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
+                                ${video.tier}
                             </span>
                         </div>
                         <p class="text-xs text-zinc-400">ID: ${video.id} • $${video.account.price.toLocaleString()}</p>
