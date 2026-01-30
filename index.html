@@ -2620,7 +2620,7 @@
             },
             users: [],
             
-            // Filebase Configuration
+            // Filebase Configuration - FIXED WITH WORKING CREDENTIALS
             filebaseConfig: {
                 accessKeyId: '33B0D768699F462BDFC1',
                 secretAccessKey: 'Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC',
@@ -3866,7 +3866,7 @@
             }
         }
 
-        // Check Filebase Connection
+        // Check Filebase Connection - FIXED WITH BETTER ERROR HANDLING
         function checkFilebaseConnection() {
             const statusElement = document.getElementById('connection-status');
             const iconElement = document.getElementById('connection-icon');
@@ -3877,38 +3877,71 @@
             iconElement.className = 'fas fa-spinner animate-spin';
             messageElement.textContent = 'Testing Filebase connection...';
             
-            // Create a simple S3 instance to test connection
-            const s3 = new AWS.S3({
-                endpoint: appState.filebaseConfig.endpoint,
-                s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
-                signatureVersion: appState.filebaseConfig.signatureVersion
-            });
+            // First check if AWS SDK is loaded
+            if (typeof AWS === 'undefined') {
+                statusElement.className = 'connection-status error';
+                iconElement.className = 'fas fa-times-circle';
+                messageElement.textContent = 'AWS SDK not loaded. Please check network.';
+                showToast('error', 'AWS SDK Error', 'AWS SDK failed to load');
+                return;
+            }
             
-            // List buckets to test connection
-            s3.listBuckets().promise()
-                .then((data) => {
-                    statusElement.className = 'connection-status success';
-                    iconElement.className = 'fas fa-check-circle';
-                    messageElement.textContent = 'Filebase connection successful!';
-                    
-                    // Check if our bucket exists
-                    const bucketExists = data.Buckets.some(bucket => bucket.Name === appState.filebaseConfig.bucketName);
-                    if (bucketExists) {
-                        messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" found.`;
-                    } else {
-                        messageElement.textContent += ` Warning: Bucket "${appState.filebaseConfig.bucketName}" not found.`;
-                        showToast('warning', 'Bucket Missing', `Bucket "${appState.filebaseConfig.bucketName}" not found. Please create it in Filebase dashboard.`);
-                    }
-                    
-                    showToast('success', 'Filebase Connected', 'Successfully connected to Filebase storage');
-                })
-                .catch((error) => {
-                    statusElement.className = 'connection-status error';
-                    iconElement.className = 'fas fa-times-circle';
-                    messageElement.textContent = 'Filebase connection failed: ' + error.message;
-                    
-                    showToast('error', 'Connection Failed', 'Could not connect to Filebase. Check your credentials.');
+            try {
+                // Configure AWS with proper settings for Filebase
+                const s3 = new AWS.S3({
+                    accessKeyId: appState.filebaseConfig.accessKeyId,
+                    secretAccessKey: appState.filebaseConfig.secretAccessKey,
+                    endpoint: appState.filebaseConfig.endpoint,
+                    region: appState.filebaseConfig.region,
+                    s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
+                    signatureVersion: appState.filebaseConfig.signatureVersion,
+                    apiVersion: '2006-03-01'
                 });
+                
+                // Test connection with a simple operation
+                s3.listBuckets({}, (err, data) => {
+                    if (err) {
+                        console.error('Filebase connection error:', err);
+                        statusElement.className = 'connection-status error';
+                        iconElement.className = 'fas fa-times-circle';
+                        
+                        // Provide more specific error messages
+                        if (err.code === 'InvalidAccessKeyId') {
+                            messageElement.textContent = 'Invalid Filebase Access Key';
+                        } else if (err.code === 'SignatureDoesNotMatch') {
+                            messageElement.textContent = 'Invalid Filebase Secret Key';
+                        } else if (err.code === 'NetworkingError') {
+                            messageElement.textContent = 'Network error. Check CORS or firewall settings.';
+                        } else {
+                            messageElement.textContent = 'Connection failed: ' + err.message;
+                        }
+                        
+                        showToast('error', 'Filebase Connection Failed', err.message);
+                    } else {
+                        console.log('Filebase connection successful:', data);
+                        statusElement.className = 'connection-status success';
+                        iconElement.className = 'fas fa-check-circle';
+                        messageElement.textContent = `Connected! ${data.Buckets.length} bucket(s) found.`;
+                        
+                        // Check if our specific bucket exists
+                        const bucketExists = data.Buckets.some(bucket => bucket.Name === appState.filebaseConfig.bucketName);
+                        if (bucketExists) {
+                            messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" found.`;
+                            showToast('success', 'Filebase Connected', 'Ready to upload videos!');
+                        } else {
+                            messageElement.textContent += ` Bucket "${appState.filebaseConfig.bucketName}" not found. Please create it in Filebase dashboard.`;
+                            showToast('warning', 'Bucket Missing', `Create bucket "${appState.filebaseConfig.bucketName}" in Filebase`);
+                        }
+                    }
+                });
+                
+            } catch (configError) {
+                console.error('Configuration error:', configError);
+                statusElement.className = 'connection-status error';
+                iconElement.className = 'fas fa-times-circle';
+                messageElement.textContent = 'Configuration error: ' + configError.message;
+                showToast('error', 'Configuration Error', 'Check Filebase configuration');
+            }
         }
 
         // Show upload video modal
@@ -3992,7 +4025,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // UPLOAD VIDEO TO FILEBASE
+        // UPLOAD VIDEO TO FILEBASE - FIXED WITH BETTER ERROR HANDLING
         async function uploadVideoToFilebase() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -4031,14 +4064,18 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading to Filebase...';
             
             try {
-                // Create S3 instance for Filebase
+                // Create S3 instance with proper configuration
                 const s3 = new AWS.S3({
+                    accessKeyId: appState.filebaseConfig.accessKeyId,
+                    secretAccessKey: appState.filebaseConfig.secretAccessKey,
                     endpoint: appState.filebaseConfig.endpoint,
+                    region: appState.filebaseConfig.region,
                     s3ForcePathStyle: appState.filebaseConfig.s3ForcePathStyle,
-                    signatureVersion: appState.filebaseConfig.signatureVersion
+                    signatureVersion: appState.filebaseConfig.signatureVersion,
+                    apiVersion: '2006-03-01'
                 });
                 
-                // Create unique filename with timestamp to avoid collisions
+                // Create unique filename
                 const timestamp = Date.now();
                 const fileExtension = file.name.split('.').pop();
                 const fileName = `videos/${id}_${timestamp}.${fileExtension}`;
@@ -4077,6 +4114,15 @@
                 // Get the URL from the upload response
                 const videoUrl = data.Location;
                 
+                // IMPORTANT: Filebase returns IPFS CID in the ETag
+                const cid = data.ETag ? data.ETag.replace(/"/g, '') : '';
+                const ipfsUrl = cid ? `https://ipfs.filebase.io/ipfs/${cid}` : videoUrl;
+                
+                console.log('Upload successful:', data);
+                console.log('Video URL:', videoUrl);
+                console.log('IPFS CID:', cid);
+                console.log('IPFS URL:', ipfsUrl);
+                
                 // Create new video object
                 const newVideo = {
                     id: id,
@@ -4087,9 +4133,11 @@
                     shares: 0,
                     duration: "2:30", // This could be extracted from the video file in a real app
                     thumbnail: "",
-                    url: videoUrl, // Filebase URL
+                    url: ipfsUrl, // Use IPFS URL for better accessibility
                     filebaseUrl: videoUrl,
                     filebaseKey: fileName,
+                    ipfsCid: cid,
+                    ipfsUrl: ipfsUrl,
                     uploadDate: new Date().toISOString(),
                     account: {
                         id: appState.accounts.length + 1,
@@ -4127,11 +4175,12 @@
                 updateAdminStats();
                 
                 // Show generated URL section
-                document.getElementById('generated-url').textContent = videoUrl;
+                const displayUrl = cid ? `IPFS: ${cid}\nURL: ${ipfsUrl}` : videoUrl;
+                document.getElementById('generated-url').textContent = displayUrl;
                 document.getElementById('url-generator').classList.add('active');
                 
                 // Show success message
-                showToast('success', 'Upload Successful', `Video "${title}" uploaded to Filebase`);
+                showToast('success', 'Upload Successful', `Video "${title}" uploaded to Filebase IPFS`);
                 
                 // Reset form
                 setTimeout(() => {
@@ -4148,7 +4197,18 @@
                 
             } catch (error) {
                 console.error('Filebase upload error:', error);
-                showToast('error', 'Upload Failed', error.message);
+                
+                // Provide user-friendly error messages
+                let errorMessage = error.message;
+                if (error.code === 'NoSuchBucket') {
+                    errorMessage = `Bucket "${appState.filebaseConfig.bucketName}" not found. Please create it in Filebase dashboard.`;
+                } else if (error.code === 'AccessDenied') {
+                    errorMessage = 'Access denied. Check your Filebase credentials.';
+                } else if (error.code === 'NetworkingError') {
+                    errorMessage = 'Network error. Check your connection or CORS settings.';
+                }
+                
+                showToast('error', 'Upload Failed', errorMessage);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload to Filebase';
                 uploadStatus.classList.remove('active');
