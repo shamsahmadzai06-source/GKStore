@@ -2846,7 +2846,7 @@
                 const timestamp = Date.now();
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 
-                // Create folder structure based on tier: small/, medium/, big/
+                // FIXED: Create folder structure WITHOUT leading slash
                 const fileName = `${tier}/${id}_${timestamp}.${fileExtension}`;
                 
                 console.log('Uploading to Filebase:', {
@@ -2856,7 +2856,7 @@
                     fileSize: file.size
                 });
                 
-                // Prepare upload parameters
+                // Prepare upload parameters with proper ACL
                 const params = {
                     Bucket: appState.filebaseConfig.bucketName,
                     Key: fileName,
@@ -2871,7 +2871,7 @@
                         'upload-date': new Date().toISOString(),
                         'original-filename': file.name
                     },
-                    // Add ACL for public read if needed
+                    // FIXED: Ensure file is publicly readable
                     ACL: 'public-read'
                 };
                 
@@ -2927,17 +2927,10 @@
                 uploadedSize.textContent = formatFileSize(file.size);
                 totalSize.textContent = formatFileSize(file.size);
                 
-                // FIXED: Generate correct URL for Filebase
-                // Filebase uses different URL format: https://ipfs.filebase.io/ipfs/<CID>
-                // But for S3 direct access, use: https://<bucket>.s3.filebase.com/<key>
+                // FIXED: Generate correct public URL for Filebase
                 const videoUrl = `https://${appState.filebaseConfig.bucketName}.s3.filebase.com/${fileName}`;
-                const ipfsUrl = data.Location || data.requestId || videoUrl; // Filebase returns IPFS URL in Location
                 
-                console.log('Generated URLs:', {
-                    s3Url: videoUrl,
-                    ipfsUrl: ipfsUrl,
-                    data: data
-                });
+                console.log('Generated public URL:', videoUrl);
                 
                 // Create new video object
                 const newVideo = {
@@ -2949,8 +2942,7 @@
                     shares: 0,
                     duration: "2:30",
                     thumbnail: "",
-                    url: ipfsUrl || videoUrl, // Prefer IPFS URL if available
-                    s3Url: videoUrl,
+                    url: videoUrl, // Use the direct S3 URL for reliable playback
                     filebaseKey: fileName,
                     fileSize: file.size,
                     uploadDate: new Date().toISOString(),
@@ -2988,14 +2980,14 @@
                 loadHomeContent();
                 updateAdminStats();
                 
-                // Show success message with URLs
+                // Show success message with URL
                 document.getElementById('generated-url').innerHTML = `
                     <strong>Video ID:</strong> ${id}<br>
                     <strong>Tier:</strong> ${tier}<br>
-                    <strong>URL:</strong> ${videoUrl}<br>
-                    ${ipfsUrl && ipfsUrl !== videoUrl ? `<strong>IPFS URL:</strong> ${ipfsUrl}<br>` : ''}
+                    <strong>Public URL:</strong> <a href="${videoUrl}" target="_blank" class="text-primary">${videoUrl}</a><br>
                     <strong>File:</strong> ${fileName}<br>
-                    <strong>Size:</strong> ${formatFileSize(file.size)}
+                    <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+                    <strong>Status:</strong> <span class="text-success">Publicly accessible</span>
                 `;
                 document.getElementById('url-generator').classList.add('active');
                 
@@ -3033,7 +3025,6 @@
                     toastType = 'warning';
                     
                     // Even with CORS error, the file might have uploaded
-                    // Create the video object anyway
                     createVideoFromUpload(id, title, description, price, tier, file);
                     
                 } else if (error.code === 'RequestTimeTooSkewed') {
@@ -3042,8 +3033,6 @@
                 
                 showToast(toastType, 'Upload Status', errorMessage);
                 
-                // Even on error, the file might have uploaded to Filebase
-                // Check Filebase dashboard to confirm
                 if (toastType === 'warning') {
                     showToast('info', 'Check Dashboard', 'Please check Filebase dashboard to confirm upload.');
                 }
@@ -3069,7 +3058,6 @@
                 duration: "2:30",
                 thumbnail: "",
                 url: videoUrl,
-                s3Url: videoUrl,
                 filebaseKey: fileName,
                 fileSize: file.size,
                 uploadDate: new Date().toISOString(),
@@ -3143,62 +3131,69 @@
                 return;
             }
             
-            // Open URL in new tab for testing
-            window.open(videoUrl, '_blank');
-            
-            showToast('info', 'Testing Video', 'Opening video URL in new tab...');
+            // Test the URL by creating a video element
+            testVideoPlayback(videoUrl);
         }
 
-        // FIXED: Handle file selection with better validation
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // FIXED: Test video playback with proper error handling
+        function testVideoPlayback(videoUrl) {
+            const testVideo = document.createElement('video');
+            testVideo.src = videoUrl;
+            testVideo.controls = true;
+            testVideo.style.width = '100%';
+            testVideo.style.maxHeight = '300px';
             
-            // Check file size (200MB limit)
-            const maxSize = 200 * 1024 * 1024; // 200MB in bytes
-            if (file.size > maxSize) {
-                showToast('error', 'File Too Large', `File size (${formatFileSize(file.size)}) exceeds 200MB limit`);
-                return;
-            }
+            // Create a test modal
+            const testModal = document.createElement('div');
+            testModal.className = 'modal-overlay';
+            testModal.innerHTML = `
+                <div class="modal" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Testing Video Playback</h3>
+                        <button class="modal-close" onclick="this.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Testing URL: <code class="text-xs">${videoUrl}</code></p>
+                        <div id="test-video-container"></div>
+                        <div id="test-status" class="mt-3">
+                            <p><i class="fas fa-spinner animate-spin text-primary"></i> Loading video...</p>
+                        </div>
+                        <div class="mt-4">
+                            <button class="btn btn-primary w-full" onclick="window.open('${videoUrl}', '_blank')">
+                                <i class="fas fa-external-link-alt"></i> Open in New Tab
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            // Check file type
-            const validTypes = [
-                'video/mp4', 
-                'video/quicktime', 
-                'video/x-msvideo', 
-                'video/x-matroska',
-                'video/webm'
-            ];
+            document.body.appendChild(testModal);
+            const testContainer = testModal.querySelector('#test-video-container');
+            const testStatus = testModal.querySelector('#test-status');
             
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-            const validExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+            testVideo.addEventListener('loadeddata', () => {
+                testStatus.innerHTML = '<p class="text-success"><i class="fas fa-check-circle"></i> Video loaded successfully!</p>';
+                testContainer.appendChild(testVideo);
+                testVideo.play().catch(e => {
+                    console.log('Auto-play blocked:', e);
+                    testStatus.innerHTML += '<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Click play button to start video</p>';
+                });
+            });
             
-            if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-                showToast('error', 'Invalid File Type', 'Please select MP4, MOV, AVI, MKV, or WEBM file');
-                return;
-            }
+            testVideo.addEventListener('error', (e) => {
+                console.error('Video error:', e);
+                testStatus.innerHTML = `<p class="text-danger"><i class="fas fa-times-circle"></i> Failed to load video. Error: ${testVideo.error ? testVideo.error.code : 'Unknown'}</p>`;
+                testStatus.innerHTML += `<p class="text-xs text-zinc-400 mt-2">Possible issues:<br>1. File not publicly accessible<br>2. CORS restrictions<br>3. Invalid video format</p>`;
+            });
             
-            appState.currentUpload.file = file;
-            
-            document.getElementById('file-name').textContent = file.name;
-            document.getElementById('file-size').textContent = formatFileSize(file.size);
-            document.getElementById('file-preview').classList.add('active');
-            
-            // Create preview
-            const previewPlayer = document.getElementById('preview-player');
-            const videoPreview = document.getElementById('video-preview');
-            const videoURL = URL.createObjectURL(file);
-            
-            previewPlayer.src = videoURL;
-            previewPlayer.load();
-            videoPreview.classList.add('active');
-            
-            showToast('success', 'File Selected', `${file.name} (${formatFileSize(file.size)}) ready for upload`);
-            
-            // Auto-test connection when file is selected
+            // Set timeout for loading
             setTimeout(() => {
-                checkFilebaseConnection();
-            }, 500);
+                if (testVideo.readyState < 1) {
+                    testStatus.innerHTML = `<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Taking too long to load. Video might be very large or network is slow.</p>`;
+                }
+            }, 5000);
         }
 
         // FIXED: Format file size function
@@ -3224,6 +3219,108 @@
             document.getElementById('video-preview').classList.remove('active');
             document.getElementById('upload-status').classList.remove('active');
             document.getElementById('url-generator').classList.remove('active');
+        }
+
+        // FIXED: Load video with better error handling
+        function loadVideo(index) {
+            const video = appState.videos[index];
+            if (!video) return;
+            
+            const videoSection = document.getElementById('video-section');
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            const videoOverlay = document.getElementById('video-overlay');
+            
+            if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
+            if (videoOverlay) videoOverlay.classList.remove('hidden');
+            
+            document.getElementById('video-title').textContent = video.title;
+            document.getElementById('video-description').textContent = video.description;
+            
+            const statsElement = document.getElementById('video-stats');
+            if (statsElement) {
+                statsElement.innerHTML = `
+                    <span>${video.views.toLocaleString()} views</span>
+                    <span>•</span>
+                    <span>${video.likes.toLocaleString()} likes</span>
+                    <span>•</span>
+                    <span>${video.duration}</span>
+                `;
+            }
+            
+            appState.currentAccount = video.account;
+            
+            // Clear previous video if exists
+            if (currentVideoPlayer) {
+                currentVideoPlayer.pause();
+                currentVideoPlayer.remove();
+                currentVideoPlayer = null;
+            }
+            
+            // Create video element if video has a URL
+            if (video.url) {
+                const videoPlayer = document.createElement('video');
+                videoPlayer.className = 'video-player';
+                videoPlayer.src = video.url;
+                videoPlayer.controls = false;
+                videoPlayer.autoplay = true;
+                videoPlayer.muted = false;
+                videoPlayer.loop = true;
+                videoPlayer.playsInline = true; // Important for mobile
+                
+                // FIXED: Add error handling for video playback
+                videoPlayer.addEventListener('error', function(e) {
+                    console.error('Video playback error:', videoPlayer.error);
+                    showToast('error', 'Video Error', 'Failed to load video. It may not be publicly accessible.');
+                    
+                    // Show error state
+                    videoSection.innerHTML = `
+                        <div class="flex items-center justify-center h-full">
+                            <div class="text-center">
+                                <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                                <h3 class="text-xl font-semibold mb-2">Video Unavailable</h3>
+                                <p class="text-zinc-400 mb-4">The video cannot be played at the moment.</p>
+                                <p class="text-xs text-zinc-500">URL: ${video.url.substring(0, 50)}...</p>
+                            </div>
+                        </div>
+                    `;
+                    videoSection.appendChild(videoOverlay);
+                });
+                
+                videoPlayer.addEventListener('loadeddata', function() {
+                    console.log('Video loaded successfully:', video.url);
+                });
+                
+                videoPlayer.addEventListener('play', () => {
+                    isVideoPlaying = true;
+                    updatePlayPauseIcon();
+                });
+                
+                videoPlayer.addEventListener('pause', () => {
+                    isVideoPlaying = false;
+                    updatePlayPauseIcon();
+                });
+                
+                // FIXED: Try to play with error handling
+                videoPlayer.play().catch(error => {
+                    console.log('Auto-play blocked:', error);
+                    // Show play button overlay
+                    document.getElementById('video-play-pause').classList.add('show');
+                    isVideoPlaying = false;
+                    updatePlayPauseIcon();
+                });
+                
+                videoSection.innerHTML = '';
+                videoSection.appendChild(videoPlayer);
+                videoSection.appendChild(videoOverlay);
+                
+                currentVideoPlayer = videoPlayer;
+                isVideoPlaying = true;
+                updatePlayPauseIcon();
+            } else {
+                videoSection.style.background = 'linear-gradient(135deg, #ec4899, #8b5cf6)';
+                videoSection.style.backgroundSize = 'cover';
+                videoSection.style.backgroundPosition = 'center';
+            }
         }
 
         // FIXED HASH FUNCTION
@@ -3872,88 +3969,24 @@
             loadVideoGrid();
         }
 
-        // Load video
-        function loadVideo(index) {
-            const video = appState.videos[index];
-            if (!video) return;
-            
-            const videoSection = document.getElementById('video-section');
-            const videoPlaceholder = document.getElementById('video-placeholder');
-            const videoOverlay = document.getElementById('video-overlay');
-            
-            if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
-            if (videoOverlay) videoOverlay.classList.remove('hidden');
-            
-            document.getElementById('video-title').textContent = video.title;
-            document.getElementById('video-description').textContent = video.description;
-            
-            const statsElement = document.getElementById('video-stats');
-            if (statsElement) {
-                statsElement.innerHTML = `
-                    <span>${video.views.toLocaleString()} views</span>
-                    <span>•</span>
-                    <span>${video.likes.toLocaleString()} likes</span>
-                    <span>•</span>
-                    <span>${video.duration}</span>
-                `;
-            }
-            
-            appState.currentAccount = video.account;
-            
-            // Clear previous video if exists
-            if (currentVideoPlayer) {
-                currentVideoPlayer.pause();
-                currentVideoPlayer.remove();
-                currentVideoPlayer = null;
-            }
-            
-            // Create video element if video has a URL
-            if (video.url) {
-                const videoPlayer = document.createElement('video');
-                videoPlayer.className = 'video-player';
-                videoPlayer.src = video.url;
-                videoPlayer.controls = false;
-                videoPlayer.autoplay = true;
-                videoPlayer.muted = false;
-                videoPlayer.loop = true;
-                
-                videoPlayer.addEventListener('play', () => {
-                    isVideoPlaying = true;
-                    updatePlayPauseIcon();
-                });
-                
-                videoPlayer.addEventListener('pause', () => {
-                    isVideoPlaying = false;
-                    updatePlayPauseIcon();
-                });
-                
-                videoSection.innerHTML = '';
-                videoSection.appendChild(videoPlayer);
-                videoSection.appendChild(videoOverlay);
-                
-                currentVideoPlayer = videoPlayer;
-                isVideoPlaying = true;
-                updatePlayPauseIcon();
-            } else {
-                videoSection.style.background = 'linear-gradient(135deg, #ec4899, #8b5cf6)';
-                videoSection.style.backgroundSize = 'cover';
-                videoSection.style.backgroundPosition = 'center';
-            }
-        }
-
         // Toggle video playback (TikTok style)
         function toggleVideoPlayback() {
             if (currentVideoPlayer) {
                 if (currentVideoPlayer.paused) {
-                    currentVideoPlayer.play();
-                    isVideoPlaying = true;
+                    currentVideoPlayer.play().then(() => {
+                        isVideoPlaying = true;
+                        showPlayPauseOverlay();
+                        updatePlayPauseIcon();
+                    }).catch(error => {
+                        console.log('Play failed:', error);
+                        showToast('error', 'Playback Error', 'Cannot play video. Try clicking the play button.');
+                    });
                 } else {
                     currentVideoPlayer.pause();
                     isVideoPlaying = false;
+                    showPlayPauseOverlay();
+                    updatePlayPauseIcon();
                 }
-                
-                showPlayPauseOverlay();
-                updatePlayPauseIcon();
             }
         }
 
@@ -5087,6 +5120,58 @@
         // Show privacy
         function showPrivacy() {
             showToast('info', 'Privacy Policy', 'This is a demo app. Privacy policy will be implemented in production.');
+        }
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (200MB limit)
+            const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+            if (file.size > maxSize) {
+                showToast('error', 'File Too Large', `File size (${formatFileSize(file.size)}) exceeds 200MB limit`);
+                return;
+            }
+            
+            // Check file type
+            const validTypes = [
+                'video/mp4', 
+                'video/quicktime', 
+                'video/x-msvideo', 
+                'video/x-matroska',
+                'video/webm'
+            ];
+            
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const validExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+            
+            if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+                showToast('error', 'Invalid File Type', 'Please select MP4, MOV, AVI, MKV, or WEBM file');
+                return;
+            }
+            
+            appState.currentUpload.file = file;
+            
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('file-size').textContent = formatFileSize(file.size);
+            document.getElementById('file-preview').classList.add('active');
+            
+            // Create preview
+            const previewPlayer = document.getElementById('preview-player');
+            const videoPreview = document.getElementById('video-preview');
+            const videoURL = URL.createObjectURL(file);
+            
+            previewPlayer.src = videoURL;
+            previewPlayer.load();
+            videoPreview.classList.add('active');
+            
+            showToast('success', 'File Selected', `${file.name} (${formatFileSize(file.size)}) ready for upload`);
+            
+            // Auto-test connection when file is selected
+            setTimeout(() => {
+                checkFilebaseConnection();
+            }, 500);
         }
 
         // Initialize app when DOM is loaded
