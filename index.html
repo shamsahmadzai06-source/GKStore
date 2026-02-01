@@ -1,183 +1,155 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ec4899">
     <meta name="description" content="GK Store - Exclusive Video Marketplace">
-    
     <title>GK Store - Video Marketplace</title>
     
-    <!-- Favicon and Apple Touch Icons -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png">
     <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
-    <link rel="manifest" href="https://shamsahmadzai06-source.github.io/GKStore/manifest.json" id="app-manifest">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GK Store">
-    <link rel="apple-touch-startup-image" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
+    <link rel="manifest" href="https://shamsahmadzai06-source.github.io/GKStore/manifest.json">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Back4App Parse SDK -->
+    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+    
     <style>
-        /* ALL YOUR ORIGINAL CSS - KEEP AS IS */
+        /* CSS Variables */
         :root {
-            --primary: #ec4899;
-            --primary-dark: #db2777;
-            --secondary: #8b5cf6;
-            --secondary-dark: #7c3aed;
-            --accent: #f59e0b;
-            --background: #000000;
-            --surface: #18181b;
-            --surface-light: #27272a;
-            --text: #ffffff;
-            --text-secondary: #a1a1aa;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --border: #3f3f46;
-            --shadow: rgba(0, 0, 0, 0.5);
-            --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
-            --gradient-reverse: linear-gradient(135deg, var(--secondary), var(--primary));
+            --primary: #ec4899; --primary-dark: #db2777; --secondary: #8b5cf6; --secondary-dark: #7c3aed;
+            --accent: #f59e0b; --bg: #000; --surface: #18181b; --surface-light: #27272a;
+            --text: #fff; --text-secondary: #a1a1aa; --success: #10b981; --warning: #f59e0b;
+            --danger: #ef4444; --border: #3f3f46; --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
 
-        html {
-            font-size: 16px;
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            line-height: 1.5;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* ALL YOUR CSS CLASSES - KEEP AS IS */
-        .hidden { display: none; }
-        .flex { display: flex; }
-        .items-center { align-items: center; }
-        .justify-center { justify-content: center; }
-        .text-center { text-align: center; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-6 { margin-bottom: 1.5rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-4 { margin-top: 1rem; }
-        .w-full { width: 100%; }
-        .btn { 
-            display: inline-flex; align-items: center; justify-content: center; 
-            gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 0.75rem; 
-            font-weight: 600; font-size: 0.875rem; text-decoration: none; 
-            cursor: pointer; border: none; transition: all 0.2s ease; 
-            position: relative; overflow: hidden; 
-        }
-        .btn-primary { background: var(--gradient); color: white; }
-        .btn-secondary { background: var(--surface-light); color: var(--text); border: 1px solid var(--border); }
-        .btn-sm { padding: 0.5rem 1rem; font-size: 0.75rem; }
-        .card { background: var(--surface); border-radius: 1rem; border: 1px solid var(--border); overflow: hidden; transition: all 0.3s ease; }
-        .card-body { padding: 1.5rem; }
-        .input { width: 100%; padding: 0.75rem 1rem; background: var(--surface-light); border: 1px solid var(--border); border-radius: 0.75rem; color: var(--text); font-size: 0.875rem; transition: all 0.2s ease; }
-        .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; animation: fadeIn 0.3s ease-out forwards; }
-        .modal { background: var(--surface); border-radius: 1.5rem; border: 1px solid var(--border); width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; animation: slideIn 0.3s ease-out; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
-        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .modal-title { font-size: 1.25rem; font-weight: 700; }
-        .modal-body { padding: 1.5rem; }
-        .modal-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; width: 2.5rem; height: 2.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
-        .text-xs { font-size: 0.75rem; }
-        .text-sm { font-size: 0.875rem; }
-        .text-xl { font-size: 1.25rem; }
-        .text-2xl { font-size: 2rem; }
-        .font-bold { font-weight: 700; }
-        .font-semibold { font-weight: 600; }
-        .text-zinc-400 { color: #a1a1aa; }
-        .text-primary { color: var(--primary); }
-        .text-success { color: var(--success); }
-        .text-danger { color: var(--danger); }
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--surface); }
-        ::-webkit-scrollbar-thumb { background: var(--surface-light); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .w-full { width: 100%; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: 700; }
+        .rounded-lg { border-radius: 1rem; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-spin { animation: spin 1s linear infinite; }
+        .gradient-text { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .gradient-bg { background: var(--gradient); }
 
-        /* Gradient text */
-        .gradient-text { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-block; }
+        /* PWA Install Button */
+        .pwa-install-btn { position: fixed; left: 1rem; bottom: 9rem; width: 3rem; height: 3rem; border-radius: 50%; background: var(--primary); color: white; cursor: pointer; z-index: 100; box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3); border: none; }
 
-        /* Top Navigation */
+        /* Layout */
+        .content { padding: 5rem 1rem 7rem; min-height: 100vh; }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        /* Navigation */
         .top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 1rem; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
-        .nav-content { display: flex; align-items: center; justify-content: space-between; }
-        .logo { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; text-decoration: none; color: var(--text); }
-        .logo-icon { width: 2rem; height: 2rem; background: var(--gradient); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; color: white; }
-        .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
-        .btn-icon { width: 2.5rem; height: 2.5rem; padding: 0; border-radius: 50%; }
-
-        /* Bottom Navigation */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--border); }
         .nav-items { display: flex; justify-content: space-around; align-items: center; max-width: 400px; margin: 0 auto; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-secondary); transition: all 0.2s ease; padding: 0.5rem; border-radius: 0.75rem; min-width: 4rem; }
-        .nav-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+        .nav-item { flex-direction: column; align-items: center; text-decoration: none; color: var(--text-secondary); padding: 0.5rem; border-radius: 0.75rem; min-width: 4rem; }
         .nav-item.active { color: var(--primary); background: rgba(236, 72, 153, 0.1); }
         .nav-item i { font-size: 1.25rem; margin-bottom: 0.25rem; }
         .nav-item span { font-size: 0.75rem; font-weight: 500; }
 
-        /* Content */
-        .content { padding: 5rem 1rem 7rem; }
-        .page { min-height: 100vh; position: relative; overflow-x: hidden; }
-        .page.hidden { display: none; }
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; border: none; transition: all 0.2s ease; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); }
+        .btn-primary { background: var(--gradient); color: white; }
+        .btn-secondary { background: var(--surface-light); color: var(--text); border: 1px solid var(--border); }
+        .btn-icon { width: 2.5rem; height: 2.5rem; padding: 0; border-radius: 50%; }
 
-        /* Toast */
-        #toast { position: fixed; top: 4rem; right: 1rem; z-index: 2000; display: none; }
-        #toast.show { display: block; animation: fadeIn 0.3s ease-out; }
+        /* Cards */
+        .card { background: var(--surface); border-radius: 1rem; border: 1px solid var(--border); overflow: hidden; transition: all 0.3s ease; }
+        .card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
+        .card-body { padding: 1.5rem; }
+
+        /* Forms */
+        .input-group { margin-bottom: 1.5rem; }
+        .input-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-secondary); }
+        .input { width: 100%; padding: 0.75rem 1rem; background: var(--surface-light); border: 1px solid var(--border); border-radius: 0.75rem; color: var(--text); font-size: 0.875rem; }
+        .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1); }
+        select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23a1a1aa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E"); background-position: right 1rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+
+        /* Video Player */
+        .video-container { position: relative; width: 100%; height: calc(100vh - 140px); background: #000; cursor: pointer; }
+        .video-player { width: 100%; height: 100%; object-fit: cover; }
+        .video-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, transparent 20%, transparent 80%, rgba(0, 0, 0, 0.9) 100%); flex-direction: column; justify-content: space-between; padding: 2rem; pointer-events: none; }
+        .video-top-actions { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); flex-direction: column; gap: 1.5rem; z-index: 10; pointer-events: auto; }
+        .video-right-actions { position: absolute; right: 1rem; bottom: 6rem; flex-direction: column; gap: 1.5rem; z-index: 10; pointer-events: auto; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center; padding: 1rem; opacity: 0; animation: fadeIn 0.3s ease-out forwards; }
+        .modal { background: var(--surface); border-radius: 1.5rem; border: 1px solid var(--border); width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; animation: slideIn 0.3s ease-out; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border); gap: 1rem; }
+
+        /* Grid */
+        .grid { display: grid; gap: 1.5rem; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-primary { background: rgba(236, 72, 153, 0.1); color: var(--primary); border: 1px solid rgba(236, 72, 153, 0.2); }
+        .badge-secondary { background: rgba(139, 92, 246, 0.1); color: var(--secondary); border: 1px solid rgba(139, 92, 246, 0.2); }
 
         /* File Upload */
-        .file-upload-area { border: 2px dashed var(--border); border-radius: 1rem; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; background: var(--surface-light); }
-        .file-upload-area:hover { border-color: var(--primary); background: rgba(236, 72, 153, 0.05); }
-        .file-preview { margin-top: 1rem; display: none; }
-        .file-preview.active { display: block; }
-        .progress-bar { width: 100%; height: 0.5rem; background: var(--surface-light); border-radius: 9999px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--gradient); border-radius: 9999px; transition: width 0.3s ease; }
+        .file-input-wrapper { position: relative; overflow: hidden; }
+        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .file-input-label { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; background: var(--surface-light); border: 2px dashed var(--border); border-radius: 0.75rem; cursor: pointer; }
+        .file-input-label:hover { border-color: var(--primary); }
+        .progress-bar { width: 100%; height: 0.5rem; background: var(--surface-light); border-radius: 0.25rem; overflow: hidden; margin-top: 0.5rem; }
+        .progress-fill { height: 100%; background: var(--gradient); transition: width 0.3s ease; }
+        .upload-preview { width: 100%; max-width: 200px; border-radius: 0.5rem; margin: 1rem auto; display: block; }
 
-        /* Notification Bell */
-        .notification-bell { position: fixed; left: 1rem; bottom: 5rem; width: 3rem; height: 3rem; border-radius: 50%; background: var(--surface-light); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); transition: all 0.3s ease; border: 1px solid var(--border); }
-        .notification-badge { position: absolute; top: -0.25rem; right: -0.25rem; width: 1.25rem; height: 1.25rem; background: var(--danger); color: white; border-radius: 50%; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        /* Loading */
+        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; }
+        .loading-spinner { width: 3rem; height: 3rem; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
 
-        /* PWA Install Button */
-        .pwa-install-btn { position: fixed; left: 1rem; bottom: 9rem; width: 3rem; height: 3rem; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3); transition: all 0.3s ease; border: none; }
-        .pwa-install-btn.hidden { display: none; }
+        /* Responsive */
+        @media (max-width: 640px) {
+            html { font-size: 14px; }
+            .content { padding: 4rem 1rem 6rem; }
+            .video-container { height: calc(100vh - 120px); }
+            .video-top-actions { top: 40%; }
+            .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+            .md\:grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+            .lg\:grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 768px) {
+            .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (min-width: 1024px) {
+            .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+        }
     </style>
 </head>
 <body>
-    <!-- Toast Notification -->
-    <div id="toast" class="card">
-        <div class="card-body">
-            <div class="flex items-center gap-3">
-                <i id="toast-icon" class="fas fa-check-circle text-success"></i>
-                <div class="flex-1">
-                    <h4 id="toast-title" class="font-semibold"></h4>
-                    <p id="toast-message" class="text-sm text-zinc-400"></p>
-                </div>
-                <button class="text-zinc-400 hover:text-white" onclick="hideToast()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="hidden fixed top-0 left-0 right-0 bg-red-600 text-white text-center p-2 z-2000">
+        <i class="fas fa-wifi-slash"></i> You're offline
     </div>
 
     <!-- PWA Install Button -->
@@ -187,54 +159,80 @@
 
     <!-- Top Navigation -->
     <nav class="top-nav">
-        <div class="nav-content">
-            <a href="#home" class="logo" onclick="showPage('home')">
-                <div class="logo-icon">
-                    <span style="font-family: 'Arial Black', sans-serif; font-size: 1rem;">GK</span>
-                </div>
-                <span class="gradient-text">GK Store</span>
+        <div class="flex items-center justify-between">
+            <a href="#" class="flex items-center gap-2 text-xl font-bold gradient-text" onclick="showPage('home')">
+                <div class="gradient-bg w-8 h-8 rounded-lg flex items-center justify-center">GK</div>
+                GK Store
             </a>
-            
-            <div class="nav-actions">
-                <button class="btn btn-icon btn-secondary" onclick="showPage('admin')">
-                    <i class="fas fa-user-shield"></i>
+            <div class="flex items-center gap-2">
+                <button id="sync-button" class="btn btn-icon btn-secondary hidden" onclick="syncVideos()" title="Sync Videos">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
-                <button class="btn btn-icon btn-secondary" onclick="showPage('profile')">
-                    <i class="far fa-user"></i>
+                <button class="btn btn-icon btn-secondary" onclick="showAdminPage()" title="Admin Panel">
+                    <i class="fas fa-user-shield"></i>
                 </button>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <div id="content-container" class="content">
+    <div class="content">
         <!-- Auth Page -->
-        <div id="auth-page" class="page">
-            <div class="flex items-center justify-center min-h-[calc(100vh-140px)]">
-                <div class="card" style="max-width: 400px; width: 100%;">
-                    <div class="card-body">
+        <div id="auth-page" class="page active">
+            <div class="flex items-center justify-center min-h-[70vh]">
+                <div class="card w-full max-w-md">
+                    <div id="login-form-container">
                         <div class="text-center mb-6">
-                            <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <span style="font-family: 'Arial Black', sans-serif; color: white; font-size: 1.5rem;">GK</span>
+                            <div class="gradient-bg w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <span class="text-white text-2xl font-bold">GK</span>
                             </div>
                             <h2 class="text-2xl font-bold mb-2">Welcome to GK Store</h2>
                             <p class="text-zinc-400">Sign in to access premium content</p>
                         </div>
                         
                         <form id="login-form" onsubmit="login(event)">
-                            <div class="mb-4">
-                                <input type="email" class="input" id="login-email" placeholder="Email" required>
+                            <div class="input-group">
+                                <label class="input-label">Email Address</label>
+                                <input type="email" class="input" placeholder="Enter your email" required>
                             </div>
-                            <div class="mb-6">
-                                <input type="password" class="input" id="login-password" placeholder="Password" required>
+                            <div class="input-group">
+                                <label class="input-label">Password</label>
+                                <input type="password" class="input" placeholder="Enter your password" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-full">
-                                Sign In
-                            </button>
+                            <button type="submit" class="btn btn-primary w-full">Sign In</button>
                         </form>
                         
-                        <div class="mt-4 text-center">
-                            <p class="text-zinc-400">Demo: Use admin@gkstore.com / password123</p>
+                        <div class="flex items-center justify-center mt-4 gap-2">
+                            <span>Don't have an account?</span>
+                            <button class="text-primary font-medium" onclick="showSignupForm()">Sign up</button>
+                        </div>
+                    </div>
+
+                    <div id="signup-form-container" class="hidden">
+                        <div class="text-center mb-6">
+                            <h2 class="text-2xl font-bold mb-2">Create Account</h2>
+                            <p class="text-zinc-400">Join GK Store for exclusive content</p>
+                        </div>
+                        
+                        <form id="signup-form" onsubmit="signup(event)">
+                            <div class="input-group">
+                                <label class="input-label">Full Name</label>
+                                <input type="text" class="input" placeholder="Enter your full name" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Email Address</label>
+                                <input type="email" class="input" placeholder="Enter your email" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Password</label>
+                                <input type="password" class="input" placeholder="Create a password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-full">Create Account</button>
+                        </form>
+                        
+                        <div class="flex items-center justify-center mt-4 gap-2">
+                            <span>Already have an account?</span>
+                            <button class="text-primary font-medium" onclick="showLoginForm()">Sign in</button>
                         </div>
                     </div>
                 </div>
@@ -242,93 +240,152 @@
         </div>
 
         <!-- Home Page -->
-        <div id="home-page" class="page hidden">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold mb-4">Featured Videos</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gradient-to-br from-pink-500 to-purple-600 aspect-[9/16] rounded-xl flex items-center justify-center cursor-pointer" onclick="showToast('info', 'Video', 'This would play a video')">
-                        <i class="fas fa-play text-white text-4xl"></i>
+        <div id="home-page" class="page">
+            <div id="video-section" class="video-container" onclick="toggleVideoPlayback()">
+                <video id="video-player" class="video-player" playsinline controls></video>
+                <div id="video-placeholder" class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="border-4 border-transparent border-t-pink-500 border-r-violet-500 rounded-full w-16 h-16 animate-spin mx-auto mb-4"></div>
+                        <p class="text-zinc-400">Loading premium content...</p>
                     </div>
-                    <div class="bg-gradient-to-br from-blue-500 to-cyan-600 aspect-[9/16] rounded-xl flex items-center justify-center cursor-pointer" onclick="showToast('info', 'Video', 'This would play a video')">
-                        <i class="fas fa-play text-white text-4xl"></i>
+                </div>
+                
+                <div id="video-overlay" class="video-overlay flex hidden">
+                    <div></div>
+                    
+                    <div id="video-top-actions" class="video-top-actions flex">
+                        <div class="flex flex-col items-center">
+                            <button class="btn btn-icon" onclick="bookAccount()">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            <div class="text-white text-xs mt-1">Book</div>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <button class="btn btn-icon" onclick="buyNow()">
+                                <i class="fas fa-shopping-bag"></i>
+                            </button>
+                            <div class="text-white text-xs mt-1">Buy</div>
+                        </div>
+                    </div>
+                    
+                    <div id="video-right-actions" class="video-right-actions flex">
+                        <div class="flex flex-col items-center">
+                            <button class="btn btn-icon" onclick="shareVideo()">
+                                <i class="fas fa-share"></i>
+                            </button>
+                            <div class="text-white text-xs mt-1">Share</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h2 id="video-title" class="text-white text-xl font-bold mb-2"></h2>
+                        <p id="video-description" class="text-zinc-300 text-sm"></p>
+                        <div class="flex items-center gap-4 mt-2">
+                            <span class="text-sm text-zinc-400"><i class="fas fa-eye mr-1"></i> <span id="video-views">0</span></span>
+                            <span class="text-sm text-zinc-400"><i class="fas fa-heart mr-1"></i> <span id="video-likes">0</span></span>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div>
-                <h2 class="text-2xl font-bold mb-4">Premium Accounts</h2>
-                <div class="grid gap-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between mb-4">
-                                <div>
-                                    <h3 class="font-semibold">VIP Account</h3>
-                                    <p class="text-sm text-zinc-400">Exclusive access</p>
-                                </div>
-                                <span class="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm">Big Tier</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xl font-bold">$5000</span>
-                                <button class="btn btn-sm btn-primary" onclick="showToast('success', 'Booked', 'Account booked successfully!')">
-                                    Book Now
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <div class="flex justify-between items-center mt-6 mb-4">
+                <h3 class="text-lg font-semibold">More Videos</h3>
+                <button id="sync-button-bottom" class="btn btn-secondary btn-sm hidden" onclick="syncVideos()">
+                    <i class="fas fa-sync-alt"></i> Sync
+                </button>
+            </div>
+            
+            <div id="video-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Video grid will be populated -->
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p class="text-zinc-400">Loading videos...</p>
                 </div>
             </div>
         </div>
 
-        <!-- Admin Page -->
-        <div id="admin-page" class="page hidden">
-            <h2 class="text-2xl font-bold mb-6">Admin Panel</h2>
-            
-            <div class="card mb-6">
-                <div class="card-body">
-                    <h3 class="font-semibold mb-4">Admin Login</h3>
-                    <form id="admin-login-form" onsubmit="adminLogin(event)">
+        <!-- Accounts Page -->
+        <div id="accounts-page" class="page">
+            <h2 class="text-2xl font-bold mb-6">Premium Accounts</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Accounts will be populated -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="gradient-bg w-12 h-12 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-user text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">Premium Account - Small</h3>
+                                <p class="text-zinc-400 text-sm">Perfect for beginners</p>
+                            </div>
+                        </div>
                         <div class="mb-4">
-                            <input type="password" id="admin-password" class="input" placeholder="Admin Password" required>
+                            <p class="text-lg font-bold gradient-text">$19.99</p>
+                            <ul class="text-sm text-zinc-400 mt-2 space-y-1">
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> 10 Premium Videos</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> Basic Support</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> 30 Days Access</li>
+                            </ul>
                         </div>
-                        <button type="submit" class="btn btn-primary w-full">
-                            Login as Admin
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            <div id="admin-dashboard" class="hidden">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <div class="text-2xl font-bold gradient-text" id="admin-video-count">0</div>
-                            <div class="text-sm text-zinc-400">Total Videos</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <div class="text-2xl font-bold gradient-text">3</div>
-                            <div class="text-sm text-zinc-400">Registered Users</div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-primary flex-1" onclick="bookAccount()">Book</button>
+                            <button class="btn btn-sm btn-secondary flex-1" onclick="buyNow()">Buy Now</button>
                         </div>
                     </div>
                 </div>
-                
-                <button class="btn btn-primary w-full mb-4" onclick="showUploadModal()">
-                    <i class="fas fa-upload mr-2"></i> Upload Video
-                </button>
                 
                 <div class="card">
                     <div class="card-body">
-                        <h3 class="font-semibold mb-4">Quick Stats</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between">
-                                <span>Storage Used</span>
-                                <span class="text-primary">0 MB</span>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="gradient-bg w-12 h-12 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-crown text-white"></i>
                             </div>
-                            <div class="flex justify-between">
-                                <span>Filebase Status</span>
-                                <span class="text-success">Connected</span>
+                            <div>
+                                <h3 class="font-semibold">Premium Account - Medium</h3>
+                                <p class="text-zinc-400 text-sm">For serious users</p>
                             </div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-lg font-bold gradient-text">$49.99</p>
+                            <ul class="text-sm text-zinc-400 mt-2 space-y-1">
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> 50 Premium Videos</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> Priority Support</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> 90 Days Access</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> HD Quality</li>
+                            </ul>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-primary flex-1" onclick="bookAccount()">Book</button>
+                            <button class="btn btn-sm btn-secondary flex-1" onclick="buyNow()">Buy Now</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="gradient-bg w-12 h-12 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-gem text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">Premium Account - Big</h3>
+                                <p class="text-zinc-400 text-sm">Ultimate experience</p>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-lg font-bold gradient-text">$99.99</p>
+                            <ul class="text-sm text-zinc-400 mt-2 space-y-1">
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> Unlimited Videos</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> 24/7 Premium Support</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> Lifetime Access</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> 4K Quality</li>
+                                <li><i class="fas fa-check text-green-500 mr-2"></i> Early Access</li>
+                            </ul>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-primary flex-1" onclick="bookAccount()">Book</button>
+                            <button class="btn btn-sm btn-secondary flex-1" onclick="buyNow()">Buy Now</button>
                         </div>
                     </div>
                 </div>
@@ -336,404 +393,1627 @@
         </div>
 
         <!-- Profile Page -->
-        <div id="profile-page" class="page hidden">
+        <div id="profile-page" class="page">
             <div class="text-center mb-8">
-                <div class="w-24 h-24 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                    <span style="font-family: 'Arial Black', sans-serif; color: white;">GK</span>
+                <div class="gradient-bg w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                    GK
                 </div>
-                <h2 class="text-2xl font-bold">User Profile</h2>
-                <p class="text-zinc-400">Premium Member</p>
+                <h2 class="text-2xl font-bold" id="profile-name">User Profile</h2>
+                <p class="text-zinc-400" id="profile-email">Premium Member</p>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <span class="badge badge-primary">Premium</span>
+                    <span class="badge badge-secondary">Active</span>
+                </div>
             </div>
             
-            <div class="card mb-4">
+            <div class="card mb-6">
                 <div class="card-body">
-                    <h3 class="font-semibold mb-4">Account Info</h3>
+                    <h3 class="font-semibold mb-4">Account Information</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-zinc-400">Email</span>
-                            <span id="user-email">user@example.com</span>
+                            <span class="text-zinc-400">Joined Date:</span>
+                            <span id="join-date">--</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-zinc-400">Member Since</span>
-                            <span>Today</span>
+                            <span class="text-zinc-400">Watched Videos:</span>
+                            <span id="watched-count">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Account Tier:</span>
+                            <span class="badge badge-primary">Premium</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <button class="btn btn-secondary w-full" onclick="logout()">
-                Logout
-            </button>
+            <div class="space-y-4">
+                <button class="btn btn-secondary w-full" onclick="showPage('accounts')">
+                    <i class="fas fa-shopping-bag"></i> View Premium Accounts
+                </button>
+                <button class="btn btn-secondary w-full" onclick="clearCache()">
+                    <i class="fas fa-broom"></i> Clear Cache
+                </button>
+                <button class="btn btn-primary w-full" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Contact Page -->
+        <div id="contact-page" class="page">
+            <h2 class="text-2xl font-bold mb-6">Contact Us</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="gradient-bg w-12 h-12 rounded-full flex items-center justify-center">
+                                <i class="fas fa-whatsapp text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">WhatsApp Support</h3>
+                                <p class="text-zinc-400">+93 793066322</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-full" onclick="openWhatsApp()">
+                            <i class="fab fa-whatsapp"></i> Chat Now
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="gradient-bg w-12 h-12 rounded-full flex items-center justify-center">
+                                <i class="fas fa-envelope text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">Email Support</h3>
+                                <p class="text-zinc-400">support@gkstore.com</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary w-full" onclick="openEmail()">
+                            <i class="fas fa-envelope"></i> Send Email
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card md:col-span-2">
+                    <div class="card-body">
+                        <h3 class="font-semibold mb-4">Send Message</h3>
+                        <form id="contact-form" onsubmit="sendContactMessage(event)">
+                            <div class="input-group">
+                                <label class="input-label">Your Name</label>
+                                <input type="text" class="input" placeholder="Enter your name" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Email Address</label>
+                                <input type="email" class="input" placeholder="Enter your email" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Message</label>
+                                <textarea class="input" rows="4" placeholder="Type your message here..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-full">
+                                <i class="fas fa-paper-plane"></i> Send Message
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Page -->
+        <div id="admin-page" class="page">
+            <h2 class="text-2xl font-bold mb-6">Admin Panel</h2>
+            <div id="admin-login-section" class="card">
+                <div class="card-body">
+                    <div class="text-center mb-6">
+                        <div class="gradient-bg w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-user-shield text-white"></i>
+                        </div>
+                        <h3 class="font-semibold">Admin Login</h3>
+                        <p class="text-zinc-400 text-sm">Enter admin credentials to continue</p>
+                    </div>
+                    <form id="admin-login-form" onsubmit="adminLogin(event)">
+                        <div class="input-group">
+                            <label class="input-label">Admin Email</label>
+                            <input type="email" class="input" placeholder="admin@gkstore.com" required>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Admin Password</label>
+                            <input type="password" class="input" placeholder="Enter admin password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full">Login as Admin</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="admin-panel-section" class="hidden">
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Admin Stats -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="font-semibold mb-4">Admin Statistics</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="text-center p-3 bg-surface-light rounded-lg">
+                                    <div class="text-2xl font-bold gradient-text" id="admin-total-videos">0</div>
+                                    <div class="text-sm text-zinc-400">Total Videos</div>
+                                </div>
+                                <div class="text-center p-3 bg-surface-light rounded-lg">
+                                    <div class="text-2xl font-bold gradient-text" id="admin-total-views">0</div>
+                                    <div class="text-sm text-zinc-400">Total Views</div>
+                                </div>
+                                <div class="text-center p-3 bg-surface-light rounded-lg">
+                                    <div class="text-2xl font-bold gradient-text" id="admin-total-likes">0</div>
+                                    <div class="text-sm text-zinc-400">Total Likes</div>
+                                </div>
+                                <div class="text-center p-3 bg-surface-light rounded-lg">
+                                    <div class="text-2xl font-bold gradient-text" id="admin-today-uploads">0</div>
+                                    <div class="text-sm text-zinc-400">Today's Uploads</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Video Card -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="font-semibold mb-4">Add New Video</h3>
+                            <form id="add-video-form" onsubmit="addVideo(event)">
+                                <div class="input-group">
+                                    <label class="input-label">Video Title *</label>
+                                    <input type="text" class="input" placeholder="Enter video title" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Video Description</label>
+                                    <textarea class="input" rows="3" placeholder="Enter video description"></textarea>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="input-group">
+                                        <label class="input-label">Category</label>
+                                        <select class="input" required>
+                                            <option value="premium">Premium</option>
+                                            <option value="exclusive">Exclusive</option>
+                                            <option value="featured">Featured</option>
+                                            <option value="trending">Trending</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Tier</label>
+                                        <select class="input" required>
+                                            <option value="small">Small</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="big">Big</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="input-group">
+                                        <label class="input-label">Price (USDT)</label>
+                                        <input type="number" class="input" placeholder="0" min="0" step="0.01" required>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Duration (minutes)</label>
+                                        <input type="number" class="input" placeholder="0" min="0">
+                                    </div>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label class="input-label">Video File *</label>
+                                    <div class="file-input-wrapper">
+                                        <input type="file" id="video-file-input" class="input" accept="video/*" required>
+                                        <label for="video-file-input" class="file-input-label">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span id="file-input-text">Choose Video File</span>
+                                        </label>
+                                    </div>
+                                    <div id="upload-progress" class="hidden">
+                                        <div class="progress-bar">
+                                            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                        <div class="text-sm text-zinc-400 text-center mt-2">
+                                            <span id="progress-text">Uploading...</span>
+                                        </div>
+                                    </div>
+                                    <div id="video-preview" class="hidden">
+                                        <video id="preview-video" class="upload-preview" controls></video>
+                                    </div>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label class="input-label">Thumbnail Image (Optional)</label>
+                                    <div class="file-input-wrapper">
+                                        <input type="file" id="thumbnail-input" class="input" accept="image/*">
+                                        <label for="thumbnail-input" class="file-input-label">
+                                            <i class="fas fa-image"></i>
+                                            <span>Choose Thumbnail</span>
+                                        </label>
+                                    </div>
+                                    <div id="thumbnail-preview" class="hidden">
+                                        <img id="preview-thumbnail" class="upload-preview" alt="Thumbnail preview">
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="input-group">
+                                        <label class="input-label">Initial Views</label>
+                                        <input type="number" class="input" value="0" min="0">
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Initial Likes</label>
+                                        <input type="number" class="input" value="0" min="0">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary w-full" id="submit-video-btn">
+                                    <i class="fas fa-upload"></i> Upload Video
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Manage Videos Card -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold">Manage Videos</h3>
+                                <button class="btn btn-secondary btn-sm" onclick="refreshAdminVideos()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                            <div id="admin-video-list">
+                                <div class="loading">
+                                    <div class="loading-spinner"></div>
+                                    <p class="text-zinc-400">Loading videos...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Actions -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="font-semibold mb-4">Admin Actions</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <button class="btn btn-secondary" onclick="exportData()">
+                                    <i class="fas fa-download"></i> Export Data
+                                </button>
+                                <button class="btn btn-secondary" onclick="importData()">
+                                    <i class="fas fa-upload"></i> Import Data
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearAllVideos()">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                                <button class="btn btn-secondary" onclick="backupToCloud()">
+                                    <i class="fas fa-cloud-upload-alt"></i> Cloud Backup
+                                </button>
+                            </div>
+                            <input type="file" id="import-file-input" class="hidden" accept=".json">
+                            <button class="btn btn-primary w-full" onclick="adminLogout()">
+                                <i class="fas fa-sign-out-alt"></i> Exit Admin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <div class="nav-items">
-            <a href="#home" class="nav-item active" onclick="showPage('home')">
+            <a href="#" class="nav-item flex" onclick="showPage('accounts')">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Accounts</span>
+            </a>
+            <a href="#" class="nav-item flex" onclick="showPage('home')">
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
-            <a href="#admin" class="nav-item" onclick="showPage('admin')">
-                <i class="fas fa-cog"></i>
-                <span>Admin</span>
+            <a href="#" class="nav-item flex" onclick="showPage('profile')">
+                <i class="far fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <a href="#" class="nav-item flex" onclick="showPage('contact')">
+                <i class="fas fa-headset"></i>
+                <span>Contact</span>
             </a>
         </div>
     </nav>
 
-    <!-- Notification Bell -->
-    <div class="notification-bell" onclick="showToast('info', 'Notifications', 'No new notifications')">
-        <i class="far fa-bell"></i>
-        <div class="notification-badge">3</div>
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="modal-overlay flex">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-body text-center">
+                <div class="gradient-bg w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <span class="text-white text-3xl font-bold">GK</span>
+                </div>
+                <h2 class="text-2xl font-bold mb-4">Welcome to GK Store!</h2>
+                <p class="text-zinc-400 mb-6">Your exclusive gateway to premium video content</p>
+                <button class="btn btn-primary w-full" onclick="closeWelcomeModal()">
+                    Get Started <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Upload Modal -->
-    <div id="upload-modal" class="modal-overlay hidden">
-        <div class="modal" style="max-width: 500px;">
+    <!-- Book Modal -->
+    <div id="book-modal" class="modal-overlay flex hidden">
+        <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title">Upload Video to Filebase</h3>
-                <button class="modal-close" onclick="closeModal('upload-modal')">
+                <h3 class="font-bold">Book Account</h3>
+                <button class="btn btn-icon" onclick="closeModal('book-modal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
+                <form id="book-form" onsubmit="submitBookRequest(event)">
+                    <div class="input-group">
+                        <label class="input-label">Your Name</label>
+                        <input type="text" class="input" placeholder="Enter your name" required>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">WhatsApp Number</label>
+                        <input type="tel" class="input" placeholder="+93 793066322" required>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Account Tier</label>
+                        <select class="input" required>
+                            <option value="">Select tier</option>
+                            <option value="small">Small ($19.99)</option>
+                            <option value="medium">Medium ($49.99)</option>
+                            <option value="big">Big ($99.99)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Payment Method</label>
+                        <select class="input" required>
+                            <option value="">Select method</option>
+                            <option value="usdt">USDT (TRC20)</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="crypto">Other Crypto</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Submit Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buy Modal -->
+    <div id="buy-modal" class="modal-overlay flex hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="font-bold">Buy Now with USDT</h3>
+                <button class="btn btn-icon" onclick="closeModal('buy-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="bg-surface p-4 rounded-lg mb-4">
+                    <p class="text-sm text-zinc-400 mb-2">USDT (TRC20) Address:</p>
+                    <code class="text-sm break-all bg-black p-2 rounded block">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                </div>
                 <div class="mb-4">
-                    <input type="text" class="input mb-4" id="video-title" placeholder="Video Title">
-                    <input type="number" class="input mb-4" id="video-price" placeholder="Price ($)">
-                    <select class="input mb-4" id="video-tier">
-                        <option value="">Select Tier</option>
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="big">Big</option>
-                    </select>
-                </div>
-                
-                <div class="file-upload-area" onclick="document.getElementById('video-file').click()">
-                    <i class="fas fa-cloud-upload-alt text-3xl text-primary mb-2"></i>
-                    <p class="font-medium">Click to select video file</p>
-                    <p class="text-sm text-zinc-400 mt-1">Max 200MB</p>
-                    <input type="file" id="video-file" accept="video/*" class="hidden" onchange="handleFileSelect(event)">
-                </div>
-                
-                <div id="file-preview" class="file-preview">
-                    <div class="card mt-4">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p id="file-name" class="font-medium"></p>
-                                    <p id="file-size" class="text-xs text-zinc-400"></p>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-secondary" onclick="clearFileSelection()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                    <p class="text-sm text-zinc-400">Scan QR Code:</p>
+                    <div class="bg-white p-4 rounded-lg inline-block mt-2">
+                        <div id="qr-code-placeholder" class="w-32 h-32 bg-gray-200 flex items-center justify-center">
+                            <i class="fas fa-qrcode text-gray-400 text-2xl"></i>
                         </div>
                     </div>
                 </div>
-                
-                <div id="upload-progress" class="mt-4 hidden">
-                    <div class="flex justify-between mb-2">
-                        <span>Uploading to Filebase...</span>
-                        <span id="upload-percent">0%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
-                    </div>
-                </div>
-                
-                <button id="upload-btn" class="btn btn-primary w-full mt-4" onclick="uploadToFilebase()">
-                    <i class="fas fa-cloud-upload-alt mr-2"></i> Upload to Filebase
+                <button class="btn btn-primary w-full" onclick="openPaymentChat()">
+                    <i class="fab fa-whatsapp"></i> Confirm Payment on WhatsApp
                 </button>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-xs text-zinc-400">Using Filebase IPFS for decentralized storage</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed top-4 right-4 z-2000 hidden">
+        <div class="bg-surface border border-border rounded-lg shadow-xl p-4 max-w-sm animate-fade-in">
+            <div class="flex items-start gap-3">
+                <i id="toast-icon" class="fas fa-check-circle text-green-500"></i>
+                <div class="flex-1">
+                    <h4 id="toast-title" class="font-semibold"></h4>
+                    <p id="toast-message" class="text-sm text-zinc-400"></p>
                 </div>
+                <button onclick="hideToast()" class="text-zinc-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
     </div>
 
 <script>
-// ====== APP STATE ======
-const appState = {
-    currentPage: 'auth',
-    isLoggedIn: false,
-    isAdminLoggedIn: false,
-    currentUser: null,
-    videos: [],
-    selectedFile: null,
+// App Configuration
+const CONFIG = {
+    // Back4App Configuration
+    BACK4APP: {
+        APPLICATION_ID: "33B0D768699F462BDFC1",
+        JAVASCRIPT_KEY: "Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC",
+        REST_API_KEY: "q6DVDlCivOaQL7arryhXANW2MnE0Iw0ttABRnutT",
+        MASTER_KEY: "WF0v3HIhwdEUSAiaNTaZfVf1LQWoy3OYZEsZPLeA",
+        SERVER_URL: "https://parseapi.back4app.com"
+    },
     
-    // Filebase Configuration - YOUR CREDENTIALS
-    filebase: {
-        accessKey: '33B0D768699F462BDFC1',
-        secretKey: 'Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC',
-        bucket: 'gk-store-videos',
-        endpoint: 'https://s3.filebase.com'
+    // Filebase Configuration
+    FILEBASE: {
+        BUCKET_NAME: "gk-store-videos",
+        ACCESS_KEY: "AKIAIOSFODNN7EXAMPLE", // Replace with your Filebase access key
+        SECRET_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", // Replace with your Filebase secret key
+        ENDPOINT: "https://s3.filebase.com",
+        REGION: "us-east-1"
+    },
+    
+    // App Settings
+    ADMIN_PASSWORD: "GK@2024!AdminSecure",
+    ADMIN_EMAIL: "admin@gkstore.com",
+    WHATSAPP_NUMBER: "+93793066322",
+    USDT_ADDRESS: "TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY",
+    
+    // Storage Keys
+    STORAGE_KEYS: {
+        USER: "gk_user",
+        VIDEOS: "gk_videos",
+        ADMIN: "gk_admin",
+        SETTINGS: "gk_settings",
+        CACHE: "gk_cache"
     }
 };
 
-// ====== INITIALIZE APP ======
-function initApp() {
-    loadFromLocalStorage();
-    setupPWA();
-    
-    // Check if user is already logged in
-    const savedUser = localStorage.getItem('gkUser');
+// App State
+const state = {
+    currentPage: 'auth',
+    currentVideoIndex: 0,
+    videos: [],
+    accounts: [],
+    currentUser: null,
+    isLoggedIn: false,
+    isAdmin: false,
+    parseInitialized: false,
+    isOnline: navigator.onLine
+};
+
+// Initialize Parse/Back4App
+let ParseVideo = null;
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', initApp);
+
+async function initApp() {
+    try {
+        // Initialize Back4App
+        await initializeBack4App();
+        
+        // Load local data
+        loadLocalData();
+        
+        // Setup PWA
+        setupPWA();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Setup file input previews
+        setupFilePreviews();
+        
+        // Check login status
+        checkLoginStatus();
+        
+        // Show welcome modal on first visit
+        if (!localStorage.getItem('gk_first_visit')) {
+            localStorage.setItem('gk_first_visit', 'true');
+            document.getElementById('welcome-modal').classList.remove('hidden');
+        }
+        
+        // Show sync button if videos are stale
+        checkStaleVideos();
+        
+        console.log('GK Store initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
+        showToast('Initialization Error', 'Using offline mode', 'error');
+        // Fallback to local data
+        loadLocalData();
+    }
+}
+
+async function initializeBack4App() {
+    try {
+        // Initialize Parse with Back4App
+        Parse.initialize(
+            CONFIG.BACK4APP.APPLICATION_ID,
+            CONFIG.BACK4APP.JAVASCRIPT_KEY
+        );
+        Parse.serverURL = CONFIG.BACK4APP.SERVER_URL;
+        
+        // Create Video class if it doesn't exist
+        ParseVideo = Parse.Object.extend("Video");
+        
+        state.parseInitialized = true;
+        console.log('Back4App initialized successfully');
+        
+        // Test connection
+        const testQuery = new Parse.Query(ParseVideo);
+        testQuery.limit(1);
+        await testQuery.find();
+        
+        return true;
+    } catch (error) {
+        console.warn('Back4App initialization failed:', error);
+        state.parseInitialized = false;
+        return false;
+    }
+}
+
+function loadLocalData() {
+    // Load user from localStorage
+    const savedUser = localStorage.getItem(CONFIG.STORAGE_KEYS.USER);
     if (savedUser) {
         try {
-            appState.currentUser = JSON.parse(savedUser);
-            appState.isLoggedIn = true;
-            showPage('home');
-        } catch(e) {
-            showPage('auth');
+            state.currentUser = JSON.parse(savedUser);
+            state.isLoggedIn = true;
+            
+            // Update profile info
+            document.getElementById('profile-name').textContent = state.currentUser.name || 'User Profile';
+            document.getElementById('profile-email').textContent = state.currentUser.email || 'Premium Member';
+            
+            if (state.currentUser.joinDate) {
+                document.getElementById('join-date').textContent = new Date(state.currentUser.joinDate).toLocaleDateString();
+            }
+        } catch (e) {
+            console.error('Error parsing user data:', e);
         }
+    }
+    
+    // Load videos from localStorage
+    const savedVideos = localStorage.getItem(CONFIG.STORAGE_KEYS.VIDEOS);
+    if (savedVideos) {
+        try {
+            state.videos = JSON.parse(savedVideos);
+        } catch (e) {
+            console.error('Error parsing video data:', e);
+            state.videos = [];
+        }
+    } else {
+        // Default videos if none exist
+        state.videos = [];
+    }
+    
+    // Check admin status
+    const adminStatus = localStorage.getItem(CONFIG.STORAGE_KEYS.ADMIN);
+    if (adminStatus === 'true') {
+        state.isAdmin = true;
+    }
+}
+
+function checkLoginStatus() {
+    if (state.isLoggedIn) {
+        showPage('home');
+        // Load videos from cloud
+        loadVideosFromCloud();
     } else {
         showPage('auth');
     }
 }
 
-// ====== PAGE MANAGEMENT ======
-function showPage(page) {
-    // Hide all pages
-    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+function setupPWA() {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        document.getElementById('pwa-install-btn').classList.remove('hidden');
+    });
     
-    // Update nav items
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.getElementById('pwa-install-btn').addEventListener('click', installPWA);
+}
+
+function installPWA() {
+    if (window.deferredPrompt) {
+        window.deferredPrompt.prompt();
+        window.deferredPrompt = null;
+    }
+}
+
+function setupEventListeners() {
+    // Network status
+    window.addEventListener('online', () => {
+        state.isOnline = true;
+        document.getElementById('offline-indicator').classList.add('hidden');
+        showToast('Back Online', 'Connection restored', 'success');
+        
+        // Sync data when back online
+        if (state.isLoggedIn) {
+            setTimeout(syncVideos, 1000);
+        }
+    });
     
-    // Show requested page
-    const pageEl = document.getElementById(`${page}-page`);
-    if (pageEl) {
-        pageEl.classList.remove('hidden');
-        appState.currentPage = page;
+    window.addEventListener('offline', () => {
+        state.isOnline = false;
+        document.getElementById('offline-indicator').classList.remove('hidden');
+        showToast('Offline Mode', 'Using cached data', 'warning');
+    });
+    
+    // Video controls
+    document.addEventListener('keydown', (e) => {
+        if (state.currentPage === 'home') {
+            if (e.key === 'ArrowDown') navigateVideo('next');
+            if (e.key === 'ArrowUp') navigateVideo('prev');
+            if (e.key === ' ') toggleVideoPlayback();
+        }
+    });
+    
+    // Video player events
+    const videoPlayer = document.getElementById('video-player');
+    if (videoPlayer) {
+        videoPlayer.addEventListener('ended', () => {
+            // Auto-play next video
+            setTimeout(() => navigateVideo('next'), 2000);
+        });
+        
+        videoPlayer.addEventListener('timeupdate', () => {
+            // Track video progress
+            if (videoPlayer.currentTime > 30) { // After 30 seconds
+                const currentVideo = state.videos[state.currentVideoIndex];
+                if (currentVideo && !currentVideo.watched) {
+                    currentVideo.watched = true;
+                    updateWatchedCount();
+                }
+            }
+        });
+    }
+}
+
+function setupFilePreviews() {
+    // Video file preview
+    const videoInput = document.getElementById('video-file-input');
+    if (videoInput) {
+        videoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('file-input-text').textContent = file.name;
+                
+                // Show preview
+                const preview = document.getElementById('preview-video');
+                preview.src = URL.createObjectURL(file);
+                document.getElementById('video-preview').classList.remove('hidden');
+            }
+        });
     }
     
-    // Update active nav
-    const navItem = document.querySelector(`.nav-item[href="#${page}"]`);
+    // Thumbnail preview
+    const thumbnailInput = document.getElementById('thumbnail-input');
+    if (thumbnailInput) {
+        thumbnailInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('preview-thumbnail');
+                preview.src = URL.createObjectURL(file);
+                document.getElementById('thumbnail-preview').classList.remove('hidden');
+            }
+        });
+    }
+}
+
+// Page Navigation
+function showPage(page) {
+    if (['home', 'accounts', 'profile', 'contact'].includes(page) && !state.isLoggedIn) {
+        page = 'auth';
+    }
+    
+    if (page === 'auth' && state.isLoggedIn) {
+        page = 'home';
+    }
+    
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    
+    // Show selected page
+    document.getElementById(`${page}-page`).classList.add('active');
+    state.currentPage = page;
+    
+    // Update nav
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    const navItem = document.querySelector(`.nav-item[onclick*="${page}"]`);
     if (navItem) navItem.classList.add('active');
     
-    // Special page handling
-    if (page === 'home') updateHomePage();
-    if (page === 'admin' && !appState.isAdminLoggedIn) {
-        document.getElementById('admin-dashboard').classList.add('hidden');
+    // Load page content
+    switch(page) {
+        case 'auth': showLoginForm(); break;
+        case 'home': loadHome(); break;
+        case 'accounts': loadAccounts(); break;
+        case 'profile': updateProfilePage(); break;
+        case 'admin': loadAdminPage(); break;
     }
 }
 
-// ====== AUTH FUNCTIONS ======
-function login(event) {
-    event.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+function showAdminPage() {
+    showPage('admin');
+}
+
+function showLoginForm() {
+    document.getElementById('login-form-container').classList.remove('hidden');
+    document.getElementById('signup-form-container').classList.add('hidden');
+}
+
+function showSignupForm() {
+    document.getElementById('login-form-container').classList.add('hidden');
+    document.getElementById('signup-form-container').classList.remove('hidden');
+}
+
+// Auth Functions
+function login(e) {
+    e.preventDefault();
+    const email = e.target[0].value;
+    const password = e.target[1].value;
     
-    // Demo authentication
-    if ((email === 'admin@gkstore.com' && password === 'password123') || 
-        (email === 'user@example.com' && password === 'password123')) {
-        
-        appState.currentUser = {
+    if (!email || !password) {
+        showToast('Error', 'Please fill in all fields', 'error');
+        return;
+    }
+    
+    // Simple validation
+    if (email && password) {
+        state.currentUser = {
             email: email,
             name: email.split('@')[0],
-            role: email === 'admin@gkstore.com' ? 'admin' : 'user'
+            joinDate: new Date().toISOString(),
+            watchedVideos: 0
         };
         
-        appState.isLoggedIn = true;
-        localStorage.setItem('gkUser', JSON.stringify(appState.currentUser));
+        state.isLoggedIn = true;
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(state.currentUser));
         
-        showToast('success', 'Welcome!', `Logged in as ${appState.currentUser.name}`);
-        showPage('home');
+        showToast('Login Successful', 'Welcome back!', 'success');
+        
+        // Load videos from cloud
+        loadVideosFromCloud();
         
         // Update profile
-        document.getElementById('user-email').textContent = email;
-    } else {
-        showToast('error', 'Login Failed', 'Invalid credentials');
-    }
-}
-
-function adminLogin(event) {
-    event.preventDefault();
-    const password = document.getElementById('admin-password').value;
-    
-    if (password === 'password123') {
-        appState.isAdminLoggedIn = true;
-        document.getElementById('admin-dashboard').classList.remove('hidden');
-        showToast('success', 'Admin Access', 'Logged in as admin');
-    } else {
-        showToast('error', 'Access Denied', 'Invalid admin password');
-    }
-}
-
-function logout() {
-    appState.isLoggedIn = false;
-    appState.isAdminLoggedIn = false;
-    appState.currentUser = null;
-    localStorage.removeItem('gkUser');
-    showPage('auth');
-    showToast('info', 'Logged Out', 'You have been logged out');
-}
-
-// ====== FILEBASE UPLOAD ======
-function showUploadModal() {
-    if (!appState.isAdminLoggedIn) {
-        showToast('error', 'Access Required', 'Please login as admin first');
-        return;
-    }
-    showModal('upload-modal');
-}
-
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    // Check file size (200MB limit)
-    if (file.size > 200 * 1024 * 1024) {
-        showToast('error', 'File Too Large', 'Maximum file size is 200MB');
-        return;
-    }
-    
-    // Check file type
-    const validTypes = ['video/mp4', 'video/webm', 'video/ogg'];
-    if (!validTypes.includes(file.type)) {
-        showToast('error', 'Invalid File', 'Please select a video file (MP4, WebM, OGG)');
-        return;
-    }
-    
-    appState.selectedFile = file;
-    
-    // Show preview
-    document.getElementById('file-name').textContent = file.name;
-    document.getElementById('file-size').textContent = formatFileSize(file.size);
-    document.getElementById('file-preview').classList.add('active');
-    
-    showToast('success', 'File Selected', `${file.name} ready for upload`);
-}
-
-function clearFileSelection() {
-    appState.selectedFile = null;
-    document.getElementById('video-file').value = '';
-    document.getElementById('file-preview').classList.remove('active');
-}
-
-function uploadToFilebase() {
-    if (!appState.selectedFile) {
-        showToast('error', 'No File', 'Please select a video file first');
-        return;
-    }
-    
-    const title = document.getElementById('video-title').value;
-    const price = document.getElementById('video-price').value;
-    const tier = document.getElementById('video-tier').value;
-    
-    if (!title || !price || !tier) {
-        showToast('error', 'Missing Info', 'Please fill all fields');
-        return;
-    }
-    
-    // Show progress bar
-    document.getElementById('upload-progress').classList.remove('hidden');
-    const uploadBtn = document.getElementById('upload-btn');
-    uploadBtn.disabled = true;
-    uploadBtn.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i> Uploading...';
-    
-    // Simulate upload progress
-    simulateUploadProgress();
-    
-    // In a real implementation, you would upload directly to Filebase
-    // For now, we'll simulate success
-    setTimeout(() => {
-        // Simulate successful upload
-        showToast('success', 'Upload Complete', 'Video uploaded to Filebase IPFS!');
+        updateProfilePage();
         
-        // Add to videos list
-        const newVideo = {
-            id: Date.now(),
-            title: title,
-            price: price,
-            tier: tier,
-            file: appState.selectedFile.name,
-            size: formatFileSize(appState.selectedFile.size),
-            timestamp: new Date().toLocaleString()
+        showPage('home');
+    }
+}
+
+function signup(e) {
+    e.preventDefault();
+    const name = e.target[0].value;
+    const email = e.target[1].value;
+    const password = e.target[2].value;
+    
+    if (!name || !email || !password) {
+        showToast('Error', 'Please fill in all fields', 'error');
+        return;
+    }
+    
+    state.currentUser = {
+        email: email,
+        name: name,
+        joinDate: new Date().toISOString(),
+        watchedVideos: 0
+    };
+    
+    state.isLoggedIn = true;
+    localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(state.currentUser));
+    
+    showToast('Account Created', 'Welcome to GK Store!', 'success');
+    
+    // Load videos from cloud
+    loadVideosFromCloud();
+    
+    // Update profile
+    updateProfilePage();
+    
+    showPage('home');
+}
+
+// Video Management
+async function loadVideosFromCloud() {
+    if (!state.parseInitialized || !state.isOnline) {
+        // Use local videos
+        loadLocalVideos();
+        return;
+    }
+    
+    try {
+        const query = new Parse.Query(ParseVideo);
+        query.descending('createdAt');
+        query.limit(100); // Limit to 100 videos
+        
+        const videos = await query.find();
+        
+        // Convert to app format
+        state.videos = videos.map(video => ({
+            id: video.id,
+            objectId: video.id,
+            title: video.get('title') || 'Untitled Video',
+            description: video.get('description') || '',
+            url: video.get('url') || '',
+            thumbnail: video.get('thumbnail') || '',
+            views: video.get('views') || 0,
+            likes: video.get('likes') || 0,
+            category: video.get('category') || 'premium',
+            tier: video.get('tier') || 'big',
+            price: video.get('price') || 0,
+            duration: video.get('duration') || 0,
+            createdAt: video.get('createdAt') || new Date().toISOString(),
+            filebaseUrl: video.get('filebaseUrl') || '',
+            // Local tracking
+            watched: localStorage.getItem(`video_watched_${video.id}`) === 'true'
+        }));
+        
+        // Save to localStorage
+        localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
+        
+        // Update cache timestamp
+        localStorage.setItem(CONFIG.STORAGE_KEYS.CACHE, Date.now().toString());
+        
+        // Hide sync button
+        document.getElementById('sync-button').classList.add('hidden');
+        document.getElementById('sync-button-bottom').classList.add('hidden');
+        
+        // Load videos on home page
+        if (state.currentPage === 'home') {
+            loadHome();
+        }
+        
+        console.log(`Loaded ${state.videos.length} videos from cloud`);
+    } catch (error) {
+        console.error('Error loading videos from cloud:', error);
+        showToast('Sync Failed', 'Using cached videos', 'warning');
+        loadLocalVideos();
+    }
+}
+
+function loadLocalVideos() {
+    // Already loaded from localStorage in loadLocalData()
+    if (state.currentPage === 'home') {
+        loadHome();
+    }
+    
+    // Show sync button if online
+    if (state.isOnline) {
+        document.getElementById('sync-button').classList.remove('hidden');
+        document.getElementById('sync-button-bottom').classList.remove('hidden');
+    }
+}
+
+async function syncVideos() {
+    showToast('Syncing', 'Checking for new videos...', 'info');
+    await loadVideosFromCloud();
+}
+
+function checkStaleVideos() {
+    const lastCache = localStorage.getItem(CONFIG.STORAGE_KEYS.CACHE);
+    if (!lastCache) return;
+    
+    const cacheTime = parseInt(lastCache);
+    const now = Date.now();
+    const hoursSinceCache = (now - cacheTime) / (1000 * 60 * 60);
+    
+    if (hoursSinceCache > 1 && state.isOnline) { // More than 1 hour
+        document.getElementById('sync-button').classList.remove('hidden');
+        document.getElementById('sync-button-bottom').classList.remove('hidden');
+    }
+}
+
+// Home Page Functions
+function loadHome() {
+    if (state.videos.length === 0) {
+        document.getElementById('video-placeholder').innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
+                <p class="text-zinc-400 mb-4">Upload videos from admin panel</p>
+                ${state.isOnline ? `<button class="btn btn-primary" onclick="syncVideos()">
+                    <i class="fas fa-sync-alt"></i> Check for Videos
+                </button>` : ''}
+            </div>
+        `;
+        document.getElementById('video-overlay').classList.add('hidden');
+        document.getElementById('video-player').classList.add('hidden');
+        return;
+    }
+    
+    // Load current video
+    loadVideo(state.currentVideoIndex);
+    
+    // Load video grid
+    const grid = document.getElementById('video-grid');
+    grid.innerHTML = '';
+    
+    state.videos.forEach((video, index) => {
+        const item = document.createElement('div');
+        item.className = 'cursor-pointer animate-fade-in';
+        item.innerHTML = `
+            <div class="bg-gradient-to-br from-pink-500 to-purple-600 aspect-[9/16] rounded-lg flex items-center justify-center relative overflow-hidden">
+                ${video.thumbnail ? 
+                    `<img src="${video.thumbnail}" alt="${video.title}" class="w-full h-full object-cover">` :
+                    `<i class="fas fa-play-circle text-white text-3xl"></i>`
+                }
+                ${video.watched ? `
+                    <div class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                        <i class="fas fa-check"></i>
+                    </div>
+                ` : ''}
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                    <h3 class="font-medium text-sm truncate">${video.title}</h3>
+                    <div class="flex items-center gap-2 text-xs text-zinc-300 mt-1">
+                        <span><i class="fas fa-eye"></i> ${video.views}</span>
+                        <span><i class="fas fa-heart"></i> ${video.likes}</span>
+                        ${video.duration ? `<span><i class="fas fa-clock"></i> ${video.duration}m</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        item.addEventListener('click', () => {
+            state.currentVideoIndex = index;
+            loadVideo(index);
+        });
+        grid.appendChild(item);
+    });
+}
+
+function loadVideo(index) {
+    const video = state.videos[index];
+    if (!video) return;
+    
+    const videoPlayer = document.getElementById('video-player');
+    const placeholder = document.getElementById('video-placeholder');
+    const overlay = document.getElementById('video-overlay');
+    
+    placeholder.classList.add('hidden');
+    videoPlayer.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+    
+    // Update video info
+    document.getElementById('video-title').textContent = video.title;
+    document.getElementById('video-description').textContent = video.description;
+    document.getElementById('video-views').textContent = video.views;
+    document.getElementById('video-likes').textContent = video.likes;
+    
+    // Set video source
+    if (video.url || video.filebaseUrl) {
+        videoPlayer.src = video.filebaseUrl || video.url;
+        videoPlayer.load();
+        
+        // Auto-play if user has interacted with page
+        setTimeout(() => {
+            if (document.activeElement) {
+                videoPlayer.play().catch(e => console.log('Auto-play prevented:', e));
+            }
+        }, 500);
+        
+        // Increment view count
+        incrementViewCount(video);
+    } else {
+        videoPlayer.src = '';
+        showToast('Video Error', 'Video URL not available', 'warning');
+    }
+    
+    // Store current video for controls
+    window.currentVideo = videoPlayer;
+}
+
+function toggleVideoPlayback() {
+    if (window.currentVideo) {
+        if (window.currentVideo.paused) {
+            window.currentVideo.play();
+        } else {
+            window.currentVideo.pause();
+        }
+    }
+}
+
+function navigateVideo(direction) {
+    if (direction === 'prev' && state.currentVideoIndex > 0) {
+        state.currentVideoIndex--;
+    } else if (direction === 'next' && state.currentVideoIndex < state.videos.length - 1) {
+        state.currentVideoIndex++;
+    } else {
+        return;
+    }
+    
+    loadVideo(state.currentVideoIndex);
+}
+
+function incrementViewCount(video) {
+    if (!video) return;
+    
+    // Check if already viewed in this session
+    const viewKey = `video_viewed_${video.id || video.objectId}_${new Date().toDateString()}`;
+    if (localStorage.getItem(viewKey)) return;
+    
+    // Mark as viewed today
+    localStorage.setItem(viewKey, 'true');
+    
+    // Increment local count
+    video.views = (video.views || 0) + 1;
+    
+    // Update in Back4App if online
+    if (state.parseInitialized && state.isOnline && video.objectId) {
+        updateVideoInCloud(video.objectId, { views: video.views });
+    }
+    
+    // Update localStorage
+    localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
+    
+    // Update watched count
+    updateWatchedCount();
+}
+
+async function updateVideoInCloud(objectId, updates) {
+    if (!state.parseInitialized || !state.isOnline) return;
+    
+    try {
+        const query = new Parse.Query(ParseVideo);
+        const video = await query.get(objectId);
+        
+        for (const [key, value] of Object.entries(updates)) {
+            video.set(key, value);
+        }
+        
+        await video.save();
+        console.log('Video updated in cloud:', objectId);
+    } catch (error) {
+        console.error('Error updating video in cloud:', error);
+    }
+}
+
+function updateWatchedCount() {
+    if (!state.currentUser) return;
+    
+    const watchedVideos = state.videos.filter(v => v.watched).length;
+    state.currentUser.watchedVideos = watchedVideos;
+    
+    // Update UI
+    document.getElementById('watched-count').textContent = watchedVideos;
+    
+    // Save to localStorage
+    localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(state.currentUser));
+}
+
+// Profile Functions
+function updateProfilePage() {
+    if (!state.currentUser) return;
+    
+    document.getElementById('profile-name').textContent = state.currentUser.name || 'User Profile';
+    document.getElementById('profile-email').textContent = state.currentUser.email || 'Premium Member';
+    
+    if (state.currentUser.joinDate) {
+        document.getElementById('join-date').textContent = new Date(state.currentUser.joinDate).toLocaleDateString();
+    }
+    
+    // Calculate watched videos
+    const watchedVideos = state.videos.filter(v => v.watched).length;
+    document.getElementById('watched-count').textContent = watchedVideos;
+}
+
+function clearCache() {
+    if (confirm('Clear all cached data? This will not delete your account.')) {
+        // Clear video cache
+        const videoKeys = Object.keys(localStorage).filter(key => key.startsWith('video_'));
+        videoKeys.forEach(key => localStorage.removeItem(key));
+        
+        // Clear cache timestamp
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.CACHE);
+        
+        // Reload videos
+        if (state.isOnline) {
+            syncVideos();
+        } else {
+            loadLocalVideos();
+        }
+        
+        showToast('Cache Cleared', 'Cached data has been removed', 'success');
+    }
+}
+
+// Admin Functions
+async function adminLogin(e) {
+    e.preventDefault();
+    const email = e.target[0].value;
+    const password = e.target[1].value;
+    
+    if (email === CONFIG.ADMIN_EMAIL && password === CONFIG.ADMIN_PASSWORD) {
+        state.isAdmin = true;
+        localStorage.setItem(CONFIG.STORAGE_KEYS.ADMIN, 'true');
+        
+        // Hide login form, show admin panel
+        document.getElementById('admin-login-section').classList.add('hidden');
+        document.getElementById('admin-panel-section').classList.remove('hidden');
+        
+        // Load admin content
+        await loadAdminPage();
+        
+        showToast('Admin Access Granted', 'Welcome to Admin Panel', 'success');
+    } else {
+        showToast('Invalid Credentials', 'Please check your email and password', 'error');
+    }
+}
+
+async function loadAdminPage() {
+    if (!state.isAdmin) {
+        document.getElementById('admin-login-section').classList.remove('hidden');
+        document.getElementById('admin-panel-section').classList.add('hidden');
+        return;
+    }
+    
+    document.getElementById('admin-login-section').classList.add('hidden');
+    document.getElementById('admin-panel-section').classList.remove('hidden');
+    
+    // Load admin stats
+    await loadAdminStats();
+    
+    // Load admin videos
+    await loadAdminVideos();
+}
+
+async function loadAdminStats() {
+    if (!state.parseInitialized) {
+        document.getElementById('admin-total-videos').textContent = state.videos.length;
+        document.getElementById('admin-total-views').textContent = state.videos.reduce((sum, v) => sum + (v.views || 0), 0);
+        document.getElementById('admin-total-likes').textContent = state.videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+        document.getElementById('admin-today-uploads').textContent = '0';
+        return;
+    }
+    
+    try {
+        const query = new Parse.Query(ParseVideo);
+        
+        // Total videos
+        const totalVideos = await query.count();
+        document.getElementById('admin-total-videos').textContent = totalVideos;
+        
+        // Total views
+        query.aggregate([
+            { group: { objectId: null, totalViews: { $sum: '$views' } } }
+        ]);
+        
+        // Today's uploads
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayQuery = new Parse.Query(ParseVideo);
+        todayQuery.greaterThanOrEqualTo('createdAt', today);
+        const todayUploads = await todayQuery.count();
+        document.getElementById('admin-today-uploads').textContent = todayUploads;
+        
+        // For views and likes, we'll calculate from local data for now
+        document.getElementById('admin-total-views').textContent = state.videos.reduce((sum, v) => sum + (v.views || 0), 0);
+        document.getElementById('admin-total-likes').textContent = state.videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+        
+    } catch (error) {
+        console.error('Error loading admin stats:', error);
+        // Fallback to local data
+        document.getElementById('admin-total-videos').textContent = state.videos.length;
+        document.getElementById('admin-total-views').textContent = state.videos.reduce((sum, v) => sum + (v.views || 0), 0);
+        document.getElementById('admin-total-likes').textContent = state.videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+        document.getElementById('admin-today-uploads').textContent = '0';
+    }
+}
+
+async function loadAdminVideos() {
+    const videoList = document.getElementById('admin-video-list');
+    
+    if (!state.parseInitialized || !state.isOnline) {
+        videoList.innerHTML = `
+            <div class="text-center p-4">
+                <i class="fas fa-cloud-off text-2xl text-zinc-400 mb-2"></i>
+                <p class="text-zinc-400">Offline mode - showing local videos</p>
+            </div>
+        `;
+        displayLocalAdminVideos();
+        return;
+    }
+    
+    try {
+        videoList.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p class="text-zinc-400">Loading videos...</p></div>';
+        
+        const query = new Parse.Query(ParseVideo);
+        query.descending('createdAt');
+        query.limit(50);
+        
+        const videos = await query.find();
+        
+        if (videos.length === 0) {
+            videoList.innerHTML = '<p class="text-zinc-400 text-center py-4">No videos found. Upload your first video!</p>';
+            return;
+        }
+        
+        displayAdminVideos(videos);
+        
+    } catch (error) {
+        console.error('Error loading admin videos:', error);
+        videoList.innerHTML = `
+            <div class="text-center p-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mb-2"></i>
+                <p class="text-zinc-400">Failed to load videos from cloud</p>
+                <button class="btn btn-secondary mt-2" onclick="displayLocalAdminVideos()">
+                    Show Local Videos
+                </button>
+            </div>
+        `;
+    }
+}
+
+function displayLocalAdminVideos() {
+    const videoList = document.getElementById('admin-video-list');
+    
+    if (state.videos.length === 0) {
+        videoList.innerHTML = '<p class="text-zinc-400 text-center py-4">No videos found in local storage.</p>';
+        return;
+    }
+    
+    let html = '<div class="space-y-3">';
+    
+    state.videos.forEach((video, index) => {
+        html += `
+            <div class="flex items-center justify-between p-3 border-b border-border last:border-b-0">
+                <div class="flex-1">
+                    <h4 class="font-medium">${video.title || 'Untitled Video'}</h4>
+                    <p class="text-sm text-zinc-400 truncate">${video.description || 'No description'}</p>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">👁️ ${video.views || 0}</span>
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">❤️ ${video.likes || 0}</span>
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">${video.tier || 'big'}</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-icon btn-secondary" onclick="editVideo('${video.id || index}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-icon btn-secondary" onclick="deleteVideo('${video.id || index}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    videoList.innerHTML = html;
+}
+
+function displayAdminVideos(videos) {
+    const videoList = document.getElementById('admin-video-list');
+    
+    let html = '<div class="space-y-3">';
+    
+    videos.forEach((video) => {
+        const videoData = {
+            id: video.id,
+            title: video.get('title') || 'Untitled Video',
+            description: video.get('description') || '',
+            views: video.get('views') || 0,
+            likes: video.get('likes') || 0,
+            tier: video.get('tier') || 'big',
+            url: video.get('url') || '',
+            filebaseUrl: video.get('filebaseUrl') || '',
+            createdAt: video.get('createdAt')
         };
         
-        appState.videos.push(newVideo);
-        saveToLocalStorage();
-        updateAdminStats();
+        html += `
+            <div class="flex items-center justify-between p-3 border-b border-border last:border-b-0">
+                <div class="flex-1">
+                    <h4 class="font-medium">${videoData.title}</h4>
+                    <p class="text-sm text-zinc-400 truncate">${videoData.description}</p>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">👁️ ${videoData.views}</span>
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">❤️ ${videoData.likes}</span>
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">${videoData.tier}</span>
+                        <span class="text-xs bg-surface-light px-2 py-1 rounded">${videoData.filebaseUrl ? 'Filebase' : 'URL'}</span>
+                    </div>
+                    <p class="text-xs text-zinc-500 mt-1">
+                        ${videoData.createdAt ? new Date(videoData.createdAt).toLocaleDateString() : 'Unknown date'}
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-icon btn-secondary" onclick="editVideoCloud('${videoData.id}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-icon btn-secondary" onclick="deleteVideoCloud('${videoData.id}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    videoList.innerHTML = html;
+}
+
+async function addVideo(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = document.getElementById('submit-video-btn');
+    
+    // Get form values
+    const title = form[0].value;
+    const description = form[1].value;
+    const category = form[2].value;
+    const tier = form[3].value;
+    const price = parseFloat(form[4].value) || 0;
+    const duration = parseInt(form[5].value) || 0;
+    const videoFile = form[6].files[0];
+    const thumbnailFile = form[8].files[0];
+    const initialViews = parseInt(form[10].value) || 0;
+    const initialLikes = parseInt(form[11].value) || 0;
+    
+    if (!title || !videoFile) {
+        showToast('Error', 'Title and video file are required', 'error');
+        return;
+    }
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    
+    try {
+        // Show upload progress
+        document.getElementById('upload-progress').classList.remove('hidden');
+        updateProgress(10, 'Preparing upload...');
+        
+        let videoUrl = '';
+        let thumbnailUrl = '';
+        
+        // Upload to Filebase if configured
+        if (CONFIG.FILEBASE.ACCESS_KEY !== 'AKIAIOSFODNN7EXAMPLE') {
+            updateProgress(30, 'Uploading to Filebase...');
+            
+            // Note: In a production app, you would upload to Filebase S3-compatible API
+            // For this example, we'll simulate the upload and store the file reference
+            
+            // Simulate Filebase upload (replace with actual S3 upload)
+            videoUrl = `https://${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/videos/${Date.now()}_${videoFile.name}`;
+            
+            if (thumbnailFile) {
+                thumbnailUrl = `https://${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/thumbnails/${Date.now()}_${thumbnailFile.name}`;
+            }
+            
+            // For now, we'll use a placeholder URL
+            videoUrl = `https://via.placeholder.com/640x360/ec4899/ffffff?text=${encodeURIComponent(title)}`;
+            if (thumbnailFile) {
+                thumbnailUrl = URL.createObjectURL(thumbnailFile);
+            }
+        } else {
+            // Use Back4App file storage
+            updateProgress(30, 'Uploading to Back4App...');
+            
+            const parseVideoFile = new Parse.File(videoFile.name, videoFile);
+            await parseVideoFile.save();
+            videoUrl = parseVideoFile.url();
+            
+            if (thumbnailFile) {
+                const parseThumbnailFile = new Parse.File(thumbnailFile.name, thumbnailFile);
+                await parseThumbnailFile.save();
+                thumbnailUrl = parseThumbnailFile.url();
+            }
+        }
+        
+        updateProgress(70, 'Saving video information...');
+        
+        // Save to Back4App
+        const video = new ParseVideo();
+        video.set('title', title);
+        video.set('description', description);
+        video.set('category', category);
+        video.set('tier', tier);
+        video.set('price', price);
+        video.set('duration', duration);
+        video.set('url', videoUrl);
+        video.set('filebaseUrl', videoUrl); // Store Filebase URL separately
+        video.set('thumbnail', thumbnailUrl);
+        video.set('views', initialViews);
+        video.set('likes', initialLikes);
+        video.set('isActive', true);
+        
+        await video.save();
+        
+        updateProgress(100, 'Video uploaded successfully!');
         
         // Reset form
-        clearFileSelection();
-        document.getElementById('video-title').value = '';
-        document.getElementById('video-price').value = '';
-        document.getElementById('video-tier').value = '';
+        form.reset();
+        document.getElementById('video-preview').classList.add('hidden');
+        document.getElementById('thumbnail-preview').classList.add('hidden');
+        document.getElementById('file-input-text').textContent = 'Choose Video File';
         document.getElementById('upload-progress').classList.add('hidden');
-        uploadBtn.disabled = false;
-        uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Upload to Filebase';
         
-        // Close modal after delay
-        setTimeout(() => closeModal('upload-modal'), 1000);
+        // Show success message
+        showToast('Success', 'Video uploaded successfully', 'success');
         
-    }, 3000);
-}
-
-function simulateUploadProgress() {
-    let progress = 0;
-    const progressBar = document.getElementById('progress-fill');
-    const percentText = document.getElementById('upload-percent');
-    
-    const interval = setInterval(() => {
-        progress += Math.random() * 20;
-        if (progress > 100) progress = 100;
+        // Reload videos
+        await loadAdminVideos();
+        await loadAdminStats();
         
-        progressBar.style.width = `${progress}%`;
-        percentText.textContent = `${Math.round(progress)}%`;
-        
-        if (progress >= 100) {
-            clearInterval(interval);
+        // Sync with local videos
+        if (state.isLoggedIn) {
+            await syncVideos();
         }
-    }, 300);
+        
+    } catch (error) {
+        console.error('Error uploading video:', error);
+        showToast('Upload Failed', error.message, 'error');
+    } finally {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
+        document.getElementById('upload-progress').classList.add('hidden');
+    }
 }
 
-// ====== UTILITY FUNCTIONS ======
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+function updateProgress(percent, message) {
+    document.getElementById('progress-fill').style.width = percent + '%';
+    document.getElementById('progress-text').textContent = message;
 }
 
-function showToast(type, title, message) {
-    const toast = document.getElementById('toast');
-    const icon = document.getElementById('toast-icon');
-    const toastTitle = document.getElementById('toast-title');
-    const toastMessage = document.getElementById('toast-message');
-    
-    // Set icon based on type
-    const icons = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        info: 'fa-info-circle',
-        warning: 'fa-exclamation-triangle'
-    };
-    
-    const colors = {
-        success: 'text-success',
-        error: 'text-danger',
-        info: 'text-primary',
-        warning: 'text-warning'
-    };
-    
-    icon.className = `fas ${icons[type] || 'fa-info-circle'} ${colors[type] || 'text-primary'}`;
-    toastTitle.textContent = title;
-    toastMessage.textContent = message;
-    
-    toast.classList.add('show');
-    
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+function editVideoCloud(objectId) {
+    showToast('Info', 'Edit feature coming soon', 'info');
+    // Implementation for editing cloud videos
 }
 
-function hideToast() {
-    document.getElementById('toast').classList.remove('show');
+async function deleteVideoCloud(objectId) {
+    if (!confirm('Are you sure you want to delete this video from the cloud? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const query = new Parse.Query(ParseVideo);
+        const video = await query.get(objectId);
+        await video.destroy();
+        
+        showToast('Success', 'Video deleted from cloud', 'success');
+        
+        // Reload videos
+        await loadAdminVideos();
+        await loadAdminStats();
+        
+        // Sync local videos
+        if (state.isLoggedIn) {
+            await syncVideos();
+        }
+        
+    } catch (error) {
+        console.error('Error deleting video:', error);
+        showToast('Delete Failed', error.message, 'error');
+    }
 }
 
+function editVideo(videoId) {
+    const video = typeof videoId === 'string' ? 
+        state.videos.find(v => v.id === videoId) : 
+        state.videos[videoId];
+    
+    if (!video) {
+        showToast('Error', 'Video not found', 'error');
+        return;
+    }
+    
+    const newTitle = prompt('Enter new title:', video.title);
+    if (newTitle !== null) {
+        const newDescription = prompt('Enter new description:', video.description);
+        if (newDescription !== null) {
+            video.title = newTitle;
+            video.description = newDescription;
+            localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
+            
+            // Update in cloud if it's a cloud video
+            if (video.objectId && state.parseInitialized && state.isOnline) {
+                updateVideoInCloud(video.objectId, {
+                    title: newTitle,
+                    description: newDescription
+                });
+            }
+            
+            showToast('Video Updated', 'Video has been updated', 'success');
+            
+            // Refresh display
+            if (state.currentPage === 'home') loadHome();
+            if (state.currentPage === 'admin') displayLocalAdminVideos();
+        }
+    }
+}
+
+function deleteVideo(videoId) {
+    if (!confirm('Are you sure you want to delete this video?')) {
+        return;
+    }
+    
+    const index = typeof videoId === 'string' ? 
+        state.videos.findIndex(v => v.id === videoId) : 
+        videoId;
+    
+    if (index === -1) {
+        showToast('Error', 'Video not found', 'error');
+        return;
+    }
+    
+    const video = state.videos[index];
+    
+    // Delete from cloud if it's a cloud video
+    if (video.objectId && state.parseInitialized && state.isOnline) {
+        deleteVideoCloud(video.objectId).catch(console.error);
+    }
+    
+    // Remove from local array
+    state.videos.splice(index, 1);
+    localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
+    
+    showToast('Video Deleted', 'Video has been removed', 'success');
+    
+    // Refresh display
+    if (state.currentPage === 'home') loadHome();
+    if (state.currentPage === 'admin') displayLocalAdminVideos();
+}
+
+function refreshAdminVideos() {
+    loadAdminVideos();
+    loadAdminStats();
+}
+
+function adminLogout() {
+    state.isAdmin = false;
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.ADMIN);
+    showPage('home');
+    showToast('Admin Logged Out', 'You have exited admin mode', 'info');
+}
+
+// Account Functions
+function loadAccounts() {
+    // Accounts are already loaded in the HTML template
+    // You can add dynamic loading here if needed
+}
+
+// Action Functions
+function bookAccount() {
+    showModal('book-modal');
+}
+
+function buyNow() {
+    showModal('buy-modal');
+}
+
+function shareVideo() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'GK Store Video',
+            text: 'Check out this premium content on GK Store',
+            url: window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(window.location.href);
+        showToast('Link Copied', 'Share link copied to clipboard', 'success');
+    }
+}
+
+function openWhatsApp() {
+    window.open(`https://wa.me/${CONFIG.WHATSAPP_NUMBER.replace('+', '')}`, '_blank');
+}
+
+function openEmail() {
+    window.open('mailto:support@gkstore.com', '_blank');
+}
+
+function openPaymentChat() {
+    const message = encodeURIComponent('Hello, I want to buy a premium account. I have sent USDT to the provided address.');
+    window.open(`https://wa.me/${CONFIG.WHATSAPP_NUMBER.replace('+', '')}?text=${message}`, '_blank');
+}
+
+function sendContactMessage(e) {
+    e.preventDefault();
+    const name = e.target[0].value;
+    const email = e.target[1].value;
+    const message = e.target[2].value;
+    
+    // In a real app, you would send this to your backend
+    console.log('Contact message:', { name, email, message });
+    
+    showToast('Message Sent', 'We will respond within 24 hours', 'success');
+    e.target.reset();
+}
+
+// Modal Functions
 function showModal(modalId) {
     document.getElementById(modalId).classList.remove('hidden');
 }
@@ -742,109 +2022,247 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
 
-function updateHomePage() {
-    // Update home page content
-    // You can add dynamic content here
+function closeWelcomeModal() {
+    document.getElementById('welcome-modal').classList.add('hidden');
 }
 
-function updateAdminStats() {
-    const videoCount = document.getElementById('admin-video-count');
-    if (videoCount) {
-        videoCount.textContent = appState.videos.length;
-    }
-}
-
-// ====== PWA FUNCTIONS ======
-function setupPWA() {
-    let deferredPrompt;
+// Form Handlers
+function submitBookRequest(e) {
+    e.preventDefault();
+    const name = e.target[0].value;
+    const phone = e.target[1].value;
+    const tier = e.target[2].value;
+    const payment = e.target[3].value;
     
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        
-        // Show install button after delay
-        setTimeout(() => {
-            const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn) {
-                installBtn.classList.remove('hidden');
-                installBtn.onclick = () => {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            showToast('success', 'Installed', 'App installed successfully!');
-                        }
-                        deferredPrompt = null;
-                    });
-                };
-            }
-        }, 5000);
-    });
+    // In a real app, you would send this to your backend
+    console.log('Book request:', { name, phone, tier, payment });
     
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/GKStore/sw.js').catch(console.error);
-    }
+    showToast('Request Submitted', 'We will contact you shortly on WhatsApp', 'success');
+    closeModal('book-modal');
+    e.target.reset();
 }
 
-// ====== LOCAL STORAGE ======
-function saveToLocalStorage() {
+// Admin Actions
+function exportData() {
     const data = {
-        videos: appState.videos,
-        user: appState.currentUser
+        videos: state.videos,
+        exportedAt: new Date().toISOString(),
+        totalVideos: state.videos.length,
+        totalViews: state.videos.reduce((sum, v) => sum + (v.views || 0), 0),
+        totalLikes: state.videos.reduce((sum, v) => sum + (v.likes || 0), 0)
     };
-    localStorage.setItem('gkStoreData', JSON.stringify(data));
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gk-store-backup-${new Date().getTime()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('Data Exported', 'Backup file downloaded', 'success');
 }
 
-function loadFromLocalStorage() {
-    const saved = localStorage.getItem('gkStoreData');
-    if (saved) {
+function importData() {
+    document.getElementById('import-file-input').click();
+}
+
+document.getElementById('import-file-input')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
         try {
-            const data = JSON.parse(saved);
-            appState.videos = data.videos || [];
-            appState.currentUser = data.user || null;
-        } catch(e) {
-            console.error('Error loading saved data:', e);
+            const data = JSON.parse(event.target.result);
+            
+            if (data.videos && Array.isArray(data.videos)) {
+                // Merge imported videos with existing ones
+                const importedVideoIds = new Set(state.videos.map(v => v.id));
+                const newVideos = data.videos.filter(v => !importedVideoIds.has(v.id));
+                
+                state.videos.push(...newVideos);
+                localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
+                
+                showToast('Data Imported', `Added ${newVideos.length} new videos`, 'success');
+                
+                // Refresh display
+                if (state.currentPage === 'home') loadHome();
+                if (state.currentPage === 'admin') displayLocalAdminVideos();
+            } else {
+                showToast('Import Failed', 'Invalid data format', 'error');
+            }
+        } catch (error) {
+            showToast('Import Failed', 'Invalid JSON file', 'error');
         }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    e.target.value = '';
+});
+
+async function clearAllVideos() {
+    if (!confirm('Are you sure you want to clear ALL videos? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        // Clear from Back4App if admin
+        if (state.isAdmin && state.parseInitialized && state.isOnline) {
+            const query = new Parse.Query(ParseVideo);
+            const videos = await query.find();
+            
+            for (const video of videos) {
+                await video.destroy();
+            }
+        }
+        
+        // Clear local data
+        state.videos = [];
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.VIDEOS);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.CACHE);
+        
+        // Clear video cache
+        const videoKeys = Object.keys(localStorage).filter(key => key.startsWith('video_'));
+        videoKeys.forEach(key => localStorage.removeItem(key));
+        
+        showToast('All Videos Cleared', 'All video data has been removed', 'success');
+        
+        // Refresh display
+        if (state.currentPage === 'home') loadHome();
+        if (state.currentPage === 'admin') {
+            await loadAdminVideos();
+            await loadAdminStats();
+        }
+        
+    } catch (error) {
+        console.error('Error clearing videos:', error);
+        showToast('Clear Failed', error.message, 'error');
     }
 }
 
-// ====== INITIALIZE ======
-document.addEventListener('DOMContentLoaded', initApp);
-
-// ====== CREATE MANIFEST ======
-function createManifest() {
-    const manifest = {
-        "name": "GK Store",
-        "short_name": "GK Store",
-        "description": "Exclusive Video Marketplace",
-        "start_url": "https://shamsahmadzai06-source.github.io/GKStore/",
-        "display": "standalone",
-        "background_color": "#000000",
-        "theme_color": "#ec4899",
-        "icons": [
-            {
-                "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            }
-        ]
-    };
-
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+async function backupToCloud() {
+    if (!state.parseInitialized || !state.isOnline) {
+        showToast('Backup Failed', 'No internet connection', 'error');
+        return;
+    }
     
-    const link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = url;
-    document.head.appendChild(link);
+    showToast('Backing Up', 'Saving local videos to cloud...', 'info');
+    
+    try {
+        let uploadedCount = 0;
+        
+        for (const localVideo of state.videos) {
+            // Check if video already exists in cloud
+            if (localVideo.objectId) continue;
+            
+            const video = new ParseVideo();
+            video.set('title', localVideo.title || 'Untitled Video');
+            video.set('description', localVideo.description || '');
+            video.set('url', localVideo.url || '');
+            video.set('thumbnail', localVideo.thumbnail || '');
+            video.set('views', localVideo.views || 0);
+            video.set('likes', localVideo.likes || 0);
+            video.set('category', localVideo.category || 'premium');
+            video.set('tier', localVideo.tier || 'big');
+            video.set('price', localVideo.price || 0);
+            video.set('duration', localVideo.duration || 0);
+            video.set('isActive', true);
+            
+            await video.save();
+            uploadedCount++;
+        }
+        
+        if (uploadedCount > 0) {
+            showToast('Backup Complete', `${uploadedCount} videos uploaded to cloud`, 'success');
+            await loadAdminVideos();
+            await loadAdminStats();
+        } else {
+            showToast('Backup Complete', 'All videos are already in cloud', 'info');
+        }
+        
+    } catch (error) {
+        console.error('Error backing up to cloud:', error);
+        showToast('Backup Failed', error.message, 'error');
+    }
 }
 
-createManifest();
+// Toast Function
+function showToast(title, message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    
+    document.getElementById('toast-title').textContent = title;
+    document.getElementById('toast-message').textContent = message;
+    
+    // Set icon based on type
+    if (type === 'success') {
+        icon.className = 'fas fa-check-circle text-green-500';
+    } else if (type === 'error') {
+        icon.className = 'fas fa-exclamation-circle text-red-500';
+    } else if (type === 'warning') {
+        icon.className = 'fas fa-exclamation-triangle text-yellow-500';
+    } else {
+        icon.className = 'fas fa-info-circle text-blue-500';
+    }
+    
+    toast.classList.remove('hidden');
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+function hideToast() {
+    document.getElementById('toast').classList.add('hidden');
+}
+
+// Logout
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        state.isLoggedIn = false;
+        state.currentUser = null;
+        state.isAdmin = false;
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.ADMIN);
+        showPage('auth');
+        showToast('Logged Out', 'You have been successfully logged out', 'info');
+    }
+}
+
+// Utility Functions
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Initialize when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
 </script>
 </body>
 </html>
