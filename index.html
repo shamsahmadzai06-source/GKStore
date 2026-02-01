@@ -2608,7 +2608,7 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
-            adminPassword: 'GK@2024!AdminSecure', // ADMIN PASSWORD
+            adminPassword: 'GK@2024!AdminSecure',
             userStats: {
                 registeredUsers: 0,
                 onlineUsers: 0
@@ -2620,13 +2620,13 @@
             },
             users: [],
             
-            // Filebase Configuration - UPDATED TO WORK WITH BROWNWAY S3 COMPATIBLE API
+            // Filebase Configuration with your credentials
             filebaseConfig: {
                 endpoint: 'https://s3.filebase.com',
                 region: 'us-east-1',
                 bucketName: 'gk-store-videos',
-                accessKeyId: '', // Will be configured from user input
-                secretAccessKey: '' // Will be configured from user input
+                accessKeyId: '33B0D768699F462BDFC1',
+                secretAccessKey: 'Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC'
             }
         };
 
@@ -2671,9 +2671,9 @@
             }, 1000);
         }
 
-        // Initialize Filebase S3 client - FIXED VERSION
+        // Initialize Filebase S3 client
         function initializeFilebaseS3() {
-            console.log('Initializing Filebase S3 connection...');
+            console.log('Initializing Filebase S3 connection with your credentials...');
             
             if (typeof AWS === 'undefined') {
                 console.error('AWS SDK not loaded');
@@ -2682,21 +2682,20 @@
             }
             
             try {
-                // Clear any previous AWS configurations
+                // Configure AWS with Filebase credentials
                 AWS.config.update({
                     region: appState.filebaseConfig.region,
                     credentials: new AWS.Credentials({
-                        accessKeyId: '',
-                        secretAccessKey: ''
+                        accessKeyId: appState.filebaseConfig.accessKeyId,
+                        secretAccessKey: appState.filebaseConfig.secretAccessKey
                     }),
                     s3ForcePathStyle: true,
-                    signatureVersion: 'v4',
-                    endpoint: appState.filebaseConfig.endpoint
+                    signatureVersion: 'v4'
                 });
                 
-                // Create S3 client
+                // Create S3 client with Filebase endpoint
                 s3Client = new AWS.S3({
-                    endpoint: appState.filebaseConfig.endpoint,
+                    endpoint: new AWS.Endpoint(appState.filebaseConfig.endpoint),
                     s3ForcePathStyle: true,
                     signatureVersion: 'v4',
                     region: appState.filebaseConfig.region
@@ -2704,7 +2703,8 @@
                 
                 awsInitialized = true;
                 
-                console.log('Filebase S3 client initialized successfully');
+                console.log('Filebase S3 client initialized successfully with your credentials');
+                showToast('success', 'Filebase Connected', 'Storage service is ready for uploads!');
                 
             } catch (error) {
                 console.error('Error initializing Filebase S3:', error);
@@ -2713,7 +2713,7 @@
             }
         }
 
-        // Check Filebase Connection - IMPROVED VERSION
+        // Check Filebase Connection
         function checkFilebaseConnection() {
             const statusElement = document.getElementById('connection-status');
             const iconElement = document.getElementById('connection-icon');
@@ -2729,71 +2729,40 @@
             // Check if S3 client is initialized
             if (!s3Client || !awsInitialized) {
                 setTimeout(() => {
-                    statusElement.className = 'connection-status success';
-                    iconElement.className = 'fas fa-check-circle';
-                    messageElement.textContent = 'Using fallback upload method';
-                    showToast('info', 'Filebase Connection', 'Using simplified upload method for browser compatibility.');
+                    statusElement.className = 'connection-status error';
+                    iconElement.className = 'fas fa-times-circle';
+                    messageElement.textContent = 'Not connected. Using fallback.';
+                    showToast('error', 'Connection Failed', 'Could not connect to Filebase. Using fallback.');
                 }, 1000);
                 return;
             }
             
-            // Try to test connection with a simple operation
+            // Test connection by listing buckets
             try {
-                // Create a minimal request to test connectivity
-                const testParams = {
-                    Bucket: appState.filebaseConfig.bucketName,
-                    MaxKeys: 1
-                };
-                
-                // Use a timeout to prevent hanging
-                const connectionTest = setTimeout(() => {
-                    statusElement.className = 'connection-status success';
-                    iconElement.className = 'fas fa-check-circle';
-                    messageElement.textContent = 'Connection test timed out. Using fallback.';
-                    showToast('warning', 'Connection Test', 'Filebase connection test timed out. Using fallback method.');
-                }, 5000);
-                
-                // Try to list objects (this is the simplest S3 operation)
-                s3Client.listObjectsV2(testParams, (err, data) => {
-                    clearTimeout(connectionTest);
-                    
+                s3Client.listBuckets({}, (err, data) => {
                     if (err) {
-                        // Check if it's a bucket not found error (which is actually a good sign - connection works!)
-                        if (err.code === 'NoSuchBucket') {
-                            statusElement.className = 'connection-status success';
-                            iconElement.className = 'fas fa-check-circle';
-                            messageElement.textContent = 'Connected! Bucket needs to be created.';
-                            showToast('success', 'Filebase Ready', 'Filebase is connected! Create bucket in dashboard.');
-                        } else if (err.code === 'AccessDenied' || err.code === 'InvalidAccessKeyId') {
-                            statusElement.className = 'connection-status warning';
-                            iconElement.className = 'fas fa-exclamation-triangle';
-                            messageElement.textContent = 'Needs API credentials. Using fallback.';
-                            showToast('info', 'Filebase Connection', 'API credentials needed for full access. Using fallback.');
-                        } else {
-                            statusElement.className = 'connection-status success';
-                            iconElement.className = 'fas fa-check-circle';
-                            messageElement.textContent = 'Using fallback upload method';
-                            showToast('info', 'Filebase Connection', 'Using simplified upload method.');
-                        }
+                        console.error('Filebase connection error:', err);
+                        statusElement.className = 'connection-status error';
+                        iconElement.className = 'fas fa-times-circle';
+                        messageElement.textContent = 'Connection failed. Check credentials.';
+                        showToast('error', 'Connection Failed', 'Please check your Filebase credentials.');
                     } else {
-                        // Successfully connected
                         statusElement.className = 'connection-status success';
                         iconElement.className = 'fas fa-check-circle';
-                        messageElement.textContent = `Connected! ${data.KeyCount || 0} objects found.`;
-                        showToast('success', 'Filebase Connected', 'Filebase is connected and ready for uploads!');
+                        messageElement.textContent = `Connected! ${data.Buckets.length} bucket(s) found.`;
+                        showToast('success', 'Connected', 'Filebase is connected and ready!');
                     }
                 });
-                
             } catch (error) {
                 console.error('Connection test error:', error);
-                statusElement.className = 'connection-status success';
-                iconElement.className = 'fas fa-check-circle';
-                messageElement.textContent = 'Using fallback upload method';
-                showToast('info', 'Connection Error', 'Using fallback upload method for compatibility.');
+                statusElement.className = 'connection-status error';
+                iconElement.className = 'fas fa-times-circle';
+                messageElement.textContent = 'Connection error occurred.';
+                showToast('error', 'Connection Error', 'Could not connect to Filebase.');
             }
         }
 
-        // Upload Video to Filebase - SIMPLIFIED VERSION
+        // Upload Video to Filebase
         async function uploadVideoToFilebase() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -2823,6 +2792,8 @@
             const uploadPercentage = document.getElementById('upload-percentage');
             const uploadedSize = document.getElementById('uploaded-size');
             const totalSize = document.getElementById('total-size');
+            const urlGenerator = document.getElementById('url-generator');
+            const generatedUrl = document.getElementById('generated-url');
             const submitBtn = document.querySelector('#upload-video-form button[type="button"]');
             
             uploadStatus.classList.add('active');
@@ -2836,8 +2807,12 @@
             totalSize.textContent = formatFileSize(file.size);
             
             try {
-                // Always use fallback method for browser compatibility
-                await uploadWithFallback(id, title, description, price, tier, file);
+                // Use Filebase if available, otherwise fallback
+                if (s3Client && awsInitialized) {
+                    await uploadToFilebase(id, title, description, price, tier, file);
+                } else {
+                    await uploadWithFallback(id, title, description, price, tier, file);
+                }
                 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -2845,7 +2820,71 @@
             }
         }
 
-        // Fallback upload method (local storage) - IMPROVED
+        // Upload to Filebase
+        async function uploadToFilebase(id, title, description, price, tier, file) {
+            console.log('Uploading to Filebase...');
+            
+            const fileName = `${tier}/${id}_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            const reader = new FileReader();
+            
+            return new Promise((resolve, reject) => {
+                reader.onload = function(e) {
+                    const params = {
+                        Bucket: appState.filebaseConfig.bucketName,
+                        Key: fileName,
+                        Body: file,
+                        ContentType: file.type,
+                        ACL: 'public-read'
+                    };
+                    
+                    // Show upload progress
+                    s3Client.upload(params)
+                        .on('httpUploadProgress', (progress) => {
+                            const percent = Math.round((progress.loaded / progress.total) * 100);
+                            uploadProgress.style.width = percent + '%';
+                            uploadPercentage.textContent = percent + '%';
+                            uploadedSize.textContent = formatFileSize(progress.loaded);
+                            totalSize.textContent = formatFileSize(progress.total);
+                        })
+                        .send((err, data) => {
+                            if (err) {
+                                console.error('Filebase upload error:', err);
+                                showToast('warning', 'Filebase Upload Failed', 'Using fallback method.');
+                                // Try fallback
+                                uploadWithFallback(id, title, description, price, tier, file)
+                                    .then(resolve)
+                                    .catch(reject);
+                                return;
+                            }
+                            
+                            // Success - get the Filebase IPFS URL
+                            const filebaseUrl = data.Location;
+                            const ipfsUrl = `https://ipfs.filebase.io/ipfs/${data.ETag.replace(/"/g, '')}`;
+                            
+                            // Update UI with Filebase URL
+                            generatedUrl.innerHTML = `
+                                <strong>Filebase URL:</strong> <a href="${filebaseUrl}" target="_blank">${filebaseUrl}</a><br>
+                                <strong>IPFS URL:</strong> <a href="${ipfsUrl}" target="_blank">${ipfsUrl}</a><br>
+                                <strong>File Name:</strong> ${fileName}<br>
+                                <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+                                <strong>Status:</strong> <span class="text-success">Uploaded to Filebase IPFS</span>
+                            `;
+                            
+                            urlGenerator.classList.add('active');
+                            
+                            // Create and save video with Filebase URL
+                            createAndSaveVideo(id, title, description, price, tier, ipfsUrl, fileName, file.size, false);
+                            
+                            showToast('success', 'Upload Complete', `Video uploaded to Filebase IPFS!`);
+                            resolve();
+                        });
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Fallback upload method (local storage)
         async function uploadWithFallback(id, title, description, price, tier, file) {
             console.log('Using fallback upload method (local storage)');
             
@@ -2859,7 +2898,22 @@
             // Wait for simulation to complete
             await new Promise(resolve => setTimeout(resolve, 2000));
             
-            // Create and save video
+            // Update URL display for fallback
+            const generatedUrl = document.getElementById('generated-url');
+            const urlGenerator = document.getElementById('url-generator');
+            
+            generatedUrl.innerHTML = `
+                <strong>Video ID:</strong> ${id}<br>
+                <strong>Tier:</strong> ${tier}<br>
+                <strong>Status:</strong> <span class="text-warning">Using local storage (fallback)</span><br>
+                <strong>File:</strong> ${fileName}<br>
+                <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+                <strong>Note:</strong> File will be stored in browser only
+            `;
+            
+            urlGenerator.classList.add('active');
+            
+            // Create and save video with fallback URL
             createAndSaveVideo(id, title, description, price, tier, videoUrl, fileName, file.size, true);
         }
 
@@ -2871,7 +2925,7 @@
             const totalSize = document.getElementById('total-size');
             
             let progress = 0;
-            const interval = 100; // Update every 100ms
+            const interval = 100;
             const steps = duration / interval;
             const increment = 100 / steps;
             const sizeIncrement = fileSize / steps;
@@ -2943,33 +2997,6 @@
             // Update UI
             loadHomeContent();
             updateAdminStats();
-            
-            // Show success message
-            const urlGenerator = document.getElementById('url-generator');
-            const generatedUrl = document.getElementById('generated-url');
-            
-            if (isFallback) {
-                generatedUrl.innerHTML = `
-                    <strong>Video ID:</strong> ${id}<br>
-                    <strong>Tier:</strong> ${tier}<br>
-                    <strong>Status:</strong> <span class="text-success">Uploaded successfully</span><br>
-                    <strong>File:</strong> ${fileName}<br>
-                    <strong>Size:</strong> ${formatFileSize(fileSize)}<br>
-                    <strong>Storage:</strong> Local browser storage
-                `;
-                showToast('success', 'Upload Complete', `Video "${title}" uploaded successfully!`);
-            } else {
-                generatedUrl.innerHTML = `
-                    <strong>Video ID:</strong> ${id}<br>
-                    <strong>Tier:</strong> ${tier}<br>
-                    <strong>File:</strong> ${fileName}<br>
-                    <strong>Size:</strong> ${formatFileSize(fileSize)}<br>
-                    <strong>Status:</strong> <span class="text-success">Upload completed</span>
-                `;
-                showToast('success', 'Upload Successful', `Video "${title}" uploaded to ${tier} folder!`);
-            }
-            
-            if (urlGenerator) urlGenerator.classList.add('active');
             
             // Reset form after delay
             setTimeout(() => {
@@ -3087,25 +3114,22 @@
                 videoPlayer.addEventListener('error', function(e) {
                     console.error('Video playback error:', videoPlayer.error);
                     
-                    // If it's a fallback video and has issues, try to recreate URL
-                    if (video.isFallback && video.url.startsWith('blob:')) {
-                        showToast('warning', 'Video Error', 'Recreating video URL...');
-                        // Try to get video from localStorage or recreate
-                        const fallbackVideo = appState.videos.find(v => v.id === video.id);
-                        if (fallbackVideo && fallbackVideo.videoData) {
-                            // Recreate blob URL
-                            const blob = new Blob([fallbackVideo.videoData], { type: 'video/mp4' });
-                            videoPlayer.src = URL.createObjectURL(blob);
+                    // Show appropriate error message
+                    if (video.url.includes('filebase.io') || video.url.includes('ipfs')) {
+                        showToast('warning', 'Filebase Video', 'Video loading from IPFS. This may take a moment...');
+                        // Retry after delay
+                        setTimeout(() => {
                             videoPlayer.load();
-                        }
+                        }, 2000);
+                    } else if (video.isFallback && video.url.startsWith('blob:')) {
+                        showToast('warning', 'Local Video', 'Recreating video URL from local storage...');
                     } else {
-                        showToast('error', 'Video Error', 'Failed to load video.');
+                        showToast('error', 'Video Error', 'Failed to load video. Trying alternative...');
                     }
                 });
                 
                 videoPlayer.addEventListener('loadeddata', function() {
                     console.log('Video loaded successfully:', video.url);
-                    showToast('success', 'Video Loaded', 'Now playing video');
                 });
                 
                 videoPlayer.addEventListener('play', () => {
@@ -3401,7 +3425,7 @@
                         if (event.request.method !== 'GET') return;
                         
                         // Handle Filebase video requests
-                        if (event.request.url.includes('filebase.com')) {
+                        if (event.request.url.includes('filebase.com') || event.request.url.includes('ipfs.filebase.io')) {
                             event.respondWith(fetch(event.request));
                             return;
                         }
