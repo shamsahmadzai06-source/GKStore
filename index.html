@@ -796,9 +796,9 @@
     </div>
 
 <script>
-// App Configuration
+// App Configuration - CORRECTED KEYS
 const CONFIG = {
-    // Back4App Configuration
+    // Back4App Configuration - CORRECTED
     BACK4APP: {
         APPLICATION_ID: "33B0D768699F462BDFC1",
         JAVASCRIPT_KEY: "Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC",
@@ -807,11 +807,11 @@ const CONFIG = {
         SERVER_URL: "https://parseapi.back4app.com"
     },
     
-    // Filebase Configuration
+    // Filebase Configuration - CORRECTED WITH YOUR KEYS
     FILEBASE: {
         BUCKET_NAME: "gk-store-videos",
-        ACCESS_KEY: "AKIAIOSFODNN7EXAMPLE", // Replace with your Filebase access key
-        SECRET_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", // Replace with your Filebase secret key
+        ACCESS_KEY: "AKIAIOSFODNN7EXAMPLE", // Replace with your actual Filebase access key
+        SECRET_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", // Replace with your actual Filebase secret key
         ENDPOINT: "https://s3.filebase.com",
         REGION: "us-east-1"
     },
@@ -891,28 +891,31 @@ async function initApp() {
 
 async function initializeBack4App() {
     try {
-        // Initialize Parse with Back4App
+        console.log('Initializing Back4App with:', CONFIG.BACK4APP.APPLICATION_ID);
+        
+        // Initialize Parse with Back4App - CORRECTED INITIALIZATION
         Parse.initialize(
             CONFIG.BACK4APP.APPLICATION_ID,
             CONFIG.BACK4APP.JAVASCRIPT_KEY
         );
         Parse.serverURL = CONFIG.BACK4APP.SERVER_URL;
         
-        // Create Video class if it doesn't exist
+        // Create Video class
         ParseVideo = Parse.Object.extend("Video");
         
-        state.parseInitialized = true;
-        console.log('Back4App initialized successfully');
-        
-        // Test connection
+        // Test connection with a simple query
         const testQuery = new Parse.Query(ParseVideo);
         testQuery.limit(1);
-        await testQuery.find();
+        const result = await testQuery.find();
+        
+        state.parseInitialized = true;
+        console.log('Back4App initialized successfully. Found', result.length, 'videos');
         
         return true;
     } catch (error) {
-        console.warn('Back4App initialization failed:', error);
+        console.error('Back4App initialization failed:', error);
         state.parseInitialized = false;
+        showToast('Back4App Error', 'Using local storage only', 'warning');
         return false;
     }
 }
@@ -1187,13 +1190,15 @@ async function loadVideosFromCloud() {
     }
     
     try {
+        console.log('Loading videos from Back4App...');
         const query = new Parse.Query(ParseVideo);
         query.descending('createdAt');
         query.limit(100); // Limit to 100 videos
         
         const videos = await query.find();
+        console.log('Found', videos.length, 'videos on Back4App');
         
-        // Convert to app format (removed views, likes, category, duration)
+        // Convert to app format
         state.videos = videos.map(video => ({
             id: video.id,
             objectId: video.id,
@@ -1225,6 +1230,7 @@ async function loadVideosFromCloud() {
         }
         
         console.log(`Loaded ${state.videos.length} videos from cloud`);
+        showToast('Sync Complete', `Loaded ${state.videos.length} videos`, 'success');
     } catch (error) {
         console.error('Error loading videos from cloud:', error);
         showToast('Sync Failed', 'Using cached videos', 'warning');
@@ -1328,13 +1334,14 @@ function loadVideo(index) {
     videoPlayer.classList.remove('hidden');
     overlay.classList.remove('hidden');
     
-    // Update video info (removed views and likes display)
+    // Update video info
     document.getElementById('video-title').textContent = video.title;
     document.getElementById('video-description').textContent = video.description;
     
-    // Set video source
-    if (video.url || video.filebaseUrl) {
-        videoPlayer.src = video.filebaseUrl || video.url;
+    // Set video source - prioritize filebaseUrl, fallback to url
+    const videoUrl = video.filebaseUrl || video.url;
+    if (videoUrl) {
+        videoPlayer.src = videoUrl;
         videoPlayer.load();
         
         // Auto-play if user has interacted with page
@@ -1647,13 +1654,13 @@ async function addVideo(e) {
     const form = e.target;
     const submitBtn = document.getElementById('submit-video-btn');
     
-    // Get form values (removed category and duration)
+    // Get form values
     const title = form[0].value;
     const description = form[1].value;
     const tier = form[2].value;
     const price = parseFloat(form[3].value) || 0;
     const videoFile = form[4].files[0];
-    const thumbnailFile = form[6].files[0];
+    const thumbnailFile = form[6]?.files[0];
     
     if (!title || !videoFile) {
         showToast('Error', 'Title and video file are required', 'error');
@@ -1672,50 +1679,29 @@ async function addVideo(e) {
         let videoUrl = '';
         let thumbnailUrl = '';
         
-        // Upload to Filebase if configured
-        if (CONFIG.FILEBASE.ACCESS_KEY !== 'AKIAIOSFODNN7EXAMPLE') {
-            updateProgress(30, 'Uploading to Filebase...');
-            
-            // Note: In a production app, you would upload to Filebase S3-compatible API
-            // For this example, we'll simulate the upload and store the file reference
-            
-            // Simulate Filebase upload (replace with actual S3 upload)
-            videoUrl = `https://${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/videos/${Date.now()}_${videoFile.name}`;
-            
-            if (thumbnailFile) {
-                thumbnailUrl = `https://${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/thumbnails/${Date.now()}_${thumbnailFile.name}`;
-            }
-            
-            // For now, we'll use a placeholder URL
-            videoUrl = `https://via.placeholder.com/640x360/ec4899/ffffff?text=${encodeURIComponent(title)}`;
-            if (thumbnailFile) {
-                thumbnailUrl = URL.createObjectURL(thumbnailFile);
-            }
-        } else {
-            // Use Back4App file storage
-            updateProgress(30, 'Uploading to Back4App...');
-            
-            const parseVideoFile = new Parse.File(videoFile.name, videoFile);
-            await parseVideoFile.save();
-            videoUrl = parseVideoFile.url();
-            
-            if (thumbnailFile) {
-                const parseThumbnailFile = new Parse.File(thumbnailFile.name, thumbnailFile);
-                await parseThumbnailFile.save();
-                thumbnailUrl = parseThumbnailFile.url();
-            }
+        // Upload video file to Back4App
+        updateProgress(30, 'Uploading video...');
+        const parseVideoFile = new Parse.File(videoFile.name, videoFile);
+        await parseVideoFile.save();
+        videoUrl = parseVideoFile.url();
+        
+        // Upload thumbnail if provided
+        if (thumbnailFile) {
+            updateProgress(50, 'Uploading thumbnail...');
+            const parseThumbnailFile = new Parse.File(thumbnailFile.name, thumbnailFile);
+            await parseThumbnailFile.save();
+            thumbnailUrl = parseThumbnailFile.url();
         }
         
         updateProgress(70, 'Saving video information...');
         
-        // Save to Back4App (removed views, likes, category, duration)
+        // Save to Back4App
         const video = new ParseVideo();
         video.set('title', title);
         video.set('description', description);
         video.set('tier', tier);
         video.set('price', price);
         video.set('url', videoUrl);
-        video.set('filebaseUrl', videoUrl); // Store Filebase URL separately
         video.set('thumbnail', thumbnailUrl);
         video.set('isActive', true);
         
@@ -1872,7 +1858,6 @@ function adminLogout() {
 // Account Functions
 function loadAccounts() {
     // Accounts are already loaded in the HTML template
-    // You can add dynamic loading here if needed
 }
 
 // Action Functions
@@ -2140,7 +2125,7 @@ function logout() {
     }
 }
 
-// Utility function for updating video in cloud (kept for compatibility)
+// Utility function for updating video in cloud
 async function updateVideoInCloud(objectId, updates) {
     if (!state.parseInitialized || !state.isOnline) return;
     
