@@ -280,10 +280,6 @@
                     <div>
                         <h2 id="video-title" class="text-white text-xl font-bold mb-2"></h2>
                         <p id="video-description" class="text-zinc-300 text-sm"></p>
-                        <div class="flex items-center gap-4 mt-2">
-                            <span class="text-sm text-zinc-400"><i class="fas fa-eye mr-1"></i> <span id="video-views">0</span></span>
-                            <span class="text-sm text-zinc-400"><i class="fas fa-heart mr-1"></i> <span id="video-likes">0</span></span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -570,15 +566,6 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="input-group">
-                                        <label class="input-label">Category</label>
-                                        <select class="input" required>
-                                            <option value="premium">Premium</option>
-                                            <option value="exclusive">Exclusive</option>
-                                            <option value="featured">Featured</option>
-                                            <option value="trending">Trending</option>
-                                        </select>
-                                    </div>
-                                    <div class="input-group">
                                         <label class="input-label">Tier</label>
                                         <select class="input" required>
                                             <option value="small">Small</option>
@@ -586,15 +573,9 @@
                                             <option value="big">Big</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
                                     <div class="input-group">
                                         <label class="input-label">Price (USDT)</label>
                                         <input type="number" class="input" placeholder="0" min="0" step="0.01" required>
-                                    </div>
-                                    <div class="input-group">
-                                        <label class="input-label">Duration (minutes)</label>
-                                        <input type="number" class="input" placeholder="0" min="0">
                                     </div>
                                 </div>
                                 
@@ -631,17 +612,6 @@
                                     </div>
                                     <div id="thumbnail-preview" class="hidden">
                                         <img id="preview-thumbnail" class="upload-preview" alt="Thumbnail preview">
-                                    </div>
-                                </div>
-                                
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="input-group">
-                                        <label class="input-label">Initial Views</label>
-                                        <input type="number" class="input" value="0" min="0">
-                                    </div>
-                                    <div class="input-group">
-                                        <label class="input-label">Initial Likes</label>
-                                        <input type="number" class="input" value="0" min="0">
                                     </div>
                                 </div>
                                 
@@ -1223,7 +1193,7 @@ async function loadVideosFromCloud() {
         
         const videos = await query.find();
         
-        // Convert to app format
+        // Convert to app format (removed views, likes, category, duration)
         state.videos = videos.map(video => ({
             id: video.id,
             objectId: video.id,
@@ -1231,12 +1201,8 @@ async function loadVideosFromCloud() {
             description: video.get('description') || '',
             url: video.get('url') || '',
             thumbnail: video.get('thumbnail') || '',
-            views: video.get('views') || 0,
-            likes: video.get('likes') || 0,
-            category: video.get('category') || 'premium',
             tier: video.get('tier') || 'big',
             price: video.get('price') || 0,
-            duration: video.get('duration') || 0,
             createdAt: video.get('createdAt') || new Date().toISOString(),
             filebaseUrl: video.get('filebaseUrl') || '',
             // Local tracking
@@ -1339,11 +1305,6 @@ function loadHome() {
                 ` : ''}
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                     <h3 class="font-medium text-sm truncate">${video.title}</h3>
-                    <div class="flex items-center gap-2 text-xs text-zinc-300 mt-1">
-                        <span><i class="fas fa-eye"></i> ${video.views}</span>
-                        <span><i class="fas fa-heart"></i> ${video.likes}</span>
-                        ${video.duration ? `<span><i class="fas fa-clock"></i> ${video.duration}m</span>` : ''}
-                    </div>
                 </div>
             </div>
         `;
@@ -1367,11 +1328,9 @@ function loadVideo(index) {
     videoPlayer.classList.remove('hidden');
     overlay.classList.remove('hidden');
     
-    // Update video info
+    // Update video info (removed views and likes display)
     document.getElementById('video-title').textContent = video.title;
     document.getElementById('video-description').textContent = video.description;
-    document.getElementById('video-views').textContent = video.views;
-    document.getElementById('video-likes').textContent = video.likes;
     
     // Set video source
     if (video.url || video.filebaseUrl) {
@@ -1385,8 +1344,8 @@ function loadVideo(index) {
             }
         }, 500);
         
-        // Increment view count
-        incrementViewCount(video);
+        // Update watched status
+        updateVideoWatchedStatus(video);
     } else {
         videoPlayer.src = '';
         showToast('Video Error', 'Video URL not available', 'warning');
@@ -1394,6 +1353,19 @@ function loadVideo(index) {
     
     // Store current video for controls
     window.currentVideo = videoPlayer;
+}
+
+function updateVideoWatchedStatus(video) {
+    if (!video) return;
+    
+    // Mark as watched
+    if (!video.watched) {
+        video.watched = true;
+        localStorage.setItem(`video_watched_${video.id || video.objectId}`, 'true');
+        
+        // Update watched count
+        updateWatchedCount();
+    }
 }
 
 function toggleVideoPlayback() {
@@ -1416,49 +1388,6 @@ function navigateVideo(direction) {
     }
     
     loadVideo(state.currentVideoIndex);
-}
-
-function incrementViewCount(video) {
-    if (!video) return;
-    
-    // Check if already viewed in this session
-    const viewKey = `video_viewed_${video.id || video.objectId}_${new Date().toDateString()}`;
-    if (localStorage.getItem(viewKey)) return;
-    
-    // Mark as viewed today
-    localStorage.setItem(viewKey, 'true');
-    
-    // Increment local count
-    video.views = (video.views || 0) + 1;
-    
-    // Update in Back4App if online
-    if (state.parseInitialized && state.isOnline && video.objectId) {
-        updateVideoInCloud(video.objectId, { views: video.views });
-    }
-    
-    // Update localStorage
-    localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
-    
-    // Update watched count
-    updateWatchedCount();
-}
-
-async function updateVideoInCloud(objectId, updates) {
-    if (!state.parseInitialized || !state.isOnline) return;
-    
-    try {
-        const query = new Parse.Query(ParseVideo);
-        const video = await query.get(objectId);
-        
-        for (const [key, value] of Object.entries(updates)) {
-            video.set(key, value);
-        }
-        
-        await video.save();
-        console.log('Video updated in cloud:', objectId);
-    } catch (error) {
-        console.error('Error updating video in cloud:', error);
-    }
 }
 
 function updateWatchedCount() {
@@ -1553,8 +1482,8 @@ async function loadAdminPage() {
 async function loadAdminStats() {
     if (!state.parseInitialized) {
         document.getElementById('admin-total-videos').textContent = state.videos.length;
-        document.getElementById('admin-total-views').textContent = state.videos.reduce((sum, v) => sum + (v.views || 0), 0);
-        document.getElementById('admin-total-likes').textContent = state.videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+        document.getElementById('admin-total-views').textContent = '0';
+        document.getElementById('admin-total-likes').textContent = '0';
         document.getElementById('admin-today-uploads').textContent = '0';
         return;
     }
@@ -1566,11 +1495,6 @@ async function loadAdminStats() {
         const totalVideos = await query.count();
         document.getElementById('admin-total-videos').textContent = totalVideos;
         
-        // Total views
-        query.aggregate([
-            { group: { objectId: null, totalViews: { $sum: '$views' } } }
-        ]);
-        
         // Today's uploads
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -1579,16 +1503,16 @@ async function loadAdminStats() {
         const todayUploads = await todayQuery.count();
         document.getElementById('admin-today-uploads').textContent = todayUploads;
         
-        // For views and likes, we'll calculate from local data for now
-        document.getElementById('admin-total-views').textContent = state.videos.reduce((sum, v) => sum + (v.views || 0), 0);
-        document.getElementById('admin-total-likes').textContent = state.videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+        // Views and likes are removed from the app
+        document.getElementById('admin-total-views').textContent = '0';
+        document.getElementById('admin-total-likes').textContent = '0';
         
     } catch (error) {
         console.error('Error loading admin stats:', error);
         // Fallback to local data
         document.getElementById('admin-total-videos').textContent = state.videos.length;
-        document.getElementById('admin-total-views').textContent = state.videos.reduce((sum, v) => sum + (v.views || 0), 0);
-        document.getElementById('admin-total-likes').textContent = state.videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+        document.getElementById('admin-total-views').textContent = '0';
+        document.getElementById('admin-total-likes').textContent = '0';
         document.getElementById('admin-today-uploads').textContent = '0';
     }
 }
@@ -1654,8 +1578,6 @@ function displayLocalAdminVideos() {
                     <h4 class="font-medium">${video.title || 'Untitled Video'}</h4>
                     <p class="text-sm text-zinc-400 truncate">${video.description || 'No description'}</p>
                     <div class="flex gap-2 mt-1">
-                        <span class="text-xs bg-surface-light px-2 py-1 rounded">👁️ ${video.views || 0}</span>
-                        <span class="text-xs bg-surface-light px-2 py-1 rounded">❤️ ${video.likes || 0}</span>
                         <span class="text-xs bg-surface-light px-2 py-1 rounded">${video.tier || 'big'}</span>
                     </div>
                 </div>
@@ -1685,8 +1607,6 @@ function displayAdminVideos(videos) {
             id: video.id,
             title: video.get('title') || 'Untitled Video',
             description: video.get('description') || '',
-            views: video.get('views') || 0,
-            likes: video.get('likes') || 0,
             tier: video.get('tier') || 'big',
             url: video.get('url') || '',
             filebaseUrl: video.get('filebaseUrl') || '',
@@ -1699,8 +1619,6 @@ function displayAdminVideos(videos) {
                     <h4 class="font-medium">${videoData.title}</h4>
                     <p class="text-sm text-zinc-400 truncate">${videoData.description}</p>
                     <div class="flex gap-2 mt-1">
-                        <span class="text-xs bg-surface-light px-2 py-1 rounded">👁️ ${videoData.views}</span>
-                        <span class="text-xs bg-surface-light px-2 py-1 rounded">❤️ ${videoData.likes}</span>
                         <span class="text-xs bg-surface-light px-2 py-1 rounded">${videoData.tier}</span>
                         <span class="text-xs bg-surface-light px-2 py-1 rounded">${videoData.filebaseUrl ? 'Filebase' : 'URL'}</span>
                     </div>
@@ -1729,17 +1647,13 @@ async function addVideo(e) {
     const form = e.target;
     const submitBtn = document.getElementById('submit-video-btn');
     
-    // Get form values
+    // Get form values (removed category and duration)
     const title = form[0].value;
     const description = form[1].value;
-    const category = form[2].value;
-    const tier = form[3].value;
-    const price = parseFloat(form[4].value) || 0;
-    const duration = parseInt(form[5].value) || 0;
-    const videoFile = form[6].files[0];
-    const thumbnailFile = form[8].files[0];
-    const initialViews = parseInt(form[10].value) || 0;
-    const initialLikes = parseInt(form[11].value) || 0;
+    const tier = form[2].value;
+    const price = parseFloat(form[3].value) || 0;
+    const videoFile = form[4].files[0];
+    const thumbnailFile = form[6].files[0];
     
     if (!title || !videoFile) {
         showToast('Error', 'Title and video file are required', 'error');
@@ -1794,19 +1708,15 @@ async function addVideo(e) {
         
         updateProgress(70, 'Saving video information...');
         
-        // Save to Back4App
+        // Save to Back4App (removed views, likes, category, duration)
         const video = new ParseVideo();
         video.set('title', title);
         video.set('description', description);
-        video.set('category', category);
         video.set('tier', tier);
         video.set('price', price);
-        video.set('duration', duration);
         video.set('url', videoUrl);
         video.set('filebaseUrl', videoUrl); // Store Filebase URL separately
         video.set('thumbnail', thumbnailUrl);
-        video.set('views', initialViews);
-        video.set('likes', initialLikes);
         video.set('isActive', true);
         
         await video.save();
@@ -2047,9 +1957,7 @@ function exportData() {
     const data = {
         videos: state.videos,
         exportedAt: new Date().toISOString(),
-        totalVideos: state.videos.length,
-        totalViews: state.videos.reduce((sum, v) => sum + (v.views || 0), 0),
-        totalLikes: state.videos.reduce((sum, v) => sum + (v.likes || 0), 0)
+        totalVideos: state.videos.length
     };
     
     const dataStr = JSON.stringify(data, null, 2);
@@ -2166,12 +2074,8 @@ async function backupToCloud() {
             video.set('description', localVideo.description || '');
             video.set('url', localVideo.url || '');
             video.set('thumbnail', localVideo.thumbnail || '');
-            video.set('views', localVideo.views || 0);
-            video.set('likes', localVideo.likes || 0);
-            video.set('category', localVideo.category || 'premium');
             video.set('tier', localVideo.tier || 'big');
             video.set('price', localVideo.price || 0);
-            video.set('duration', localVideo.duration || 0);
             video.set('isActive', true);
             
             await video.save();
@@ -2236,25 +2140,23 @@ function logout() {
     }
 }
 
-// Utility Functions
-function formatNumber(num) {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-}
-
-function formatDuration(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+// Utility function for updating video in cloud (kept for compatibility)
+async function updateVideoInCloud(objectId, updates) {
+    if (!state.parseInitialized || !state.isOnline) return;
     
-    if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    try {
+        const query = new Parse.Query(ParseVideo);
+        const video = await query.get(objectId);
+        
+        for (const [key, value] of Object.entries(updates)) {
+            video.set(key, value);
+        }
+        
+        await video.save();
+        console.log('Video updated in cloud:', objectId);
+    } catch (error) {
+        console.error('Error updating video in cloud:', error);
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 // Initialize when DOM is loaded
