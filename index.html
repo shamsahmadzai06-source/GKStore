@@ -17,6 +17,9 @@
     <!-- Back4App Parse SDK -->
     <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
     
+    <!-- AWS SDK for Filebase (S3 compatible) -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1495.0.min.js"></script>
+    
     <style>
         /* CSS Variables */
         :root {
@@ -551,7 +554,7 @@
                         </div>
                     </div>
                     
-                    <!-- Add Video Card - SIMPLIFIED FORM -->
+                    <!-- Add Video Card -->
                     <div class="card">
                         <div class="card-body">
                             <h3 class="font-semibold mb-4">Add New Video</h3>
@@ -615,7 +618,7 @@
                                     </div>
                                 </div>
                                 
-                                <button type="button" class="btn btn-primary w-full" id="submit-video-btn" onclick="uploadVideo()">
+                                <button type="button" class="btn btn-primary w-full" id="submit-video-btn" onclick="uploadVideoToFilebase()">
                                     <i class="fas fa-upload"></i> Upload Video
                                 </button>
                             </form>
@@ -796,15 +799,23 @@
     </div>
 
 <script>
-// App Configuration - CORRECTED KEYS
+// App Configuration
 const CONFIG = {
-    // Back4App Configuration - CORRECTED
+    // Back4App Configuration
     BACK4APP: {
-        APPLICATION_ID: "33B0D768699F462BDFC1",
-        JAVASCRIPT_KEY: "Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC",
-        REST_API_KEY: "q6DVDlCivOaQL7arryhXANW2MnE0Iw0ttABRnutT",
-        MASTER_KEY: "WF0v3HIhwdEUSAiaNTaZfVf1LQWoy3OYZEsZPLeA",
+        APPLICATION_ID: "33B0D768699F462BDFC1", // Your Back4App Application ID
+        JAVASCRIPT_KEY: "Yr1udg7LAUTk0EPLJM0BsXPlM8VMciKsQk2PhbSC", // Your Back4App JavaScript Key
         SERVER_URL: "https://parseapi.back4app.com"
+    },
+    
+    // Filebase Configuration (S3-compatible)
+    FILEBASE: {
+        ACCESS_KEY_ID: "YOUR_FILEBASE_ACCESS_KEY", // Get from Filebase dashboard
+        SECRET_ACCESS_KEY: "YOUR_FILEBASE_SECRET_KEY", // Get from Filebase dashboard
+        ENDPOINT: "s3.filebase.com",
+        REGION: "us-east-1",
+        BUCKET_NAME: "gk-store-videos", // Create this bucket in Filebase
+        CDN_URL: "https://ipfs.filebase.io/ipfs/" // Filebase CDN URL
     },
     
     // App Settings
@@ -833,11 +844,13 @@ const state = {
     isLoggedIn: false,
     isAdmin: false,
     parseInitialized: false,
+    filebaseInitialized: false,
     isOnline: navigator.onLine
 };
 
 // Initialize Parse/Back4App
 let ParseVideo = null;
+let S3 = null;
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', initApp);
@@ -848,6 +861,9 @@ async function initApp() {
         
         // Initialize Back4App
         await initializeBack4App();
+        
+        // Initialize Filebase
+        await initializeFilebase();
         
         // Load local data
         loadLocalData();
@@ -896,7 +912,7 @@ async function initializeBack4App() {
         // Create Video class
         ParseVideo = Parse.Object.extend("Video");
         
-        // Test connection with a simple query
+        // Test connection
         try {
             const testQuery = new Parse.Query(ParseVideo);
             testQuery.limit(1);
@@ -914,6 +930,46 @@ async function initializeBack4App() {
         console.error('Back4App initialization failed:', error);
         state.parseInitialized = false;
         showToast('Back4App Error', 'Using local storage only', 'warning');
+        return false;
+    }
+}
+
+async function initializeFilebase() {
+    try {
+        console.log('Initializing Filebase...');
+        
+        // Configure AWS SDK for Filebase (S3-compatible)
+        AWS.config.update({
+            accessKeyId: CONFIG.FILEBASE.ACCESS_KEY_ID,
+            secretAccessKey: CONFIG.FILEBASE.SECRET_ACCESS_KEY,
+            region: CONFIG.FILEBASE.REGION,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4'
+        });
+        
+        // Create S3 instance with Filebase endpoint
+        S3 = new AWS.S3({
+            endpoint: new AWS.Endpoint(CONFIG.FILEBASE.ENDPOINT),
+            apiVersion: '2006-03-01'
+        });
+        
+        // Test connection by listing buckets
+        try {
+            const buckets = await S3.listBuckets().promise();
+            console.log('Filebase connection successful. Available buckets:', buckets.Buckets);
+            state.filebaseInitialized = true;
+        } catch (error) {
+            console.warn('Filebase connection test failed, but will try to upload anyway:', error.message);
+            // We'll still try to upload as bucket might not exist yet
+            state.filebaseInitialized = true;
+        }
+        
+        console.log('Filebase initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('Filebase initialization failed:', error);
+        state.filebaseInitialized = false;
+        showToast('Filebase Error', 'Video uploads may not work', 'warning');
         return false;
     }
 }
@@ -949,7 +1005,6 @@ function loadLocalData() {
             state.videos = [];
         }
     } else {
-        // Default videos if none exist
         state.videos = [];
     }
     
@@ -1025,7 +1080,7 @@ function setupEventListeners() {
         
         videoPlayer.addEventListener('timeupdate', () => {
             // Track video progress
-            if (videoPlayer.currentTime > 30) { // After 30 seconds
+            if (videoPlayer.currentTime > 30) {
                 const currentVideo = state.videos[state.currentVideoIndex];
                 if (currentVideo && !currentVideo.watched) {
                     currentVideo.watched = true;
@@ -1195,7 +1250,7 @@ async function loadVideosFromCloud() {
         console.log('Loading videos from Back4App...');
         const query = new Parse.Query(ParseVideo);
         query.descending('createdAt');
-        query.limit(100); // Limit to 100 videos
+        query.limit(100);
         
         const videos = await query.find();
         console.log('Found', videos.length, 'videos on Back4App');
@@ -1211,7 +1266,6 @@ async function loadVideosFromCloud() {
             tier: video.get('tier') || 'big',
             price: video.get('price') || 0,
             createdAt: video.get('createdAt') || new Date().toISOString(),
-            // Local tracking
             watched: localStorage.getItem(`video_watched_${video.id}`) === 'true'
         }));
         
@@ -1240,7 +1294,6 @@ async function loadVideosFromCloud() {
 }
 
 function loadLocalVideos() {
-    // Already loaded from localStorage in loadLocalData()
     if (state.currentPage === 'home') {
         loadHome();
     }
@@ -1265,7 +1318,7 @@ function checkStaleVideos() {
     const now = Date.now();
     const hoursSinceCache = (now - cacheTime) / (1000 * 60 * 60);
     
-    if (hoursSinceCache > 1 && state.isOnline) { // More than 1 hour
+    if (hoursSinceCache > 1 && state.isOnline) {
         document.getElementById('sync-button').classList.remove('hidden');
         document.getElementById('sync-button-bottom').classList.remove('hidden');
     }
@@ -1365,12 +1418,9 @@ function loadVideo(index) {
 function updateVideoWatchedStatus(video) {
     if (!video) return;
     
-    // Mark as watched
     if (!video.watched) {
         video.watched = true;
         localStorage.setItem(`video_watched_${video.id || video.objectId}`, 'true');
-        
-        // Update watched count
         updateWatchedCount();
     }
 }
@@ -1403,10 +1453,7 @@ function updateWatchedCount() {
     const watchedVideos = state.videos.filter(v => v.watched).length;
     state.currentUser.watchedVideos = watchedVideos;
     
-    // Update UI
     document.getElementById('watched-count').textContent = watchedVideos;
-    
-    // Save to localStorage
     localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(state.currentUser));
 }
 
@@ -1421,21 +1468,17 @@ function updateProfilePage() {
         document.getElementById('join-date').textContent = new Date(state.currentUser.joinDate).toLocaleDateString();
     }
     
-    // Calculate watched videos
     const watchedVideos = state.videos.filter(v => v.watched).length;
     document.getElementById('watched-count').textContent = watchedVideos;
 }
 
 function clearCache() {
     if (confirm('Clear all cached data? This will not delete your account.')) {
-        // Clear video cache
         const videoKeys = Object.keys(localStorage).filter(key => key.startsWith('video_'));
         videoKeys.forEach(key => localStorage.removeItem(key));
         
-        // Clear cache timestamp
         localStorage.removeItem(CONFIG.STORAGE_KEYS.CACHE);
         
-        // Reload videos
         if (state.isOnline) {
             syncVideos();
         } else {
@@ -1456,11 +1499,9 @@ async function adminLogin(e) {
         state.isAdmin = true;
         localStorage.setItem(CONFIG.STORAGE_KEYS.ADMIN, 'true');
         
-        // Hide login form, show admin panel
         document.getElementById('admin-login-section').classList.add('hidden');
         document.getElementById('admin-panel-section').classList.remove('hidden');
         
-        // Load admin content
         await loadAdminPage();
         
         showToast('Admin Access Granted', 'Welcome to Admin Panel', 'success');
@@ -1479,10 +1520,7 @@ async function loadAdminPage() {
     document.getElementById('admin-login-section').classList.add('hidden');
     document.getElementById('admin-panel-section').classList.remove('hidden');
     
-    // Load admin stats
     await loadAdminStats();
-    
-    // Load admin videos
     await loadAdminVideos();
 }
 
@@ -1497,12 +1535,9 @@ async function loadAdminStats() {
     
     try {
         const query = new Parse.Query(ParseVideo);
-        
-        // Total videos
         const totalVideos = await query.count();
         document.getElementById('admin-total-videos').textContent = totalVideos;
         
-        // Today's uploads
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayQuery = new Parse.Query(ParseVideo);
@@ -1510,13 +1545,11 @@ async function loadAdminStats() {
         const todayUploads = await todayQuery.count();
         document.getElementById('admin-today-uploads').textContent = todayUploads;
         
-        // Views and likes are removed from the app
         document.getElementById('admin-total-views').textContent = '0';
         document.getElementById('admin-total-likes').textContent = '0';
         
     } catch (error) {
         console.error('Error loading admin stats:', error);
-        // Fallback to local data
         document.getElementById('admin-total-videos').textContent = state.videos.length;
         document.getElementById('admin-total-views').textContent = '0';
         document.getElementById('admin-total-likes').textContent = '0';
@@ -1648,8 +1681,8 @@ function displayAdminVideos(videos) {
     videoList.innerHTML = html;
 }
 
-// SIMPLIFIED UPLOAD FUNCTION
-async function uploadVideo() {
+// UPLOAD TO FILEBASE FUNCTION
+async function uploadVideoToFilebase() {
     const title = document.getElementById('video-title-input').value;
     const description = document.getElementById('video-description-input').value;
     const tier = document.getElementById('video-tier-input').value;
@@ -1669,28 +1702,46 @@ async function uploadVideo() {
     try {
         // Show upload progress
         document.getElementById('upload-progress').classList.remove('hidden');
-        updateProgress(10, 'Preparing upload...');
+        updateProgress(10, 'Preparing files...');
         
         let videoUrl = '';
         let thumbnailUrl = '';
         
-        // Upload video file to Back4App
-        updateProgress(30, 'Uploading video file...');
-        const parseVideoFile = new Parse.File(videoFile.name, videoFile);
-        await parseVideoFile.save();
-        videoUrl = parseVideoFile.url();
+        // Upload video to Filebase
+        updateProgress(30, 'Uploading video to Filebase...');
+        const videoFileName = `videos/${Date.now()}_${videoFile.name.replace(/\s+/g, '_')}`;
+        const videoUploadParams = {
+            Bucket: CONFIG.FILEBASE.BUCKET_NAME,
+            Key: videoFileName,
+            Body: videoFile,
+            ContentType: videoFile.type,
+            ACL: 'public-read'
+        };
+        
+        const videoUpload = await S3.upload(videoUploadParams).promise();
+        videoUrl = `https://${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/${videoFileName}`;
+        console.log('Video uploaded to Filebase:', videoUrl);
         
         // Upload thumbnail if provided
         if (thumbnailFile) {
-            updateProgress(50, 'Uploading thumbnail...');
-            const parseThumbnailFile = new Parse.File(thumbnailFile.name, thumbnailFile);
-            await parseThumbnailFile.save();
-            thumbnailUrl = parseThumbnailFile.url();
+            updateProgress(50, 'Uploading thumbnail to Filebase...');
+            const thumbnailFileName = `thumbnails/${Date.now()}_${thumbnailFile.name.replace(/\s+/g, '_')}`;
+            const thumbnailUploadParams = {
+                Bucket: CONFIG.FILEBASE.BUCKET_NAME,
+                Key: thumbnailFileName,
+                Body: thumbnailFile,
+                ContentType: thumbnailFile.type,
+                ACL: 'public-read'
+            };
+            
+            const thumbnailUpload = await S3.upload(thumbnailUploadParams).promise();
+            thumbnailUrl = `https://${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/${thumbnailFileName}`;
+            console.log('Thumbnail uploaded to Filebase:', thumbnailUrl);
         }
         
-        updateProgress(70, 'Saving video information...');
+        updateProgress(70, 'Saving video information to Back4App...');
         
-        // Save to Back4App
+        // Save metadata to Back4App
         const video = new ParseVideo();
         video.set('title', title);
         video.set('description', description);
@@ -1699,17 +1750,14 @@ async function uploadVideo() {
         video.set('url', videoUrl);
         video.set('thumbnail', thumbnailUrl);
         video.set('isActive', true);
+        video.set('fileName', videoFileName);
         
         await video.save();
         
         updateProgress(100, 'Video uploaded successfully!');
         
         // Reset form
-        document.getElementById('video-title-input').value = '';
-        document.getElementById('video-description-input').value = '';
-        document.getElementById('video-price-input').value = '0';
-        document.getElementById('video-file-input').value = '';
-        document.getElementById('thumbnail-input').value = '';
+        document.getElementById('add-video-form').reset();
         document.getElementById('video-preview').classList.add('hidden');
         document.getElementById('thumbnail-preview').classList.add('hidden');
         document.getElementById('file-input-text').textContent = 'Choose Video File';
@@ -1752,20 +1800,53 @@ function updateProgress(percent, message) {
 
 function editVideoCloud(objectId) {
     showToast('Info', 'Edit feature coming soon', 'info');
-    // Implementation for editing cloud videos
 }
 
 async function deleteVideoCloud(objectId) {
-    if (!confirm('Are you sure you want to delete this video from the cloud? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this video? This will remove it from both Back4App and Filebase.')) {
         return;
     }
     
     try {
+        // Get video info first
         const query = new Parse.Query(ParseVideo);
         const video = await query.get(objectId);
+        
+        // Get file names for deletion from Filebase
+        const videoUrl = video.get('url');
+        const thumbnailUrl = video.get('thumbnail');
+        
+        // Delete from Back4App
         await video.destroy();
         
-        showToast('Success', 'Video deleted from cloud', 'success');
+        // Delete from Filebase if we have URLs
+        if (state.filebaseInitialized) {
+            try {
+                if (videoUrl) {
+                    const videoKey = videoUrl.split(`${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/`)[1];
+                    if (videoKey) {
+                        await S3.deleteObject({
+                            Bucket: CONFIG.FILEBASE.BUCKET_NAME,
+                            Key: videoKey
+                        }).promise();
+                    }
+                }
+                
+                if (thumbnailUrl) {
+                    const thumbnailKey = thumbnailUrl.split(`${CONFIG.FILEBASE.BUCKET_NAME}.s3.filebase.com/`)[1];
+                    if (thumbnailKey) {
+                        await S3.deleteObject({
+                            Bucket: CONFIG.FILEBASE.BUCKET_NAME,
+                            Key: thumbnailKey
+                        }).promise();
+                    }
+                }
+            } catch (s3Error) {
+                console.warn('Could not delete files from Filebase:', s3Error.message);
+            }
+        }
+        
+        showToast('Success', 'Video deleted successfully', 'success');
         
         // Reload videos
         await loadAdminVideos();
@@ -1800,7 +1881,6 @@ function editVideo(videoId) {
             video.description = newDescription;
             localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
             
-            // Update in cloud if it's a cloud video
             if (video.objectId && state.parseInitialized && state.isOnline) {
                 updateVideoInCloud(video.objectId, {
                     title: newTitle,
@@ -1810,7 +1890,6 @@ function editVideo(videoId) {
             
             showToast('Video Updated', 'Video has been updated', 'success');
             
-            // Refresh display
             if (state.currentPage === 'home') loadHome();
             if (state.currentPage === 'admin') displayLocalAdminVideos();
         }
@@ -1833,18 +1912,15 @@ function deleteVideo(videoId) {
     
     const video = state.videos[index];
     
-    // Delete from cloud if it's a cloud video
     if (video.objectId && state.parseInitialized && state.isOnline) {
         deleteVideoCloud(video.objectId).catch(console.error);
     }
     
-    // Remove from local array
     state.videos.splice(index, 1);
     localStorage.setItem(CONFIG.STORAGE_KEYS.VIDEOS, JSON.stringify(state.videos));
     
     showToast('Video Deleted', 'Video has been removed', 'success');
     
-    // Refresh display
     if (state.currentPage === 'home') loadHome();
     if (state.currentPage === 'admin') displayLocalAdminVideos();
 }
@@ -1907,7 +1983,6 @@ function sendContactMessage(e) {
     const email = e.target[1].value;
     const message = e.target[2].value;
     
-    // In a real app, you would send this to your backend
     console.log('Contact message:', { name, email, message });
     
     showToast('Message Sent', 'We will respond within 24 hours', 'success');
@@ -1935,7 +2010,6 @@ function submitBookRequest(e) {
     const tier = e.target[2].value;
     const payment = e.target[3].value;
     
-    // In a real app, you would send this to your backend
     console.log('Book request:', { name, phone, tier, payment });
     
     showToast('Request Submitted', 'We will contact you shortly on WhatsApp', 'success');
@@ -1980,7 +2054,6 @@ document.getElementById('import-file-input')?.addEventListener('change', functio
             const data = JSON.parse(event.target.result);
             
             if (data.videos && Array.isArray(data.videos)) {
-                // Merge imported videos with existing ones
                 const importedVideoIds = new Set(state.videos.map(v => v.id));
                 const newVideos = data.videos.filter(v => !importedVideoIds.has(v.id));
                 
@@ -1989,7 +2062,6 @@ document.getElementById('import-file-input')?.addEventListener('change', functio
                 
                 showToast('Data Imported', `Added ${newVideos.length} new videos`, 'success');
                 
-                // Refresh display
                 if (state.currentPage === 'home') loadHome();
                 if (state.currentPage === 'admin') displayLocalAdminVideos();
             } else {
@@ -2001,7 +2073,6 @@ document.getElementById('import-file-input')?.addEventListener('change', functio
     };
     reader.readAsText(file);
     
-    // Reset file input
     e.target.value = '';
 });
 
@@ -2032,7 +2103,6 @@ async function clearAllVideos() {
         
         showToast('All Videos Cleared', 'All video data has been removed', 'success');
         
-        // Refresh display
         if (state.currentPage === 'home') loadHome();
         if (state.currentPage === 'admin') {
             await loadAdminVideos();
@@ -2057,7 +2127,6 @@ async function backupToCloud() {
         let uploadedCount = 0;
         
         for (const localVideo of state.videos) {
-            // Check if video already exists in cloud
             if (localVideo.objectId) continue;
             
             const video = new ParseVideo();
@@ -2095,7 +2164,6 @@ function showToast(title, message, type = 'info') {
     document.getElementById('toast-title').textContent = title;
     document.getElementById('toast-message').textContent = message;
     
-    // Set icon based on type
     if (type === 'success') {
         icon.className = 'fas fa-check-circle text-green-500';
     } else if (type === 'error') {
@@ -2108,7 +2176,6 @@ function showToast(title, message, type = 'info') {
     
     toast.classList.remove('hidden');
     
-    // Auto-hide after 3 seconds
     setTimeout(() => {
         toast.classList.add('hidden');
     }, 3000);
