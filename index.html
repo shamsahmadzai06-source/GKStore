@@ -1581,7 +1581,7 @@
     <!-- Main Content Container -->
     <div id="content-container" class="content">
         <!-- Auth Pages (Login/Signup) -->
-        <div id="auth-page" class="page">
+        <div id="auth-page" class="page hidden">
             <div class="auth-container">
                 <div class="auth-card card">
                     <!-- Login Form -->
@@ -2565,8 +2565,16 @@
                     showPage('auth');
                 }
             } else {
-                showPage('auth');
+                // Show welcome modal first
+                document.getElementById('welcome-modal').classList.remove('hidden');
             }
+        }
+
+        // Close welcome modal - FIXED FUNCTION
+        function closeWelcomeModal() {
+            console.log('Closing welcome modal...');
+            document.getElementById('welcome-modal').classList.add('hidden');
+            showPage('auth');
         }
 
         // Setup Supabase connection and load initial data
@@ -3037,12 +3045,6 @@
             }
         }
 
-        // Close welcome modal
-        function closeWelcomeModal() {
-            document.getElementById('welcome-modal').classList.add('hidden');
-            showPage('auth');
-        }
-
         // Load user preferences
         function loadPreferences() {
             const savedLanguage = localStorage.getItem('appLanguage') || 'en';
@@ -3120,18 +3122,24 @@
             });
         }
 
-        // Show page
+        // Show page - FIXED FUNCTION
         async function showPage(page) {
+            console.log('Showing page:', page);
+            
             // If not logged in and trying to access protected pages, redirect to auth
             const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
             if (protectedPages.includes(page) && !appState.isLoggedIn) {
+                console.log('User not logged in, redirecting to auth');
                 page = 'auth';
             }
             
             // If logged in and trying to access auth, redirect to home
             if (page === 'auth' && appState.isLoggedIn) {
+                console.log('User already logged in, redirecting to home');
                 page = 'home';
             }
+            
+            console.log('Final page to show:', page);
             
             const pages = document.querySelectorAll('[id$="-page"]');
             pages.forEach(p => p.classList.add('hidden'));
@@ -3168,6 +3176,8 @@
                         loadNotificationsContent();
                         break;
                 }
+            } else {
+                console.error('Page element not found:', `${page}-page`);
             }
         }
 
