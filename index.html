@@ -2123,8 +2123,8 @@
         </div>
     </div>
 
-    <!-- Welcome Modal -->
-    <div id="welcome-modal" class="modal-overlay">
+    <!-- Welcome Modal - FIXED: Added hidden class -->
+    <div id="welcome-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-body">
                 <div class="text-center">
@@ -2541,12 +2541,18 @@
         let isVideoPlaying = true;
 
         // ============================================
-        // INITIALIZE APP
+        // INITIALIZE APP - FIXED
         // ============================================
         async function initApp() {
             console.log('🚀 Initializing GK Store App...');
             
-            // First, try to initialize Supabase
+            // First, hide the welcome modal if it's showing
+            const welcomeModal = document.getElementById('welcome-modal');
+            if (welcomeModal) {
+                welcomeModal.classList.add('hidden');
+            }
+            
+            // Then, try to initialize Supabase
             appState.useSupabase = await initializeSupabase();
             
             if (!appState.useSupabase) {
@@ -2569,13 +2575,14 @@
                     // Load user stats
                     await loadUserStats();
                     
-                    // Show home page
+                    // Show home page directly
                     showPage('home');
                 } catch (e) {
                     console.error('Error parsing saved user:', e);
                     showPage('auth');
                 }
             } else {
+                // Show auth page if not logged in
                 showPage('auth');
             }
         }
@@ -3851,10 +3858,17 @@
         // UTILITY FUNCTIONS
         // ============================================
         
-        // Close welcome modal
+        // Close welcome modal - FIXED
         function closeWelcomeModal() {
-            document.getElementById('welcome-modal').classList.add('hidden');
-            showPage('auth');
+            const welcomeModal = document.getElementById('welcome-modal');
+            if (welcomeModal) {
+                welcomeModal.classList.add('hidden');
+            }
+            
+            // If user is not logged in, show auth page
+            if (!appState.isLoggedIn) {
+                showPage('auth');
+            }
         }
         
         // Load user preferences
