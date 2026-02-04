@@ -2124,7 +2124,7 @@
     </div>
 
     <!-- Welcome Modal -->
-    <div id="welcome-modal" class="modal-overlay hidden">
+    <div id="welcome-modal" class="modal-overlay">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-body">
                 <div class="text-center">
@@ -2302,7 +2302,7 @@
         </div>
     </div>
 
-    <!-- Add Video Modal -->
+    <!-- Add Video Modal - UPDATED WITH FILE UPLOAD -->
     <div id="add-video-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-header">
@@ -2348,22 +2348,68 @@
                         </select>
                     </div>
                     
-                    <!-- YouTube or Direct Video URL -->
+                    <!-- OPTION 1: Upload Video File -->
                     <div class="input-group">
-                        <label class="input-label">Video URL <span class="text-danger">*</span></label>
-                        <input type="url" class="input" id="video-url-input" placeholder="https://example.com/video.mp4 or YouTube URL" required>
-                        <p class="text-xs text-zinc-400 mt-1">Enter a direct video URL or YouTube embed URL</p>
+                        <label class="input-label">Upload Video File</label>
+                        <div class="file-upload-area" id="video-upload-area">
+                            <i class="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
+                            <p class="mb-2">Drag & drop video file here</p>
+                            <p class="text-xs text-zinc-400 mb-3">or click to browse (MP4, WebM, MOV)</p>
+                            <input type="file" id="video-file-input" accept="video/*" class="hidden">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('video-file-input').click()">
+                                Browse Files
+                            </button>
+                        </div>
+                        <div id="video-file-preview" class="hidden mt-2">
+                            <div class="flex items-center justify-between bg-surface-light p-2 rounded">
+                                <span id="video-file-name" class="text-sm"></span>
+                                <button type="button" class="text-danger" onclick="clearVideoFile()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Video Thumbnail URL -->
+                    <!-- OPTION 2: Video URL (Alternative to file upload) -->
                     <div class="input-group">
-                        <label class="input-label">Thumbnail URL (Optional)</label>
-                        <input type="url" class="input" id="video-thumbnail-input" placeholder="https://example.com/thumbnail.jpg">
+                        <label class="input-label">Or Enter Video URL</label>
+                        <input type="url" class="input" id="video-url-input" placeholder="https://example.com/video.mp4">
+                        <p class="text-xs text-zinc-400 mt-1">Leave empty if uploading file</p>
                     </div>
                     
-                    <button type="button" class="btn btn-primary w-full" onclick="addNewVideo()">
+                    <!-- Thumbnail Upload -->
+                    <div class="input-group">
+                        <label class="input-label">Thumbnail Image</label>
+                        <div class="file-upload-area" id="thumbnail-upload-area">
+                            <i class="fas fa-image text-2xl mb-2 text-secondary"></i>
+                            <p class="text-sm mb-2">Upload thumbnail (Optional)</p>
+                            <input type="file" id="thumbnail-file-input" accept="image/*" class="hidden">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('thumbnail-file-input').click()">
+                                Select Image
+                            </button>
+                        </div>
+                        <div id="thumbnail-preview" class="hidden mt-2">
+                            <img id="thumbnail-preview-img" class="w-20 h-20 object-cover rounded" alt="Thumbnail preview">
+                            <button type="button" class="text-danger mt-2" onclick="clearThumbnail()">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary w-full mt-4" onclick="addNewVideo()">
                         <i class="fas fa-plus"></i> Add Video
                     </button>
+                    
+                    <!-- Progress Bar -->
+                    <div id="upload-progress" class="hidden mt-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Uploading...</span>
+                            <span id="upload-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="upload-progress-fill" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -2485,75 +2531,60 @@
 
     <script>
         // ============================================
-        // SUPABASE CONFIGURATION - FIXED
+        // SUPABASE CONFIGURATION - CORRECT KEYS
         // ============================================
         const SUPABASE_URL = 'https://hizhxoagtvloapmafosz.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbHp4b2FndHZsb2FwbWFmb3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3OTIyODUsImV4cCI6MjA1NjM2ODI4NX0.rGpykFqB1GMrS5-ftB-IXzGZ8Q9bvVZSRnGePz05hE4';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpemh4b2FndHZsb2FwbWFmb3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxOTY4MTgsImV4cCI6MjA4NTc3MjgxOH0.Fju8tbAq0AtKWAbxJZ4p1q065_52gBsdIBgMFH2Y3zI';
         
         // Initialize Supabase client
         let supabase = null;
         
-        // Initialize Supabase client - NON-BLOCKING version
-        async function initializeSupabaseAsync() {
+        async function initializeSupabase() {
             try {
                 // Use the correct Supabase initialization
-                if (window.supabase && window.supabase.createClient) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    console.log('✅ Supabase client created');
-                    
-                    // Test connection with timeout
-                    setTimeout(async () => {
-                        try {
-                            const { data, error } = await supabase.from('videos').select('*').limit(1);
-                            if (error) {
-                                console.warn('⚠️ Supabase connection test failed:', error.message);
-                                appState.useSupabase = false;
-                                // Load fallback videos
-                                await loadFallbackVideos();
-                            } else {
-                                console.log('✅ Supabase connection successful');
-                                appState.useSupabase = true;
-                                // Refresh videos from Supabase
-                                await loadVideosFromStorage();
-                            }
-                        } catch (testError) {
-                            console.warn('⚠️ Supabase test error:', testError);
-                            appState.useSupabase = false;
-                            await loadFallbackVideos();
-                        }
-                    }, 1000);
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase initialized successfully');
+                
+                // Test connection
+                const { data, error } = await supabase.from('videos').select('*').limit(1);
+                if (error) {
+                    console.error('❌ Supabase connection test failed:', error.message);
+                    // Create table if it doesn't exist
+                    await createTablesIfNeeded();
+                    return true;
                 } else {
-                    console.warn('⚠️ Supabase SDK not available, using local storage');
-                    appState.useSupabase = false;
-                    await loadFallbackVideos();
+                    console.log('✅ Supabase connection test passed');
+                    return true;
                 }
             } catch (error) {
                 console.error('❌ Failed to initialize Supabase:', error);
-                appState.useSupabase = false;
-                await loadFallbackVideos();
+                return false;
             }
         }
         
-        // Load fallback videos if Supabase fails
-        async function loadFallbackVideos() {
-            console.log('📂 Loading fallback videos from local storage');
-            
-            // Check local storage first
-            const localVideos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-            
-            if (localVideos.length > 0) {
-                appState.videos = localVideos;
-                console.log(`✅ Loaded ${localVideos.length} videos from local storage`);
-            } else {
-                // Create sample videos
-                appState.videos = await createSampleVideos();
-                console.log(`✅ Created ${appState.videos.length} sample videos`);
-            }
-            
-            // Update UI if we're on home page
-            if (appState.currentPage === 'home' && appState.isLoggedIn) {
-                loadVideo(appState.currentVideoIndex);
-                loadVideoGrid();
+        // Create tables if they don't exist
+        async function createTablesIfNeeded() {
+            try {
+                console.log('Creating tables if needed...');
+                
+                // Try to create videos table
+                const { error: videoError } = await supabase.from('videos').select('*').limit(1);
+                if (videoError && videoError.message.includes('does not exist')) {
+                    console.log('Creating videos table...');
+                    // Table will be created automatically on first insert
+                }
+                
+                // Try to create book_requests table
+                const { error: requestError } = await supabase.from('book_requests').select('*').limit(1);
+                if (requestError && requestError.message.includes('does not exist')) {
+                    console.log('Creating book_requests table...');
+                    // Table will be created automatically on first insert
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Error checking tables:', error);
+                return false;
             }
         }
         
@@ -2587,14 +2618,18 @@
         async function initApp() {
             console.log('🚀 Initializing GK Store App...');
             
-            // First, load user preferences and setup UI
+            // First, try to initialize Supabase
+            appState.useSupabase = await initializeSupabase();
+            
+            if (!appState.useSupabase) {
+                console.log('⚠️ Supabase not available, using local storage mode');
+                showToast('warning', 'Offline Mode', 'Using local storage. Some features may be limited.');
+            }
+            
             loadPreferences();
             setupEventListeners();
             registerServiceWorker();
             setupPWAInstall();
-            
-            // Try to initialize Supabase WITHOUT blocking the app
-            initializeSupabaseAsync();
             
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
@@ -2603,25 +2638,16 @@
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
                     
-                    // Update profile page with saved user data
-                    document.getElementById('user-name').textContent = appState.currentUser.name || 'User';
-                    document.getElementById('user-email').textContent = appState.currentUser.email || 'user@example.com';
-                    document.getElementById('member-since').textContent = new Date().toLocaleDateString();
-                    
                     // Load user stats
                     await loadUserStats();
                     
-                    // Load videos and show home page
-                    await loadVideos();
+                    // Show home page
                     showPage('home');
                 } catch (e) {
                     console.error('Error parsing saved user:', e);
-                    // If there's an error with saved user, clear it and show auth
-                    localStorage.removeItem('gkStoreUser');
                     showPage('auth');
                 }
             } else {
-                // No saved user, show auth page
                 showPage('auth');
             }
         }
@@ -2629,18 +2655,6 @@
         // ============================================
         // SUPABASE FUNCTIONS
         // ============================================
-        
-        // Hash function for passwords
-        function secureHash(str) {
-            let hash = 0;
-            if (str.length === 0) return hash.toString(36);
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash).toString(36);
-        }
         
         // Load videos from Supabase or local storage
         async function loadVideosFromStorage() {
@@ -2653,7 +2667,10 @@
                     
                     if (error) {
                         console.error('Error loading videos from Supabase:', error);
-                        throw error;
+                        // Fallback to local storage
+                        const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
+                        console.log(`✅ Loaded ${videos.length} videos from local storage (fallback)`);
+                        return videos;
                     }
                     
                     console.log(`✅ Loaded ${data?.length || 0} videos from Supabase`);
@@ -2723,7 +2740,13 @@
                     
                     if (error) {
                         console.error('Error saving book request to Supabase:', error);
-                        return null;
+                        // Fallback to local storage
+                        const requests = JSON.parse(localStorage.getItem('gkStoreBookRequests') || '[]');
+                        request.id = Date.now().toString();
+                        request.created_at = new Date().toISOString();
+                        requests.unshift(request);
+                        localStorage.setItem('gkStoreBookRequests', JSON.stringify(requests));
+                        return request;
                     }
                     
                     return data;
@@ -2753,7 +2776,13 @@
                     
                     if (error) {
                         console.error('Error saving video to Supabase:', error);
-                        return null;
+                        // Fallback to local storage
+                        const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
+                        video.id = video.id || `vid_${Date.now()}`;
+                        video.created_at = new Date().toISOString();
+                        videos.unshift(video);
+                        localStorage.setItem('gkStoreVideos', JSON.stringify(videos));
+                        return video;
                     }
                     
                     return data;
@@ -2782,7 +2811,11 @@
                     
                     if (error) {
                         console.error('Error deleting video from Supabase:', error);
-                        return false;
+                        // Fallback to local storage
+                        const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
+                        const filteredVideos = videos.filter(v => v.id !== videoId);
+                        localStorage.setItem('gkStoreVideos', JSON.stringify(filteredVideos));
+                        return true;
                     }
                     
                     return true;
@@ -2795,6 +2828,94 @@
             } catch (error) {
                 console.error('Error deleting video:', error);
                 return false;
+            }
+        }
+        
+        // Upload video file to Supabase Storage
+        async function uploadVideoFile(file, videoId) {
+            try {
+                if (!supabase || !appState.useSupabase) {
+                    throw new Error('Supabase not available for file upload');
+                }
+                
+                // Create a unique filename
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${videoId}_${Date.now()}.${fileExt}`;
+                
+                // Show upload progress
+                showUploadProgress(0);
+                
+                const { data, error } = await supabase.storage
+                    .from('videos')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        onUploadProgress: (progress) => {
+                            const percentage = (progress.loaded / progress.total) * 100;
+                            showUploadProgress(percentage);
+                        }
+                    });
+
+                if (error) throw error;
+
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('videos')
+                    .getPublicUrl(fileName);
+
+                // Hide progress bar
+                document.getElementById('upload-progress').classList.add('hidden');
+                
+                return publicUrl;
+
+            } catch (error) {
+                console.error('Error uploading video:', error);
+                document.getElementById('upload-progress').classList.add('hidden');
+                throw error;
+            }
+        }
+        
+        // Upload thumbnail image
+        async function uploadThumbnailFile(file, videoId) {
+            try {
+                if (!supabase || !appState.useSupabase) {
+                    throw new Error('Supabase not available for file upload');
+                }
+                
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${videoId}_thumbnail_${Date.now()}.${fileExt}`;
+                
+                const { data, error } = await supabase.storage
+                    .from('thumbnails')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (error) throw error;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('thumbnails')
+                    .getPublicUrl(fileName);
+
+                return publicUrl;
+
+            } catch (error) {
+                console.error('Error uploading thumbnail:', error);
+                throw error;
+            }
+        }
+        
+        // Show upload progress
+        function showUploadProgress(percentage) {
+            const progressBar = document.getElementById('upload-progress');
+            const progressFill = document.getElementById('upload-progress-fill');
+            const progressText = document.getElementById('upload-percentage');
+            
+            if (progressBar && progressFill && progressText) {
+                progressBar.classList.remove('hidden');
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = `${Math.round(percentage)}%`;
             }
         }
         
@@ -2941,66 +3062,26 @@
         // VIDEO MANAGEMENT FUNCTIONS
         // ============================================
         
-        // Load videos for home page - with better error handling
+        // Load videos for home page
         async function loadVideos() {
             try {
-                console.log('📹 Loading videos...');
+                appState.videos = await loadVideosFromStorage();
                 
-                if (appState.useSupabase && supabase) {
-                    console.log('🔗 Loading from Supabase...');
-                    const { data, error } = await supabase
-                        .from('videos')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('❌ Supabase error:', error);
-                        throw error;
-                    }
-                    
-                    appState.videos = data || [];
-                    console.log(`✅ Loaded ${appState.videos.length} videos from Supabase`);
-                    
-                    // Save to local storage as backup
-                    localStorage.setItem('gkStoreVideos', JSON.stringify(appState.videos));
-                } else {
-                    console.log('📂 Loading from local storage...');
-                    appState.videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                    console.log(`✅ Loaded ${appState.videos.length} videos from local storage`);
-                }
-                
-                // If no videos, create sample videos
+                // If no videos, create some sample videos
                 if (appState.videos.length === 0) {
-                    console.log('🎬 No videos found, creating sample videos');
+                    console.log('No videos found, creating sample videos');
                     appState.videos = await createSampleVideos();
                 }
                 
-                // Update UI
-                if (appState.currentPage === 'home' && appState.isLoggedIn) {
+                if (appState.videos.length > 0) {
                     loadVideo(appState.currentVideoIndex);
                     loadVideoGrid();
+                } else {
+                    showNoVideosMessage();
                 }
-                
             } catch (error) {
-                console.error('❌ Error loading videos:', error);
-                
-                // Try to load from local storage as fallback
-                try {
-                    const fallbackVideos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                    if (fallbackVideos.length > 0) {
-                        appState.videos = fallbackVideos;
-                        console.log(`✅ Loaded ${fallbackVideos.length} videos from fallback storage`);
-                    } else {
-                        appState.videos = await createSampleVideos();
-                        console.log(`✅ Created ${appState.videos.length} sample videos`);
-                    }
-                } catch (fallbackError) {
-                    console.error('❌ Fallback also failed:', fallbackError);
-                    appState.videos = await createSampleVideos();
-                }
-                
-                // Show user-friendly message
-                showToast('warning', 'Offline Mode', 'Using local storage. Some features may be limited.');
+                console.error('Error loading videos:', error);
+                showToast('error', 'Load Failed', 'Could not load videos');
             }
         }
         
@@ -3043,16 +3124,14 @@
             ];
             
             // Save sample videos to storage
-            if (appState.useSupabase) {
-                // For Supabase, we'll just use them in memory
-                return sampleVideos;
-            } else {
-                localStorage.setItem('gkStoreVideos', JSON.stringify(sampleVideos));
-                return sampleVideos;
+            for (const video of sampleVideos) {
+                await saveVideo(video);
             }
+            
+            return sampleVideos;
         }
         
-        // Add new video
+        // Add new video with file upload
         async function addNewVideo() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
@@ -3065,23 +3144,66 @@
             const price = parseFloat(document.getElementById('video-price').value);
             const tier = document.getElementById('video-tier').value;
             const url = document.getElementById('video-url-input').value.trim();
-            const thumbnail = document.getElementById('video-thumbnail-input').value.trim();
             
             // Validation
-            if (!id || !title || isNaN(price) || price < 0 || !tier || !url) {
+            if (!id || !title || isNaN(price) || price < 0 || !tier) {
                 showToast('error', 'Validation Error', 'Please fill all required fields');
                 return;
             }
             
             try {
+                let videoUrl = url;
+                let thumbnailUrl = '';
+                
+                // Check if video file was uploaded
+                const videoFileInput = document.getElementById('video-file-input');
+                if (videoFileInput && videoFileInput.files.length > 0) {
+                    const videoFile = videoFileInput.files[0];
+                    
+                    // Validate video file
+                    if (!videoFile.type.startsWith('video/')) {
+                        showToast('error', 'Invalid File', 'Please select a video file');
+                        return;
+                    }
+                    
+                    if (videoFile.size > 100 * 1024 * 1024) { // 100MB limit
+                        showToast('error', 'File Too Large', 'Video file must be less than 100MB');
+                        return;
+                    }
+                    
+                    videoUrl = await uploadVideoFile(videoFile, id);
+                } else if (!url) {
+                    showToast('error', 'Video Required', 'Please either upload a video file or enter a video URL');
+                    return;
+                }
+                
+                // Check if thumbnail file was uploaded
+                const thumbnailFileInput = document.getElementById('thumbnail-file-input');
+                if (thumbnailFileInput && thumbnailFileInput.files.length > 0) {
+                    const thumbnailFile = thumbnailFileInput.files[0];
+                    
+                    // Validate thumbnail file
+                    if (!thumbnailFile.type.startsWith('image/')) {
+                        showToast('error', 'Invalid File', 'Please select an image file for thumbnail');
+                        return;
+                    }
+                    
+                    if (thumbnailFile.size > 5 * 1024 * 1024) { // 5MB limit
+                        showToast('error', 'File Too Large', 'Thumbnail must be less than 5MB');
+                        return;
+                    }
+                    
+                    thumbnailUrl = await uploadThumbnailFile(thumbnailFile, id);
+                }
+                
                 const video = {
                     id: id,
                     title: title,
                     description: description || 'No description available',
                     tier: tier,
                     price: price,
-                    video_url: url,
-                    thumbnail_url: thumbnail || '',
+                    video_url: videoUrl,
+                    thumbnail_url: thumbnailUrl,
                     sold: false,
                     created_at: new Date().toISOString()
                 };
@@ -3107,6 +3229,9 @@
                 
                 // Reset form and close modal
                 document.getElementById('add-video-form').reset();
+                document.getElementById('video-file-preview').classList.add('hidden');
+                document.getElementById('thumbnail-preview').classList.add('hidden');
+                document.getElementById('upload-progress').classList.add('hidden');
                 closeModal('add-video-modal');
                 
             } catch (error) {
@@ -3211,70 +3336,49 @@
         }
         
         // ============================================
-        // UI FUNCTIONS - FIXED VERSION
+        // UI FUNCTIONS
         // ============================================
         
-        // Show page - FIXED VERSION
+        // Show page
         async function showPage(page) {
-            console.log(`📱 Showing page: ${page}`);
-            
-            // Hide welcome modal if it's showing
-            document.getElementById('welcome-modal')?.classList.add('hidden');
-            
             // If not logged in and trying to access protected pages, redirect to auth
             const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
             if (protectedPages.includes(page) && !appState.isLoggedIn) {
-                console.log('🔒 Redirecting to auth (not logged in)');
                 page = 'auth';
             }
             
             // If logged in and trying to access auth, redirect to home
             if (page === 'auth' && appState.isLoggedIn) {
-                console.log('🔀 Redirecting to home (already logged in)');
                 page = 'home';
             }
             
-            // Hide all pages
             const pages = document.querySelectorAll('[id$="-page"]');
             pages.forEach(p => p.classList.add('hidden'));
             
-            // Update navigation
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => item.classList.remove('active'));
             
-            // Show the requested page
             const pageElement = document.getElementById(`${page}-page`);
             if (pageElement) {
                 pageElement.classList.remove('hidden');
                 appState.currentPage = page;
                 
-                // Update URL hash
                 window.history.pushState(null, null, `#${page}`);
                 
-                // Update active nav item
                 const activeNavItem = document.querySelector(`.nav-item[href="#${page}"]`);
                 if (activeNavItem) {
                     activeNavItem.classList.add('active');
                 }
                 
-                // Load page-specific content
                 switch(page) {
                     case 'auth':
                         showLoginForm();
                         break;
                     case 'home':
-                        // Ensure videos are loaded
-                        if (appState.videos.length === 0) {
-                            await loadVideos();
-                        }
-                        loadVideo(appState.currentVideoIndex);
-                        loadVideoGrid();
+                        await loadHomeContent();
                         break;
                     case 'accounts':
                         await loadAccountsContent();
-                        break;
-                    case 'profile':
-                        // Profile data should already be loaded
                         break;
                     case 'admin':
                         loadAdminContent();
@@ -3283,10 +3387,6 @@
                         await loadNotificationsContent();
                         break;
                 }
-                
-                console.log(`✅ Page ${page} loaded successfully`);
-            } else {
-                console.error(`❌ Page element not found: ${page}-page`);
             }
         }
         
@@ -4032,6 +4132,133 @@
                 document.getElementById('offline-indicator').classList.add('show');
                 showToast('error', 'Offline', 'Connection lost. Some features may not work.');
             });
+            
+            // File upload event listeners
+            const videoFileInput = document.getElementById('video-file-input');
+            const thumbnailFileInput = document.getElementById('thumbnail-file-input');
+            
+            if (videoFileInput) {
+                videoFileInput.addEventListener('change', handleVideoFileSelect);
+            }
+            
+            if (thumbnailFileInput) {
+                thumbnailFileInput.addEventListener('change', handleThumbnailFileSelect);
+            }
+            
+            // Drag and drop for video upload
+            const videoUploadArea = document.getElementById('video-upload-area');
+            if (videoUploadArea) {
+                videoUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    videoUploadArea.classList.add('dragover');
+                });
+                
+                videoUploadArea.addEventListener('dragleave', () => {
+                    videoUploadArea.classList.remove('dragover');
+                });
+                
+                videoUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    videoUploadArea.classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        videoFileInput.files = files;
+                        handleVideoFileSelect({ target: videoFileInput });
+                    }
+                });
+            }
+            
+            // Drag and drop for thumbnail upload
+            const thumbnailUploadArea = document.getElementById('thumbnail-upload-area');
+            if (thumbnailUploadArea) {
+                thumbnailUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    thumbnailUploadArea.classList.add('dragover');
+                });
+                
+                thumbnailUploadArea.addEventListener('dragleave', () => {
+                    thumbnailUploadArea.classList.remove('dragover');
+                });
+                
+                thumbnailUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    thumbnailUploadArea.classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        thumbnailFileInput.files = files;
+                        handleThumbnailFileSelect({ target: thumbnailFileInput });
+                    }
+                });
+            }
+        }
+        
+        // Handle video file selection
+        function handleVideoFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (max 100MB)
+            if (file.size > 100 * 1024 * 1024) {
+                showToast('error', 'File Too Large', 'Video file must be less than 100MB');
+                event.target.value = '';
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.startsWith('video/')) {
+                showToast('error', 'Invalid File', 'Please select a video file');
+                event.target.value = '';
+                return;
+            }
+            
+            // Show file info
+            document.getElementById('video-file-name').textContent = file.name;
+            document.getElementById('video-file-preview').classList.remove('hidden');
+            
+            // Clear URL input if file is selected
+            document.getElementById('video-url-input').value = '';
+        }
+        
+        // Handle thumbnail file selection
+        function handleThumbnailFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('error', 'File Too Large', 'Thumbnail must be less than 5MB');
+                event.target.value = '';
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                showToast('error', 'Invalid File', 'Please select an image file');
+                event.target.value = '';
+                return;
+            }
+            
+            // Preview image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('thumbnail-preview-img').src = e.target.result;
+                document.getElementById('thumbnail-preview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Clear video file
+        function clearVideoFile() {
+            document.getElementById('video-file-input').value = '';
+            document.getElementById('video-file-preview').classList.add('hidden');
+        }
+        
+        // Clear thumbnail
+        function clearThumbnail() {
+            document.getElementById('thumbnail-file-input').value = '';
+            document.getElementById('thumbnail-preview').classList.add('hidden');
         }
         
         // Navigate videos
@@ -4391,7 +4618,14 @@
             document.getElementById('video-price').value = '';
             document.getElementById('video-tier').value = '';
             document.getElementById('video-url-input').value = '';
-            document.getElementById('video-thumbnail-input').value = '';
+            
+            document.getElementById('video-file-input').value = '';
+            document.getElementById('video-file-preview').classList.add('hidden');
+            
+            document.getElementById('thumbnail-file-input').value = '';
+            document.getElementById('thumbnail-preview').classList.add('hidden');
+            
+            document.getElementById('upload-progress').classList.add('hidden');
             
             showModal('add-video-modal');
         }
@@ -4602,6 +4836,7 @@
                         "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png",
                         "sizes": "512x512",
                         "type": "image/png"
+                    }
                 ]
             };
 
@@ -4618,16 +4853,8 @@
         // INITIALIZE APP WHEN DOM IS LOADED
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🏁 DOM Content Loaded');
             createManifest();
-            
-            // Hide welcome modal by default
-            document.getElementById('welcome-modal')?.classList.add('hidden');
-            
-            // Start the app
-            setTimeout(() => {
-                initApp();
-            }, 100);
+            initApp();
         });
 
     </script>
