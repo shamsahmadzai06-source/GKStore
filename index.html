@@ -2123,7 +2123,7 @@
         </div>
     </div>
 
-    <!-- Welcome Modal - FIXED: Added hidden class -->
+    <!-- Welcome Modal -->
     <div id="welcome-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-body">
@@ -2493,26 +2493,67 @@
         // Initialize Supabase client
         let supabase = null;
         
-        async function initializeSupabase() {
+        // Initialize Supabase client - NON-BLOCKING version
+        async function initializeSupabaseAsync() {
             try {
                 // Use the correct Supabase initialization
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase initialized successfully');
-                
-                // Test connection
-                const { data, error } = await supabase.from('videos').select('*').limit(1);
-                if (error) {
-                    console.error('❌ Supabase connection test failed:', error.message);
-                    // Fallback to local storage if Supabase fails
-                    console.log('⚠️ Using local storage fallback');
-                    return false;
+                if (window.supabase && window.supabase.createClient) {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    console.log('✅ Supabase client created');
+                    
+                    // Test connection with timeout
+                    setTimeout(async () => {
+                        try {
+                            const { data, error } = await supabase.from('videos').select('*').limit(1);
+                            if (error) {
+                                console.warn('⚠️ Supabase connection test failed:', error.message);
+                                appState.useSupabase = false;
+                                // Load fallback videos
+                                await loadFallbackVideos();
+                            } else {
+                                console.log('✅ Supabase connection successful');
+                                appState.useSupabase = true;
+                                // Refresh videos from Supabase
+                                await loadVideosFromStorage();
+                            }
+                        } catch (testError) {
+                            console.warn('⚠️ Supabase test error:', testError);
+                            appState.useSupabase = false;
+                            await loadFallbackVideos();
+                        }
+                    }, 1000);
                 } else {
-                    console.log('✅ Supabase connection test passed');
-                    return true;
+                    console.warn('⚠️ Supabase SDK not available, using local storage');
+                    appState.useSupabase = false;
+                    await loadFallbackVideos();
                 }
             } catch (error) {
                 console.error('❌ Failed to initialize Supabase:', error);
-                return false;
+                appState.useSupabase = false;
+                await loadFallbackVideos();
+            }
+        }
+        
+        // Load fallback videos if Supabase fails
+        async function loadFallbackVideos() {
+            console.log('📂 Loading fallback videos from local storage');
+            
+            // Check local storage first
+            const localVideos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
+            
+            if (localVideos.length > 0) {
+                appState.videos = localVideos;
+                console.log(`✅ Loaded ${localVideos.length} videos from local storage`);
+            } else {
+                // Create sample videos
+                appState.videos = await createSampleVideos();
+                console.log(`✅ Created ${appState.videos.length} sample videos`);
+            }
+            
+            // Update UI if we're on home page
+            if (appState.currentPage === 'home' && appState.isLoggedIn) {
+                loadVideo(appState.currentVideoIndex);
+                loadVideoGrid();
             }
         }
         
@@ -2541,29 +2582,19 @@
         let isVideoPlaying = true;
 
         // ============================================
-        // INITIALIZE APP - FIXED
+        // INITIALIZE APP
         // ============================================
         async function initApp() {
             console.log('🚀 Initializing GK Store App...');
             
-            // First, hide the welcome modal if it's showing
-            const welcomeModal = document.getElementById('welcome-modal');
-            if (welcomeModal) {
-                welcomeModal.classList.add('hidden');
-            }
-            
-            // Then, try to initialize Supabase
-            appState.useSupabase = await initializeSupabase();
-            
-            if (!appState.useSupabase) {
-                console.log('⚠️ Supabase not available, using local storage mode');
-                showToast('warning', 'Offline Mode', 'Using local storage. Some features may be limited.');
-            }
-            
+            // First, load user preferences and setup UI
             loadPreferences();
             setupEventListeners();
             registerServiceWorker();
             setupPWAInstall();
+            
+            // Try to initialize Supabase WITHOUT blocking the app
+            initializeSupabaseAsync();
             
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
@@ -2572,17 +2603,25 @@
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
                     
+                    // Update profile page with saved user data
+                    document.getElementById('user-name').textContent = appState.currentUser.name || 'User';
+                    document.getElementById('user-email').textContent = appState.currentUser.email || 'user@example.com';
+                    document.getElementById('member-since').textContent = new Date().toLocaleDateString();
+                    
                     // Load user stats
                     await loadUserStats();
                     
-                    // Show home page directly
+                    // Load videos and show home page
+                    await loadVideos();
                     showPage('home');
                 } catch (e) {
                     console.error('Error parsing saved user:', e);
+                    // If there's an error with saved user, clear it and show auth
+                    localStorage.removeItem('gkStoreUser');
                     showPage('auth');
                 }
             } else {
-                // Show auth page if not logged in
+                // No saved user, show auth page
                 showPage('auth');
             }
         }
@@ -2902,26 +2941,66 @@
         // VIDEO MANAGEMENT FUNCTIONS
         // ============================================
         
-        // Load videos for home page
+        // Load videos for home page - with better error handling
         async function loadVideos() {
             try {
-                appState.videos = await loadVideosFromStorage();
+                console.log('📹 Loading videos...');
                 
-                // If no videos, create some sample videos
+                if (appState.useSupabase && supabase) {
+                    console.log('🔗 Loading from Supabase...');
+                    const { data, error } = await supabase
+                        .from('videos')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('❌ Supabase error:', error);
+                        throw error;
+                    }
+                    
+                    appState.videos = data || [];
+                    console.log(`✅ Loaded ${appState.videos.length} videos from Supabase`);
+                    
+                    // Save to local storage as backup
+                    localStorage.setItem('gkStoreVideos', JSON.stringify(appState.videos));
+                } else {
+                    console.log('📂 Loading from local storage...');
+                    appState.videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
+                    console.log(`✅ Loaded ${appState.videos.length} videos from local storage`);
+                }
+                
+                // If no videos, create sample videos
                 if (appState.videos.length === 0) {
-                    console.log('No videos found, creating sample videos');
+                    console.log('🎬 No videos found, creating sample videos');
                     appState.videos = await createSampleVideos();
                 }
                 
-                if (appState.videos.length > 0) {
+                // Update UI
+                if (appState.currentPage === 'home' && appState.isLoggedIn) {
                     loadVideo(appState.currentVideoIndex);
                     loadVideoGrid();
-                } else {
-                    showNoVideosMessage();
                 }
+                
             } catch (error) {
-                console.error('Error loading videos:', error);
-                showToast('error', 'Load Failed', 'Could not load videos');
+                console.error('❌ Error loading videos:', error);
+                
+                // Try to load from local storage as fallback
+                try {
+                    const fallbackVideos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
+                    if (fallbackVideos.length > 0) {
+                        appState.videos = fallbackVideos;
+                        console.log(`✅ Loaded ${fallbackVideos.length} videos from fallback storage`);
+                    } else {
+                        appState.videos = await createSampleVideos();
+                        console.log(`✅ Created ${appState.videos.length} sample videos`);
+                    }
+                } catch (fallbackError) {
+                    console.error('❌ Fallback also failed:', fallbackError);
+                    appState.videos = await createSampleVideos();
+                }
+                
+                // Show user-friendly message
+                showToast('warning', 'Offline Mode', 'Using local storage. Some features may be limited.');
             }
         }
         
@@ -3132,49 +3211,70 @@
         }
         
         // ============================================
-        // UI FUNCTIONS
+        // UI FUNCTIONS - FIXED VERSION
         // ============================================
         
-        // Show page
+        // Show page - FIXED VERSION
         async function showPage(page) {
+            console.log(`📱 Showing page: ${page}`);
+            
+            // Hide welcome modal if it's showing
+            document.getElementById('welcome-modal')?.classList.add('hidden');
+            
             // If not logged in and trying to access protected pages, redirect to auth
             const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
             if (protectedPages.includes(page) && !appState.isLoggedIn) {
+                console.log('🔒 Redirecting to auth (not logged in)');
                 page = 'auth';
             }
             
             // If logged in and trying to access auth, redirect to home
             if (page === 'auth' && appState.isLoggedIn) {
+                console.log('🔀 Redirecting to home (already logged in)');
                 page = 'home';
             }
             
+            // Hide all pages
             const pages = document.querySelectorAll('[id$="-page"]');
             pages.forEach(p => p.classList.add('hidden'));
             
+            // Update navigation
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => item.classList.remove('active'));
             
+            // Show the requested page
             const pageElement = document.getElementById(`${page}-page`);
             if (pageElement) {
                 pageElement.classList.remove('hidden');
                 appState.currentPage = page;
                 
+                // Update URL hash
                 window.history.pushState(null, null, `#${page}`);
                 
+                // Update active nav item
                 const activeNavItem = document.querySelector(`.nav-item[href="#${page}"]`);
                 if (activeNavItem) {
                     activeNavItem.classList.add('active');
                 }
                 
+                // Load page-specific content
                 switch(page) {
                     case 'auth':
                         showLoginForm();
                         break;
                     case 'home':
-                        await loadHomeContent();
+                        // Ensure videos are loaded
+                        if (appState.videos.length === 0) {
+                            await loadVideos();
+                        }
+                        loadVideo(appState.currentVideoIndex);
+                        loadVideoGrid();
                         break;
                     case 'accounts':
                         await loadAccountsContent();
+                        break;
+                    case 'profile':
+                        // Profile data should already be loaded
                         break;
                     case 'admin':
                         loadAdminContent();
@@ -3183,6 +3283,10 @@
                         await loadNotificationsContent();
                         break;
                 }
+                
+                console.log(`✅ Page ${page} loaded successfully`);
+            } else {
+                console.error(`❌ Page element not found: ${page}-page`);
             }
         }
         
@@ -3858,17 +3962,10 @@
         // UTILITY FUNCTIONS
         // ============================================
         
-        // Close welcome modal - FIXED
+        // Close welcome modal
         function closeWelcomeModal() {
-            const welcomeModal = document.getElementById('welcome-modal');
-            if (welcomeModal) {
-                welcomeModal.classList.add('hidden');
-            }
-            
-            // If user is not logged in, show auth page
-            if (!appState.isLoggedIn) {
-                showPage('auth');
-            }
+            document.getElementById('welcome-modal').classList.add('hidden');
+            showPage('auth');
         }
         
         // Load user preferences
@@ -4505,7 +4602,6 @@
                         "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png",
                         "sizes": "512x512",
                         "type": "image/png"
-                    }
                 ]
             };
 
@@ -4522,8 +4618,16 @@
         // INITIALIZE APP WHEN DOM IS LOADED
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🏁 DOM Content Loaded');
             createManifest();
-            initApp();
+            
+            // Hide welcome modal by default
+            document.getElementById('welcome-modal')?.classList.add('hidden');
+            
+            // Start the app
+            setTimeout(() => {
+                initApp();
+            }, 100);
         });
 
     </script>
