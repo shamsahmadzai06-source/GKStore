@@ -21,10 +21,7 @@
     <meta name="apple-mobile-web-app-title" content="GK Store">
     <link rel="apple-touch-startup-image" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
     
-    <!-- Supabase and Font Awesome -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         /* ALL YOUR ORIGINAL CSS CODE - EXACTLY AS IS */
         :root {
@@ -261,7 +258,7 @@
 
         .page {
             min-height: 100vh;
-            position:relative;
+            position: relative;
             overflow-x: hidden;
         }
 
@@ -1301,7 +1298,7 @@
             background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         }
 
-        /* Upload Video Styles - UPDATED */
+        /* Upload Video Styles */
         .file-upload-area {
             border: 2px dashed var(--border);
             border-radius: 1rem;
@@ -1383,6 +1380,30 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        /* URL Generator Styles */
+        .url-generator {
+            background: var(--surface-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .url-generator.active {
+            display: block;
+        }
+
+        .url-display {
+            background: var(--surface);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            font-family: monospace;
+            font-size: 0.75rem;
+            word-break: break-all;
+            margin-top: 0.5rem;
         }
 
         /* PWA Install Modal styles */
@@ -1988,8 +2009,8 @@
                                 <button class="btn btn-secondary" onclick="showManageVideos()">
                                     <i class="fas fa-video"></i> Manage Videos
                                 </button>
-                                <button class="btn btn-secondary" onclick="showAddVideo()">
-                                    <i class="fas fa-plus"></i> Add Video
+                                <button class="btn btn-secondary" onclick="showUploadVideo()">
+                                    <i class="fas fa-upload"></i> Upload Video
                                 </button>
                                 <button class="btn btn-secondary" onclick="showBookRequests()">
                                     <i class="fas fa-bookmark"></i> Book Requests
@@ -2302,17 +2323,17 @@
         </div>
     </div>
 
-    <!-- Add Video Modal - UPDATED WITH FILE UPLOAD -->
-    <div id="add-video-modal" class="modal-overlay hidden">
+    <!-- Upload Video Modal -->
+    <div id="upload-video-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-header">
-                <h3 class="modal-title">Add New Video</h3>
-                <button class="modal-close" onclick="closeModal('add-video-modal')">
+                <h3 class="modal-title">Upload New Video</h3>
+                <button class="modal-close" onclick="closeModal('upload-video-modal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="add-video-form">
+                <form id="upload-video-form">
                     <!-- Video ID -->
                     <div class="input-group">
                         <label class="input-label">Video ID <span class="text-danger">*</span></label>
@@ -2348,68 +2369,27 @@
                         </select>
                     </div>
                     
-                    <!-- OPTION 1: Upload Video File -->
+                    <!-- File Upload Section -->
                     <div class="input-group">
-                        <label class="input-label">Upload Video File</label>
-                        <div class="file-upload-area" id="video-upload-area">
-                            <i class="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
-                            <p class="mb-2">Drag & drop video file here</p>
-                            <p class="text-xs text-zinc-400 mb-3">or click to browse (MP4, WebM, MOV)</p>
-                            <input type="file" id="video-file-input" accept="video/*" class="hidden">
-                            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('video-file-input').click()">
-                                Browse Files
-                            </button>
+                        <label class="input-label">Video URL <span class="text-danger">*</span></label>
+                        <div class="file-upload-area" id="file-upload-area">
+                            <i class="fas fa-link text-3xl text-primary mb-2"></i>
+                            <p class="font-medium">Paste video URL from YouTube, Vimeo, etc.</p>
+                            <p class="text-sm text-zinc-400 mt-1">Supported: YouTube, Vimeo, direct video links</p>
                         </div>
-                        <div id="video-file-preview" class="hidden mt-2">
-                            <div class="flex items-center justify-between bg-surface-light p-2 rounded">
-                                <span id="video-file-name" class="text-sm"></span>
-                                <button type="button" class="text-danger" onclick="clearVideoFile()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                        
+                        <input type="url" class="input mt-3" id="video-url" placeholder="https://example.com/video.mp4" required>
+                        
+                        <!-- URL Generator -->
+                        <div id="url-generator" class="url-generator">
+                            <label class="input-label">Generated URL</label>
+                            <div class="url-display" id="generated-url">Video URL will be used directly</div>
                         </div>
                     </div>
                     
-                    <!-- OPTION 2: Video URL (Alternative to file upload) -->
-                    <div class="input-group">
-                        <label class="input-label">Or Enter Video URL</label>
-                        <input type="url" class="input" id="video-url-input" placeholder="https://example.com/video.mp4">
-                        <p class="text-xs text-zinc-400 mt-1">Leave empty if uploading file</p>
-                    </div>
-                    
-                    <!-- Thumbnail Upload -->
-                    <div class="input-group">
-                        <label class="input-label">Thumbnail Image</label>
-                        <div class="file-upload-area" id="thumbnail-upload-area">
-                            <i class="fas fa-image text-2xl mb-2 text-secondary"></i>
-                            <p class="text-sm mb-2">Upload thumbnail (Optional)</p>
-                            <input type="file" id="thumbnail-file-input" accept="image/*" class="hidden">
-                            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('thumbnail-file-input').click()">
-                                Select Image
-                            </button>
-                        </div>
-                        <div id="thumbnail-preview" class="hidden mt-2">
-                            <img id="thumbnail-preview-img" class="w-20 h-20 object-cover rounded" alt="Thumbnail preview">
-                            <button type="button" class="text-danger mt-2" onclick="clearThumbnail()">
-                                <i class="fas fa-trash"></i> Remove
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <button type="button" class="btn btn-primary w-full mt-4" onclick="addNewVideo()">
+                    <button type="button" class="btn btn-primary w-full" onclick="addVideoManually()">
                         <i class="fas fa-plus"></i> Add Video
                     </button>
-                    
-                    <!-- Progress Bar -->
-                    <div id="upload-progress" class="hidden mt-4">
-                        <div class="flex justify-between text-sm mb-1">
-                            <span>Uploading...</span>
-                            <span id="upload-percentage">0%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div id="upload-progress-fill" class="progress-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>
@@ -2530,79 +2510,26 @@
     </div>
 
     <script>
-        // ============================================
-        // SUPABASE CONFIGURATION - CORRECT KEYS
-        // ============================================
-        const SUPABASE_URL = 'https://hizhxoagtvloapmafosz.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpemh4b2FndHZsb2FwbWFmb3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxOTY4MTgsImV4cCI6MjA4NTc3MjgxOH0.Fju8tbAq0AtKWAbxJZ4p1q065_52gBsdIBgMFH2Y3zI';
-        
-        // Initialize Supabase client
-        let supabase = null;
-        
-        async function initializeSupabase() {
-            try {
-                // Use the correct Supabase initialization
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase initialized successfully');
-                
-                // Test connection
-                const { data, error } = await supabase.from('videos').select('*').limit(1);
-                if (error) {
-                    console.error('❌ Supabase connection test failed:', error.message);
-                    // Create table if it doesn't exist
-                    await createTablesIfNeeded();
-                    return true;
-                } else {
-                    console.log('✅ Supabase connection test passed');
-                    return true;
-                }
-            } catch (error) {
-                console.error('❌ Failed to initialize Supabase:', error);
-                return false;
-            }
-        }
-        
-        // Create tables if they don't exist
-        async function createTablesIfNeeded() {
-            try {
-                console.log('Creating tables if needed...');
-                
-                // Try to create videos table
-                const { error: videoError } = await supabase.from('videos').select('*').limit(1);
-                if (videoError && videoError.message.includes('does not exist')) {
-                    console.log('Creating videos table...');
-                    // Table will be created automatically on first insert
-                }
-                
-                // Try to create book_requests table
-                const { error: requestError } = await supabase.from('book_requests').select('*').limit(1);
-                if (requestError && requestError.message.includes('does not exist')) {
-                    console.log('Creating book_requests table...');
-                    // Table will be created automatically on first insert
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Error checking tables:', error);
-                return false;
-            }
-        }
-        
-        // ============================================
-        // APP STATE MANAGEMENT
-        // ============================================
+        // App State Management
         const appState = {
             currentPage: 'auth',
             currentVideoIndex: 0,
             videos: [],
-            currentUser: null,
-            isLoggedIn: false,
-            isAdminLoggedIn: false,
-            currentAccount: null,
+            accounts: [],
+            notifications: [],
+            bookRequests: [],
             language: 'en',
             theme: 'dark',
-            notifications: [],
-            useSupabase: true
+            isLoggedIn: false,
+            currentUser: null,
+            currentAccount: null,
+            isAdminLoggedIn: false,
+            adminPasswordHash: null, // Will be set with hashed password
+            userStats: {
+                registeredUsers: 0,
+                onlineUsers: 0
+            },
+            users: []
         };
 
         // PWA Variables
@@ -2612,24 +2539,16 @@
         let playPauseTimeout = null;
         let isVideoPlaying = true;
 
-        // ============================================
-        // INITIALIZE APP
-        // ============================================
-        async function initApp() {
-            console.log('🚀 Initializing GK Store App...');
-            
-            // First, try to initialize Supabase
-            appState.useSupabase = await initializeSupabase();
-            
-            if (!appState.useSupabase) {
-                console.log('⚠️ Supabase not available, using local storage mode');
-                showToast('warning', 'Offline Mode', 'Using local storage. Some features may be limited.');
-            }
-            
+        // Initialize App
+        function initApp() {
             loadPreferences();
+            loadSampleData();
             setupEventListeners();
             registerServiceWorker();
             setupPWAInstall();
+            
+            // Load data from localStorage
+            loadAllDataFromLocalStorage();
             
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
@@ -2637,11 +2556,6 @@
                 try {
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
-                    
-                    // Load user stats
-                    await loadUserStats();
-                    
-                    // Show home page
                     showPage('home');
                 } catch (e) {
                     console.error('Error parsing saved user:', e);
@@ -2652,1334 +2566,171 @@
             }
         }
 
-        // ============================================
-        // SUPABASE FUNCTIONS
-        // ============================================
-        
-        // Load videos from Supabase or local storage
-        async function loadVideosFromStorage() {
-            try {
-                if (appState.useSupabase && supabase) {
-                    const { data, error } = await supabase
-                        .from('videos')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('Error loading videos from Supabase:', error);
-                        // Fallback to local storage
-                        const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                        console.log(`✅ Loaded ${videos.length} videos from local storage (fallback)`);
-                        return videos;
-                    }
-                    
-                    console.log(`✅ Loaded ${data?.length || 0} videos from Supabase`);
-                    return data || [];
-                } else {
-                    // Fallback to local storage
-                    const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                    console.log(`✅ Loaded ${videos.length} videos from local storage`);
-                    return videos;
-                }
-            } catch (error) {
-                console.error('Error loading videos:', error);
-                // Return empty array on error
-                return [];
+        // FIXED HASH FUNCTION
+        function secureHash(str) {
+            // Simple but consistent hash function
+            let hash = 0;
+            if (str.length === 0) return hash.toString(36);
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
             }
+            return Math.abs(hash).toString(36);
         }
-        
-        // Load book requests
-        async function loadBookRequestsFromStorage() {
-            try {
-                if (appState.useSupabase && supabase) {
-                    const { data, error } = await supabase
-                        .from('book_requests')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('Error loading book requests:', error);
-                        return [];
-                    }
-                    
-                    return data || [];
-                } else {
-                    return JSON.parse(localStorage.getItem('gkStoreBookRequests') || '[]');
-                }
-            } catch (error) {
-                console.error('Error loading book requests:', error);
-                return [];
-            }
-        }
-        
-        // Save videos to storage
-        async function saveVideosToStorage(videos) {
-            try {
-                if (appState.useSupabase && supabase) {
-                    // For Supabase, we handle saving in individual functions
-                    return true;
-                } else {
-                    localStorage.setItem('gkStoreVideos', JSON.stringify(videos));
-                    return true;
-                }
-            } catch (error) {
-                console.error('Error saving videos:', error);
-                return false;
-            }
-        }
-        
-        // Save book request
-        async function saveBookRequest(request) {
-            try {
-                if (appState.useSupabase && supabase) {
-                    const { data, error } = await supabase
-                        .from('book_requests')
-                        .insert([request])
-                        .select()
-                        .single();
-                    
-                    if (error) {
-                        console.error('Error saving book request to Supabase:', error);
-                        // Fallback to local storage
-                        const requests = JSON.parse(localStorage.getItem('gkStoreBookRequests') || '[]');
-                        request.id = Date.now().toString();
-                        request.created_at = new Date().toISOString();
-                        requests.unshift(request);
-                        localStorage.setItem('gkStoreBookRequests', JSON.stringify(requests));
-                        return request;
-                    }
-                    
-                    return data;
-                } else {
-                    const requests = JSON.parse(localStorage.getItem('gkStoreBookRequests') || '[]');
-                    request.id = Date.now().toString();
-                    request.created_at = new Date().toISOString();
-                    requests.unshift(request);
-                    localStorage.setItem('gkStoreBookRequests', JSON.stringify(requests));
-                    return request;
-                }
-            } catch (error) {
-                console.error('Error saving book request:', error);
-                return null;
-            }
-        }
-        
-        // Save video
-        async function saveVideo(video) {
-            try {
-                if (appState.useSupabase && supabase) {
-                    const { data, error } = await supabase
-                        .from('videos')
-                        .insert([video])
-                        .select()
-                        .single();
-                    
-                    if (error) {
-                        console.error('Error saving video to Supabase:', error);
-                        // Fallback to local storage
-                        const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                        video.id = video.id || `vid_${Date.now()}`;
-                        video.created_at = new Date().toISOString();
-                        videos.unshift(video);
-                        localStorage.setItem('gkStoreVideos', JSON.stringify(videos));
-                        return video;
-                    }
-                    
-                    return data;
-                } else {
-                    const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                    video.id = video.id || `vid_${Date.now()}`;
-                    video.created_at = new Date().toISOString();
-                    videos.unshift(video);
-                    localStorage.setItem('gkStoreVideos', JSON.stringify(videos));
-                    return video;
-                }
-            } catch (error) {
-                console.error('Error saving video:', error);
-                return null;
-            }
-        }
-        
-        // Delete video
-        async function deleteVideoFromStorage(videoId) {
-            try {
-                if (appState.useSupabase && supabase) {
-                    const { error } = await supabase
-                        .from('videos')
-                        .delete()
-                        .eq('id', videoId);
-                    
-                    if (error) {
-                        console.error('Error deleting video from Supabase:', error);
-                        // Fallback to local storage
-                        const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                        const filteredVideos = videos.filter(v => v.id !== videoId);
-                        localStorage.setItem('gkStoreVideos', JSON.stringify(filteredVideos));
-                        return true;
-                    }
-                    
-                    return true;
-                } else {
-                    const videos = JSON.parse(localStorage.getItem('gkStoreVideos') || '[]');
-                    const filteredVideos = videos.filter(v => v.id !== videoId);
-                    localStorage.setItem('gkStoreVideos', JSON.stringify(filteredVideos));
-                    return true;
-                }
-            } catch (error) {
-                console.error('Error deleting video:', error);
-                return false;
-            }
-        }
-        
-        // Upload video file to Supabase Storage
-        async function uploadVideoFile(file, videoId) {
-            try {
-                if (!supabase || !appState.useSupabase) {
-                    throw new Error('Supabase not available for file upload');
-                }
-                
-                // Create a unique filename
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${videoId}_${Date.now()}.${fileExt}`;
-                
-                // Show upload progress
-                showUploadProgress(0);
-                
-                const { data, error } = await supabase.storage
-                    .from('videos')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false,
-                        onUploadProgress: (progress) => {
-                            const percentage = (progress.loaded / progress.total) * 100;
-                            showUploadProgress(percentage);
-                        }
-                    });
 
-                if (error) throw error;
-
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('videos')
-                    .getPublicUrl(fileName);
-
-                // Hide progress bar
-                document.getElementById('upload-progress').classList.add('hidden');
-                
-                return publicUrl;
-
-            } catch (error) {
-                console.error('Error uploading video:', error);
-                document.getElementById('upload-progress').classList.add('hidden');
-                throw error;
-            }
-        }
-        
-        // Upload thumbnail image
-        async function uploadThumbnailFile(file, videoId) {
-            try {
-                if (!supabase || !appState.useSupabase) {
-                    throw new Error('Supabase not available for file upload');
-                }
-                
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${videoId}_thumbnail_${Date.now()}.${fileExt}`;
-                
-                const { data, error } = await supabase.storage
-                    .from('thumbnails')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
-
-                if (error) throw error;
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('thumbnails')
-                    .getPublicUrl(fileName);
-
-                return publicUrl;
-
-            } catch (error) {
-                console.error('Error uploading thumbnail:', error);
-                throw error;
-            }
-        }
-        
-        // Show upload progress
-        function showUploadProgress(percentage) {
-            const progressBar = document.getElementById('upload-progress');
-            const progressFill = document.getElementById('upload-progress-fill');
-            const progressText = document.getElementById('upload-percentage');
-            
-            if (progressBar && progressFill && progressText) {
-                progressBar.classList.remove('hidden');
-                progressFill.style.width = `${percentage}%`;
-                progressText.textContent = `${Math.round(percentage)}%`;
-            }
-        }
-        
-        // ============================================
-        // AUTHENTICATION FUNCTIONS
-        // ============================================
-        
-        // Login function
-        async function login(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('login-email').value.trim();
-            const password = document.getElementById('login-password').value;
-            const rememberMe = document.getElementById('remember-me').checked;
-            
-            // Simple validation
-            if (!email || !password) {
-                showToast('error', 'Validation Error', 'Please fill in all fields');
-                return;
-            }
-            
-            try {
-                // For demo purposes, accept any email/password
-                // In production, you would verify against Supabase
-                const user = {
-                    id: Date.now().toString(),
-                    email: email,
-                    name: email.split('@')[0],
-                    role: 'user',
-                    createdAt: new Date().toISOString()
-                };
-                
-                appState.currentUser = user;
-                appState.isLoggedIn = true;
-                
-                // Save to localStorage if remember me is checked
-                if (rememberMe) {
-                    localStorage.setItem('gkStoreUser', JSON.stringify(user));
-                }
-                
-                // Update profile page
-                document.getElementById('user-name').textContent = user.name;
-                document.getElementById('user-email').textContent = user.email;
-                document.getElementById('member-since').textContent = new Date().toLocaleDateString();
-                
-                // Show success message
-                showToast('success', 'Login Successful', `Welcome back, ${user.name}!`);
-                
-                // Reset form
-                document.getElementById('login-form').reset();
-                
-                // Redirect to home
-                setTimeout(() => {
-                    showPage('home');
-                }, 500);
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                showToast('error', 'Login Failed', 'An error occurred. Please try again.');
-            }
-        }
-        
-        // Signup function
-        async function signup(event) {
-            event.preventDefault();
-            
-            const name = document.getElementById('signup-name').value.trim();
-            const email = document.getElementById('signup-email').value.trim();
-            const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('signup-confirm-password').value;
-            
-            // Validation
-            if (password !== confirmPassword) {
-                showToast('error', 'Signup Failed', 'Passwords do not match');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showToast('error', 'Signup Failed', 'Password must be at least 6 characters');
-                return;
-            }
-            
-            try {
-                const user = {
-                    id: Date.now().toString(),
-                    email: email,
-                    name: name,
-                    role: 'user',
-                    createdAt: new Date().toISOString()
-                };
-                
-                appState.currentUser = user;
-                appState.isLoggedIn = true;
-                
-                // Save to localStorage
-                localStorage.setItem('gkStoreUser', JSON.stringify(user));
-                
-                // Update profile page
-                document.getElementById('user-name').textContent = user.name;
-                document.getElementById('user-email').textContent = user.email;
-                document.getElementById('member-since').textContent = new Date().toLocaleDateString();
-                
-                // Show success message
-                showToast('success', 'Account Created', `Welcome to GK Store, ${name}!`);
-                
-                // Reset form
-                document.getElementById('signup-form').reset();
-                
-                // Redirect to home
-                setTimeout(() => {
-                    showPage('home');
-                }, 500);
-                
-            } catch (error) {
-                console.error('Signup error:', error);
-                showToast('error', 'Signup Failed', 'An error occurred. Please try again.');
-            }
-        }
-        
-        // Admin login
-        async function adminLogin(event) {
-            event.preventDefault();
-            
-            const password = document.getElementById('admin-password').value;
-            
-            // For demo, accept "admin123" as admin password
-            if (password === 'admin123') {
-                appState.isAdminLoggedIn = true;
-                const adminDashboard = document.getElementById('admin-dashboard');
-                if (adminDashboard) {
-                    adminDashboard.classList.remove('hidden');
-                }
-                showToast('success', 'Admin Login', 'Successfully logged in as admin');
-                document.getElementById('admin-password').value = '';
-                
-                // Update admin stats
-                await updateAdminStats();
-            } else {
-                showToast('error', 'Admin Login', 'Incorrect admin password');
-            }
-        }
-        
-        // ============================================
-        // VIDEO MANAGEMENT FUNCTIONS
-        // ============================================
-        
-        // Load videos for home page
-        async function loadVideos() {
-            try {
-                appState.videos = await loadVideosFromStorage();
-                
-                // If no videos, create some sample videos
-                if (appState.videos.length === 0) {
-                    console.log('No videos found, creating sample videos');
-                    appState.videos = await createSampleVideos();
-                }
-                
-                if (appState.videos.length > 0) {
-                    loadVideo(appState.currentVideoIndex);
-                    loadVideoGrid();
-                } else {
-                    showNoVideosMessage();
-                }
-            } catch (error) {
-                console.error('Error loading videos:', error);
-                showToast('error', 'Load Failed', 'Could not load videos');
-            }
-        }
-        
-        // Create sample videos
-        async function createSampleVideos() {
-            const sampleVideos = [
-                {
-                    id: 'vid_001',
-                    title: 'Premium Instagram Account',
-                    description: 'A verified Instagram account with 50K+ followers',
-                    tier: 'big',
-                    price: 299.99,
-                    video_url: 'https://assets.mixkit.co/videos/preview/mixkit-close-up-shot-of-a-vertical-video-of-a-womans-face-44645-large.mp4',
-                    thumbnail_url: '',
-                    sold: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'vid_002',
-                    title: 'TikTok Creator Account',
-                    description: 'Monetized TikTok account with viral content',
-                    tier: 'medium',
-                    price: 199.99,
-                    video_url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-watching-a-video-on-a-tablet-44733-large.mp4',
-                    thumbnail_url: '',
-                    sold: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'vid_003',
-                    title: 'YouTube Gaming Channel',
-                    description: 'Gaming channel with 10K+ subscribers',
-                    tier: 'small',
-                    price: 99.99,
-                    video_url: 'https://assets.mixkit.co/videos/preview/mixkit-playing-a-video-game-on-a-tablet-44730-large.mp4',
-                    thumbnail_url: '',
-                    sold: false,
-                    created_at: new Date().toISOString()
-                }
+        // URL Validation Function
+        function isValidVideoUrl(url) {
+            const patterns = [
+                /^https?:\/\/.*\.(mp4|webm|mov|avi|m3u8)$/i,
+                /^https?:\/\/(www\.)?youtube\.com\/watch\?v=/i,
+                /^https?:\/\/youtu\.be\//i,
+                /^https?:\/\/(www\.)?vimeo\.com\//i,
+                /^https?:\/\/(www\.)?dailymotion\.com\//i
             ];
-            
-            // Save sample videos to storage
-            for (const video of sampleVideos) {
-                await saveVideo(video);
-            }
-            
-            return sampleVideos;
+            return patterns.some(pattern => pattern.test(url));
         }
-        
-        // Add new video with file upload
-        async function addNewVideo() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            const id = document.getElementById('video-id').value.trim();
-            const title = document.getElementById('video-title-input').value.trim();
-            const description = document.getElementById('video-description-input').value.trim();
-            const price = parseFloat(document.getElementById('video-price').value);
-            const tier = document.getElementById('video-tier').value;
-            const url = document.getElementById('video-url-input').value.trim();
-            
-            // Validation
-            if (!id || !title || isNaN(price) || price < 0 || !tier) {
-                showToast('error', 'Validation Error', 'Please fill all required fields');
-                return;
-            }
-            
+
+        // Input Sanitization Function
+        function sanitizeInput(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load all data from localStorage
+        function loadAllDataFromLocalStorage() {
             try {
-                let videoUrl = url;
-                let thumbnailUrl = '';
-                
-                // Check if video file was uploaded
-                const videoFileInput = document.getElementById('video-file-input');
-                if (videoFileInput && videoFileInput.files.length > 0) {
-                    const videoFile = videoFileInput.files[0];
-                    
-                    // Validate video file
-                    if (!videoFile.type.startsWith('video/')) {
-                        showToast('error', 'Invalid File', 'Please select a video file');
-                        return;
-                    }
-                    
-                    if (videoFile.size > 100 * 1024 * 1024) { // 100MB limit
-                        showToast('error', 'File Too Large', 'Video file must be less than 100MB');
-                        return;
-                    }
-                    
-                    videoUrl = await uploadVideoFile(videoFile, id);
-                } else if (!url) {
-                    showToast('error', 'Video Required', 'Please either upload a video file or enter a video URL');
-                    return;
+                // Load videos
+                const savedVideos = localStorage.getItem('gkStoreVideos');
+                if (savedVideos) {
+                    appState.videos = JSON.parse(savedVideos);
                 }
                 
-                // Check if thumbnail file was uploaded
-                const thumbnailFileInput = document.getElementById('thumbnail-file-input');
-                if (thumbnailFileInput && thumbnailFileInput.files.length > 0) {
-                    const thumbnailFile = thumbnailFileInput.files[0];
-                    
-                    // Validate thumbnail file
-                    if (!thumbnailFile.type.startsWith('image/')) {
-                        showToast('error', 'Invalid File', 'Please select an image file for thumbnail');
-                        return;
-                    }
-                    
-                    if (thumbnailFile.size > 5 * 1024 * 1024) { // 5MB limit
-                        showToast('error', 'File Too Large', 'Thumbnail must be less than 5MB');
-                        return;
-                    }
-                    
-                    thumbnailUrl = await uploadThumbnailFile(thumbnailFile, id);
+                // Load accounts
+                const savedAccounts = localStorage.getItem('gkStoreAccounts');
+                if (savedAccounts) {
+                    appState.accounts = JSON.parse(savedAccounts);
                 }
                 
-                const video = {
-                    id: id,
-                    title: title,
-                    description: description || 'No description available',
-                    tier: tier,
-                    price: price,
-                    video_url: videoUrl,
-                    thumbnail_url: thumbnailUrl,
-                    sold: false,
-                    created_at: new Date().toISOString()
-                };
-                
-                // Save to storage
-                const savedVideo = await saveVideo(video);
-                if (!savedVideo) {
-                    showToast('error', 'Add Failed', 'Could not save video');
-                    return;
-                }
-                
-                // Add to local state
-                appState.videos.unshift(savedVideo);
-                appState.currentVideoIndex = 0;
-                
-                // Update UI
-                loadVideo(0);
-                loadVideoGrid();
-                await updateAdminStats();
-                
-                // Show success message
-                showToast('success', 'Video Added', `Video "${title}" has been added successfully`);
-                
-                // Reset form and close modal
-                document.getElementById('add-video-form').reset();
-                document.getElementById('video-file-preview').classList.add('hidden');
-                document.getElementById('thumbnail-preview').classList.add('hidden');
-                document.getElementById('upload-progress').classList.add('hidden');
-                closeModal('add-video-modal');
-                
-            } catch (error) {
-                console.error('Error in addNewVideo:', error);
-                showToast('error', 'Add Failed', 'An error occurred. Please try again.');
-            }
-        }
-        
-        // Delete video
-        async function deleteVideo(videoId) {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            if (confirm('Are you sure you want to delete this video?')) {
-                try {
-                    // Delete from storage
-                    const success = await deleteVideoFromStorage(videoId);
-                    if (!success) {
-                        showToast('error', 'Delete Failed', 'Could not delete video');
-                        return;
-                    }
-                    
-                    // Remove from local state
-                    const videoIndex = appState.videos.findIndex(v => v.id === videoId);
-                    if (videoIndex !== -1) {
-                        appState.videos.splice(videoIndex, 1);
-                    }
-                    
-                    // Update current video index if needed
-                    if (appState.currentVideoIndex >= appState.videos.length) {
-                        appState.currentVideoIndex = Math.max(0, appState.videos.length - 1);
-                    }
-                    
-                    // Update UI
-                    loadAdminVideos('all');
-                    loadHomeContent();
-                    await updateAdminStats();
-                    
-                    showToast('success', 'Video Deleted', 'Video has been removed successfully');
-                    
-                } catch (error) {
-                    console.error('Error in deleteVideo:', error);
-                    showToast('error', 'Delete Failed', 'An error occurred');
-                }
-            }
-        }
-        
-        // ============================================
-        // BOOK REQUEST FUNCTIONS
-        // ============================================
-        
-        // Submit book request
-        async function submitBookRequest() {
-            const name = document.getElementById('book-name').value;
-            const whatsapp = document.getElementById('book-whatsapp').value;
-            const notes = document.getElementById('book-notes').value;
-            
-            if (!name || !whatsapp || !appState.currentAccount) {
-                showToast('error', 'Validation Error', 'Please fill in all required fields');
-                return;
-            }
-            
-            try {
-                const request = {
-                    user_id: appState.currentUser?.id || null,
-                    video_id: appState.currentAccount.id,
-                    account_title: appState.currentAccount.title,
-                    account_tier: appState.currentAccount.tier,
-                    account_price: appState.currentAccount.price,
-                    user_name: name,
-                    whatsapp_number: whatsapp,
-                    notes: notes,
-                    status: 'pending',
-                    created_at: new Date().toISOString()
-                };
-                
-                const savedRequest = await saveBookRequest(request);
-                if (!savedRequest) {
-                    showToast('error', 'Submission Failed', 'Could not submit request');
-                    return;
-                }
-                
-                showToast('success', 'Request Submitted', 'We will contact you shortly on WhatsApp');
-                closeModal('book-modal');
-                
-                // Clear form
-                document.getElementById('book-name').value = '';
-                document.getElementById('book-whatsapp').value = '';
-                document.getElementById('book-notes').value = '';
-                
-                // Update admin stats if admin is logged in
-                if (appState.isAdminLoggedIn) {
-                    await updateAdminStats();
-                }
-                
-            } catch (error) {
-                console.error('Error in submitBookRequest:', error);
-                showToast('error', 'Submission Failed', 'An error occurred');
-            }
-        }
-        
-        // ============================================
-        // UI FUNCTIONS
-        // ============================================
-        
-        // Show page
-        async function showPage(page) {
-            // If not logged in and trying to access protected pages, redirect to auth
-            const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
-            if (protectedPages.includes(page) && !appState.isLoggedIn) {
-                page = 'auth';
-            }
-            
-            // If logged in and trying to access auth, redirect to home
-            if (page === 'auth' && appState.isLoggedIn) {
-                page = 'home';
-            }
-            
-            const pages = document.querySelectorAll('[id$="-page"]');
-            pages.forEach(p => p.classList.add('hidden'));
-            
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => item.classList.remove('active'));
-            
-            const pageElement = document.getElementById(`${page}-page`);
-            if (pageElement) {
-                pageElement.classList.remove('hidden');
-                appState.currentPage = page;
-                
-                window.history.pushState(null, null, `#${page}`);
-                
-                const activeNavItem = document.querySelector(`.nav-item[href="#${page}"]`);
-                if (activeNavItem) {
-                    activeNavItem.classList.add('active');
-                }
-                
-                switch(page) {
-                    case 'auth':
-                        showLoginForm();
-                        break;
-                    case 'home':
-                        await loadHomeContent();
-                        break;
-                    case 'accounts':
-                        await loadAccountsContent();
-                        break;
-                    case 'admin':
-                        loadAdminContent();
-                        break;
-                    case 'notifications':
-                        await loadNotificationsContent();
-                        break;
-                }
-            }
-        }
-        
-        // Load home page content
-        async function loadHomeContent() {
-            await loadVideos();
-        }
-        
-        // Load video
-        function loadVideo(index) {
-            const video = appState.videos[index];
-            if (!video) return;
-            
-            const videoSection = document.getElementById('video-section');
-            const videoPlaceholder = document.getElementById('video-placeholder');
-            const videoOverlay = document.getElementById('video-overlay');
-            
-            if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
-            if (videoOverlay) videoOverlay.classList.remove('hidden');
-            
-            document.getElementById('video-title').textContent = video.title;
-            document.getElementById('video-description').textContent = video.description || '';
-            
-            appState.currentAccount = video;
-            
-            // Clear previous video if exists
-            if (currentVideoPlayer) {
-                currentVideoPlayer.pause();
-                currentVideoPlayer.remove();
-                currentVideoPlayer = null;
-            }
-            
-            // Create video element if video has a URL
-            if (video.video_url) {
-                const videoPlayer = document.createElement('video');
-                videoPlayer.className = 'video-player';
-                videoPlayer.src = video.video_url;
-                videoPlayer.controls = false;
-                videoPlayer.autoplay = true;
-                videoPlayer.muted = false;
-                videoPlayer.loop = true;
-                
-                // Add event listeners
-                videoPlayer.addEventListener('play', () => {
-                    isVideoPlaying = true;
-                    updatePlayPauseIcon();
-                });
-                
-                videoPlayer.addEventListener('pause', () => {
-                    isVideoPlaying = false;
-                    updatePlayPauseIcon();
-                });
-                
-                videoSection.innerHTML = '';
-                videoSection.appendChild(videoPlayer);
-                videoSection.appendChild(videoOverlay);
-                
-                currentVideoPlayer = videoPlayer;
-                isVideoPlaying = true;
-                updatePlayPauseIcon();
-            } else {
-                // Set gradient background if no video
-                videoSection.style.background = 'linear-gradient(135deg, #ec4899, #8b5cf6)';
-                videoSection.style.backgroundSize = 'cover';
-                videoSection.style.backgroundPosition = 'center';
-            }
-        }
-        
-        // Load video grid
-        function loadVideoGrid() {
-            const grid = document.getElementById('video-grid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            if (appState.videos.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-4 text-center py-12">
-                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
-                        <p class="text-zinc-400">Add videos to see them here.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            appState.videos.forEach((video, index) => {
-                const videoItem = document.createElement('div');
-                videoItem.className = 'video-item';
-                videoItem.innerHTML = `
-                    <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                        <i class="fas fa-play-circle" style="font-size: 3rem; color: white; opacity: 0.8;"></i>
-                    </div>
-                    <div class="video-item-overlay">
-                        <div class="video-item-title">${video.title}</div>
-                        <div class="video-item-stats">
-                            <span><i class="fas fa-tag"></i> ${video.tier}</span>
-                            <span><i class="fas fa-dollar-sign"></i> ${video.price}</span>
-                        </div>
-                    </div>
-                `;
-                
-                videoItem.addEventListener('click', () => {
-                    appState.currentVideoIndex = index;
-                    loadVideo(index);
-                });
-                
-                grid.appendChild(videoItem);
-            });
-        }
-        
-        // Show no videos message
-        function showNoVideosMessage() {
-            const videoSection = document.getElementById('video-section');
-            const videoPlaceholder = document.getElementById('video-placeholder');
-            if (videoSection && videoPlaceholder) {
-                videoPlaceholder.innerHTML = `
-                    <div class="text-center">
-                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
-                        <p class="text-zinc-400">Add videos from the admin section to see content here.</p>
-                        ${appState.currentUser?.role === 'admin' ? 
-                            `<button class="btn btn-primary mt-4" onclick="showAddVideo()">
-                                <i class="fas fa-plus"></i> Add First Video
-                            </button>` : ''}
-                    </div>
-                `;
-                videoPlaceholder.classList.remove('hidden');
-            }
-        }
-        
-        // Load accounts page content
-        async function loadAccountsContent() {
-            const grid = document.getElementById('accounts-grid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            // Load videos
-            if (appState.videos.length === 0) {
-                await loadVideos();
-            }
-            
-            if (appState.videos.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-3 text-center py-12">
-                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
-                        <p class="text-zinc-400 mb-4">Add videos from the admin section to see accounts here.</p>
-                        ${appState.currentUser?.role === 'admin' ? 
-                            `<button class="btn btn-primary" onclick="showAddVideo()">
-                                <i class="fas fa-plus"></i> Add First Video
-                            </button>` : 
-                            `<button class="btn btn-primary" onclick="showPage('home')">
-                                <i class="fas fa-video"></i> Browse Videos
-                            </button>`}
-                    </div>
-                `;
-                return;
-            }
-            
-            appState.videos.forEach(video => {
-                const accountCard = document.createElement('div');
-                accountCard.className = 'account-card';
-                
-                // Determine icon class based on tier
-                let iconClass = 'account-icon ';
-                let iconText = '';
-                if (video.tier === 'small') {
-                    iconClass += 'small';
-                    iconText = '<i class="fas fa-user"></i>';
-                } else if (video.tier === 'medium') {
-                    iconClass += 'medium';
-                    iconText = '<i class="fas fa-user-tie"></i>';
+                // Load users
+                const savedUsers = localStorage.getItem('gkStoreUsers');
+                if (savedUsers) {
+                    appState.users = JSON.parse(savedUsers);
                 } else {
-                    iconClass += 'big';
-                    iconText = '<i class="fas fa-crown"></i>';
+                    // Create default admin user if none exists
+                    createDefaultUsers();
                 }
                 
-                accountCard.innerHTML = `
-                    <div class="${iconClass}">
-                        ${iconText}
-                    </div>
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-semibold">${video.title}</h3>
-                        <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
-                            ${video.tier}
-                        </span>
-                    </div>
-                    <p class="text-zinc-400 text-sm mb-4">${video.description || 'No description available'}</p>
-                    
-                    <!-- Video Preview Area -->
-                    <div class="mb-4">
-                        <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
-                             style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
-                             onclick="playAccountVideo('${video.id}')">
-                            <i class="fas fa-play-circle text-white text-3xl"></i>
-                        </div>
-                        <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex gap-2 mb-3">
-                        <button class="btn btn-sm btn-primary flex-1" onclick="bookAccountById('${video.id}')">
-                            <i class="fas fa-bookmark"></i> Book
-                        </button>
-                        <button class="btn btn-sm btn-success flex-1" onclick="buyAccountById('${video.id}')">
-                            <i class="fas fa-shopping-bag"></i> Buy Now
-                        </button>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-2xl font-bold gradient-text">$${video.price}</span>
-                        <button class="btn btn-sm ${video.sold ? 'btn-secondary' : 'btn-primary'}" 
-                                onclick="viewAccount('${video.id}')" 
-                                ${video.sold ? 'disabled' : ''}>
-                            ${video.sold ? 'Sold' : 'View Details'}
-                        </button>
-                    </div>
-                `;
-                
-                grid.appendChild(accountCard);
-            });
-        }
-        
-        // Play account video
-        function playAccountVideo(videoId) {
-            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
-            if (videoIndex !== -1) {
-                showPage('home');
-                setTimeout(() => {
-                    appState.currentVideoIndex = videoIndex;
-                    loadVideo(videoIndex);
-                }, 300);
-            } else {
-                showToast('error', 'Video Not Found', 'Video is not available');
-            }
-        }
-        
-        // Book account by ID
-        function bookAccountById(videoId) {
-            const video = appState.videos.find(v => v.id === videoId);
-            if (video) {
-                appState.currentAccount = video;
-                showModal('book-modal');
-                
-                document.getElementById('book-account-name').textContent = video.title;
-                document.getElementById('book-account-tier').textContent = video.tier;
-                document.getElementById('book-account-price').textContent = `$${video.price}`;
-            } else {
-                showToast('error', 'Not Found', 'Video not found');
-            }
-        }
-        
-        // Buy account by ID
-        function buyAccountById(videoId) {
-            const video = appState.videos.find(v => v.id === videoId);
-            if (video) {
-                appState.currentAccount = video;
-                showModal('buy-modal');
-                
-                document.getElementById('buy-account-name').textContent = video.title;
-                document.getElementById('buy-account-tier').textContent = video.tier;
-                document.getElementById('buy-account-price').textContent = `$${video.price}`;
-                document.getElementById('payment-amount').textContent = video.price;
-            }
-        }
-        
-        // Load admin videos
-        async function loadAdminVideos(filter = 'all') {
-            const videosList = document.getElementById('admin-videos-list');
-            if (!videosList) return;
-            
-            videosList.innerHTML = '';
-            
-            try {
-                let videos = appState.videos;
-                
-                if (filter !== 'all') {
-                    videos = videos.filter(v => v.tier === filter);
+                // Load book requests
+                const savedBookRequests = localStorage.getItem('gkStoreBookRequests');
+                if (savedBookRequests) {
+                    appState.bookRequests = JSON.parse(savedBookRequests);
                 }
                 
-                if (videos.length === 0) {
-                    videosList.innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
-                            <h3 class="text-xl font-semibold mb-2">No Videos Found</h3>
-                            <p class="text-zinc-400">No videos in the ${filter} tier</p>
-                        </div>
-                    `;
-                    return;
+                // Load notifications
+                const savedNotifications = localStorage.getItem('gkStoreNotifications');
+                if (savedNotifications) {
+                    appState.notifications = JSON.parse(savedNotifications);
                 }
                 
-                videos.forEach(video => {
-                    const videoItem = document.createElement('div');
-                    videoItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
-                    videoItem.innerHTML = `
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="font-medium">${video.title}</span>
-                                <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
-                                    ${video.tier}
-                                </span>
-                            </div>
-                            <p class="text-xs text-zinc-400">ID: ${video.id} • $${video.price}</p>
-                            <p class="text-xs text-zinc-400 mt-1">${(video.description || '').substring(0, 60)}${video.description && video.description.length > 60 ? '...' : ''}</p>
-                            <div class="flex gap-2 mt-2">
-                                <span class="text-xs text-zinc-500"><i class="fas fa-calendar"></i> ${new Date(video.created_at).toLocaleDateString()}</span>
-                                <span class="text-xs text-zinc-500 ${video.sold ? 'text-success' : 'text-warning'}">
-                                    <i class="fas fa-${video.sold ? 'check' : 'clock'}"></i> ${video.sold ? 'Sold' : 'Available'}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="btn btn-sm btn-primary" onclick="playVideoNow('${video.id}')">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteVideo('${video.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    
-                    videosList.appendChild(videoItem);
-                });
-            } catch (error) {
-                console.error('Error in loadAdminVideos:', error);
-            }
-        }
-        
-        // Load admin book requests
-        async function loadAdminBookRequests() {
-            const requestsList = document.getElementById('admin-book-requests-list');
-            const emptyState = document.getElementById('admin-book-requests-empty');
-            
-            if (!requestsList || !emptyState) return;
-            
-            requestsList.innerHTML = '';
-            
-            try {
-                const requests = await loadBookRequestsFromStorage();
-                
-                if (requests.length === 0) {
-                    requestsList.classList.add('hidden');
-                    emptyState.classList.remove('hidden');
-                    return;
+                // Load user stats
+                const savedStats = localStorage.getItem('gkStoreStats');
+                if (savedStats) {
+                    appState.userStats = JSON.parse(savedStats);
                 }
                 
-                requestsList.classList.remove('hidden');
-                emptyState.classList.add('hidden');
-                
-                requests.forEach(request => {
-                    const requestItem = document.createElement('div');
-                    requestItem.className = 'p-3 bg-surface-light rounded-lg';
-                    requestItem.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h4 class="font-semibold">${request.account_title}</h4>
-                                <span class="badge ${request.account_tier === 'big' ? 'badge-primary' : request.account_tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
-                                    ${request.account_tier}
-                                </span>
-                            </div>
-                            <span class="text-sm text-zinc-400">$${request.account_price}</span>
-                        </div>
-                        
-                        <div class="space-y-2 mt-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-user text-zinc-400 text-sm"></i>
-                                <span class="text-sm">${request.user_name}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fab fa-whatsapp text-green-500 text-sm"></i>
-                                <span class="text-sm">${request.whatsapp_number}</span>
-                            </div>
-                            ${request.notes ? `
-                            <div class="flex items-start gap-2">
-                                <i class="fas fa-sticky-note text-zinc-400 text-sm mt-0.5"></i>
-                                <span class="text-sm">${request.notes}</span>
-                            </div>
-                            ` : ''}
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-calendar text-zinc-400 text-sm"></i>
-                                <span class="text-sm">${new Date(request.created_at).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-success flex-1" onclick="approveBookRequest('${request.id}')">
-                                <i class="fas fa-check"></i> Approve
-                            </button>
-                            <button class="btn btn-sm btn-danger flex-1" onclick="rejectBookRequest('${request.id}')">
-                                <i class="fas fa-times"></i> Reject
-                            </button>
-                        </div>
-                    `;
-                    
-                    requestsList.appendChild(requestItem);
-                });
-            } catch (error) {
-                console.error('Error in loadAdminBookRequests:', error);
-            }
-        }
-        
-        // Approve book request
-        async function approveBookRequest(requestId) {
-            try {
-                showToast('success', 'Request Approved', 'Book request has been approved');
-                
-                // For demo, just remove from list
-                await loadAdminBookRequests();
-                await updateAdminStats();
+                // Set admin password hash
+                appState.adminPasswordHash = secureHash('GK@2024!AdminSecure');
                 
             } catch (error) {
-                console.error('Error in approveBookRequest:', error);
-                showToast('error', 'Approval Failed', 'An error occurred');
+                console.error('Error loading data from localStorage:', error);
+                createDefaultUsers();
             }
         }
-        
-        // Reject book request
-        async function rejectBookRequest(requestId) {
+
+        // Create default users (admin and test user)
+        function createDefaultUsers() {
+            const adminPasswordHash = secureHash('GK@2024!AdminSecure');
+            const testUserPasswordHash = secureHash('password123');
+            
+            // Create admin user with secure password
+            const adminUser = {
+                id: 1,
+                email: 'admin@gkstore.com',
+                password: adminPasswordHash,
+                name: 'Admin User',
+                role: 'admin',
+                createdAt: new Date().toISOString().split('T')[0],
+                lastLogin: new Date().toISOString()
+            };
+            
+            // Create test user
+            const testUser = {
+                id: 2,
+                email: 'user@example.com',
+                password: testUserPasswordHash,
+                name: 'Test User',
+                role: 'user',
+                createdAt: '2024-01-15',
+                lastLogin: new Date().toISOString()
+            };
+            
+            appState.users = [adminUser, testUser];
+            appState.userStats = {
+                registeredUsers: 2,
+                onlineUsers: 0
+            };
+            
+            // Set admin password hash
+            appState.adminPasswordHash = adminPasswordHash;
+            
+            // Save to localStorage
+            saveDataToLocalStorage('gkStoreUsers', appState.users);
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
+            
+            console.log('Default users created. Admin password: GK@2024!AdminSecure');
+            console.log('Test user credentials: user@example.com / password123');
+        }
+
+        // Save data to localStorage
+        function saveDataToLocalStorage(key, data) {
             try {
-                showToast('success', 'Request Rejected', 'Book request has been rejected');
-                
-                // For demo, just remove from list
-                await loadAdminBookRequests();
-                await updateAdminStats();
-                
+                localStorage.setItem(key, JSON.stringify(data));
             } catch (error) {
-                console.error('Error in rejectBookRequest:', error);
-                showToast('error', 'Rejection Failed', 'An error occurred');
+                console.error(`Error saving ${key} to localStorage:`, error);
             }
         }
-        
-        // Load user stats
-        async function loadUserStats() {
-            // For demo, just set some random stats
-            document.getElementById('videos-watched-count').textContent = Math.floor(Math.random() * 50) + 10;
-            document.getElementById('accounts-booked-count').textContent = Math.floor(Math.random() * 10) + 1;
-            document.getElementById('watch-time-count').textContent = Math.floor(Math.random() * 50) + 5 + 'h';
-            document.getElementById('purchases-count').textContent = Math.floor(Math.random() * 5) + 1;
+
+        // Save all data to localStorage
+        function saveAllDataToLocalStorage() {
+            saveDataToLocalStorage('gkStoreVideos', appState.videos);
+            saveDataToLocalStorage('gkStoreAccounts', appState.accounts);
+            saveDataToLocalStorage('gkStoreUsers', appState.users);
+            saveDataToLocalStorage('gkStoreBookRequests', appState.bookRequests);
+            saveDataToLocalStorage('gkStoreNotifications', appState.notifications);
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
         }
-        
-        // Update admin stats
-        async function updateAdminStats() {
-            const videos = appState.videos;
-            const requests = await loadBookRequestsFromStorage();
-            
-            document.getElementById('admin-video-count').textContent = videos.length;
-            document.getElementById('admin-registered-users').textContent = localStorage.getItem('gkStoreUser') ? 1 : 0;
-            document.getElementById('admin-sold-count').textContent = videos.filter(v => v.sold).length;
-            document.getElementById('admin-online-users').textContent = 1; // For demo
-            
-            // Update recent activity
-            const activityContainer = document.getElementById('admin-recent-activity');
-            if (activityContainer) {
-                activityContainer.innerHTML = '';
-                
-                const recentRequests = requests.slice(0, 3);
-                recentRequests.forEach(request => {
-                    const activityItem = document.createElement('div');
-                    activityItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
-                    activityItem.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full ${request.status === 'pending' ? 'bg-warning' : 'bg-success'} flex items-center justify-center">
-                                <i class="fas fa-bookmark text-white text-xs"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium">${request.user_name}</p>
-                                <p class="text-xs text-zinc-400">${request.account_title}</p>
-                            </div>
-                        </div>
-                        <span class="badge ${request.status === 'pending' ? 'badge-warning' : 'badge-success'} text-xs">
-                            ${request.status}
-                        </span>
-                    `;
-                    
-                    activityContainer.appendChild(activityItem);
-                });
-            }
-        }
-        
-        // Load notifications content
-        async function loadNotificationsContent() {
-            const list = document.getElementById('notifications-list');
-            const emptyState = document.getElementById('notifications-empty');
-            
-            if (!list || !emptyState) return;
-            
-            list.innerHTML = '';
-            
-            if (!appState.currentUser) {
-                list.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            
-            // For demo, create some sample notifications
-            const notifications = [
-                {
-                    id: 1,
-                    title: 'New Video Available',
-                    message: 'Check out our latest premium account video',
-                    read: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 2,
-                    title: 'Booking Confirmed',
-                    message: 'Your booking request has been received',
-                    read: true,
-                    created_at: new Date(Date.now() - 86400000).toISOString()
-                },
-                {
-                    id: 3,
-                    title: 'Welcome to GK Store',
-                    message: 'Thank you for joining our exclusive community',
-                    read: true,
-                    created_at: new Date(Date.now() - 172800000).toISOString()
-                }
-            ];
-            
-            appState.notifications = notifications;
-            
-            if (notifications.length === 0) {
-                list.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            
-            list.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-            
-            notifications.forEach(notification => {
-                const notificationItem = document.createElement('div');
-                notificationItem.className = `card ${notification.read ? '' : 'border-primary'}`;
-                notificationItem.innerHTML = `
-                    <div class="card-body">
-                        <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                                <i class="fas fa-bell text-white"></i>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start">
-                                    <h4 class="font-semibold">${notification.title}</h4>
-                                    <span class="text-xs text-zinc-400">${new Date(notification.created_at).toLocaleDateString()}</span>
-                                </div>
-                                <p class="text-sm text-zinc-400 mt-1">${notification.message}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                list.appendChild(notificationItem);
-            });
-            
-            // Update notification count
-            const unreadCount = notifications.filter(n => !n.read).length;
-            updateNotificationCount(unreadCount);
-        }
-        
-        // Update notification count
-        function updateNotificationCount(count) {
-            const badge = document.getElementById('notification-count');
-            
-            if (badge) {
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-        }
-        
-        // ============================================
-        // PWA FUNCTIONS
-        // ============================================
-        
+
         // Setup PWA Install
         function setupPWAInstall() {
+            // Check if app is already installed
             isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
                            window.navigator.standalone === true;
             
             if (isAppInstalled) {
+                console.log('App is already installed');
                 document.body.classList.add('pwa-installed');
                 document.getElementById('pwa-install-btn')?.classList.add('hidden');
                 return;
             }
             
+            // Listen for beforeinstallprompt event
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
                 
+                // Show install button after 3 seconds
                 setTimeout(() => {
                     const installBtn = document.getElementById('pwa-install-btn');
                     if (installBtn) {
@@ -3989,7 +2740,9 @@
                 }, 3000);
             });
             
+            // Listen for app installed event
             window.addEventListener('appinstalled', () => {
+                console.log('App installed successfully');
                 isAppInstalled = true;
                 document.body.classList.add('pwa-installed');
                 const installBtn = document.getElementById('pwa-install-btn');
@@ -4000,12 +2753,13 @@
                 showToast('success', 'App Installed', 'GK Store has been installed successfully!');
             });
             
+            // Setup install confirm button
             const installConfirmBtn = document.getElementById('pwa-install-confirm');
             if (installConfirmBtn) {
                 installConfirmBtn.addEventListener('click', installPWA);
             }
         }
-        
+
         // Show PWA install modal
         function showPWAInstallModal() {
             if (isAppInstalled) {
@@ -4020,7 +2774,7 @@
             
             showModal('pwa-install-modal');
         }
-        
+
         // Install PWA
         async function installPWA() {
             if (!deferredPrompt) {
@@ -4044,30 +2798,72 @@
                 showToast('error', 'Install Failed', 'Could not install the app. Please try again.');
             }
         }
-        
+
         // Register Service Worker
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then((registration) => {
-                        console.log('ServiceWorker registration successful');
+                // Simple service worker for basic caching
+                const swCode = `
+                    const CACHE_NAME = 'gk-store-v2';
+                    const urlsToCache = [
+                        './',
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+                    ];
+
+                    self.addEventListener('install', (event) => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then((cache) => cache.addAll(urlsToCache))
+                                .then(() => self.skipWaiting())
+                        );
+                    });
+
+                    self.addEventListener('activate', (event) => {
+                        event.waitUntil(
+                            caches.keys().then((cacheNames) => {
+                                return Promise.all(
+                                    cacheNames.map((cacheName) => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            }).then(() => self.clients.claim())
+                        );
+                    });
+
+                    self.addEventListener('fetch', (event) => {
+                        if (event.request.method !== 'GET') return;
+                        
+                        event.respondWith(
+                            fetch(event.request)
+                                .catch(() => {
+                                    return caches.match(event.request);
+                                })
+                        );
+                    });
+                `;
+
+                // Create blob URL for service worker
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => {
+                        console.log('Service Worker registered');
                     })
-                    .catch((error) => {
-                        console.log('ServiceWorker registration failed:', error);
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
                     });
             }
         }
-        
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
-        
-        // Close welcome modal
+
+        // Close welcome modal and show login
         function closeWelcomeModal() {
             document.getElementById('welcome-modal').classList.add('hidden');
             showPage('auth');
         }
-        
+
         // Load user preferences
         function loadPreferences() {
             const savedLanguage = localStorage.getItem('appLanguage') || 'en';
@@ -4078,8 +2874,163 @@
             
             document.documentElement.setAttribute('data-theme', savedTheme);
         }
-        
-        // Setup event listeners
+
+        // Load sample data
+        function loadSampleData() {
+            // Create sample videos if none exist
+            if (appState.videos.length === 0) {
+                appState.videos = [
+                    {
+                        id: "vid_001",
+                        title: "Premium Account Showcase",
+                        description: "Get exclusive access to premium content and features.",
+                        views: 12500,
+                        likes: 850,
+                        shares: 120,
+                        duration: "2:45",
+                        thumbnail: "",
+                        url: "",
+                        account: {
+                            id: 1,
+                            title: "Premium Plus",
+                            tier: "big",
+                            price: 5000,
+                            followers: 15000,
+                            thumbnail: ""
+                        }
+                    },
+                    {
+                        id: "vid_002",
+                        title: "VIP Access Preview",
+                        description: "Preview of our exclusive VIP access features.",
+                        views: 8900,
+                        likes: 620,
+                        shares: 85,
+                        duration: "3:20",
+                        thumbnail: "",
+                        url: "",
+                        account: {
+                            id: 2,
+                            title: "VIP Access",
+                            tier: "medium",
+                            price: 2500,
+                            followers: 8500,
+                            thumbnail: ""
+                        }
+                    }
+                ];
+                
+                // Create sample accounts
+                appState.accounts = [
+                    {
+                        id: 1,
+                        title: "Premium Plus",
+                        description: "Get exclusive access to premium content and features.",
+                        tier: "big",
+                        price: 5000,
+                        sold: false,
+                        videoId: "vid_001"
+                    },
+                    {
+                        id: 2,
+                        title: "VIP Access",
+                        description: "Preview of our exclusive VIP access features.",
+                        tier: "medium",
+                        price: 2500,
+                        sold: false,
+                        videoId: "vid_002"
+                    }
+                ];
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+            }
+
+            // Create sample notifications if none exist
+            if (appState.notifications.length === 0) {
+                appState.notifications = [
+                    {
+                        id: 1,
+                        title: "New Video Uploaded",
+                        message: "Check out the latest premium account showcase",
+                        time: "2 hours ago",
+                        read: false,
+                        icon: "fas fa-video",
+                        color: "primary"
+                    }
+                ];
+                saveDataToLocalStorage('gkStoreNotifications', appState.notifications);
+            }
+
+            // Create sample book requests if none exist
+            if (appState.bookRequests.length === 0) {
+                appState.bookRequests = [
+                    {
+                        id: 1,
+                        accountId: 1,
+                        accountTitle: "Premium Plus",
+                        accountTier: "big",
+                        accountPrice: 5000,
+                        userName: "John Smith",
+                        whatsappNumber: "+93 793066322",
+                        notes: "Interested in full access",
+                        timestamp: "2024-01-15 14:30",
+                        status: "pending"
+                    }
+                ];
+                saveDataToLocalStorage('gkStoreBookRequests', appState.bookRequests);
+            }
+
+            updateNotificationCount();
+            updateAdminStats();
+        }
+
+        // Update admin stats
+        function updateAdminStats() {
+            const adminVideoCount = document.getElementById('admin-video-count');
+            const adminRegisteredUsers = document.getElementById('admin-registered-users');
+            const adminOnlineUsers = document.getElementById('admin-online-users');
+            const adminSoldCount = document.getElementById('admin-sold-count');
+            
+            if (adminVideoCount) adminVideoCount.textContent = appState.videos.length;
+            if (adminRegisteredUsers) adminRegisteredUsers.textContent = appState.userStats.registeredUsers;
+            if (adminOnlineUsers) adminOnlineUsers.textContent = appState.userStats.onlineUsers;
+            
+            const soldAccounts = appState.accounts.filter(a => a.sold).length;
+            if (adminSoldCount) adminSoldCount.textContent = soldAccounts;
+            
+            const activityContainer = document.getElementById('admin-recent-activity');
+            if (activityContainer) {
+                activityContainer.innerHTML = '';
+                
+                const recentBooks = [...appState.bookRequests]
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, 3);
+                
+                recentBooks.forEach(request => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
+                    activityItem.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full ${request.status === 'pending' ? 'bg-warning' : 'bg-success'} flex items-center justify-center">
+                                <i class="fas fa-bookmark text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">${request.userName}</p>
+                                <p class="text-xs text-zinc-400">${request.accountTitle}</p>
+                            </div>
+                        </div>
+                        <span class="badge ${request.status === 'pending' ? 'badge-warning' : 'badge-success'} text-xs">
+                            ${request.status}
+                        </span>
+                    `;
+                    
+                    activityContainer.appendChild(activityItem);
+                });
+            }
+        }
+
+        // Set up event listeners
         function setupEventListeners() {
             document.addEventListener('keydown', (e) => {
                 if (appState.currentPage === 'home') {
@@ -4122,6 +3073,18 @@
                 });
             }
 
+            window.addEventListener('scroll', () => {
+                if (appState.currentPage === 'home') {
+                    const scrollTop = window.pageYOffset;
+                    const windowHeight = window.innerHeight;
+                    const documentHeight = document.documentElement.scrollHeight;
+                    
+                    if (scrollTop + windowHeight >= documentHeight - 100) {
+                        loadMoreVideos();
+                    }
+                }
+            });
+
             // Network status monitoring
             window.addEventListener('online', () => {
                 document.getElementById('offline-indicator').classList.remove('show');
@@ -4132,147 +3095,163 @@
                 document.getElementById('offline-indicator').classList.add('show');
                 showToast('error', 'Offline', 'Connection lost. Some features may not work.');
             });
-            
-            // File upload event listeners
-            const videoFileInput = document.getElementById('video-file-input');
-            const thumbnailFileInput = document.getElementById('thumbnail-file-input');
-            
-            if (videoFileInput) {
-                videoFileInput.addEventListener('change', handleVideoFileSelect);
+        }
+
+        // Show page
+        function showPage(page) {
+            // If not logged in and trying to access protected pages, redirect to auth
+            const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
+            if (protectedPages.includes(page) && !appState.isLoggedIn) {
+                page = 'auth';
             }
             
-            if (thumbnailFileInput) {
-                thumbnailFileInput.addEventListener('change', handleThumbnailFileSelect);
+            // If logged in and trying to access auth, redirect to home
+            if (page === 'auth' && appState.isLoggedIn) {
+                page = 'home';
             }
             
-            // Drag and drop for video upload
-            const videoUploadArea = document.getElementById('video-upload-area');
-            if (videoUploadArea) {
-                videoUploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    videoUploadArea.classList.add('dragover');
-                });
+            const pages = document.querySelectorAll('[id$="-page"]');
+            pages.forEach(p => p.classList.add('hidden'));
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            
+            const pageElement = document.getElementById(`${page}-page`);
+            if (pageElement) {
+                pageElement.classList.remove('hidden');
+                appState.currentPage = page;
                 
-                videoUploadArea.addEventListener('dragleave', () => {
-                    videoUploadArea.classList.remove('dragover');
-                });
+                window.history.pushState(null, null, `#${page}`);
                 
-                videoUploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    videoUploadArea.classList.remove('dragover');
-                    
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        videoFileInput.files = files;
-                        handleVideoFileSelect({ target: videoFileInput });
-                    }
-                });
-            }
-            
-            // Drag and drop for thumbnail upload
-            const thumbnailUploadArea = document.getElementById('thumbnail-upload-area');
-            if (thumbnailUploadArea) {
-                thumbnailUploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    thumbnailUploadArea.classList.add('dragover');
-                });
+                const activeNavItem = document.querySelector(`.nav-item[href="#${page}"]`);
+                if (activeNavItem) {
+                    activeNavItem.classList.add('active');
+                }
                 
-                thumbnailUploadArea.addEventListener('dragleave', () => {
-                    thumbnailUploadArea.classList.remove('dragover');
-                });
-                
-                thumbnailUploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    thumbnailUploadArea.classList.remove('dragover');
-                    
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        thumbnailFileInput.files = files;
-                        handleThumbnailFileSelect({ target: thumbnailFileInput });
-                    }
-                });
+                switch(page) {
+                    case 'auth':
+                        showLoginForm();
+                        break;
+                    case 'home':
+                        loadHomeContent();
+                        break;
+                    case 'accounts':
+                        loadAccountsContent();
+                        break;
+                    case 'admin':
+                        loadAdminContent();
+                        break;
+                    case 'notifications':
+                        loadNotificationsContent();
+                        break;
+                }
             }
         }
-        
-        // Handle video file selection
-        function handleVideoFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // Check file size (max 100MB)
-            if (file.size > 100 * 1024 * 1024) {
-                showToast('error', 'File Too Large', 'Video file must be less than 100MB');
-                event.target.value = '';
-                return;
-            }
-            
-            // Check file type
-            if (!file.type.startsWith('video/')) {
-                showToast('error', 'Invalid File', 'Please select a video file');
-                event.target.value = '';
-                return;
-            }
-            
-            // Show file info
-            document.getElementById('video-file-name').textContent = file.name;
-            document.getElementById('video-file-preview').classList.remove('hidden');
-            
-            // Clear URL input if file is selected
-            document.getElementById('video-url-input').value = '';
-        }
-        
-        // Handle thumbnail file selection
-        function handleThumbnailFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // Check file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('error', 'File Too Large', 'Thumbnail must be less than 5MB');
-                event.target.value = '';
-                return;
-            }
-            
-            // Check file type
-            if (!file.type.startsWith('image/')) {
-                showToast('error', 'Invalid File', 'Please select an image file');
-                event.target.value = '';
-                return;
-            }
-            
-            // Preview image
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('thumbnail-preview-img').src = e.target.result;
-                document.getElementById('thumbnail-preview').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // Clear video file
-        function clearVideoFile() {
-            document.getElementById('video-file-input').value = '';
-            document.getElementById('video-file-preview').classList.add('hidden');
-        }
-        
-        // Clear thumbnail
-        function clearThumbnail() {
-            document.getElementById('thumbnail-file-input').value = '';
-            document.getElementById('thumbnail-preview').classList.add('hidden');
-        }
-        
-        // Navigate videos
-        function navigateVideo(direction) {
-            if (direction === 'prev' && appState.currentVideoIndex > 0) {
-                appState.currentVideoIndex--;
+
+        // Load home page content
+        function loadHomeContent() {
+            if (appState.videos.length > 0) {
                 loadVideo(appState.currentVideoIndex);
-            } else if (direction === 'next' && appState.currentVideoIndex < appState.videos.length - 1) {
-                appState.currentVideoIndex++;
-                loadVideo(appState.currentVideoIndex);
+            } else {
+                // Show empty state
+                const videoSection = document.getElementById('video-section');
+                const videoPlaceholder = document.getElementById('video-placeholder');
+                if (videoSection && videoPlaceholder) {
+                    videoPlaceholder.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                            <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
+                            <p class="text-zinc-400">Upload videos from the admin section to see content here.</p>
+                            ${appState.currentUser?.role === 'admin' ? 
+                                `<button class="btn btn-primary mt-4" onclick="showUploadVideo()">
+                                    <i class="fas fa-upload"></i> Upload First Video
+                                </button>` : ''}
+                        </div>
+                    `;
+                    videoPlaceholder.classList.remove('hidden');
+                }
+            }
+            
+            loadVideoGrid();
+        }
+
+        // Load video
+        function loadVideo(index) {
+            const video = appState.videos[index];
+            if (!video) return;
+            
+            const videoSection = document.getElementById('video-section');
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            const videoOverlay = document.getElementById('video-overlay');
+            
+            if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
+            if (videoOverlay) videoOverlay.classList.remove('hidden');
+            
+            document.getElementById('video-title').textContent = video.title;
+            document.getElementById('video-description').textContent = video.description;
+            
+            const statsElement = document.getElementById('video-stats');
+            if (statsElement) {
+                statsElement.innerHTML = `
+                    <span>${video.views.toLocaleString()} views</span>
+                    <span>•</span>
+                    <span>${video.likes.toLocaleString()} likes</span>
+                    <span>•</span>
+                    <span>${video.duration}</span>
+                `;
+            }
+            
+            appState.currentAccount = video.account;
+            
+            // Clear previous video if exists
+            if (currentVideoPlayer) {
+                currentVideoPlayer.pause();
+                currentVideoPlayer.remove();
+                currentVideoPlayer = null;
+            }
+            
+            // Create video element if video has a URL
+            if (video.url) {
+                const videoPlayer = document.createElement('video');
+                videoPlayer.className = 'video-player';
+                videoPlayer.src = video.url;
+                videoPlayer.controls = false;
+                videoPlayer.autoplay = true;
+                videoPlayer.muted = false;
+                videoPlayer.loop = true;
+                
+                // Add event listeners for video
+                videoPlayer.addEventListener('play', () => {
+                    isVideoPlaying = true;
+                    updatePlayPauseIcon();
+                });
+                
+                videoPlayer.addEventListener('pause', () => {
+                    isVideoPlaying = false;
+                    updatePlayPauseIcon();
+                });
+                
+                videoPlayer.addEventListener('error', (e) => {
+                    console.error('Video error:', e);
+                    showToast('error', 'Video Error', 'Failed to load video');
+                });
+                
+                videoSection.innerHTML = '';
+                videoSection.appendChild(videoPlayer);
+                videoSection.appendChild(videoOverlay);
+                
+                currentVideoPlayer = videoPlayer;
+                isVideoPlaying = true;
+                updatePlayPauseIcon();
+            } else {
+                // Set gradient background if no video
+                videoSection.style.background = 'linear-gradient(135deg, #ec4899, #8b5cf6)';
+                videoSection.style.backgroundSize = 'cover';
+                videoSection.style.backgroundPosition = 'center';
             }
         }
-        
-        // Toggle video playback
+
+        // Toggle video playback (TikTok style)
         function toggleVideoPlayback() {
             if (currentVideoPlayer) {
                 if (currentVideoPlayer.paused) {
@@ -4283,30 +3262,36 @@
                     isVideoPlaying = false;
                 }
                 
+                // Show play/pause overlay
                 showPlayPauseOverlay();
                 updatePlayPauseIcon();
             }
         }
-        
+
         // Show play/pause overlay
         function showPlayPauseOverlay() {
             const playPauseOverlay = document.getElementById('video-play-pause');
             const playPauseIcon = document.getElementById('play-pause-icon');
             
             if (playPauseOverlay && playPauseIcon) {
+                // Update icon
                 playPauseIcon.className = isVideoPlaying ? 'fas fa-pause' : 'fas fa-play';
+                
+                // Show overlay
                 playPauseOverlay.classList.add('show');
                 
+                // Clear any existing timeout
                 if (playPauseTimeout) {
                     clearTimeout(playPauseTimeout);
                 }
                 
+                // Hide overlay after 1 second
                 playPauseTimeout = setTimeout(() => {
                     playPauseOverlay.classList.remove('show');
                 }, 1000);
             }
         }
-        
+
         // Update play/pause icon
         function updatePlayPauseIcon() {
             const playPauseIcon = document.getElementById('play-pause-icon');
@@ -4314,7 +3299,843 @@
                 playPauseIcon.className = isVideoPlaying ? 'fas fa-pause' : 'fas fa-play';
             }
         }
-        
+
+        // Navigate videos
+        function navigateVideo(direction) {
+            if (direction === 'prev' && appState.currentVideoIndex > 0) {
+                appState.currentVideoIndex--;
+                loadVideo(appState.currentVideoIndex);
+            } else if (direction === 'next' && appState.currentVideoIndex < appState.videos.length - 1) {
+                appState.currentVideoIndex++;
+                loadVideo(appState.currentVideoIndex);
+            }
+        }
+
+        // Load video grid
+        function loadVideoGrid() {
+            const grid = document.getElementById('video-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            if (appState.videos.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-4 text-center py-12">
+                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
+                        <p class="text-zinc-400">Upload videos to see them here.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            appState.videos.forEach((video, index) => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                videoItem.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                        <i class="fas fa-play-circle" style="font-size: 3rem; color: white; opacity: 0.8;"></i>
+                    </div>
+                    <div class="video-item-overlay">
+                        <div class="video-item-title">${sanitizeInput(video.title)}</div>
+                        <div class="video-item-stats">
+                            <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
+                            <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
+                            <span>${video.duration}</span>
+                        </div>
+                    </div>
+                `;
+                
+                videoItem.addEventListener('click', () => {
+                    appState.currentVideoIndex = index;
+                    loadVideo(index);
+                });
+                
+                grid.appendChild(videoItem);
+            });
+        }
+
+        // Load more videos (infinite scroll)
+        function loadMoreVideos() {
+            const loadingMore = document.getElementById('loading-more');
+            if (loadingMore) loadingMore.classList.remove('hidden');
+            
+            setTimeout(() => {
+                const loadingMore = document.getElementById('loading-more');
+                if (loadingMore) loadingMore.classList.add('hidden');
+                showToast('info', 'No More Videos', 'All videos loaded');
+            }, 1000);
+        }
+
+        // Load accounts page content
+        function loadAccountsContent() {
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            // Show empty message if no accounts
+            if (appState.accounts.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-3 text-center py-12">
+                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
+                        <p class="text-zinc-400 mb-4">Upload videos from the admin section to see accounts here.</p>
+                        ${appState.currentUser?.role === 'admin' ? 
+                            `<button class="btn btn-primary" onclick="showUploadVideo()">
+                                <i class="fas fa-upload"></i> Upload First Video
+                            </button>` : 
+                            `<button class="btn btn-primary" onclick="showPage('home')">
+                                <i class="fas fa-video"></i> Browse Videos
+                            </button>`}
+                    </div>
+                `;
+                return;
+            }
+            
+            appState.accounts.forEach(account => {
+                const accountCard = document.createElement('div');
+                accountCard.className = 'account-card';
+                
+                // Determine icon class based on tier
+                let iconClass = 'account-icon ';
+                let iconText = '';
+                if (account.tier === 'small') {
+                    iconClass += 'small';
+                    iconText = '<i class="fas fa-user"></i>';
+                } else if (account.tier === 'medium') {
+                    iconClass += 'medium';
+                    iconText = '<i class="fas fa-user-tie"></i>';
+                } else {
+                    iconClass += 'big';
+                    iconText = '<i class="fas fa-crown"></i>';
+                }
+                
+                accountCard.innerHTML = `
+                    <div class="${iconClass}">
+                        ${iconText}
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold">${sanitizeInput(account.title)}</h3>
+                        <span class="badge ${account.tier === 'big' ? 'badge-primary' : account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
+                            ${account.tier}
+                        </span>
+                    </div>
+                    <p class="text-zinc-400 text-sm mb-4">${sanitizeInput(account.description)}</p>
+                    
+                    <!-- Video Preview Area -->
+                    <div class="mb-4">
+                        <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
+                             style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
+                             onclick="playAccountVideo('${account.videoId}')">
+                            <i class="fas fa-play-circle text-white text-3xl"></i>
+                        </div>
+                        <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 mb-3">
+                        <button class="btn btn-sm btn-primary flex-1" onclick="bookAccountById(${account.id})">
+                            <i class="fas fa-bookmark"></i> Book
+                        </button>
+                        <button class="btn btn-sm btn-success flex-1" onclick="buyAccountById(${account.id})">
+                            <i class="fas fa-shopping-bag"></i> Buy Now
+                        </button>
+                        <button class="btn btn-sm btn-secondary flex-1" onclick="shareAccount(${account.id})">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold gradient-text">$${account.price.toLocaleString()}</span>
+                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
+                                onclick="viewAccount(${account.id})" 
+                                ${account.sold ? 'disabled' : ''}>
+                            ${account.sold ? 'Sold' : 'View Details'}
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(accountCard);
+            });
+        }
+
+        // Play account video
+        function playAccountVideo(videoId) {
+            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                // Navigate to home page and play the video
+                showPage('home');
+                setTimeout(() => {
+                    appState.currentVideoIndex = videoIndex;
+                    loadVideo(videoIndex);
+                }, 300);
+            } else {
+                showToast('error', 'Video Not Found', 'Video is not available');
+            }
+        }
+
+        // Book account by ID
+        function bookAccountById(accountId) {
+            const account = appState.accounts.find(a => a.id === accountId);
+            if (account) {
+                appState.currentAccount = account;
+                showModal('book-modal');
+                
+                document.getElementById('book-account-name').textContent = account.title;
+                document.getElementById('book-account-tier').textContent = account.tier;
+                document.getElementById('book-account-price').textContent = `$${account.price.toLocaleString()}`;
+            }
+        }
+
+        // Buy account by ID
+        function buyAccountById(accountId) {
+            const account = appState.accounts.find(a => a.id === accountId);
+            if (account) {
+                appState.currentAccount = account;
+                showModal('buy-modal');
+                
+                document.getElementById('buy-account-name').textContent = account.title;
+                document.getElementById('buy-account-tier').textContent = account.tier;
+                document.getElementById('buy-account-price').textContent = `$${account.price.toLocaleString()}`;
+                document.getElementById('payment-amount').textContent = account.price.toLocaleString();
+            }
+        }
+
+        // Share account
+        function shareAccount(accountId) {
+            const account = appState.accounts.find(a => a.id === accountId);
+            if (account) {
+                if (navigator.share) {
+                    navigator.share({
+                        title: account.title,
+                        text: `Check out this ${account.tier} tier account on GK Store for $${account.price}`,
+                        url: window.location.href
+                    });
+                } else {
+                    navigator.clipboard.writeText(`${account.title} - $${account.price} - ${account.tier} tier`);
+                    showToast('success', 'Copied', 'Account details copied to clipboard');
+                }
+            }
+        }
+
+        // Filter accounts by tier
+        function filterAccounts(tier) {
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase() === tier.toLowerCase()) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            let filteredAccounts = appState.accounts;
+            if (tier !== 'all') {
+                filteredAccounts = appState.accounts.filter(account => account.tier === tier);
+            }
+            
+            // Show empty message if no accounts in the selected tier
+            if (filteredAccounts.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-3 text-center py-12">
+                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No ${tier} Tier Accounts</h3>
+                        <p class="text-zinc-400 mb-4">No accounts available in the ${tier} tier.</p>
+                        <button class="btn btn-primary" onclick="filterAccounts('all')">
+                            <i class="fas fa-list"></i> View All Accounts
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredAccounts.forEach(account => {
+                const accountCard = document.createElement('div');
+                accountCard.className = 'account-card';
+                
+                // Determine icon class based on tier
+                let iconClass = 'account-icon ';
+                let iconText = '';
+                if (account.tier === 'small') {
+                    iconClass += 'small';
+                    iconText = '<i class="fas fa-user"></i>';
+                } else if (account.tier === 'medium') {
+                    iconClass += 'medium';
+                    iconText = '<i class="fas fa-user-tie"></i>';
+                } else {
+                    iconClass += 'big';
+                    iconText = '<i class="fas fa-crown"></i>';
+                }
+                
+                accountCard.innerHTML = `
+                    <div class="${iconClass}">
+                        ${iconText}
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold">${sanitizeInput(account.title)}</h3>
+                        <span class="badge ${account.tier === 'big' ? 'badge-primary' : account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
+                            ${account.tier}
+                        </span>
+                    </div>
+                    <p class="text-zinc-400 text-sm mb-4">${sanitizeInput(account.description)}</p>
+                    
+                    <!-- Video Preview Area -->
+                    <div class="mb-4">
+                        <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
+                             style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
+                             onclick="playAccountVideo('${account.videoId}')">
+                            <i class="fas fa-play-circle text-white text-3xl"></i>
+                        </div>
+                        <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 mb-3">
+                        <button class="btn btn-sm btn-primary flex-1" onclick="bookAccountById(${account.id})">
+                            <i class="fas fa-bookmark"></i> Book
+                        </button>
+                        <button class="btn btn-sm btn-success flex-1" onclick="buyAccountById(${account.id})">
+                            <i class="fas fa-shopping-bag"></i> Buy Now
+                        </button>
+                        <button class="btn btn-sm btn-secondary flex-1" onclick="shareAccount(${account.id})">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold gradient-text">$${account.price.toLocaleString()}</span>
+                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
+                                onclick="viewAccount(${account.id})" 
+                                ${account.sold ? 'disabled' : ''}>
+                            ${account.sold ? 'Sold' : 'View Details'}
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(accountCard);
+            });
+            
+            showToast('info', 'Filter Applied', `${tier} accounts`);
+        }
+
+        // Load admin page content
+        function loadAdminContent() {
+            // Reset admin login state
+            appState.isAdminLoggedIn = false;
+            const adminDashboard = document.getElementById('admin-dashboard');
+            if (adminDashboard) {
+                adminDashboard.classList.add('hidden');
+            }
+            
+            // Clear password field
+            const adminPasswordInput = document.getElementById('admin-password');
+            if (adminPasswordInput) {
+                adminPasswordInput.value = '';
+            }
+        }
+
+        // View account details
+        function viewAccount(id) {
+            const account = appState.accounts.find(a => a.id === id);
+            if (account) {
+                appState.currentAccount = account;
+                showModal('book-modal');
+                
+                document.getElementById('book-account-name').textContent = account.title;
+                document.getElementById('book-account-tier').textContent = account.tier;
+                document.getElementById('book-account-price').textContent = `$${account.price.toLocaleString()}`;
+            }
+        }
+
+        // FIXED ADMIN LOGIN FUNCTION - Now uses secure hash comparison
+        function adminLogin(event) {
+            event.preventDefault();
+            
+            const passwordInput = document.getElementById('admin-password');
+            const password = passwordInput.value;
+            
+            // Hash the input password and compare with stored hash
+            const inputHash = secureHash(password);
+            
+            if (inputHash === appState.adminPasswordHash) {
+                appState.isAdminLoggedIn = true;
+                const adminDashboard = document.getElementById('admin-dashboard');
+                if (adminDashboard) {
+                    adminDashboard.classList.remove('hidden');
+                }
+                showToast('success', 'Admin Login', 'Successfully logged in as admin');
+                passwordInput.value = '';
+                
+                updateAdminStats();
+            } else {
+                showToast('error', 'Admin Login', 'Incorrect password. Try: GK@2024!AdminSecure');
+            }
+        }
+
+        // Show upload video modal
+        function showUploadVideo() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            const nextId = appState.videos.length > 0 ? `vid_${(appState.videos.length + 1).toString().padStart(3, '0')}` : 'vid_001';
+            document.getElementById('video-id').value = nextId;
+            
+            document.getElementById('video-title-input').value = '';
+            document.getElementById('video-description-input').value = '';
+            document.getElementById('video-price').value = '';
+            document.getElementById('video-tier').value = '';
+            document.getElementById('video-url').value = '';
+            
+            showModal('upload-video-modal');
+        }
+
+        // Add video manually (with validation)
+        function addVideoManually() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            const id = document.getElementById('video-id').value.trim();
+            const title = document.getElementById('video-title-input').value.trim();
+            const description = document.getElementById('video-description-input').value.trim();
+            const price = parseFloat(document.getElementById('video-price').value);
+            const tier = document.getElementById('video-tier').value;
+            const url = document.getElementById('video-url').value.trim();
+            
+            // Validation
+            if (!id || !title || isNaN(price) || price < 0 || !tier || !url) {
+                showToast('error', 'Validation Error', 'Please fill all required fields including video URL');
+                return;
+            }
+            
+            // Validate video URL
+            if (!isValidVideoUrl(url)) {
+                showToast('error', 'Invalid URL', 'Please enter a valid video URL (MP4, WebM, YouTube, Vimeo, etc.)');
+                return;
+            }
+            
+            if (appState.videos.some(v => v.id === id)) {
+                showToast('error', 'Duplicate ID', 'Video ID already exists. Please use a unique ID.');
+                return;
+            }
+            
+            // Sanitize inputs
+            const sanitizedTitle = sanitizeInput(title);
+            const sanitizedDescription = sanitizeInput(description);
+            
+            // Create new video object
+            const newVideo = {
+                id: id,
+                title: sanitizedTitle,
+                description: sanitizedDescription || 'No description available',
+                views: 0,
+                likes: 0,
+                shares: 0,
+                duration: "2:30", // Default duration
+                thumbnail: "",
+                url: url,
+                account: {
+                    id: appState.accounts.length + 1,
+                    title: sanitizedTitle,
+                    tier: tier,
+                    price: price,
+                    followers: 0,
+                    thumbnail: ""
+                }
+            };
+            
+            // Create corresponding account
+            const newAccount = {
+                id: newVideo.account.id,
+                title: newVideo.account.title,
+                description: newVideo.description,
+                tier: newVideo.account.tier,
+                price: newVideo.account.price,
+                sold: false,
+                videoId: id
+            };
+            
+            // Add to videos array
+            appState.videos.unshift(newVideo);
+            
+            // Add to accounts array
+            appState.accounts.unshift(newAccount);
+            appState.currentVideoIndex = 0;
+            
+            // Save to localStorage
+            saveAllDataToLocalStorage();
+            
+            // Update UI
+            loadHomeContent();
+            updateAdminStats();
+            
+            // Show success message
+            showToast('success', 'Video Added', `Video "${sanitizedTitle}" added successfully`);
+            
+            // Reset form and close modal
+            document.getElementById('upload-video-form').reset();
+            closeModal('upload-video-modal');
+            
+            // Load the new video
+            setTimeout(() => {
+                loadVideo(0);
+            }, 500);
+        }
+
+        // Show manage videos modal
+        function showManageVideos() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            loadAdminVideos();
+            showModal('manage-videos-modal');
+        }
+
+        // Load admin videos
+        function loadAdminVideos(filter = 'all') {
+            const videosList = document.getElementById('admin-videos-list');
+            if (!videosList) return;
+            
+            videosList.innerHTML = '';
+            
+            const filteredVideos = filter === 'all' 
+                ? appState.videos 
+                : appState.videos.filter(video => video.account.tier === filter);
+            
+            if (filteredVideos.length === 0) {
+                videosList.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Videos Found</h3>
+                        <p class="text-zinc-400">No videos in the ${filter} tier</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredVideos.forEach(video => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
+                videoItem.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium">${sanitizeInput(video.title)}</span>
+                            <span class="badge ${video.account.tier === 'big' ? 'badge-primary' : video.account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
+                                ${video.account.tier}
+                            </span>
+                        </div>
+                        <p class="text-xs text-zinc-400">ID: ${video.id} • $${video.account.price.toLocaleString()}</p>
+                        <p class="text-xs text-zinc-400 mt-1">${sanitizeInput(video.description.substring(0, 60))}${video.description.length > 60 ? '...' : ''}</p>
+                        <div class="flex gap-2 mt-2">
+                            <span class="text-xs text-zinc-500"><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
+                            <span class="text-xs text-zinc-500"><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
+                            <span class="text-xs text-zinc-500"><i class="fas fa-share"></i> ${video.shares.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-primary" onclick="playVideoNow('${video.id}')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteVideo('${video.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                videosList.appendChild(videoItem);
+            });
+        }
+
+        // Filter admin videos
+        function adminFilterVideos(tier) {
+            document.querySelectorAll('#manage-videos-modal .tab-item').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().includes(tier)) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            loadAdminVideos(tier);
+        }
+
+        // Delete video with memory cleanup
+        function deleteVideo(videoId) {
+            if (confirm('Are you sure you want to delete this video? The corresponding account will also be removed.')) {
+                // Remove video
+                const videoIndex = appState.videos.findIndex(v => v.id === videoId);
+                if (videoIndex !== -1) {
+                    const video = appState.videos[videoIndex];
+                    // Clean up blob URLs if any
+                    if (video.url && video.url.startsWith('blob:')) {
+                        URL.revokeObjectURL(video.url);
+                    }
+                    if (video.thumbnail && video.thumbnail.startsWith('blob:')) {
+                        URL.revokeObjectURL(video.thumbnail);
+                    }
+                    appState.videos.splice(videoIndex, 1);
+                }
+                
+                // Remove corresponding account
+                const accountIndex = appState.accounts.findIndex(a => a.videoId === videoId);
+                if (accountIndex !== -1) {
+                    appState.accounts.splice(accountIndex, 1);
+                }
+                
+                // Update current video index if needed
+                if (appState.currentVideoIndex >= appState.videos.length) {
+                    appState.currentVideoIndex = Math.max(0, appState.videos.length - 1);
+                }
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
+                loadAdminVideos('all');
+                loadHomeContent();
+                updateAdminStats();
+                
+                showToast('success', 'Video Deleted', 'Video and corresponding account have been removed');
+            }
+        }
+
+        // Play video now
+        function playVideoNow(videoId) {
+            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                closeModal('manage-videos-modal');
+                showPage('home');
+                setTimeout(() => {
+                    appState.currentVideoIndex = videoIndex;
+                    loadVideo(videoIndex);
+                }, 300);
+            }
+        }
+
+        // Show book requests modal
+        function showBookRequests() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            loadAdminBookRequests();
+            showModal('book-requests-modal');
+        }
+
+        // Load admin book requests
+        function loadAdminBookRequests() {
+            const requestsList = document.getElementById('admin-book-requests-list');
+            const emptyState = document.getElementById('admin-book-requests-empty');
+            
+            if (!requestsList || !emptyState) return;
+            
+            requestsList.innerHTML = '';
+            
+            const pendingRequests = appState.bookRequests.filter(r => r.status === 'pending');
+            
+            if (pendingRequests.length === 0) {
+                requestsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            requestsList.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            pendingRequests.forEach(request => {
+                const requestItem = document.createElement('div');
+                requestItem.className = 'p-3 bg-surface-light rounded-lg';
+                requestItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-semibold">${sanitizeInput(request.accountTitle)}</h4>
+                            <span class="badge ${request.accountTier === 'big' ? 'badge-primary' : request.accountTier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
+                                ${request.accountTier}
+                            </span>
+                        </div>
+                        <span class="text-sm text-zinc-400">$${request.accountPrice.toLocaleString()}</span>
+                    </div>
+                    
+                    <div class="space-y-2 mt-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-user text-zinc-400 text-sm"></i>
+                            <span class="text-sm">${sanitizeInput(request.userName)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fab fa-whatsapp text-green-500 text-sm"></i>
+                            <span class="text-sm">${request.whatsappNumber}</span>
+                        </div>
+                        ${request.notes ? `
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-sticky-note text-zinc-400 text-sm mt-0.5"></i>
+                            <span class="text-sm">${sanitizeInput(request.notes)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-sm btn-success flex-1" onclick="approveBookRequest(${request.id})">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-sm btn-danger flex-1" onclick="rejectBookRequest(${request.id})">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                `;
+                
+                requestsList.appendChild(requestItem);
+            });
+        }
+
+        // Approve book request
+        function approveBookRequest(requestId) {
+            const request = appState.bookRequests.find(r => r.id === requestId);
+            if (request) {
+                request.status = 'approved';
+                
+                const account = appState.accounts.find(a => a.id === request.accountId);
+                if (account) {
+                    account.sold = true;
+                }
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
+                loadAdminBookRequests();
+                updateAdminStats();
+                showToast('success', 'Request Approved', `Book request approved for ${request.userName}`);
+            }
+        }
+
+        // Reject book request
+        function rejectBookRequest(requestId) {
+            const request = appState.bookRequests.find(r => r.id === requestId);
+            if (request) {
+                request.status = 'rejected';
+                
+                // Save to localStorage
+                saveAllDataToLocalStorage();
+                
+                loadAdminBookRequests();
+                updateAdminStats();
+                showToast('success', 'Request Rejected', `Book request rejected for ${request.userName}`);
+            }
+        }
+
+        // Show manage settings modal
+        function showManageSettings() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            document.getElementById('new-admin-password').value = '';
+            document.getElementById('new-usdt-address').value = document.getElementById('usdt-address').textContent;
+            document.getElementById('new-whatsapp-number').value = '+93 793066322';
+            
+            showModal('manage-settings-modal');
+        }
+
+        // Save admin settings
+        function saveAdminSettings() {
+            const newPassword = document.getElementById('new-admin-password').value;
+            const newUsdtAddress = document.getElementById('new-usdt-address').value;
+            const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
+            
+            if (newPassword && newPassword.length >= 6) {
+                // Update admin password hash
+                appState.adminPasswordHash = secureHash(newPassword);
+                showToast('success', 'Password Updated', 'Admin password has been changed');
+            }
+            
+            if (newUsdtAddress) {
+                document.getElementById('usdt-address').textContent = newUsdtAddress;
+                document.getElementById('payment-address').textContent = newUsdtAddress;
+                showToast('success', 'USDT Updated', 'USDT address has been updated');
+            }
+            
+            if (newWhatsappNumber) {
+                // Update WhatsApp number in localStorage
+                localStorage.setItem('gkStoreWhatsApp', newWhatsappNumber);
+                showToast('success', 'WhatsApp Updated', 'WhatsApp number has been updated');
+            }
+            
+            showToast('success', 'Settings Saved', 'Admin settings have been updated');
+            closeModal('manage-settings-modal');
+        }
+
+        // Load notifications content
+        function loadNotificationsContent() {
+            const list = document.getElementById('notifications-list');
+            const emptyState = document.getElementById('notifications-empty');
+            
+            if (!list || !emptyState) return;
+            
+            list.innerHTML = '';
+            
+            if (appState.notifications.length === 0) {
+                list.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            list.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            appState.notifications.forEach(notification => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = `card ${notification.read ? '' : 'border-primary'}`;
+                notificationItem.innerHTML = `
+                    <div class="card-body">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-full bg-${notification.color} flex items-center justify-center">
+                                <i class="${notification.icon} text-white"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-semibold">${sanitizeInput(notification.title)}</h4>
+                                    <span class="text-xs text-zinc-400">${notification.time}</span>
+                                </div>
+                                <p class="text-sm text-zinc-400 mt-1">${sanitizeInput(notification.message)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                notificationItem.addEventListener('click', () => {
+                    notification.read = true;
+                    updateNotificationCount();
+                    saveDataToLocalStorage('gkStoreNotifications', appState.notifications);
+                    loadNotificationsContent();
+                });
+                
+                list.appendChild(notificationItem);
+            });
+        }
+
+        // Update notification count
+        function updateNotificationCount() {
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-count');
+            
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
         // Show modal
         function showModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -4326,17 +4147,17 @@
                     if (modalId === 'book-modal') {
                         document.getElementById('book-account-name').textContent = appState.currentAccount.title;
                         document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
-                        document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price}`;
+                        document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price.toLocaleString()}`;
                     } else if (modalId === 'buy-modal') {
                         document.getElementById('buy-account-name').textContent = appState.currentAccount.title;
                         document.getElementById('buy-account-tier').textContent = appState.currentAccount.tier;
-                        document.getElementById('buy-account-price').textContent = `$${appState.currentAccount.price}`;
-                        document.getElementById('payment-amount').textContent = appState.currentAccount.price;
+                        document.getElementById('buy-account-price').textContent = `$${appState.currentAccount.price.toLocaleString()}`;
+                        document.getElementById('payment-amount').textContent = appState.currentAccount.price.toLocaleString();
                     }
                 }
             }
         }
-        
+
         // Close modal
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -4345,17 +4166,18 @@
                 document.body.style.overflow = '';
             }
         }
-        
+
         // Toggle language
         function toggleLanguage() {
             showModal('language-modal');
         }
-        
+
         // Set language
         function setLanguage(lang) {
             appState.language = lang;
             localStorage.setItem('appLanguage', lang);
             
+            // Update language checkmarks
             document.querySelectorAll('[id^="lang-"]').forEach(check => {
                 check.classList.add('hidden');
             });
@@ -4365,6 +4187,7 @@
                 activeCheck.classList.remove('hidden');
             }
             
+            // Update RTL/LTR
             const rtlLanguages = ['ar', 'fa', 'ur', 'ps'];
             if (rtlLanguages.includes(lang)) {
                 document.body.setAttribute('dir', 'rtl');
@@ -4373,17 +4196,20 @@
             }
             
             closeModal('language-modal');
+            
             showToast('success', 'Language Updated', 'Language preference saved');
         }
-        
+
         // Toggle theme
         function toggleTheme() {
             appState.theme = appState.theme === 'dark' ? 'light' : 'dark';
             localStorage.setItem('appTheme', appState.theme);
+            
             document.documentElement.setAttribute('data-theme', appState.theme);
+            
             showToast('success', 'Theme Updated', `Switched to ${appState.theme} mode`);
         }
-        
+
         // Show toast notification
         function showToast(type, title, message) {
             const toast = document.getElementById('toast');
@@ -4423,7 +4249,7 @@
             
             setTimeout(hideToast, 3000);
         }
-        
+
         // Hide toast
         function hideToast() {
             const toast = document.getElementById('toast');
@@ -4431,7 +4257,7 @@
                 toast.classList.add('hidden');
             }
         }
-        
+
         // Video actions
         function shareVideo() {
             const video = appState.videos[appState.currentVideoIndex];
@@ -4445,18 +4271,60 @@
                 showToast('info', 'Share', `Copy link to share: ${window.location.href}`);
             }
         }
-        
+
         // Account actions
         function bookAccount() {
             if (!appState.currentAccount) return;
             showModal('book-modal');
         }
-        
+
         function buyNow() {
             if (!appState.currentAccount) return;
             showModal('buy-modal');
         }
-        
+
+        // Submit book request
+        function submitBookRequest() {
+            const name = document.getElementById('book-name').value;
+            const whatsapp = document.getElementById('book-whatsapp').value;
+            const notes = document.getElementById('book-notes').value;
+            
+            if (!name || !whatsapp) {
+                showToast('error', 'Validation Error', 'Please fill in all required fields');
+                return;
+            }
+            
+            const bookRequest = {
+                id: appState.bookRequests.length + 1,
+                accountId: appState.currentAccount.id,
+                accountTitle: appState.currentAccount.title,
+                accountTier: appState.currentAccount.tier,
+                accountPrice: appState.currentAccount.price,
+                userName: sanitizeInput(name),
+                whatsappNumber: whatsapp,
+                notes: sanitizeInput(notes),
+                timestamp: new Date().toISOString(),
+                status: 'pending'
+            };
+            
+            appState.bookRequests.push(bookRequest);
+            
+            // Save to localStorage
+            saveDataToLocalStorage('gkStoreBookRequests', appState.bookRequests);
+            
+            showToast('success', 'Request Submitted', 'We will contact you shortly on WhatsApp');
+            closeModal('book-modal');
+            
+            // Clear form
+            document.getElementById('book-name').value = '';
+            document.getElementById('book-whatsapp').value = '';
+            document.getElementById('book-notes').value = '';
+            
+            if (appState.isAdminLoggedIn) {
+                updateAdminStats();
+            }
+        }
+
         // Copy USDT address
         function copyUSDTAddress() {
             const address = document.getElementById('usdt-address');
@@ -4470,7 +4338,7 @@
                     });
             }
         }
-        
+
         // Copy payment address
         function copyAddress() {
             const address = document.getElementById('payment-address');
@@ -4484,14 +4352,14 @@
                     });
             }
         }
-        
+
         // Open WhatsApp
         function openWhatsApp() {
             const phone = '93793066322';
             const message = encodeURIComponent('Hello, I need support with GK Store');
             window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
         }
-        
+
         // Open payment chat
         function openPaymentChat() {
             if (!appState.currentAccount) return;
@@ -4506,308 +4374,269 @@
             
             window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
         }
-        
+
         // Send contact message
         function sendContactMessage(event) {
             event.preventDefault();
+            
             const form = event.target;
+            const formData = new FormData(form);
+            
+            console.log('Contact message:', Object.fromEntries(formData));
+            
             showToast('success', 'Message Sent', 'We will respond within 24 hours');
             form.reset();
         }
-        
+
         // Logout
         function logout() {
+            // Clean up object URLs to free memory
+            appState.videos.forEach(video => {
+                if (video.url && video.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(video.url);
+                }
+                if (video.thumbnail && video.thumbnail.startsWith('blob:')) {
+                    URL.revokeObjectURL(video.thumbnail);
+                }
+            });
+            
+            // Decrease online users count
+            if (appState.userStats.onlineUsers > 0) {
+                appState.userStats.onlineUsers--;
+                saveDataToLocalStorage('gkStoreStats', appState.userStats);
+            }
+            
             appState.isLoggedIn = false;
             appState.currentUser = null;
             appState.isAdminLoggedIn = false;
-            appState.notifications = [];
             localStorage.removeItem('gkStoreUser');
             showToast('info', 'Logged Out', 'You have been logged out');
             showPage('auth');
         }
-        
-        // Auth form functions
+
+        // Auth Functions
         function showLoginForm() {
             document.getElementById('login-form-container').classList.remove('hidden');
             document.getElementById('signup-form-container').classList.add('hidden');
             document.getElementById('forgot-password-container').classList.add('hidden');
         }
-        
+
         function showSignupForm() {
             document.getElementById('login-form-container').classList.add('hidden');
             document.getElementById('signup-form-container').classList.remove('hidden');
             document.getElementById('forgot-password-container').classList.add('hidden');
         }
-        
+
         function showForgotPassword() {
             document.getElementById('login-form-container').classList.add('hidden');
             document.getElementById('signup-form-container').classList.add('hidden');
             document.getElementById('forgot-password-container').classList.remove('hidden');
         }
-        
-        // Reset password function
-        function resetPassword(event) {
+
+        // Login function
+        function login(event) {
             event.preventDefault();
-            const email = document.getElementById('reset-email').value.trim();
-            showToast('success', 'Reset Link Sent', 'Check your email for password reset instructions');
-            document.getElementById('forgot-password-form').reset();
-            showLoginForm();
+            
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            // Find user
+            const hashedPassword = secureHash(password);
+            const user = appState.users.find(u => u.email === email && u.password === hashedPassword);
+            
+            if (user) {
+                // Update last login
+                user.lastLogin = new Date().toISOString();
+                
+                // Set current user
+                appState.currentUser = user;
+                appState.isLoggedIn = true;
+                
+                // Update online users count
+                appState.userStats.onlineUsers++;
+                saveDataToLocalStorage('gkStoreStats', appState.userStats);
+                
+                // Save to localStorage if remember me is checked
+                if (rememberMe) {
+                    localStorage.setItem('gkStoreUser', JSON.stringify(user));
+                }
+                
+                // Update profile page
+                document.getElementById('user-name').textContent = user.name;
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('member-since').textContent = user.createdAt;
+                
+                // Show success message
+                showToast('success', 'Login Successful', `Welcome back, ${user.name}!`);
+                
+                // Reset form
+                document.getElementById('login-form').reset();
+                
+                // Redirect to home
+                setTimeout(() => {
+                    showPage('home');
+                }, 500);
+                
+            } else {
+                showToast('error', 'Login Failed', 'Invalid email or password');
+            }
         }
-        
-        // Social login function
-        function socialLogin(provider) {
-            const mockUser = {
-                id: `social_${Date.now()}`,
-                email: `user_${Date.now()}@${provider}.com`,
-                name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+
+        // Signup function
+        function signup(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            
+            // Validation
+            if (password !== confirmPassword) {
+                showToast('error', 'Signup Failed', 'Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('error', 'Signup Failed', 'Password must be at least 6 characters');
+                return;
+            }
+            
+            // Check if user already exists
+            if (appState.users.some(u => u.email === email)) {
+                showToast('error', 'Signup Failed', 'User with this email already exists');
+                return;
+            }
+            
+            // Create new user with hashed password
+            const newUser = {
+                id: appState.users.length + 1,
+                email: email,
+                password: secureHash(password), // Store hashed password
+                name: sanitizeInput(name),
                 role: 'user',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString().split('T')[0],
+                lastLogin: new Date().toISOString()
             };
             
-            appState.currentUser = mockUser;
+            // Add to users array
+            appState.users.push(newUser);
+            
+            // Update stats
+            appState.userStats.registeredUsers++;
+            appState.userStats.onlineUsers++;
+            
+            // Save to localStorage
+            saveDataToLocalStorage('gkStoreUsers', appState.users);
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
+            
+            // Set current user
+            appState.currentUser = newUser;
             appState.isLoggedIn = true;
             
-            localStorage.setItem('gkStoreUser', JSON.stringify(mockUser));
+            // Save to localStorage
+            localStorage.setItem('gkStoreUser', JSON.stringify(newUser));
             
-            document.getElementById('user-name').textContent = mockUser.name;
-            document.getElementById('user-email').textContent = mockUser.email;
-            document.getElementById('member-since').textContent = new Date().toLocaleDateString();
+            // Update profile page
+            document.getElementById('user-name').textContent = newUser.name;
+            document.getElementById('user-email').textContent = newUser.email;
+            document.getElementById('member-since').textContent = newUser.createdAt;
             
-            showToast('success', 'Login Successful', `Welcome, ${mockUser.name}!`);
+            // Show success message
+            showToast('success', 'Account Created', `Welcome to GK Store, ${name}!`);
             
+            // Reset form
+            document.getElementById('signup-form').reset();
+            
+            // Redirect to home
             setTimeout(() => {
                 showPage('home');
             }, 500);
         }
-        
+
+        // Reset password function
+        function resetPassword(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('reset-email').value.trim();
+            
+            // Check if user exists
+            const user = appState.users.find(u => u.email === email);
+            
+            if (user) {
+                showToast('success', 'Reset Link Sent', 'Check your email for password reset instructions');
+                
+                // Reset form and go back to login
+                document.getElementById('forgot-password-form').reset();
+                showLoginForm();
+            } else {
+                showToast('error', 'Reset Failed', 'No account found with this email');
+            }
+        }
+
+        // Social login function
+        function socialLogin(provider) {
+            // Create a mock user
+            const mockUser = {
+                id: appState.users.length + 1,
+                email: `user_${Date.now()}@${provider}.com`,
+                password: secureHash('social_auth'), // Store hashed password
+                name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+                role: 'user',
+                createdAt: new Date().toISOString().split('T')[0],
+                lastLogin: new Date().toISOString()
+            };
+            
+            // Check if user already exists (by email)
+            let existingUser = appState.users.find(u => u.email === mockUser.email);
+            
+            if (!existingUser) {
+                // Add new user
+                appState.users.push(mockUser);
+                appState.userStats.registeredUsers++;
+                saveDataToLocalStorage('gkStoreUsers', appState.users);
+                existingUser = mockUser;
+            }
+            
+            // Update stats
+            appState.userStats.onlineUsers++;
+            saveDataToLocalStorage('gkStoreStats', appState.userStats);
+            
+            // Set current user
+            appState.currentUser = existingUser;
+            appState.isLoggedIn = true;
+            
+            // Save to localStorage
+            localStorage.setItem('gkStoreUser', JSON.stringify(existingUser));
+            
+            // Update profile page
+            document.getElementById('user-name').textContent = existingUser.name;
+            document.getElementById('user-email').textContent = existingUser.email;
+            document.getElementById('member-since').textContent = existingUser.createdAt;
+            
+            // Show success message
+            showToast('success', 'Login Successful', `Welcome, ${existingUser.name}!`);
+            
+            // Redirect to home
+            setTimeout(() => {
+                showPage('home');
+            }, 500);
+        }
+
         // Show terms
         function showTerms() {
             showToast('info', 'Terms of Service', 'This is a demo app. Terms will be implemented in production.');
         }
-        
+
         // Show privacy
         function showPrivacy() {
             showToast('info', 'Privacy Policy', 'This is a demo app. Privacy policy will be implemented in production.');
         }
-        
-        // Load admin content
-        function loadAdminContent() {
-            appState.isAdminLoggedIn = false;
-            const adminDashboard = document.getElementById('admin-dashboard');
-            if (adminDashboard) {
-                adminDashboard.classList.add('hidden');
-            }
-            const adminPasswordInput = document.getElementById('admin-password');
-            if (adminPasswordInput) {
-                adminPasswordInput.value = '';
-            }
-        }
-        
-        // Show add video modal
-        function showAddVideo() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            const nextId = appState.videos.length > 0 ? `vid_${(appState.videos.length + 1).toString().padStart(3, '0')}` : 'vid_001';
-            document.getElementById('video-id').value = nextId;
-            
-            document.getElementById('video-title-input').value = '';
-            document.getElementById('video-description-input').value = '';
-            document.getElementById('video-price').value = '';
-            document.getElementById('video-tier').value = '';
-            document.getElementById('video-url-input').value = '';
-            
-            document.getElementById('video-file-input').value = '';
-            document.getElementById('video-file-preview').classList.add('hidden');
-            
-            document.getElementById('thumbnail-file-input').value = '';
-            document.getElementById('thumbnail-preview').classList.add('hidden');
-            
-            document.getElementById('upload-progress').classList.add('hidden');
-            
-            showModal('add-video-modal');
-        }
-        
-        // Show manage videos modal
-        async function showManageVideos() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            await loadAdminVideos();
-            showModal('manage-videos-modal');
-        }
-        
-        // Filter admin videos
-        function adminFilterVideos(tier) {
-            document.querySelectorAll('#manage-videos-modal .tab-item').forEach(tab => {
-                tab.classList.remove('active');
-                if (tab.textContent.toLowerCase().includes(tier)) {
-                    tab.classList.add('active');
-                }
-            });
-            
-            loadAdminVideos(tier);
-        }
-        
-        // Play video now
-        function playVideoNow(videoId) {
-            const videoIndex = appState.videos.findIndex(v => v.id === videoId);
-            if (videoIndex !== -1) {
-                closeModal('manage-videos-modal');
-                showPage('home');
-                setTimeout(() => {
-                    appState.currentVideoIndex = videoIndex;
-                    loadVideo(videoIndex);
-                }, 300);
-            }
-        }
-        
-        // Show book requests modal
-        async function showBookRequests() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            await loadAdminBookRequests();
-            showModal('book-requests-modal');
-        }
-        
-        // Show manage settings modal
-        function showManageSettings() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            document.getElementById('new-admin-password').value = '';
-            document.getElementById('new-usdt-address').value = document.getElementById('usdt-address').textContent;
-            document.getElementById('new-whatsapp-number').value = '+93 793066322';
-            
-            showModal('manage-settings-modal');
-        }
-        
-        // Save admin settings
-        function saveAdminSettings() {
-            showToast('success', 'Settings Saved', 'Admin settings have been updated');
-            closeModal('manage-settings-modal');
-        }
-        
-        // Filter accounts by tier
-        function filterAccounts(tier) {
-            document.querySelectorAll('.tab-item').forEach(tab => {
-                tab.classList.remove('active');
-                if (tab.textContent.toLowerCase() === tier.toLowerCase()) {
-                    tab.classList.add('active');
-                }
-            });
-            
-            const grid = document.getElementById('accounts-grid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            let filteredVideos = appState.videos;
-            if (tier !== 'all') {
-                filteredVideos = appState.videos.filter(video => video.tier === tier);
-            }
-            
-            if (filteredVideos.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-3 text-center py-12">
-                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">No ${tier} Tier Accounts</h3>
-                        <p class="text-zinc-400 mb-4">No accounts available in the ${tier} tier.</p>
-                        <button class="btn btn-primary" onclick="filterAccounts('all')">
-                            <i class="fas fa-list"></i> View All Accounts
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-            
-            filteredVideos.forEach(video => {
-                const accountCard = document.createElement('div');
-                accountCard.className = 'account-card';
-                
-                let iconClass = 'account-icon ';
-                let iconText = '';
-                if (video.tier === 'small') {
-                    iconClass += 'small';
-                    iconText = '<i class="fas fa-user"></i>';
-                } else if (video.tier === 'medium') {
-                    iconClass += 'medium';
-                    iconText = '<i class="fas fa-user-tie"></i>';
-                } else {
-                    iconClass += 'big';
-                    iconText = '<i class="fas fa-crown"></i>';
-                }
-                
-                accountCard.innerHTML = `
-                    <div class="${iconClass}">
-                        ${iconText}
-                    </div>
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-semibold">${video.title}</h3>
-                        <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
-                            ${video.tier}
-                        </span>
-                    </div>
-                    <p class="text-zinc-400 text-sm mb-4">${video.description || 'No description available'}</p>
-                    
-                    <!-- Video Preview Area -->
-                    <div class="mb-4">
-                        <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
-                             style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
-                             onclick="playAccountVideo('${video.id}')">
-                            <i class="fas fa-play-circle text-white text-3xl"></i>
-                        </div>
-                        <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex gap-2 mb-3">
-                        <button class="btn btn-sm btn-primary flex-1" onclick="bookAccountById('${video.id}')">
-                            <i class="fas fa-bookmark"></i> Book
-                        </button>
-                        <button class="btn btn-sm btn-success flex-1" onclick="buyAccountById('${video.id}')">
-                            <i class="fas fa-shopping-bag"></i> Buy Now
-                        </button>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-2xl font-bold gradient-text">$${video.price}</span>
-                        <button class="btn btn-sm ${video.sold ? 'btn-secondary' : 'btn-primary'}" 
-                                onclick="viewAccount('${video.id}')" 
-                                ${video.sold ? 'disabled' : ''}>
-                            ${video.sold ? 'Sold' : 'View Details'}
-                        </button>
-                    </div>
-                `;
-                
-                grid.appendChild(accountCard);
-            });
-            
-            showToast('info', 'Filter Applied', `${tier} accounts`);
-        }
-        
-        // View account details
-        function viewAccount(videoId) {
-            const video = appState.videos.find(v => v.id === videoId);
-            if (video) {
-                appState.currentAccount = video;
-                showModal('book-modal');
-                
-                document.getElementById('book-account-name').textContent = video.title;
-                document.getElementById('book-account-tier').textContent = video.tier;
-                document.getElementById('book-account-price').textContent = `$${video.price}`;
-            }
-        }
-        
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+
         // Create and inject manifest JSON
         function createManifest() {
             const manifest = {
@@ -4823,8 +4652,18 @@
                 "lang": "en",
                 "icons": [
                     {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png",
+                        "sizes": "72x72",
+                        "type": "image/png"
+                    },
+                    {
                         "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png",
                         "sizes": "96x96",
+                        "type": "image/png"
+                    },
+                    {
+                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png",
+                        "sizes": "144x144",
                         "type": "image/png"
                     },
                     {
@@ -4840,22 +4679,19 @@
                 ]
             };
 
+            // Create a Blob with the manifest content
             const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
             const manifestUrl = URL.createObjectURL(blob);
             
+            // Update the manifest link
             const manifestLink = document.getElementById('app-manifest');
             if (manifestLink) {
                 manifestLink.href = manifestUrl;
             }
         }
 
-        // ============================================
-        // INITIALIZE APP WHEN DOM IS LOADED
-        // ============================================
-        document.addEventListener('DOMContentLoaded', () => {
-            createManifest();
-            initApp();
-        });
+        // Call createManifest when the page loads
+        document.addEventListener('DOMContentLoaded', createManifest);
 
     </script>
 </body>
