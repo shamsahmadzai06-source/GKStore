@@ -21,10 +21,10 @@
     <meta name="apple-mobile-web-app-title" content="GK Store">
     <link rel="apple-touch-startup-image" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Include Supabase JS -->
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ALL YOUR ORIGINAL CSS CODE - EXACTLY AS IS */
         :root {
@@ -2372,15 +2372,26 @@
                         </select>
                     </div>
                     
-                    <!-- Video URL -->
+                    <!-- File Upload Section -->
                     <div class="input-group">
                         <label class="input-label">Video URL <span class="text-danger">*</span></label>
-                        <input type="url" class="input" id="video-url" placeholder="https://example.com/video.mp4" required>
-                        <p class="text-xs text-zinc-400 mt-1">Supported: Direct video links (MP4, WebM, etc.)</p>
+                        <div class="file-upload-area" id="file-upload-area">
+                            <i class="fas fa-link text-3xl text-primary mb-2"></i>
+                            <p class="font-medium">Paste video URL from YouTube, Vimeo, etc.</p>
+                            <p class="text-sm text-zinc-400 mt-1">Supported: YouTube, Vimeo, direct video links</p>
+                        </div>
+                        
+                        <input type="url" class="input mt-3" id="video-url" placeholder="https://example.com/video.mp4" required>
+                        
+                        <!-- URL Generator -->
+                        <div id="url-generator" class="url-generator">
+                            <label class="input-label">Generated URL</label>
+                            <div class="url-display" id="generated-url">Video URL will be used directly</div>
+                        </div>
                     </div>
                     
-                    <button type="button" class="btn btn-primary w-full" onclick="addVideoToSupabase()">
-                        <i class="fas fa-plus"></i> Add Video to Supabase
+                    <button type="button" class="btn btn-primary w-full" onclick="addVideoManually()">
+                        <i class="fas fa-plus"></i> Add Video
                     </button>
                 </form>
             </div>
@@ -2505,7 +2516,7 @@
         // Supabase Configuration
         const SUPABASE_URL = 'https://bgwjirmuwweabbxnivjm.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnd2ppcm11d3dlYWJieG5pdmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ4NzIsImV4cCI6MjA4NTk3MDg3Mn0.Iye9sbCKPutmXQKLOrdemJGPE2zFjtqJSscVg_EmK0g';
-
+        
         // Initialize Supabase client
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -2545,13 +2556,18 @@
             registerServiceWorker();
             setupPWAInstall();
             
+            // Initialize Supabase tables if they don't exist
+            await initializeSupabaseTables();
+            
+            // Load data from Supabase
+            await loadAllDataFromSupabase();
+            
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
             if (savedUser) {
                 try {
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
-                    await loadVideosFromSupabase();
                     showPage('home');
                 } catch (e) {
                     console.error('Error parsing saved user:', e);
@@ -2561,8 +2577,287 @@
                 showPage('auth');
             }
             
-            // Load sample data if Supabase is empty
-            await checkAndLoadSampleData();
+            // Load initial data
+            updateNotificationCount();
+            updateAdminStats();
+        }
+
+        // Initialize Supabase tables
+        async function initializeSupabaseTables() {
+            try {
+                // Check if videos table exists by trying to fetch
+                const { data: videos, error: videosError } = await supabase
+                    .from('videos')
+                    .select('*')
+                    .limit(1);
+                
+                // If table doesn't exist, we'll create it through Supabase dashboard
+                // You need to create these tables manually in Supabase:
+                // 1. videos (id, title, description, price, tier, video_url, created_at)
+                // 2. accounts (id, video_id, title, description, price, tier, sold)
+                // 3. book_requests (id, video_id, user_name, whatsapp_number, notes, status, created_at)
+                // 4. users (id, email, password, name, role, created_at, last_login)
+                
+                if (videosError && videosError.code === 'PGRST116') {
+                    console.log('Tables need to be created in Supabase dashboard');
+                    showToast('info', 'Setup Required', 'Please create tables in Supabase dashboard');
+                }
+                
+            } catch (error) {
+                console.error('Error initializing tables:', error);
+            }
+        }
+
+        // Load all data from Supabase
+        async function loadAllDataFromSupabase() {
+            try {
+                // Load videos
+                const { data: videos, error: videosError } = await supabase
+                    .from('videos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (!videosError && videos) {
+                    appState.videos = videos.map(video => ({
+                        ...video,
+                        account: {
+                            id: video.id,
+                            title: video.title,
+                            tier: video.tier,
+                            price: video.price,
+                            followers: 0
+                        }
+                    }));
+                }
+                
+                // Load accounts
+                const { data: accounts, error: accountsError } = await supabase
+                    .from('accounts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (!accountsError && accounts) {
+                    appState.accounts = accounts;
+                }
+                
+                // Load users
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('*');
+                
+                if (!usersError && users) {
+                    appState.users = users;
+                } else {
+                    // Create default admin user if none exists
+                    await createDefaultUsers();
+                }
+                
+                // Load book requests
+                const { data: bookRequests, error: bookRequestsError } = await supabase
+                    .from('book_requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (!bookRequestsError && bookRequests) {
+                    appState.bookRequests = bookRequests;
+                }
+                
+                // Load user stats
+                appState.userStats = {
+                    registeredUsers: appState.users.length,
+                    onlineUsers: 0
+                };
+                
+                // Set admin password hash
+                appState.adminPasswordHash = secureHash('GK@2024!AdminSecure');
+                
+            } catch (error) {
+                console.error('Error loading data from Supabase:', error);
+                await createDefaultUsers();
+            }
+        }
+
+        // Create default users in Supabase
+        async function createDefaultUsers() {
+            try {
+                const adminPasswordHash = secureHash('GK@2024!AdminSecure');
+                const testUserPasswordHash = secureHash('password123');
+                
+                // Create admin user
+                const adminUser = {
+                    email: 'admin@gkstore.com',
+                    password: adminPasswordHash,
+                    name: 'Admin User',
+                    role: 'admin'
+                };
+                
+                // Create test user
+                const testUser = {
+                    email: 'user@example.com',
+                    password: testUserPasswordHash,
+                    name: 'Test User',
+                    role: 'user'
+                };
+                
+                // Insert users into Supabase
+                const { data: adminData, error: adminError } = await supabase
+                    .from('users')
+                    .insert([adminUser]);
+                
+                const { data: testData, error: testError } = await supabase
+                    .from('users')
+                    .insert([testUser]);
+                
+                if (!adminError && !testError) {
+                    // Reload users
+                    const { data: users, error: usersError } = await supabase
+                        .from('users')
+                        .select('*');
+                    
+                    if (!usersError && users) {
+                        appState.users = users;
+                        appState.userStats = {
+                            registeredUsers: users.length,
+                            onlineUsers: 0
+                        };
+                    }
+                    
+                    console.log('Default users created. Admin password: GK@2024!AdminSecure');
+                    console.log('Test user credentials: user@example.com / password123');
+                }
+                
+                // Set admin password hash
+                appState.adminPasswordHash = adminPasswordHash;
+                
+            } catch (error) {
+                console.error('Error creating default users:', error);
+            }
+        }
+
+        // Save video to Supabase
+        async function saveVideoToSupabase(videoData) {
+            try {
+                const { data, error } = await supabase
+                    .from('videos')
+                    .insert([videoData]);
+                
+                if (error) throw error;
+                
+                return data;
+            } catch (error) {
+                console.error('Error saving video to Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Save account to Supabase
+        async function saveAccountToSupabase(accountData) {
+            try {
+                const { data, error } = await supabase
+                    .from('accounts')
+                    .insert([accountData]);
+                
+                if (error) throw error;
+                
+                return data;
+            } catch (error) {
+                console.error('Error saving account to Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Save book request to Supabase
+        async function saveBookRequestToSupabase(requestData) {
+            try {
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .insert([requestData]);
+                
+                if (error) throw error;
+                
+                return data;
+            } catch (error) {
+                console.error('Error saving book request to Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Save user to Supabase
+        async function saveUserToSupabase(userData) {
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .insert([userData]);
+                
+                if (error) throw error;
+                
+                return data;
+            } catch (error) {
+                console.error('Error saving user to Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Delete video from Supabase
+        async function deleteVideoFromSupabase(videoId) {
+            try {
+                // First delete the corresponding account
+                const { error: accountError } = await supabase
+                    .from('accounts')
+                    .delete()
+                    .eq('video_id', videoId);
+                
+                if (accountError) {
+                    console.error('Error deleting account:', accountError);
+                }
+                
+                // Then delete the video
+                const { error: videoError } = await supabase
+                    .from('videos')
+                    .delete()
+                    .eq('id', videoId);
+                
+                if (videoError) throw videoError;
+                
+                return true;
+            } catch (error) {
+                console.error('Error deleting video from Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Update account sold status in Supabase
+        async function updateAccountSoldStatus(accountId, sold) {
+            try {
+                const { error } = await supabase
+                    .from('accounts')
+                    .update({ sold: sold })
+                    .eq('id', accountId);
+                
+                if (error) throw error;
+                
+                return true;
+            } catch (error) {
+                console.error('Error updating account status:', error);
+                throw error;
+            }
+        }
+
+        // Update book request status in Supabase
+        async function updateBookRequestStatus(requestId, status) {
+            try {
+                const { error } = await supabase
+                    .from('book_requests')
+                    .update({ status: status })
+                    .eq('id', requestId);
+                
+                if (error) throw error;
+                
+                return true;
+            } catch (error) {
+                console.error('Error updating book request status:', error);
+                throw error;
+            }
         }
 
         // FIXED HASH FUNCTION
@@ -2591,617 +2886,9 @@
 
         // Input Sanitization Function
         function sanitizeInput(text) {
-            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        // Load videos from Supabase
-        async function loadVideosFromSupabase() {
-            try {
-                const { data: videos, error } = await supabase
-                    .from('videos')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (videos && videos.length > 0) {
-                    appState.videos = videos.map(video => ({
-                        id: video.id,
-                        title: video.title,
-                        description: video.description,
-                        views: video.views || 0,
-                        likes: video.likes || 0,
-                        shares: video.shares || 0,
-                        duration: video.duration || "2:30",
-                        thumbnail: video.thumbnail || "",
-                        url: video.video_url,
-                        price: video.price,
-                        tier: video.tier,
-                        sold: video.sold || false,
-                        created_at: video.created_at,
-                        updated_at: video.updated_at
-                    }));
-                    
-                    // Also load accounts from videos
-                    appState.accounts = appState.videos.map(video => ({
-                        id: video.id,
-                        title: video.title,
-                        description: video.description,
-                        tier: video.tier,
-                        price: video.price,
-                        sold: video.sold || false,
-                        videoId: video.id
-                    }));
-                } else {
-                    console.log('No videos found in Supabase');
-                }
-                
-                // Load book requests
-                await loadBookRequestsFromSupabase();
-                
-            } catch (error) {
-                console.error('Error loading videos from Supabase:', error);
-                showToast('error', 'Database Error', 'Could not load videos');
-            }
-        }
-
-        // Load book requests from Supabase
-        async function loadBookRequestsFromSupabase() {
-            try {
-                const { data: requests, error } = await supabase
-                    .from('book_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (requests) {
-                    appState.bookRequests = requests.map(request => ({
-                        id: request.id,
-                        accountId: request.video_id,
-                        accountTitle: request.video_title,
-                        accountTier: request.video_tier,
-                        accountPrice: request.video_price,
-                        userName: request.user_name,
-                        whatsappNumber: request.whatsapp_number,
-                        notes: request.notes || '',
-                        timestamp: request.created_at,
-                        status: request.status || 'pending'
-                    }));
-                }
-                
-            } catch (error) {
-                console.error('Error loading book requests from Supabase:', error);
-            }
-        }
-
-        // Check and load sample data if needed
-        async function checkAndLoadSampleData() {
-            try {
-                const { data: videos, error } = await supabase
-                    .from('videos')
-                    .select('id')
-                    .limit(1);
-                
-                if (error) throw error;
-                
-                // If no videos exist, create sample videos
-                if (!videos || videos.length === 0) {
-                    await createSampleVideos();
-                }
-                
-            } catch (error) {
-                console.error('Error checking sample data:', error);
-            }
-        }
-
-        // Create sample videos in Supabase
-        async function createSampleVideos() {
-            const sampleVideos = [
-                {
-                    id: 'vid_001',
-                    title: 'Premium Account Showcase',
-                    description: 'Get exclusive access to premium content and features.',
-                    video_url: '',
-                    price: 5000,
-                    tier: 'big',
-                    sold: false,
-                    views: 12500,
-                    likes: 850,
-                    shares: 120
-                },
-                {
-                    id: 'vid_002',
-                    title: 'VIP Access Preview',
-                    description: 'Preview of our exclusive VIP access features.',
-                    video_url: '',
-                    price: 2500,
-                    tier: 'medium',
-                    sold: false,
-                    views: 8900,
-                    likes: 620,
-                    shares: 85
-                }
-            ];
-
-            try {
-                for (const video of sampleVideos) {
-                    const { error } = await supabase
-                        .from('videos')
-                        .insert([video]);
-                    
-                    if (error) throw error;
-                }
-                
-                console.log('Sample videos created successfully');
-                await loadVideosFromSupabase();
-                
-            } catch (error) {
-                console.error('Error creating sample videos:', error);
-            }
-        }
-
-        // Add video to Supabase
-        async function addVideoToSupabase() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            const id = document.getElementById('video-id').value.trim();
-            const title = document.getElementById('video-title-input').value.trim();
-            const description = document.getElementById('video-description-input').value.trim();
-            const price = parseFloat(document.getElementById('video-price').value);
-            const tier = document.getElementById('video-tier').value;
-            const url = document.getElementById('video-url').value.trim();
-            
-            // Validation
-            if (!id || !title || isNaN(price) || price < 0 || !tier || !url) {
-                showToast('error', 'Validation Error', 'Please fill all required fields');
-                return;
-            }
-            
-            // Validate video URL
-            if (!isValidVideoUrl(url)) {
-                showToast('error', 'Invalid URL', 'Please enter a valid video URL');
-                return;
-            }
-            
-            try {
-                // Check if video already exists
-                const { data: existingVideo, error: checkError } = await supabase
-                    .from('videos')
-                    .select('id')
-                    .eq('id', id)
-                    .single();
-                
-                if (existingVideo) {
-                    showToast('error', 'Duplicate ID', 'Video ID already exists');
-                    return;
-                }
-                
-                // Insert new video
-                const { error: insertError } = await supabase
-                    .from('videos')
-                    .insert([{
-                        id: id,
-                        title: sanitizeInput(title),
-                        description: sanitizeInput(description) || 'No description available',
-                        video_url: url,
-                        price: price,
-                        tier: tier,
-                        sold: false,
-                        views: 0,
-                        likes: 0,
-                        shares: 0,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }]);
-                
-                if (insertError) throw insertError;
-                
-                // Reload videos
-                await loadVideosFromSupabase();
-                
-                // Update UI
-                loadHomeContent();
-                updateAdminStats();
-                
-                // Show success message
-                showToast('success', 'Video Added', `Video "${title}" added successfully`);
-                
-                // Reset form and close modal
-                document.getElementById('upload-video-form').reset();
-                closeModal('upload-video-modal');
-                
-                // Load the new video
-                setTimeout(() => {
-                    appState.currentVideoIndex = 0;
-                    loadVideo(0);
-                }, 500);
-                
-            } catch (error) {
-                console.error('Error adding video:', error);
-                showToast('error', 'Database Error', 'Could not add video');
-            }
-        }
-
-        // Delete video from Supabase
-        async function deleteVideo(videoId) {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Please login as admin first');
-                return;
-            }
-            
-            if (!confirm('Are you sure you want to delete this video?')) {
-                return;
-            }
-            
-            try {
-                // Delete the video
-                const { error } = await supabase
-                    .from('videos')
-                    .delete()
-                    .eq('id', videoId);
-                
-                if (error) throw error;
-                
-                // Also delete related book requests
-                await supabase
-                    .from('book_requests')
-                    .delete()
-                    .eq('video_id', videoId);
-                
-                // Reload videos
-                await loadVideosFromSupabase();
-                
-                // Update current video index if needed
-                if (appState.currentVideoIndex >= appState.videos.length) {
-                    appState.currentVideoIndex = Math.max(0, appState.videos.length - 1);
-                }
-                
-                // Update UI
-                loadAdminVideos('all');
-                loadHomeContent();
-                updateAdminStats();
-                
-                showToast('success', 'Video Deleted', 'Video has been removed');
-                
-            } catch (error) {
-                console.error('Error deleting video:', error);
-                showToast('error', 'Database Error', 'Could not delete video');
-            }
-        }
-
-        // Submit book request to Supabase
-        async function submitBookRequest() {
-            if (!appState.currentAccount) return;
-            
-            const name = document.getElementById('book-name').value;
-            const whatsapp = document.getElementById('book-whatsapp').value;
-            const notes = document.getElementById('book-notes').value;
-            
-            if (!name || !whatsapp) {
-                showToast('error', 'Validation Error', 'Please fill in all required fields');
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('book_requests')
-                    .insert([{
-                        video_id: appState.currentAccount.id,
-                        video_title: appState.currentAccount.title,
-                        video_tier: appState.currentAccount.tier,
-                        video_price: appState.currentAccount.price,
-                        user_name: sanitizeInput(name),
-                        whatsapp_number: whatsapp,
-                        notes: sanitizeInput(notes),
-                        status: 'pending',
-                        created_at: new Date().toISOString()
-                    }]);
-                
-                if (error) throw error;
-                
-                // Reload book requests
-                await loadBookRequestsFromSupabase();
-                
-                showToast('success', 'Request Submitted', 'We will contact you shortly on WhatsApp');
-                closeModal('book-modal');
-                
-                // Clear form
-                document.getElementById('book-name').value = '';
-                document.getElementById('book-whatsapp').value = '';
-                document.getElementById('book-notes').value = '';
-                
-                if (appState.isAdminLoggedIn) {
-                    updateAdminStats();
-                }
-                
-            } catch (error) {
-                console.error('Error submitting book request:', error);
-                showToast('error', 'Database Error', 'Could not submit request');
-            }
-        }
-
-        // Approve book request in Supabase
-        async function approveBookRequest(requestId) {
-            try {
-                // Update book request status
-                const { error: updateError } = await supabase
-                    .from('book_requests')
-                    .update({ status: 'approved' })
-                    .eq('id', requestId);
-                
-                if (updateError) throw updateError;
-                
-                // Update video sold status
-                const request = appState.bookRequests.find(r => r.id === requestId);
-                if (request) {
-                    const { error: videoError } = await supabase
-                        .from('videos')
-                        .update({ sold: true })
-                        .eq('id', request.accountId);
-                    
-                    if (videoError) throw videoError;
-                }
-                
-                // Reload data
-                await loadBookRequestsFromSupabase();
-                await loadVideosFromSupabase();
-                
-                loadAdminBookRequests();
-                updateAdminStats();
-                showToast('success', 'Request Approved', `Book request approved for ${request.userName}`);
-                
-            } catch (error) {
-                console.error('Error approving book request:', error);
-                showToast('error', 'Database Error', 'Could not approve request');
-            }
-        }
-
-        // Reject book request in Supabase
-        async function rejectBookRequest(requestId) {
-            try {
-                const { error } = await supabase
-                    .from('book_requests')
-                    .update({ status: 'rejected' })
-                    .eq('id', requestId);
-                
-                if (error) throw error;
-                
-                // Reload book requests
-                await loadBookRequestsFromSupabase();
-                
-                loadAdminBookRequests();
-                updateAdminStats();
-                showToast('success', 'Request Rejected', `Book request rejected`);
-                
-            } catch (error) {
-                console.error('Error rejecting book request:', error);
-                showToast('error', 'Database Error', 'Could not reject request');
-            }
-        }
-
-        // Load admin videos from Supabase
-        async function loadAdminVideos(filter = 'all') {
-            try {
-                let query = supabase
-                    .from('videos')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (filter !== 'all') {
-                    query = query.eq('tier', filter);
-                }
-                
-                const { data: videos, error } = await query;
-                
-                if (error) throw error;
-                
-                const videosList = document.getElementById('admin-videos-list');
-                if (!videosList) return;
-                
-                videosList.innerHTML = '';
-                
-                if (!videos || videos.length === 0) {
-                    videosList.innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
-                            <h3 class="text-xl font-semibold mb-2">No Videos Found</h3>
-                            <p class="text-zinc-400">No videos in the ${filter} tier</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                videos.forEach(video => {
-                    const videoItem = document.createElement('div');
-                    videoItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
-                    videoItem.innerHTML = `
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="font-medium">${sanitizeInput(video.title)}</span>
-                                <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
-                                    ${video.tier}
-                                </span>
-                            </div>
-                            <p class="text-xs text-zinc-400">ID: ${video.id} • $${video.price.toLocaleString()}</p>
-                            <p class="text-xs text-zinc-400 mt-1">${sanitizeInput(video.description.substring(0, 60))}${video.description.length > 60 ? '...' : ''}</p>
-                            <div class="flex gap-2 mt-2">
-                                <span class="text-xs text-zinc-500"><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
-                                <span class="text-xs text-zinc-500"><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
-                                <span class="text-xs text-zinc-500"><i class="fas fa-share"></i> ${video.shares.toLocaleString()}</span>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="btn btn-sm btn-primary" onclick="playVideoNow('${video.id}')">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteVideo('${video.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    
-                    videosList.appendChild(videoItem);
-                });
-                
-            } catch (error) {
-                console.error('Error loading admin videos:', error);
-                showToast('error', 'Database Error', 'Could not load videos');
-            }
-        }
-
-        // Load admin book requests from Supabase
-        async function loadAdminBookRequests() {
-            try {
-                const { data: requests, error } = await supabase
-                    .from('book_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                const requestsList = document.getElementById('admin-book-requests-list');
-                const emptyState = document.getElementById('admin-book-requests-empty');
-                
-                if (!requestsList || !emptyState) return;
-                
-                requestsList.innerHTML = '';
-                
-                const pendingRequests = requests ? requests.filter(r => r.status === 'pending') : [];
-                
-                if (pendingRequests.length === 0) {
-                    requestsList.classList.add('hidden');
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
-                
-                requestsList.classList.remove('hidden');
-                emptyState.classList.add('hidden');
-                
-                pendingRequests.forEach(request => {
-                    const requestItem = document.createElement('div');
-                    requestItem.className = 'p-3 bg-surface-light rounded-lg';
-                    requestItem.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h4 class="font-semibold">${sanitizeInput(request.video_title)}</h4>
-                                <span class="badge ${request.video_tier === 'big' ? 'badge-primary' : request.video_tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
-                                    ${request.video_tier}
-                                </span>
-                            </div>
-                            <span class="text-sm text-zinc-400">$${request.video_price.toLocaleString()}</span>
-                        </div>
-                        
-                        <div class="space-y-2 mt-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-user text-zinc-400 text-sm"></i>
-                                <span class="text-sm">${sanitizeInput(request.user_name)}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fab fa-whatsapp text-green-500 text-sm"></i>
-                                <span class="text-sm">${request.whatsapp_number}</span>
-                            </div>
-                            ${request.notes ? `
-                            <div class="flex items-start gap-2">
-                                <i class="fas fa-sticky-note text-zinc-400 text-sm mt-0.5"></i>
-                                <span class="text-sm">${sanitizeInput(request.notes)}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-success flex-1" onclick="approveBookRequest(${request.id})">
-                                <i class="fas fa-check"></i> Approve
-                            </button>
-                            <button class="btn btn-sm btn-danger flex-1" onclick="rejectBookRequest(${request.id})">
-                                <i class="fas fa-times"></i> Reject
-                            </button>
-                        </div>
-                    `;
-                    
-                    requestsList.appendChild(requestItem);
-                });
-                
-            } catch (error) {
-                console.error('Error loading book requests:', error);
-                showToast('error', 'Database Error', 'Could not load book requests');
-            }
-        }
-
-        // Update admin stats
-        async function updateAdminStats() {
-            try {
-                // Get video count
-                const { data: videos, error: videosError } = await supabase
-                    .from('videos')
-                    .select('id', { count: 'exact' });
-                
-                if (!videosError && videos) {
-                    const adminVideoCount = document.getElementById('admin-video-count');
-                    if (adminVideoCount) adminVideoCount.textContent = videos.length;
-                }
-                
-                // Get sold count
-                const { data: soldVideos, error: soldError } = await supabase
-                    .from('videos')
-                    .select('id')
-                    .eq('sold', true);
-                
-                if (!soldError && soldVideos) {
-                    const adminSoldCount = document.getElementById('admin-sold-count');
-                    if (adminSoldCount) adminSoldCount.textContent = soldVideos.length;
-                }
-                
-                // Get book requests count
-                const { data: requests, error: requestsError } = await supabase
-                    .from('book_requests')
-                    .select('id', { count: 'exact' });
-                
-                if (!requestsError && requests) {
-                    const adminRegisteredUsers = document.getElementById('admin-registered-users');
-                    if (adminRegisteredUsers) adminRegisteredUsers.textContent = requests.length;
-                }
-                
-                // Update activity feed
-                const activityContainer = document.getElementById('admin-recent-activity');
-                if (activityContainer) {
-                    activityContainer.innerHTML = '';
-                    
-                    const recentRequests = appState.bookRequests
-                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                        .slice(0, 3);
-                    
-                    recentRequests.forEach(request => {
-                        const activityItem = document.createElement('div');
-                        activityItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
-                        activityItem.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full ${request.status === 'pending' ? 'bg-warning' : 'bg-success'} flex items-center justify-center">
-                                    <i class="fas fa-bookmark text-white text-xs"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium">${request.userName}</p>
-                                    <p class="text-xs text-zinc-400">${request.accountTitle}</p>
-                                </div>
-                            </div>
-                            <span class="badge ${request.status === 'pending' ? 'badge-warning' : 'badge-success'} text-xs">
-                                ${request.status}
-                            </span>
-                        `;
-                        
-                        activityContainer.appendChild(activityItem);
-                    });
-                }
-                
-            } catch (error) {
-                console.error('Error updating admin stats:', error);
-            }
         }
 
         // Setup PWA Install
@@ -3210,6 +2897,7 @@
                            window.navigator.standalone === true;
             
             if (isAppInstalled) {
+                console.log('App is already installed');
                 document.body.classList.add('pwa-installed');
                 document.getElementById('pwa-install-btn')?.classList.add('hidden');
                 return;
@@ -3229,6 +2917,7 @@
             });
             
             window.addEventListener('appinstalled', () => {
+                console.log('App installed successfully');
                 isAppInstalled = true;
                 document.body.classList.add('pwa-installed');
                 const installBtn = document.getElementById('pwa-install-btn');
@@ -3358,6 +3047,51 @@
             document.documentElement.setAttribute('data-theme', savedTheme);
         }
 
+        // Update admin stats
+        function updateAdminStats() {
+            const adminVideoCount = document.getElementById('admin-video-count');
+            const adminRegisteredUsers = document.getElementById('admin-registered-users');
+            const adminOnlineUsers = document.getElementById('admin-online-users');
+            const adminSoldCount = document.getElementById('admin-sold-count');
+            
+            if (adminVideoCount) adminVideoCount.textContent = appState.videos.length;
+            if (adminRegisteredUsers) adminRegisteredUsers.textContent = appState.userStats.registeredUsers;
+            if (adminOnlineUsers) adminOnlineUsers.textContent = appState.userStats.onlineUsers;
+            
+            const soldAccounts = appState.accounts.filter(a => a.sold).length;
+            if (adminSoldCount) adminSoldCount.textContent = soldAccounts;
+            
+            const activityContainer = document.getElementById('admin-recent-activity');
+            if (activityContainer) {
+                activityContainer.innerHTML = '';
+                
+                const recentBooks = [...appState.bookRequests]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 3);
+                
+                recentBooks.forEach(request => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
+                    activityItem.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full ${request.status === 'pending' ? 'bg-warning' : 'bg-success'} flex items-center justify-center">
+                                <i class="fas fa-bookmark text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">${request.user_name}</p>
+                                <p class="text-xs text-zinc-400">${request.account_title}</p>
+                            </div>
+                        </div>
+                        <span class="badge ${request.status === 'pending' ? 'badge-warning' : 'badge-success'} text-xs">
+                            ${request.status}
+                        </span>
+                    `;
+                    
+                    activityContainer.appendChild(activityItem);
+                });
+            }
+        }
+
         // Set up event listeners
         function setupEventListeners() {
             document.addEventListener('keydown', (e) => {
@@ -3413,7 +3147,6 @@
                 }
             });
 
-            // Network status monitoring
             window.addEventListener('online', () => {
                 document.getElementById('offline-indicator').classList.remove('show');
                 showToast('success', 'Back Online', 'Connection restored');
@@ -3426,14 +3159,12 @@
         }
 
         // Show page
-        async function showPage(page) {
-            // If not logged in and trying to access protected pages, redirect to auth
+        function showPage(page) {
             const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
             if (protectedPages.includes(page) && !appState.isLoggedIn) {
                 page = 'auth';
             }
             
-            // If logged in and trying to access auth, redirect to home
             if (page === 'auth' && appState.isLoggedIn) {
                 page = 'home';
             }
@@ -3481,7 +3212,6 @@
             if (appState.videos.length > 0) {
                 loadVideo(appState.currentVideoIndex);
             } else {
-                // Show empty state
                 const videoSection = document.getElementById('video-section');
                 const videoPlaceholder = document.getElementById('video-placeholder');
                 if (videoSection && videoPlaceholder) {
@@ -3521,34 +3251,29 @@
             const statsElement = document.getElementById('video-stats');
             if (statsElement) {
                 statsElement.innerHTML = `
-                    <span>${video.views.toLocaleString()} views</span>
+                    <span>${video.price ? '$' + video.price : 'Price not set'}</span>
                     <span>•</span>
-                    <span>${video.likes.toLocaleString()} likes</span>
-                    <span>•</span>
-                    <span>${video.duration}</span>
+                    <span>${video.tier || 'No tier'}</span>
                 `;
             }
             
-            appState.currentAccount = appState.accounts.find(a => a.id === video.id);
+            appState.currentAccount = video.account;
             
-            // Clear previous video if exists
             if (currentVideoPlayer) {
                 currentVideoPlayer.pause();
                 currentVideoPlayer.remove();
                 currentVideoPlayer = null;
             }
             
-            // Create video element if video has a URL
-            if (video.url) {
+            if (video.video_url) {
                 const videoPlayer = document.createElement('video');
                 videoPlayer.className = 'video-player';
-                videoPlayer.src = video.url;
+                videoPlayer.src = video.video_url;
                 videoPlayer.controls = false;
                 videoPlayer.autoplay = true;
                 videoPlayer.muted = false;
                 videoPlayer.loop = true;
                 
-                // Add event listeners for video
                 videoPlayer.addEventListener('play', () => {
                     isVideoPlaying = true;
                     updatePlayPauseIcon();
@@ -3572,7 +3297,6 @@
                 isVideoPlaying = true;
                 updatePlayPauseIcon();
             } else {
-                // Set gradient background if no video
                 videoSection.style.background = 'linear-gradient(135deg, #ec4899, #8b5cf6)';
                 videoSection.style.backgroundSize = 'cover';
                 videoSection.style.backgroundPosition = 'center';
@@ -3590,7 +3314,6 @@
                     isVideoPlaying = false;
                 }
                 
-                // Show play/pause overlay
                 showPlayPauseOverlay();
                 updatePlayPauseIcon();
             }
@@ -3602,18 +3325,14 @@
             const playPauseIcon = document.getElementById('play-pause-icon');
             
             if (playPauseOverlay && playPauseIcon) {
-                // Update icon
                 playPauseIcon.className = isVideoPlaying ? 'fas fa-pause' : 'fas fa-play';
                 
-                // Show overlay
                 playPauseOverlay.classList.add('show');
                 
-                // Clear any existing timeout
                 if (playPauseTimeout) {
                     clearTimeout(playPauseTimeout);
                 }
                 
-                // Hide overlay after 1 second
                 playPauseTimeout = setTimeout(() => {
                     playPauseOverlay.classList.remove('show');
                 }, 1000);
@@ -3667,9 +3386,8 @@
                     <div class="video-item-overlay">
                         <div class="video-item-title">${sanitizeInput(video.title)}</div>
                         <div class="video-item-stats">
-                            <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
-                            <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
-                            <span>${video.duration}</span>
+                            <span><i class="fas fa-dollar-sign"></i> ${video.price || '0'}</span>
+                            <span>${video.tier || 'No tier'}</span>
                         </div>
                     </div>
                 `;
@@ -3702,7 +3420,6 @@
             
             grid.innerHTML = '';
             
-            // Show empty message if no accounts
             if (appState.accounts.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-3 text-center py-12">
@@ -3725,7 +3442,6 @@
                 const accountCard = document.createElement('div');
                 accountCard.className = 'account-card';
                 
-                // Determine icon class based on tier
                 let iconClass = 'account-icon ';
                 let iconText = '';
                 if (account.tier === 'small') {
@@ -3755,7 +3471,7 @@
                     <div class="mb-4">
                         <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
                              style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
-                             onclick="playAccountVideo('${account.videoId}')">
+                             onclick="playAccountVideo('${account.video_id}')">
                             <i class="fas fa-play-circle text-white text-3xl"></i>
                         </div>
                         <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
@@ -3792,7 +3508,6 @@
         function playAccountVideo(videoId) {
             const videoIndex = appState.videos.findIndex(v => v.id === videoId);
             if (videoIndex !== -1) {
-                // Navigate to home page and play the video
                 showPage('home');
                 setTimeout(() => {
                     appState.currentVideoIndex = videoIndex;
@@ -3866,7 +3581,6 @@
                 filteredAccounts = appState.accounts.filter(account => account.tier === tier);
             }
             
-            // Show empty message if no accounts in the selected tier
             if (filteredAccounts.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-3 text-center py-12">
@@ -3885,7 +3599,6 @@
                 const accountCard = document.createElement('div');
                 accountCard.className = 'account-card';
                 
-                // Determine icon class based on tier
                 let iconClass = 'account-icon ';
                 let iconText = '';
                 if (account.tier === 'small') {
@@ -3915,7 +3628,7 @@
                     <div class="mb-4">
                         <div class="w-full h-40 bg-surface-light rounded-lg flex items-center justify-center mb-2" 
                              style="cursor: pointer; background: linear-gradient(135deg, #ec4899, #8b5cf6);"
-                             onclick="playAccountVideo('${account.videoId}')">
+                             onclick="playAccountVideo('${account.video_id}')">
                             <i class="fas fa-play-circle text-white text-3xl"></i>
                         </div>
                         <p class="text-xs text-zinc-400 text-center">Click to preview video</p>
@@ -3952,14 +3665,12 @@
 
         // Load admin page content
         function loadAdminContent() {
-            // Reset admin login state
             appState.isAdminLoggedIn = false;
             const adminDashboard = document.getElementById('admin-dashboard');
             if (adminDashboard) {
                 adminDashboard.classList.add('hidden');
             }
             
-            // Clear password field
             const adminPasswordInput = document.getElementById('admin-password');
             if (adminPasswordInput) {
                 adminPasswordInput.value = '';
@@ -3986,8 +3697,6 @@
             const passwordInput = document.getElementById('admin-password');
             const password = passwordInput.value;
             
-            // Set admin password
-            appState.adminPasswordHash = secureHash('GK@2024!AdminSecure');
             const inputHash = secureHash(password);
             
             if (inputHash === appState.adminPasswordHash) {
@@ -4024,6 +3733,108 @@
             showModal('upload-video-modal');
         }
 
+        // Add video manually (with validation)
+        async function addVideoManually() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            const id = document.getElementById('video-id').value.trim();
+            const title = document.getElementById('video-title-input').value.trim();
+            const description = document.getElementById('video-description-input').value.trim();
+            const price = parseFloat(document.getElementById('video-price').value);
+            const tier = document.getElementById('video-tier').value;
+            const url = document.getElementById('video-url').value.trim();
+            
+            if (!id || !title || isNaN(price) || price < 0 || !tier || !url) {
+                showToast('error', 'Validation Error', 'Please fill all required fields including video URL');
+                return;
+            }
+            
+            if (!isValidVideoUrl(url)) {
+                showToast('error', 'Invalid URL', 'Please enter a valid video URL (MP4, WebM, YouTube, Vimeo, etc.)');
+                return;
+            }
+            
+            if (appState.videos.some(v => v.id === id)) {
+                showToast('error', 'Duplicate ID', 'Video ID already exists. Please use a unique ID.');
+                return;
+            }
+            
+            const sanitizedTitle = sanitizeInput(title);
+            const sanitizedDescription = sanitizeInput(description);
+            
+            try {
+                // Save video to Supabase
+                const videoData = {
+                    id: id,
+                    title: sanitizedTitle,
+                    description: sanitizedDescription || 'No description available',
+                    price: price,
+                    tier: tier,
+                    video_url: url,
+                    created_at: new Date().toISOString()
+                };
+                
+                await saveVideoToSupabase(videoData);
+                
+                // Save account to Supabase
+                const accountData = {
+                    video_id: id,
+                    title: sanitizedTitle,
+                    description: sanitizedDescription || 'No description available',
+                    price: price,
+                    tier: tier,
+                    sold: false,
+                    created_at: new Date().toISOString()
+                };
+                
+                await saveAccountToSupabase(accountData);
+                
+                // Update local state
+                const newVideo = {
+                    ...videoData,
+                    account: {
+                        id: id,
+                        title: sanitizedTitle,
+                        tier: tier,
+                        price: price,
+                        followers: 0
+                    }
+                };
+                
+                const newAccount = {
+                    ...accountData,
+                    id: Date.now() // Temporary ID until we get from Supabase
+                };
+                
+                appState.videos.unshift(newVideo);
+                appState.accounts.unshift(newAccount);
+                appState.currentVideoIndex = 0;
+                
+                // Update UI
+                loadHomeContent();
+                updateAdminStats();
+                
+                // Show success message
+                showToast('success', 'Video Added', `Video "${sanitizedTitle}" added successfully`);
+                
+                // Reset form and close modal
+                document.getElementById('upload-video-form').reset();
+                closeModal('upload-video-modal');
+                
+                // Load the new video
+                setTimeout(() => {
+                    loadVideo(0);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error saving video:', error);
+                showToast('error', 'Error', 'Failed to save video. Please try again.');
+            }
+        }
+
         // Show manage videos modal
         function showManageVideos() {
             if (!appState.isAdminLoggedIn) {
@@ -4033,6 +3844,56 @@
             
             loadAdminVideos();
             showModal('manage-videos-modal');
+        }
+
+        // Load admin videos
+        function loadAdminVideos(filter = 'all') {
+            const videosList = document.getElementById('admin-videos-list');
+            if (!videosList) return;
+            
+            videosList.innerHTML = '';
+            
+            const filteredVideos = filter === 'all' 
+                ? appState.videos 
+                : appState.videos.filter(video => video.tier === filter);
+            
+            if (filteredVideos.length === 0) {
+                videosList.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Videos Found</h3>
+                        <p class="text-zinc-400">No videos in the ${filter} tier</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredVideos.forEach(video => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
+                videoItem.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium">${sanitizeInput(video.title)}</span>
+                            <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
+                                ${video.tier}
+                            </span>
+                        </div>
+                        <p class="text-xs text-zinc-400">ID: ${video.id} • $${video.price.toLocaleString()}</p>
+                        <p class="text-xs text-zinc-400 mt-1">${sanitizeInput(video.description.substring(0, 60))}${video.description.length > 60 ? '...' : ''}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-primary" onclick="playVideoNow('${video.id}')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteVideo('${video.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                videosList.appendChild(videoItem);
+            });
         }
 
         // Filter admin videos
@@ -4045,6 +3906,48 @@
             });
             
             loadAdminVideos(tier);
+        }
+
+        // Delete video
+        async function deleteVideo(videoId) {
+            if (confirm('Are you sure you want to delete this video? The corresponding account will also be removed.')) {
+                try {
+                    // Delete from Supabase
+                    await deleteVideoFromSupabase(videoId);
+                    
+                    // Remove from local state
+                    const videoIndex = appState.videos.findIndex(v => v.id === videoId);
+                    if (videoIndex !== -1) {
+                        const video = appState.videos[videoIndex];
+                        if (video.video_url && video.video_url.startsWith('blob:')) {
+                            URL.revokeObjectURL(video.video_url);
+                        }
+                        appState.videos.splice(videoIndex, 1);
+                    }
+                    
+                    // Remove corresponding account
+                    const accountIndex = appState.accounts.findIndex(a => a.video_id === videoId);
+                    if (accountIndex !== -1) {
+                        appState.accounts.splice(accountIndex, 1);
+                    }
+                    
+                    // Update current video index if needed
+                    if (appState.currentVideoIndex >= appState.videos.length) {
+                        appState.currentVideoIndex = Math.max(0, appState.videos.length - 1);
+                    }
+                    
+                    // Update UI
+                    loadAdminVideos('all');
+                    loadHomeContent();
+                    updateAdminStats();
+                    
+                    showToast('success', 'Video Deleted', 'Video and corresponding account have been removed');
+                    
+                } catch (error) {
+                    console.error('Error deleting video:', error);
+                    showToast('error', 'Error', 'Failed to delete video. Please try again.');
+                }
+            }
         }
 
         // Play video now
@@ -4071,6 +3974,122 @@
             showModal('book-requests-modal');
         }
 
+        // Load admin book requests
+        function loadAdminBookRequests() {
+            const requestsList = document.getElementById('admin-book-requests-list');
+            const emptyState = document.getElementById('admin-book-requests-empty');
+            
+            if (!requestsList || !emptyState) return;
+            
+            requestsList.innerHTML = '';
+            
+            const pendingRequests = appState.bookRequests.filter(r => r.status === 'pending');
+            
+            if (pendingRequests.length === 0) {
+                requestsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            requestsList.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            pendingRequests.forEach(request => {
+                const requestItem = document.createElement('div');
+                requestItem.className = 'p-3 bg-surface-light rounded-lg';
+                requestItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-semibold">${request.account_title || 'N/A'}</h4>
+                            <span class="badge ${request.tier === 'big' ? 'badge-primary' : request.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
+                                ${request.tier || 'N/A'}
+                            </span>
+                        </div>
+                        <span class="text-sm text-zinc-400">$${request.price ? request.price.toLocaleString() : 'N/A'}</span>
+                    </div>
+                    
+                    <div class="space-y-2 mt-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-user text-zinc-400 text-sm"></i>
+                            <span class="text-sm">${sanitizeInput(request.user_name)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fab fa-whatsapp text-green-500 text-sm"></i>
+                            <span class="text-sm">${request.whatsapp_number}</span>
+                        </div>
+                        ${request.notes ? `
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-sticky-note text-zinc-400 text-sm mt-0.5"></i>
+                            <span class="text-sm">${sanitizeInput(request.notes)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-sm btn-success flex-1" onclick="approveBookRequest(${request.id})">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-sm btn-danger flex-1" onclick="rejectBookRequest(${request.id})">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                `;
+                
+                requestsList.appendChild(requestItem);
+            });
+        }
+
+        // Approve book request
+        async function approveBookRequest(requestId) {
+            try {
+                const request = appState.bookRequests.find(r => r.id === requestId);
+                if (request) {
+                    // Update in Supabase
+                    await updateBookRequestStatus(requestId, 'approved');
+                    
+                    // Update account sold status
+                    const account = appState.accounts.find(a => a.video_id === request.video_id);
+                    if (account) {
+                        await updateAccountSoldStatus(account.id, true);
+                        account.sold = true;
+                    }
+                    
+                    // Update local state
+                    request.status = 'approved';
+                    
+                    // Update UI
+                    loadAdminBookRequests();
+                    updateAdminStats();
+                    showToast('success', 'Request Approved', `Book request approved for ${request.user_name}`);
+                }
+            } catch (error) {
+                console.error('Error approving request:', error);
+                showToast('error', 'Error', 'Failed to approve request. Please try again.');
+            }
+        }
+
+        // Reject book request
+        async function rejectBookRequest(requestId) {
+            try {
+                const request = appState.bookRequests.find(r => r.id === requestId);
+                if (request) {
+                    // Update in Supabase
+                    await updateBookRequestStatus(requestId, 'rejected');
+                    
+                    // Update local state
+                    request.status = 'rejected';
+                    
+                    // Update UI
+                    loadAdminBookRequests();
+                    updateAdminStats();
+                    showToast('success', 'Request Rejected', `Book request rejected for ${request.user_name}`);
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                showToast('error', 'Error', 'Failed to reject request. Please try again.');
+            }
+        }
+
         // Show manage settings modal
         function showManageSettings() {
             if (!appState.isAdminLoggedIn) {
@@ -4092,7 +4111,6 @@
             const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
             
             if (newPassword && newPassword.length >= 6) {
-                // Update admin password hash
                 appState.adminPasswordHash = secureHash(newPassword);
                 showToast('success', 'Password Updated', 'Admin password has been changed');
             }
@@ -4216,7 +4234,6 @@
             appState.language = lang;
             localStorage.setItem('appLanguage', lang);
             
-            // Update language checkmarks
             document.querySelectorAll('[id^="lang-"]').forEach(check => {
                 check.classList.add('hidden');
             });
@@ -4226,7 +4243,6 @@
                 activeCheck.classList.remove('hidden');
             }
             
-            // Update RTL/LTR
             const rtlLanguages = ['ar', 'fa', 'ur', 'ps'];
             if (rtlLanguages.includes(lang)) {
                 document.body.setAttribute('dir', 'rtl');
@@ -4322,6 +4338,59 @@
             showModal('buy-modal');
         }
 
+        // Submit book request
+        async function submitBookRequest() {
+            const name = document.getElementById('book-name').value;
+            const whatsapp = document.getElementById('book-whatsapp').value;
+            const notes = document.getElementById('book-notes').value;
+            
+            if (!name || !whatsapp) {
+                showToast('error', 'Validation Error', 'Please fill in all required fields');
+                return;
+            }
+            
+            try {
+                const requestData = {
+                    video_id: appState.currentAccount.id,
+                    user_name: sanitizeInput(name),
+                    whatsapp_number: whatsapp,
+                    notes: sanitizeInput(notes),
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
+                    account_title: appState.currentAccount.title,
+                    tier: appState.currentAccount.tier,
+                    price: appState.currentAccount.price
+                };
+                
+                // Save to Supabase
+                await saveBookRequestToSupabase(requestData);
+                
+                // Update local state
+                const bookRequest = {
+                    ...requestData,
+                    id: Date.now() // Temporary ID
+                };
+                
+                appState.bookRequests.push(bookRequest);
+                
+                showToast('success', 'Request Submitted', 'We will contact you shortly on WhatsApp');
+                closeModal('book-modal');
+                
+                // Clear form
+                document.getElementById('book-name').value = '';
+                document.getElementById('book-whatsapp').value = '';
+                document.getElementById('book-notes').value = '';
+                
+                if (appState.isAdminLoggedIn) {
+                    updateAdminStats();
+                }
+                
+            } catch (error) {
+                console.error('Error submitting book request:', error);
+                showToast('error', 'Error', 'Failed to submit request. Please try again.');
+            }
+        }
+
         // Copy USDT address
         function copyUSDTAddress() {
             const address = document.getElementById('usdt-address');
@@ -4387,15 +4456,15 @@
 
         // Logout
         function logout() {
-            // Clean up object URLs to free memory
             appState.videos.forEach(video => {
-                if (video.url && video.url.startsWith('blob:')) {
-                    URL.revokeObjectURL(video.url);
-                }
-                if (video.thumbnail && video.thumbnail.startsWith('blob:')) {
-                    URL.revokeObjectURL(video.thumbnail);
+                if (video.video_url && video.video_url.startsWith('blob:')) {
+                    URL.revokeObjectURL(video.video_url);
                 }
             });
+            
+            if (appState.userStats.onlineUsers > 0) {
+                appState.userStats.onlineUsers--;
+            }
             
             appState.isLoggedIn = false;
             appState.currentUser = null;
@@ -4425,75 +4494,62 @@
         }
 
         // Login function
-        function login(event) {
+        async function login(event) {
             event.preventDefault();
             
             const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             const rememberMe = document.getElementById('remember-me').checked;
             
-            // Simple auth for demo - in production, use Supabase Auth
-            if (email === 'admin@gkstore.com' && password === 'GK@2024!AdminSecure') {
-                // Admin login
-                const adminUser = {
-                    email: email,
-                    name: 'Admin User',
-                    role: 'admin',
-                    createdAt: new Date().toISOString().split('T')[0]
-                };
-                
-                appState.currentUser = adminUser;
-                appState.isLoggedIn = true;
-                
-                if (rememberMe) {
-                    localStorage.setItem('gkStoreUser', JSON.stringify(adminUser));
+            const hashedPassword = secureHash(password);
+            const user = appState.users.find(u => u.email === email && u.password === hashedPassword);
+            
+            if (user) {
+                // Update last login in Supabase
+                try {
+                    await supabase
+                        .from('users')
+                        .update({ last_login: new Date().toISOString() })
+                        .eq('id', user.id);
+                } catch (error) {
+                    console.error('Error updating last login:', error);
                 }
                 
-                document.getElementById('user-name').textContent = adminUser.name;
-                document.getElementById('user-email').textContent = adminUser.email;
-                document.getElementById('member-since').textContent = adminUser.createdAt;
-                
-                showToast('success', 'Login Successful', `Welcome back, ${adminUser.name}!`);
-                document.getElementById('login-form').reset();
-                
-                setTimeout(() => {
-                    showPage('home');
-                }, 500);
-                
-            } else if (email && password) {
-                // Regular user login
-                const user = {
-                    email: email,
-                    name: email.split('@')[0],
-                    role: 'user',
-                    createdAt: new Date().toISOString().split('T')[0]
-                };
-                
+                // Set current user
                 appState.currentUser = user;
                 appState.isLoggedIn = true;
                 
+                // Update online users count
+                appState.userStats.onlineUsers++;
+                
+                // Save to localStorage if remember me is checked
                 if (rememberMe) {
                     localStorage.setItem('gkStoreUser', JSON.stringify(user));
                 }
                 
+                // Update profile page
                 document.getElementById('user-name').textContent = user.name;
                 document.getElementById('user-email').textContent = user.email;
-                document.getElementById('member-since').textContent = user.createdAt;
+                document.getElementById('member-since').textContent = user.created_at || user.createdAt;
                 
+                // Show success message
                 showToast('success', 'Login Successful', `Welcome back, ${user.name}!`);
+                
+                // Reset form
                 document.getElementById('login-form').reset();
                 
+                // Redirect to home
                 setTimeout(() => {
                     showPage('home');
                 }, 500);
                 
             } else {
-                showToast('error', 'Login Failed', 'Please enter email and password');
+                showToast('error', 'Login Failed', 'Invalid email or password');
             }
         }
 
         // Signup function
-        function signup(event) {
+        async function signup(event) {
             event.preventDefault();
             
             const name = document.getElementById('signup-name').value.trim();
@@ -4501,7 +4557,6 @@
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
             
-            // Validation
             if (password !== confirmPassword) {
                 showToast('error', 'Signup Failed', 'Passwords do not match');
                 return;
@@ -4512,29 +4567,64 @@
                 return;
             }
             
-            // Create new user
-            const newUser = {
-                email: email,
-                name: sanitizeInput(name),
-                role: 'user',
-                createdAt: new Date().toISOString().split('T')[0]
-            };
+            if (appState.users.some(u => u.email === email)) {
+                showToast('error', 'Signup Failed', 'User with this email already exists');
+                return;
+            }
             
-            appState.currentUser = newUser;
-            appState.isLoggedIn = true;
-            
-            localStorage.setItem('gkStoreUser', JSON.stringify(newUser));
-            
-            document.getElementById('user-name').textContent = newUser.name;
-            document.getElementById('user-email').textContent = newUser.email;
-            document.getElementById('member-since').textContent = newUser.createdAt;
-            
-            showToast('success', 'Account Created', `Welcome to GK Store, ${name}!`);
-            document.getElementById('signup-form').reset();
-            
-            setTimeout(() => {
-                showPage('home');
-            }, 500);
+            try {
+                const newUser = {
+                    email: email,
+                    password: secureHash(password),
+                    name: sanitizeInput(name),
+                    role: 'user',
+                    created_at: new Date().toISOString(),
+                    last_login: new Date().toISOString()
+                };
+                
+                // Save to Supabase
+                const { data, error } = await supabase
+                    .from('users')
+                    .insert([newUser])
+                    .select();
+                
+                if (error) throw error;
+                
+                // Update local state
+                if (data && data.length > 0) {
+                    const savedUser = data[0];
+                    appState.users.push(savedUser);
+                    appState.userStats.registeredUsers++;
+                    appState.userStats.onlineUsers++;
+                    
+                    // Set current user
+                    appState.currentUser = savedUser;
+                    appState.isLoggedIn = true;
+                    
+                    // Save to localStorage
+                    localStorage.setItem('gkStoreUser', JSON.stringify(savedUser));
+                    
+                    // Update profile page
+                    document.getElementById('user-name').textContent = savedUser.name;
+                    document.getElementById('user-email').textContent = savedUser.email;
+                    document.getElementById('member-since').textContent = savedUser.created_at;
+                    
+                    // Show success message
+                    showToast('success', 'Account Created', `Welcome to GK Store, ${name}!`);
+                    
+                    // Reset form
+                    document.getElementById('signup-form').reset();
+                    
+                    // Redirect to home
+                    setTimeout(() => {
+                        showPage('home');
+                    }, 500);
+                }
+                
+            } catch (error) {
+                console.error('Error signing up:', error);
+                showToast('error', 'Signup Failed', 'Failed to create account. Please try again.');
+            }
         }
 
         // Reset password function
@@ -4543,33 +4633,70 @@
             
             const email = document.getElementById('reset-email').value.trim();
             
-            showToast('success', 'Reset Link Sent', 'Check your email for password reset instructions');
+            const user = appState.users.find(u => u.email === email);
             
-            document.getElementById('forgot-password-form').reset();
-            showLoginForm();
+            if (user) {
+                showToast('success', 'Reset Link Sent', 'Check your email for password reset instructions');
+                
+                document.getElementById('forgot-password-form').reset();
+                showLoginForm();
+            } else {
+                showToast('error', 'Reset Failed', 'No account found with this email');
+            }
         }
 
         // Social login function
-        function socialLogin(provider) {
-            // Create a mock user
+        async function socialLogin(provider) {
             const mockUser = {
                 email: `user_${Date.now()}@${provider}.com`,
+                password: secureHash('social_auth'),
                 name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
                 role: 'user',
-                createdAt: new Date().toISOString().split('T')[0]
+                created_at: new Date().toISOString(),
+                last_login: new Date().toISOString()
             };
             
-            appState.currentUser = mockUser;
+            let existingUser = appState.users.find(u => u.email === mockUser.email);
+            
+            if (!existingUser) {
+                try {
+                    // Save to Supabase
+                    const { data, error } = await supabase
+                        .from('users')
+                        .insert([mockUser])
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        existingUser = data[0];
+                        appState.users.push(existingUser);
+                        appState.userStats.registeredUsers++;
+                    }
+                } catch (error) {
+                    console.error('Error saving social login user:', error);
+                }
+            }
+            
+            // Update stats
+            appState.userStats.onlineUsers++;
+            
+            // Set current user
+            appState.currentUser = existingUser || mockUser;
             appState.isLoggedIn = true;
             
-            localStorage.setItem('gkStoreUser', JSON.stringify(mockUser));
+            // Save to localStorage
+            localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
             
-            document.getElementById('user-name').textContent = mockUser.name;
-            document.getElementById('user-email').textContent = mockUser.email;
-            document.getElementById('member-since').textContent = mockUser.createdAt;
+            // Update profile page
+            document.getElementById('user-name').textContent = appState.currentUser.name;
+            document.getElementById('user-email').textContent = appState.currentUser.email;
+            document.getElementById('member-since').textContent = appState.currentUser.created_at;
             
-            showToast('success', 'Login Successful', `Welcome, ${mockUser.name}!`);
+            // Show success message
+            showToast('success', 'Login Successful', `Welcome, ${appState.currentUser.name}!`);
             
+            // Redirect to home
             setTimeout(() => {
                 showPage('home');
             }, 500);
@@ -4639,7 +4766,6 @@
             }
         }
 
-        // Call createManifest when the page loads
         document.addEventListener('DOMContentLoaded', createManifest);
 
     </script>
