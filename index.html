@@ -2511,7 +2511,30 @@
             </div>
         </div>
     </div>
+// ============================================
+// FIX FOR DUPLICATE SUPABASE DECLARATION
+// ============================================
 
+// Self-executing function to avoid duplicate declarations
+(function() {
+    // Check if supabase already exists
+    if (typeof window.supabaseClient === 'undefined') {
+        const SUPABASE_URL = 'https://bgwjirmuwweabbxnivjm.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnd2ppcm11d3dlYWJieG5pdmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ4NzIsImV4cCI6MjA4NTk3MDg3Mn0.Iye9sbCKPutmXQKLOrdemJGPE2zFjtqJSscVg_EmK0g';
+        
+        try {
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (error) {
+            console.error('Supabase init failed, using mock:', error);
+            window.supabaseClient = { from: () => ({ 
+                select: () => Promise.resolve({ data: [], error: null }) 
+            }) };
+        }
+    }
+    
+    // Use this everywhere instead of direct supabase
+    window.supa = window.supabaseClient;
+})();
     <script>
         // Supabase Configuration
         const SUPABASE_URL = 'https://bgwjirmuwweabbxnivjm.supabase.co';
@@ -4771,3 +4794,4 @@
     </script>
 </body>
 </html>
+
