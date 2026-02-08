@@ -25,9 +25,12 @@
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
     
+    <!-- CryptoJS for password hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ALL YOUR ORIGINAL CSS CODE - KEEPING IT AS IS */
+        /* ALL YOUR ORIGINAL CSS CODE REMAINS EXACTLY THE SAME */
         :root {
             --primary: #ec4899;
             --primary-dark: #db2777;
@@ -2709,8 +2712,56 @@
             isVideoPlaying: false,
             isFullscreen: false,
             // Device detection
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768,
+            // Security tokens
+            sessionToken: null,
+            sessionExpiry: null
         };
+
+        // Security Configuration
+        const SECURITY_CONFIG = {
+            // Session timeout in milliseconds (24 hours)
+            SESSION_TIMEOUT: 24 * 60 * 60 * 1000,
+            // Password requirements
+            PASSWORD_MIN_LENGTH: 8,
+            // Rate limiting
+            MAX_LOGIN_ATTEMPTS: 5,
+            LOGIN_COOLDOWN: 15 * 60 * 1000, // 15 minutes
+            // API security
+            API_RATE_LIMIT: 100, // requests per minute
+            // Encryption salt
+            SALT: 'gk-store-secure-salt-2024'
+        };
+
+        // Password hashing function
+        function hashPassword(password) {
+            return CryptoJS.SHA256(password + SECURITY_CONFIG.SALT).toString();
+        }
+
+        // Generate session token
+        function generateSessionToken(userId, email) {
+            const timestamp = Date.now();
+            const data = `${userId}-${email}-${timestamp}-${Math.random()}`;
+            return CryptoJS.SHA256(data + SECURITY_CONFIG.SALT).toString();
+        }
+
+        // Validate session
+        function validateSession() {
+            if (!appState.sessionToken || !appState.sessionExpiry) {
+                return false;
+            }
+            
+            if (Date.now() > appState.sessionExpiry) {
+                // Session expired
+                appState.sessionToken = null;
+                appState.sessionExpiry = null;
+                appState.isAdminLoggedIn = false;
+                localStorage.removeItem('gkStoreSession');
+                return false;
+            }
+            
+            return true;
+        }
 
         // PWA Variables
         let deferredPrompt = null;
@@ -2722,18 +2773,34 @@
             setupEventListeners();
             setupPWAInstall();
             
-            // Check if user is already logged in
+            // Check for existing session
+            const savedSession = localStorage.getItem('gkStoreSession');
+            if (savedSession) {
+                try {
+                    const session = JSON.parse(savedSession);
+                    if (session.expiry > Date.now() && session.token) {
+                        appState.sessionToken = session.token;
+                        appState.sessionExpiry = session.expiry;
+                        appState.isAdminLoggedIn = true;
+                        appState.currentUser = session.user;
+                        appState.isLoggedIn = true;
+                        
+                        showPage('home');
+                        await loadInitialData();
+                        showToast('success', 'Welcome Back', 'Session restored');
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Session restore error:', e);
+                }
+            }
+            
+            // Check if regular user is logged in
             const savedUser = localStorage.getItem('gkStoreUser');
             if (savedUser) {
                 try {
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
-                    
-                    // If admin was logged in, restore admin session
-                    if (appState.currentUser.email === appState.adminCredentials.email) {
-                        appState.isAdminLoggedIn = true;
-                    }
-                    
                     showPage('home');
                     await loadInitialData();
                 } catch (e) {
@@ -2818,17 +2885,11 @@
         // Load initial data from Supabase
         async function loadInitialData() {
             try {
-                await Promise.all([
-                    loadVideosFromSupabase(),
-                    loadAccountsFromSupabase(),
-                    loadBookRequestsFromSupabase()
-                ]);
+                // Only load videos for now - other data will be loaded as needed
+                await loadVideosFromSupabase();
                 
                 // Update user stats
                 appState.userStats.onlineUsers = Math.max(appState.userStats.onlineUsers || 0, 1);
-                if (appState.currentUser && appState.currentUser.email !== appState.adminCredentials.email) {
-                    appState.userStats.registeredUsers = Math.max(appState.userStats.registeredUsers || 0, 1);
-                }
                 
                 updateNotificationCount();
                 updateAdminStats();
@@ -2841,13 +2902,20 @@
             }
         }
 
-        // Load videos from Supabase
+        // Load videos from Supabase with user-specific filtering
         async function loadVideosFromSupabase() {
             try {
-                const { data, error } = await supabase
+                let query = supabase
                     .from('videos')
                     .select('*')
                     .order('created_at', { ascending: false });
+                
+                // If not admin, only show non-sold videos
+                if (!appState.isAdminLoggedIn) {
+                    query = query.eq('sold', false);
+                }
+                
+                const { data, error } = await query;
                 
                 if (error) throw error;
                 
@@ -2869,7 +2937,8 @@
                             title: video.video_title,
                             tier: video.account_tier,
                             price: video.price,
-                            followers: Math.floor(Math.random() * 100000) + 1000
+                            followers: Math.floor(Math.random() * 100000) + 1000,
+                            sold: video.sold || false
                         }
                     }));
                 } else {
@@ -2887,10 +2956,17 @@
         // Load accounts from Supabase
         async function loadAccountsFromSupabase() {
             try {
-                const { data, error } = await supabase
+                let query = supabase
                     .from('videos')
-                    .select('video_id, video_title, description, account_tier, price, sold')
+                    .select('video_id, video_title, description, account_tier, price, sold, created_at')
                     .order('created_at', { ascending: false });
+                
+                // If not admin, only show non-sold accounts
+                if (!appState.isAdminLoggedIn) {
+                    query = query.eq('sold', false);
+                }
+                
+                const { data, error } = await query;
                 
                 if (error) throw error;
                 
@@ -2903,7 +2979,7 @@
                         price: video.price,
                         sold: video.sold || false,
                         videoId: video.video_id,
-                        createdAt: new Date().toISOString()
+                        createdAt: video.created_at
                     }));
                 }
             } catch (error) {
@@ -2912,9 +2988,13 @@
             }
         }
 
-        // Load book requests from Supabase
+        // Load book requests from Supabase (admin only)
         async function loadBookRequestsFromSupabase() {
             try {
+                if (!validateSession()) {
+                    throw new Error('Session expired');
+                }
+                
                 const { data, error } = await supabase
                     .from('book_requests')
                     .select('*')
@@ -2996,7 +3076,8 @@
                             title: video.video_title,
                             tier: video.account_tier,
                             price: video.price,
-                            followers: Math.floor(Math.random() * 100000) + 1000
+                            followers: Math.floor(Math.random() * 100000) + 1000,
+                            sold: video.sold || false
                         }
                     }));
                     
@@ -3033,7 +3114,8 @@
                             title: 'Demo Account',
                             tier: 'small',
                             price: 199,
-                            followers: 10000
+                            followers: 10000,
+                            sold: false
                         }
                     },
                     {
@@ -3053,7 +3135,8 @@
                             title: 'Premium Account',
                             tier: 'medium',
                             price: 399,
-                            followers: 25000
+                            followers: 25000,
+                            sold: false
                         }
                     }
                 ];
@@ -4049,48 +4132,148 @@
             }
         }
 
-        // Admin login
-        function adminLogin(event) {
+        // Secure Admin login with session management
+        async function adminLogin(event) {
             event.preventDefault();
             
             const email = document.getElementById('admin-email').value;
             const password = document.getElementById('admin-password').value;
             
-            if (email === appState.adminCredentials.email && password === appState.adminCredentials.password) {
-                appState.isAdminLoggedIn = true;
-                appState.isLoggedIn = true;
-                appState.currentUser = {
-                    email: email,
-                    name: 'Admin User',
-                    role: 'admin'
-                };
+            try {
+                // First, check if admin user exists in users table
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('role', 'admin')
+                    .single();
                 
-                localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
-                
-                const adminDashboard = document.getElementById('admin-dashboard');
-                if (adminDashboard) {
-                    adminDashboard.classList.remove('hidden');
+                if (userError || !userData) {
+                    // Admin not found in users table, fall back to hardcoded credentials
+                    if (email === appState.adminCredentials.email && password === appState.adminCredentials.password) {
+                        // Create session
+                        const sessionToken = generateSessionToken('admin', email);
+                        const sessionExpiry = Date.now() + SECURITY_CONFIG.SESSION_TIMEOUT;
+                        
+                        appState.sessionToken = sessionToken;
+                        appState.sessionExpiry = sessionExpiry;
+                        appState.isAdminLoggedIn = true;
+                        appState.isLoggedIn = true;
+                        appState.currentUser = {
+                            id: 'admin',
+                            email: email,
+                            name: 'Admin User',
+                            role: 'admin'
+                        };
+                        
+                        // Save session to localStorage
+                        const session = {
+                            token: sessionToken,
+                            expiry: sessionExpiry,
+                            user: appState.currentUser
+                        };
+                        localStorage.setItem('gkStoreSession', JSON.stringify(session));
+                        
+                        const adminDashboard = document.getElementById('admin-dashboard');
+                        if (adminDashboard) {
+                            adminDashboard.classList.remove('hidden');
+                        }
+                        
+                        showToast('success', 'Admin Login', 'Successfully logged in as admin');
+                        document.getElementById('admin-login-form').reset();
+                        
+                        // Update admin stats
+                        updateAdminStats();
+                        
+                        // Refresh content
+                        if (appState.currentPage === 'home') {
+                            loadHomeContent();
+                        } else if (appState.currentPage === 'accounts') {
+                            loadAccountsContent();
+                        }
+                    } else {
+                        showToast('error', 'Admin Login', 'Invalid credentials. Use admin@gkstore.com / admin123');
+                    }
+                } else {
+                    // Admin found in database - validate password
+                    const { data: credData, error: credError } = await supabase
+                        .from('admin_credentials')
+                        .select('password_hash')
+                        .eq('user_id', userData.id)
+                        .single();
+                    
+                    if (credError || !credData) {
+                        showToast('error', 'Admin Login', 'Admin account not properly configured');
+                        return;
+                    }
+                    
+                    const hashedPassword = hashPassword(password);
+                    if (hashedPassword === credData.password_hash) {
+                        // Create session
+                        const sessionToken = generateSessionToken(userData.id, email);
+                        const sessionExpiry = Date.now() + SECURITY_CONFIG.SESSION_TIMEOUT;
+                        
+                        appState.sessionToken = sessionToken;
+                        appState.sessionExpiry = sessionExpiry;
+                        appState.isAdminLoggedIn = true;
+                        appState.isLoggedIn = true;
+                        appState.currentUser = {
+                            id: userData.id,
+                            email: userData.email,
+                            name: userData.full_name || 'Admin User',
+                            role: 'admin'
+                        };
+                        
+                        // Save session to localStorage
+                        const session = {
+                            token: sessionToken,
+                            expiry: sessionExpiry,
+                            user: appState.currentUser
+                        };
+                        localStorage.setItem('gkStoreSession', JSON.stringify(session));
+                        
+                        // Update last login
+                        await supabase
+                            .from('users')
+                            .update({ last_login: new Date().toISOString() })
+                            .eq('id', userData.id);
+                        
+                        const adminDashboard = document.getElementById('admin-dashboard');
+                        if (adminDashboard) {
+                            adminDashboard.classList.remove('hidden');
+                        }
+                        
+                        showToast('success', 'Admin Login', 'Successfully logged in as admin');
+                        document.getElementById('admin-login-form').reset();
+                        
+                        // Update admin stats
+                        updateAdminStats();
+                        
+                        // Refresh content
+                        if (appState.currentPage === 'home') {
+                            loadHomeContent();
+                        } else if (appState.currentPage === 'accounts') {
+                            loadAccountsContent();
+                        }
+                    } else {
+                        showToast('error', 'Admin Login', 'Invalid password');
+                    }
                 }
-                
-                showToast('success', 'Admin Login', 'Successfully logged in as admin');
-                document.getElementById('admin-login-form').reset();
-                
-                // Update admin stats
-                updateAdminStats();
-                
-                // Refresh content
-                if (appState.currentPage === 'home') {
-                    loadHomeContent();
-                } else if (appState.currentPage === 'accounts') {
-                    loadAccountsContent();
-                }
-            } else {
-                showToast('error', 'Admin Login', 'Invalid credentials. Use admin@gkstore.com / admin123');
+            } catch (error) {
+                console.error('Admin login error:', error);
+                showToast('error', 'Login Failed', 'Could not authenticate. Please try again.');
             }
         }
 
-        // Show upload video modal
+        // Show upload video modal (secured)
         function showUploadVideo() {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
@@ -4181,8 +4364,15 @@
             }
         }
 
-        // Upload video
+        // Upload video with security checks
         async function uploadVideo() {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
@@ -4251,7 +4441,7 @@
                     }
                 }
                 
-                // Create video object for Supabase
+                // Create video object for Supabase with created_by field
                 const videoData = {
                     video_id: id,
                     video_title: title,
@@ -4264,7 +4454,8 @@
                     likes: 0,
                     shares: 0,
                     duration: "2:30",
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    created_by: appState.currentUser ? appState.currentUser.id : null
                 };
                 
                 // Insert into Supabase
@@ -4296,7 +4487,8 @@
                             title: newVideo.video_title,
                             tier: newVideo.account_tier,
                             price: newVideo.price,
-                            followers: Math.floor(Math.random() * 100000) + 1000
+                            followers: Math.floor(Math.random() * 100000) + 1000,
+                            sold: newVideo.sold || false
                         }
                     };
                     
@@ -4345,8 +4537,15 @@
             }
         }
 
-        // Show manage videos modal
+        // Show manage videos modal (secured)
         async function showManageVideos() {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
@@ -4426,10 +4625,32 @@
             loadAdminVideos(tier);
         }
 
-        // Delete video from Supabase
+        // Delete video from Supabase with security check
         async function deleteVideo(videoId) {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             if (confirm('Are you sure you want to delete this video? The corresponding account will also be removed.')) {
                 try {
+                    // Check if video exists and admin has permission
+                    const { data: videoData, error: fetchError } = await supabase
+                        .from('videos')
+                        .select('created_by')
+                        .eq('video_id', videoId)
+                        .single();
+                    
+                    if (fetchError) throw fetchError;
+                    
+                    // Check permission (admin can delete all videos)
+                    if (!appState.isAdminLoggedIn) {
+                        showToast('error', 'Permission Denied', 'Only admin can delete videos');
+                        return;
+                    }
+                    
                     // Delete from Supabase
                     const { error } = await supabase
                         .from('videos')
@@ -4458,8 +4679,15 @@
             }
         }
 
-        // Show book requests modal
+        // Show book requests modal (secured)
         async function showBookRequests() {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
@@ -4543,8 +4771,15 @@
             window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${message}`, '_blank');
         }
 
-        // Mark request as completed
+        // Mark request as completed (secured)
         async function markAsCompleted(requestId) {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             try {
                 const { error } = await supabase
                     .from('book_requests')
@@ -4566,8 +4801,15 @@
             }
         }
 
-        // Show manage settings modal
+        // Show manage settings modal (secured)
         function showManageSettings() {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Please login as admin first');
                 return;
@@ -4580,14 +4822,51 @@
             showModal('manage-settings-modal');
         }
 
-        // Save admin settings
-        function saveAdminSettings() {
+        // Save admin settings (secured)
+        async function saveAdminSettings() {
+            if (!validateSession()) {
+                showToast('error', 'Session Expired', 'Please login again');
+                appState.isAdminLoggedIn = false;
+                showPage('auth');
+                return;
+            }
+            
             const newPassword = document.getElementById('new-admin-password').value;
             const newUsdtAddress = document.getElementById('new-usdt-address').value;
             const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
             
-            if (newPassword && newPassword.length >= 6) {
-                appState.adminCredentials.password = newPassword;
+            if (newPassword && newPassword.length >= SECURITY_CONFIG.PASSWORD_MIN_LENGTH) {
+                // Update admin password in database
+                try {
+                    const hashedPassword = hashPassword(newPassword);
+                    
+                    // First get the admin user
+                    const { data: userData, error: userError } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('email', appState.currentUser.email)
+                        .eq('role', 'admin')
+                        .single();
+                    
+                    if (!userError && userData) {
+                        // Update password in admin_credentials
+                        const { error: updateError } = await supabase
+                            .from('admin_credentials')
+                            .upsert({
+                                user_id: userData.id,
+                                password_hash: hashedPassword,
+                                updated_at: new Date().toISOString()
+                            });
+                        
+                        if (updateError) throw updateError;
+                        
+                        appState.adminCredentials.password = newPassword;
+                    }
+                } catch (error) {
+                    console.error('Error updating password:', error);
+                    showToast('error', 'Update Failed', 'Could not update password');
+                    return;
+                }
             }
             
             if (newUsdtAddress) {
@@ -4784,6 +5063,12 @@
         function bookAccount() {
             if (!appState.currentAccount) return;
             
+            // Check if account is sold
+            if (appState.currentAccount.sold) {
+                showToast('error', 'Account Sold', 'This account has already been sold');
+                return;
+            }
+            
             document.getElementById('book-account-name').textContent = appState.currentAccount.title;
             document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
             document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
@@ -4793,6 +5078,12 @@
 
         function buyNow() {
             if (!appState.currentAccount) return;
+            
+            // Check if account is sold
+            if (appState.currentAccount.sold) {
+                showToast('error', 'Account Sold', 'This account has already been sold');
+                return;
+            }
             
             document.getElementById('buy-account-name').textContent = appState.currentAccount.title;
             document.getElementById('buy-account-tier').textContent = appState.currentAccount.tier;
@@ -4813,13 +5104,20 @@
                 return;
             }
             
+            // Check if account is sold
+            if (appState.currentAccount.sold) {
+                showToast('error', 'Account Sold', 'This account has already been sold');
+                return;
+            }
+            
             try {
                 const bookRequestData = {
                     video_id: appState.currentAccount.id,
                     user_name: name,
                     whatsapp_number: whatsapp,
                     additional_notes: notes || null,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    user_id: appState.currentUser ? appState.currentUser.id : null
                 };
                 
                 const { data, error } = await supabase
@@ -4916,6 +5214,11 @@
             // Clear video players
             appState.videoPlayers.clear();
             
+            // Clear session
+            appState.sessionToken = null;
+            appState.sessionExpiry = null;
+            localStorage.removeItem('gkStoreSession');
+            
             appState.isLoggedIn = false;
             appState.currentUser = null;
             appState.isAdminLoggedIn = false;
@@ -4951,6 +5254,12 @@
             const password = document.getElementById('login-password').value;
             const rememberMe = document.getElementById('remember-me').checked;
             
+            // Check if it's admin login
+            if (email === appState.adminCredentials.email) {
+                showToast('info', 'Admin Login', 'Please use the admin login form');
+                return;
+            }
+            
             appState.currentUser = {
                 email: email,
                 name: email.split('@')[0],
@@ -4965,9 +5274,6 @@
             
             // Update user stats
             appState.userStats.onlineUsers = (appState.userStats.onlineUsers || 0) + 1;
-            if (email !== appState.adminCredentials.email) {
-                appState.userStats.registeredUsers = (appState.userStats.registeredUsers || 0) + 1;
-            }
             
             // Update profile page
             document.getElementById('user-name').textContent = appState.currentUser.name;
@@ -5015,7 +5321,6 @@
             
             // Update user stats
             appState.userStats.onlineUsers = (appState.userStats.onlineUsers || 0) + 1;
-            appState.userStats.registeredUsers = (appState.userStats.registeredUsers || 0) + 1;
             
             document.getElementById('user-name').textContent = appState.currentUser.name;
             document.getElementById('user-email').textContent = appState.currentUser.email;
@@ -5056,7 +5361,6 @@
             
             // Update user stats
             appState.userStats.onlineUsers = (appState.userStats.onlineUsers || 0) + 1;
-            appState.userStats.registeredUsers = (appState.userStats.registeredUsers || 0) + 1;
             
             document.getElementById('user-name').textContent = appState.currentUser.name;
             document.getElementById('user-email').textContent = appState.currentUser.email;
