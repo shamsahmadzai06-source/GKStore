@@ -2511,30 +2511,7 @@
             </div>
         </div>
     </div>
-// ============================================
-// FIX FOR DUPLICATE SUPABASE DECLARATION
-// ============================================
 
-// Self-executing function to avoid duplicate declarations
-(function() {
-    // Check if supabase already exists
-    if (typeof window.supabaseClient === 'undefined') {
-        const SUPABASE_URL = 'https://bgwjirmuwweabbxnivjm.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnd2ppcm11d3dlYWJieG5pdmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQ4NzIsImV4cCI6MjA4NTk3MDg3Mn0.Iye9sbCKPutmXQKLOrdemJGPE2zFjtqJSscVg_EmK0g';
-        
-        try {
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (error) {
-            console.error('Supabase init failed, using mock:', error);
-            window.supabaseClient = { from: () => ({ 
-                select: () => Promise.resolve({ data: [], error: null }) 
-            }) };
-        }
-    }
-    
-    // Use this everywhere instead of direct supabase
-    window.supa = window.supabaseClient;
-})();
     <script>
         // Supabase Configuration
         const SUPABASE_URL = 'https://bgwjirmuwweabbxnivjm.supabase.co';
@@ -2996,56 +2973,15 @@
             }
         }
 
-        // Register Service Worker
+        // Register Service Worker - FIXED
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swCode = `
-                    const CACHE_NAME = 'gk-store-v2';
-                    const urlsToCache = [
-                        './',
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
-                    ];
-
-                    self.addEventListener('install', (event) => {
-                        event.waitUntil(
-                            caches.open(CACHE_NAME)
-                                .then((cache) => cache.addAll(urlsToCache))
-                                .then(() => self.skipWaiting())
-                        );
-                    });
-
-                    self.addEventListener('activate', (event) => {
-                        event.waitUntil(
-                            caches.keys().then((cacheNames) => {
-                                return Promise.all(
-                                    cacheNames.map((cacheName) => {
-                                        if (cacheName !== CACHE_NAME) {
-                                            return caches.delete(cacheName);
-                                        }
-                                    })
-                                );
-                            }).then(() => self.clients.claim())
-                        );
-                    });
-
-                    self.addEventListener('fetch', (event) => {
-                        if (event.request.method !== 'GET') return;
-                        
-                        event.respondWith(
-                            fetch(event.request)
-                                .catch(() => {
-                                    return caches.match(event.request);
-                                })
-                        );
-                    });
-                `;
-
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
+                const swUrl = new URL('https://shamsahmadzai06-source.github.io/GKStore/');
+                swUrl.searchParams.set('sw', 'v2');
                 
-                navigator.serviceWorker.register(swUrl)
+                navigator.serviceWorker.register(swUrl.toString())
                     .then(registration => {
-                        console.log('Service Worker registered');
+                        console.log('Service Worker registered with scope:', registration.scope);
                     })
                     .catch(error => {
                         console.log('Service Worker registration failed:', error);
@@ -4738,60 +4674,6 @@
         // Initialize app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
 
-        // Create and inject manifest JSON
-        function createManifest() {
-            const manifest = {
-                "name": "GK Store",
-                "short_name": "GK Store",
-                "description": "Exclusive Video Marketplace",
-                "start_url": "https://shamsahmadzai06-source.github.io/GKStore/",
-                "display": "standalone",
-                "background_color": "#000000",
-                "theme_color": "#ec4899",
-                "orientation": "portrait-primary",
-                "scope": "/GKStore/",
-                "lang": "en",
-                "icons": [
-                    {
-                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png",
-                        "sizes": "72x72",
-                        "type": "image/png"
-                    },
-                    {
-                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png",
-                        "sizes": "96x96",
-                        "type": "image/png"
-                    },
-                    {
-                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png",
-                        "sizes": "144x144",
-                        "type": "image/png"
-                    },
-                    {
-                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png",
-                        "sizes": "192x192",
-                        "type": "image/png"
-                    },
-                    {
-                        "src": "https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png",
-                        "sizes": "512x512",
-                        "type": "image/png"
-                    }
-                ]
-            };
-
-            const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
-            const manifestUrl = URL.createObjectURL(blob);
-            
-            const manifestLink = document.getElementById('app-manifest');
-            if (manifestLink) {
-                manifestLink.href = manifestUrl;
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', createManifest);
-
     </script>
 </body>
 </html>
-
