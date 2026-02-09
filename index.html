@@ -12,7 +12,7 @@
     <title>GK Store - Video Marketplace</title>
     
     <!-- Favicon and Apple Touch Icons -->
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJvSURBVHgB7d2/axNRHAfw7727NFqtFoRCwIogCA50dHDQhS4qdBH6H5QiiBM6OEgHB4cODoqDgo4iCA4ODiL0HxAqhUIrSqFQ6h9pzfe8npWEkve7937v3fv7QEKavPfuZz7zvXdv3qMgiqk6EsB+cwv+ccB6BaKR8nhjblF9ErB/9Aq56X/ZpfAkqk+nT716qg+1zTtJzoN6fhFOT/c2J5/mhNFP8Ws7PZj9xZrpWPZorKHA2Ht3IJthgEvuXjC66yDE7krlCKwz6zANcKhzwzAUY0qlYhWAwdEkAL1HkgWYfv9rE4DeMakCMP5/5f7xDWKTLsD+8mK6o16AQYHL06njUFwrBcj0L5Y+SoxYPHx/ogBZRDGCUYASjAKUYBSgBKOAV4b9C3wK0oImT/HoAAAAAElFTkSuQmCC">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJvSURBVHgB7d2/axNRHAfw7727NFqtFoRCwIogCA50dHDQhS4qdBH6H5QiiBM6OEgHB4cODoqDgo4iCA4ODiL0HxAqhUIrSqFQ6h9pzfe8npWEkve7937v3fv7QEKavPfeZz7zvXdv3qMgiqk6EsB+cwv+ccB6BaKR8nhjblF9ErB/9Aq56X/ZpfAkqk+nT716qg+1zTtJzoN6fhFOT/c2J5/mhNFP8Ws7PZj9xZrpWPZorKHA2Ht3IJthgEvuXjC66yDE7krlCKwz6zANcKhzwzAUY0qlYhWAwdEkAL1HkgWYfv9rE4DeMakCMP5/5f7xDWKTLsD+8mK6o16AQYHL06njUFwrBcj0L5Y+SoxYPHx/ogBZRDGCUYASjAKUYBSgBKOAV4b9C3wK0oImT/HoAAAAAElFTkSuQmCC">
     
     <!-- Web App Manifest -->
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkdLIFN0b3JlIiwKICAic2hvcnRfbmFtZSI6ICJHSyBTdG9yZSIsCiAgImRlc2NyaXB0aW9uIjogIkV4Y2x1c2l2ZSBWaWRlbyBNYXJrZXRwbGFjZSIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiNlYzQ4OTkiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJhbmRyb2lkLWxhdW5jaGVyaWNvbi05Ni05Ni5wbmciLAogICAgICAic2l6ZXMiOiAiOTZ4OTYiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9LAogICAgewogICAgICAic3JjIjogImFuZHJvaWQtbGF1bmNoZXJpY29uLTE5Mi0xOTIucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9LAogICAgewogICAgICAic3JjIjogImFuZHJvaWQtbGF1bmNoZXJpY29uLTUxMi01MTIucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFzay1hYmxlIgogICAgfQogIF0KfQ==" id="app-manifest">
@@ -24,6 +24,9 @@
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    
+    <!-- QR Code Library for Google Authenticator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -1724,15 +1727,30 @@
             }
         }
 
-        /* Admin access code input styles */
-        .access-code-inputs {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-            margin: 1rem 0;
+        /* NEW: 2FA Verification Styles */
+        .verification-step {
+            text-align: center;
+            margin-bottom: 1.5rem;
         }
 
-        .access-code-input {
+        .verification-step h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .verification-step p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .verification-code-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .verification-code-input {
             width: 3rem;
             height: 3rem;
             text-align: center;
@@ -1745,28 +1763,172 @@
             transition: all 0.2s ease;
         }
 
-        .access-code-input:focus {
+        .verification-code-input:focus {
             border-color: var(--primary);
             outline: none;
             box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
         }
 
-        .access-code-input.filled {
+        .verification-code-input.filled {
             border-color: var(--primary);
             background: rgba(236, 72, 153, 0.1);
         }
 
-        /* Resend timer */
-        .resend-timer {
+        .qr-code-container {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin: 1.5rem auto;
+            display: inline-block;
+        }
+
+        .qr-code-placeholder {
+            width: 200px;
+            height: 200px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+        }
+
+        .recovery-codes {
+            background: var(--surface-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .recovery-code {
+            font-family: monospace;
+            padding: 0.5rem;
+            background: var(--surface);
+            border-radius: 0.25rem;
+            margin: 0.25rem;
+            display: inline-block;
+            font-size: 0.875rem;
+        }
+
+        .verification-timer {
             font-size: 0.875rem;
             color: var(--text-secondary);
-            text-align: center;
             margin-top: 0.5rem;
         }
 
-        .resend-timer .countdown {
-            color: var(--primary);
-            font-weight: 600;
+        .verification-timer.expired {
+            color: var(--danger);
+        }
+
+        .verification-method {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--surface-light);
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .verification-method:hover {
+            background: var(--surface);
+            border-color: var(--primary);
+        }
+
+        .verification-method.active {
+            border-color: var(--primary);
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .verification-method-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .verification-method-icon.email {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .verification-method-icon.phone {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .verification-method-icon.google {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .setup-step {
+            margin-bottom: 1.5rem;
+        }
+
+        .setup-step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .admin-ip-log {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .ip-address {
+            font-family: monospace;
+            background: var(--surface-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .auth-logs {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: var(--surface-light);
+            border-radius: 0.5rem;
+        }
+
+        .auth-log-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+        }
+
+        .auth-log-item:last-child {
+            border-bottom: none;
+        }
+
+        .auth-log-success {
+            color: var(--success);
+        }
+
+        .auth-log-failed {
+            color: var(--danger);
+        }
+
+        .security-settings {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
         }
     </style>
 </head>
@@ -1803,7 +1965,7 @@
                     <i class="fas fa-globe"></i>
                 </button>
                 
-                <button class="btn btn-icon btn-secondary" onclick="showAdminLogin()" id="admin-access-btn">
+                <button class="btn btn-icon btn-secondary" onclick="showPage('admin')">
                     <i class="fas fa-user-shield"></i>
                 </button>
                 
@@ -1983,7 +2145,7 @@
             </div>
             
             <!-- Video Grid - Only shown on desktop, hidden on mobile -->
-            <div id="video-grid-desktop" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6 hidden">
+            <div id="video-grid-desktop" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                 <!-- Video items will be dynamically loaded here -->
             </div>
             
@@ -2144,14 +2306,29 @@
 
         <!-- Admin Page -->
         <div id="admin-page" class="page hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Admin Panel</h2>
-                <button class="btn btn-sm btn-danger" onclick="adminLogout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout Admin
-                </button>
-            </div>
+            <h2 class="text-2xl font-bold mb-6">Admin Panel</h2>
             
             <div class="grid gap-6">
+                <!-- Admin Login -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="font-semibold mb-4">Admin Login</h3>
+                        <form id="admin-login-form" onsubmit="adminLogin(event)">
+                            <div class="input-group">
+                                <label class="input-label">Admin Email</label>
+                                <input type="email" id="admin-email" class="input" placeholder="Enter admin email" value="admin@gkstore.com" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Admin Password</label>
+                                <input type="password" id="admin-password" class="input" placeholder="Enter admin password" value="admin123" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-full">
+                                <i class="fas fa-lock"></i> Login as Admin
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
                 <!-- Admin Dashboard (Hidden until login) -->
                 <div id="admin-dashboard" class="hidden">
                     <!-- Stats Overview -->
@@ -2196,34 +2373,42 @@
                                 <button class="btn btn-secondary" onclick="showBookRequests()">
                                     <i class="fas fa-bookmark"></i> Book Requests
                                 </button>
-                                <button class="btn btn-secondary" onclick="showManageSettings()">
-                                    <i class="fas fa-cog"></i> Settings
+                                <button class="btn btn-secondary" onclick="showSecuritySettings()">
+                                    <i class="fas fa-shield-alt"></i> Security Settings
                                 </button>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Recent Activity -->
+                    <!-- Security Status -->
                     <div class="card">
                         <div class="card-body">
-                            <h3 class="font-semibold mb-4">Recent Activity</h3>
-                            <div class="space-y-3" id="admin-recent-activity">
-                                <!-- Activity items will be loaded here -->
+                            <h3 class="font-semibold mb-4">Security Status</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-shield-alt text-success"></i>
+                                        <span>2FA Status</span>
+                                    </div>
+                                    <span class="badge badge-success" id="2fa-status">Active</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-history text-primary"></i>
+                                        <span>Last Admin Login</span>
+                                    </div>
+                                    <span id="last-admin-login">Just now</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-desktop text-secondary"></i>
+                                        <span>Your IP Address</span>
+                                    </div>
+                                    <span class="ip-address" id="current-ip">Loading...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Admin Login Required Message -->
-                <div id="admin-login-required" class="text-center py-12">
-                    <div class="w-24 h-24 gradient-bg rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-lock text-white text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Admin Access Required</h3>
-                    <p class="text-zinc-400 mb-6">Please login with admin credentials to access this panel</p>
-                    <button class="btn btn-primary" onclick="showAdminLogin()">
-                        <i class="fas fa-sign-in-alt"></i> Admin Login
-                    </button>
                 </div>
             </div>
         </div>
@@ -2487,88 +2672,6 @@
         </div>
     </div>
 
-    <!-- Admin Login Modal -->
-    <div id="admin-login-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Admin Access</h3>
-                <button class="modal-close" onclick="closeModal('admin-login-modal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="modal-body">
-                <!-- Step 1: Email Login -->
-                <div id="admin-login-step1">
-                    <div class="text-center mb-4">
-                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-lock text-white text-2xl"></i>
-                        </div>
-                        <h4 class="text-lg font-semibold">Admin Authentication</h4>
-                        <p class="text-zinc-400 text-sm mt-1">Enter your admin email to begin</p>
-                    </div>
-                    
-                    <form id="admin-login-form">
-                        <div class="input-group">
-                            <label class="input-label">Admin Email</label>
-                            <input type="email" id="admin-email" class="input" placeholder="admin@example.com" required>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-full mt-4">
-                            <i class="fas fa-envelope"></i> Send Access Code
-                        </button>
-                    </form>
-                </div>
-                
-                <!-- Step 2: Access Code Verification -->
-                <div id="admin-login-step2" class="hidden">
-                    <div class="text-center mb-4">
-                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-key text-white text-2xl"></i>
-                        </div>
-                        <h4 class="text-lg font-semibold">Enter Access Code</h4>
-                        <p class="text-zinc-400 text-sm mt-1">Check your email for the access code</p>
-                    </div>
-                    
-                    <div class="text-center mb-4">
-                        <p class="text-sm" id="admin-email-display"></p>
-                    </div>
-                    
-                    <form id="admin-verify-form">
-                        <div class="input-group">
-                            <label class="input-label">6-Digit Access Code</label>
-                            <div class="access-code-inputs">
-                                <input type="text" id="code1" class="access-code-input" maxlength="1" onkeyup="moveToNext(1, event)" required>
-                                <input type="text" id="code2" class="access-code-input" maxlength="1" onkeyup="moveToNext(2, event)" required>
-                                <input type="text" id="code3" class="access-code-input" maxlength="1" onkeyup="moveToNext(3, event)" required>
-                                <input type="text" id="code4" class="access-code-input" maxlength="1" onkeyup="moveToNext(4, event)" required>
-                                <input type="text" id="code5" class="access-code-input" maxlength="1" onkeyup="moveToNext(5, event)" required>
-                                <input type="text" id="code6" class="access-code-input" maxlength="1" onkeyup="moveToNext(6, event)" required>
-                            </div>
-                            <p class="text-xs text-zinc-400 mt-2 text-center">Enter the 6-digit code sent to your email</p>
-                        </div>
-                        
-                        <div class="flex gap-2 mt-4">
-                            <button type="button" class="btn btn-secondary flex-1" onclick="backToEmailStep()">
-                                <i class="fas fa-arrow-left"></i> Back
-                            </button>
-                            <button type="submit" class="btn btn-primary flex-1">
-                                <i class="fas fa-check"></i> Verify Code
-                            </button>
-                        </div>
-                        
-                        <div class="text-center mt-4">
-                            <button type="button" class="text-sm text-primary" onclick="resendAccessCode()" id="resend-code-btn">
-                                Resend Code
-                            </button>
-                            <p class="resend-timer" id="resend-timer"></p>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Language Selector -->
     <div id="language-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 300px;">
@@ -2745,6 +2848,209 @@
         </div>
     </div>
 
+    <!-- 2FA Verification Modal -->
+    <div id="2fa-verification-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Two-Factor Verification</h3>
+                <button class="modal-close" onclick="closeModal('2fa-verification-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="verification-step">
+                    <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-shield-alt text-white text-2xl"></i>
+                    </div>
+                    <h3>Verify Your Identity</h3>
+                    <p>Enter verification code sent to your registered method</p>
+                </div>
+                
+                <div id="verification-method-container">
+                    <!-- Method selection will be loaded here -->
+                </div>
+                
+                <div id="verification-code-container" class="hidden">
+                    <div class="verification-code-container">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="0">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="1">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="2">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="3">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="4">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="5">
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="verification-timer" id="verification-timer">Code expires in 05:00</p>
+                        <button class="btn btn-link text-sm mt-2" onclick="resendVerificationCode()">
+                            Resend Code
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-primary w-full" onclick="verify2FACode()">
+                            <i class="fas fa-check"></i> Verify & Continue
+                        </button>
+                        <button class="btn btn-secondary w-full mt-2" onclick="cancel2FA()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Authenticator Setup Modal -->
+    <div id="google-auth-setup-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Setup Google Authenticator</h3>
+                <button class="modal-close" onclick="closeModal('google-auth-setup-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="setup-step">
+                    <p class="setup-step-number">1</p>
+                    <p><strong>Install Google Authenticator</strong> on your phone from the App Store or Google Play</p>
+                </div>
+                
+                <div class="setup-step">
+                    <p class="setup-step-number">2</p>
+                    <p><strong>Scan this QR code</strong> with Google Authenticator app</p>
+                    <div class="text-center my-4">
+                        <div id="qr-code-container" class="qr-code-container">
+                            <div id="qr-code-placeholder" class="qr-code-placeholder">
+                                <i class="fas fa-qrcode text-4xl text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="setup-step">
+                    <p class="setup-step-number">3</p>
+                    <p><strong>Enter the 6-digit code</strong> from Google Authenticator</p>
+                    <div class="verification-code-container mt-4">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="0">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="1">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="2">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="3">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="4">
+                        <input type="text" class="verification-code-input" maxlength="1" data-index="5">
+                    </div>
+                </div>
+                
+                <div class="recovery-codes mt-4">
+                    <p class="text-sm font-medium mb-2">⚠️ Save these recovery codes</p>
+                    <div id="recovery-codes-list" class="text-center">
+                        <!-- Recovery codes will be generated here -->
+                    </div>
+                    <p class="text-xs text-zinc-400 mt-2">Use these codes if you lose access to your authenticator</p>
+                </div>
+                
+                <div class="mt-4">
+                    <button class="btn btn-primary w-full" onclick="verifyGoogleAuthSetup()">
+                        <i class="fas fa-check"></i> Complete Setup
+                    </button>
+                    <button class="btn btn-secondary w-full mt-2" onclick="closeModal('google-auth-setup-modal')">
+                        Cancel Setup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Settings Modal -->
+    <div id="security-settings-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Security Settings</h3>
+                <button class="modal-close" onclick="closeModal('security-settings-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">Two-Factor Authentication</h4>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm">Protect your admin account with 2FA</p>
+                                <p class="text-xs text-zinc-400">Current status: <span id="current-2fa-status" class="font-medium">Not Setup</span></p>
+                            </div>
+                            <button class="btn btn-primary" onclick="setup2FA()">
+                                <i class="fas fa-cog"></i> Setup
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="security-settings">
+                        <h4 class="font-semibold mb-2">Verification Methods</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-envelope text-primary"></i>
+                                    <span>Email Verification</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="email-verification-toggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-phone text-success"></i>
+                                    <span>SMS Verification</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="sms-verification-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-google text-warning"></i>
+                                    <span>Google Authenticator</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="google-auth-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-settings">
+                        <h4 class="font-semibold mb-2">Admin IP Whitelist</h4>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Your IP: <span id="your-ip" class="font-mono">Loading...</span></span>
+                                <button class="btn btn-sm btn-secondary" onclick="addCurrentIPToWhitelist()">
+                                    <i class="fas fa-plus"></i> Add Current IP
+                                </button>
+                            </div>
+                            <div id="ip-whitelist">
+                                <!-- IP addresses will be loaded here -->
+                            </div>
+                            <p class="text-xs text-zinc-400">Only whitelisted IPs can access admin panel</p>
+                        </div>
+                    </div>
+                    
+                    <div class="security-settings">
+                        <h4 class="font-semibold mb-2">Login History</h4>
+                        <div class="auth-logs" id="admin-auth-logs">
+                            <!-- Authentication logs will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary w-full mt-4" onclick="saveSecuritySettings()">
+                    Save Security Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Manage Settings Modal -->
     <div id="manage-settings-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 500px;">
@@ -2793,18 +3099,14 @@
     </div>
 
     <script>
-        // ===========================================
-        // SUPABASE CONFIGURATION
-        // ===========================================
+        // Supabase Configuration
         const SUPABASE_URL = 'https://ieinqlpnubtwwkldqhab.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllaW5xbHBudWJ0d3drbGRxaGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MzA3ODcsImV4cCI6MjA4NjEwNjc4N30.sJsoTu1bHBgconNOPfXZk33Ttuy1ZKC2oW2SonBnQ4o';
         
         // Initialize Supabase client
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ===========================================
-        // APP STATE MANAGEMENT
-        // ===========================================
+        // App State Management
         const appState = {
             currentPage: 'auth',
             currentVideoIndex: 0,
@@ -2818,129 +3120,97 @@
             currentUser: null,
             currentAccount: null,
             isAdminLoggedIn: false,
+            
+            // Enhanced security configuration
+            adminCredentials: {
+                email: 'admin@gkstore.com',
+                password: 'admin123'
+            },
+            
+            // 2FA Configuration
+            twoFactorAuth: {
+                enabled: false,
+                methods: {
+                    email: true,
+                    phone: false,
+                    googleAuth: false
+                },
+                googleAuthSecret: null,
+                recoveryCodes: [],
+                tempSecret: null
+            },
+            
+            // IP Security
+            ipWhitelist: [],
+            authLogs: [],
+            
+            // Current verification session
+            currentVerification: {
+                method: null,
+                code: null,
+                expiresAt: null,
+                tempAdminCredentials: null
+            },
+            
             userStats: {
                 registeredUsers: 0,
                 onlineUsers: 0
             },
+            
             currentUpload: {
                 file: null,
                 progress: 0,
                 url: ''
             },
+            
             // Video optimization state
             videoPlayers: new Map(),
             currentVideoPlayer: null,
             isVideoPlaying: false,
             isFullscreen: false,
+            
             // Device detection
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
-        };
-
-        // Admin Authentication State
-        const adminAuth = {
-            currentEmail: '',
-            accessCode: '',
-            resendTimer: null,
-            resendCooldown: 60, // 60 seconds cooldown
-            lastSent: 0,
-            
-            // Generate 6-digit code
-            generateAccessCode() {
-                return Math.floor(100000 + Math.random() * 900000).toString();
-            },
-            
-            // Check if can resend
-            canResend() {
-                const now = Date.now();
-                return now - this.lastSent >= this.resendCooldown * 1000;
-            },
-            
-            // Start resend timer
-            startResendTimer() {
-                let seconds = this.resendCooldown;
-                const timerElement = document.getElementById('resend-timer');
-                const resendBtn = document.getElementById('resend-code-btn');
-                
-                if (resendBtn) resendBtn.disabled = true;
-                
-                this.resendTimer = setInterval(() => {
-                    seconds--;
-                    
-                    if (timerElement) {
-                        timerElement.innerHTML = `Resend available in <span class="countdown">${seconds}s</span>`;
-                    }
-                    
-                    if (seconds <= 0) {
-                        clearInterval(this.resendTimer);
-                        if (timerElement) timerElement.innerHTML = '';
-                        if (resendBtn) {
-                            resendBtn.disabled = false;
-                            resendBtn.textContent = 'Resend Code';
-                        }
-                    }
-                }, 1000);
-            },
-            
-            // Clear timer
-            clearTimer() {
-                if (this.resendTimer) {
-                    clearInterval(this.resendTimer);
-                    this.resendTimer = null;
-                }
-            }
-        };
-
-        // Rate limiting for access code requests
-        const rateLimit = {
-            attempts: {},
-            maxAttempts: 5,
-            timeWindow: 15 * 60 * 1000, // 15 minutes
-            
-            check(email) {
-                const now = Date.now();
-                const userAttempts = this.attempts[email] || [];
-                
-                // Clean old attempts
-                const recentAttempts = userAttempts.filter(time => now - time < this.timeWindow);
-                
-                if (recentAttempts.length >= this.maxAttempts) {
-                    return false;
-                }
-                
-                recentAttempts.push(now);
-                this.attempts[email] = recentAttempts;
-                return true;
-            }
         };
 
         // PWA Variables
         let deferredPrompt = null;
         let isAppInstalled = false;
 
-        // ===========================================
-        // INITIALIZATION
-        // ===========================================
+        // Initialize App
         async function initApp() {
             loadPreferences();
+            loadSecuritySettings();
             setupEventListeners();
             setupPWAInstall();
             
-            // Create necessary Supabase tables
-            await createSupabaseTables();
+            // Get user IP
+            await getUserIP();
             
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
-            const adminToken = localStorage.getItem('adminToken');
-            
             if (savedUser) {
                 try {
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
                     
-                    // Check if admin was logged in
-                    if (adminToken && adminToken === 'authenticated') {
-                        appState.isAdminLoggedIn = true;
-                        updateAdminButton();
+                    // If admin was logged in, check if 2FA is required
+                    if (appState.currentUser.email === appState.adminCredentials.email) {
+                        const adminSession = localStorage.getItem('adminSession');
+                        if (adminSession) {
+                            const sessionData = JSON.parse(adminSession);
+                            const now = new Date();
+                            const sessionExpiry = new Date(sessionData.expiresAt);
+                            
+                            // Check if session is still valid and IP matches
+                            if (now < sessionExpiry && sessionData.ip === appState.currentIP) {
+                                appState.isAdminLoggedIn = true;
+                                logAuthAttempt('admin', true, 'Session restored');
+                            } else {
+                                localStorage.removeItem('adminSession');
+                                logAuthAttempt('admin', false, 'Session expired');
+                            }
+                        }
                     }
                     
                     showPage('home');
@@ -2956,460 +3226,285 @@
             // Initialize video optimization
             initializeVideoOptimization();
             
-            // Handle orientation changes
+            // Handle orientation changes for mobile
             if (appState.isMobile) {
                 window.addEventListener('orientationchange', handleOrientationChange);
             }
         }
 
-        // Create Supabase tables
-        async function createSupabaseTables() {
+        // Get user IP address
+        async function getUserIP() {
             try {
-                // Create admin_access_codes table
-                const { error: codesError } = await supabase.rpc('create_admin_tables');
-                if (codesError) {
-                    console.log('Creating tables manually...');
-                    await createTablesManually();
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                appState.currentIP = data.ip;
+                document.getElementById('current-ip')?.textContent = data.ip;
+                document.getElementById('your-ip')?.textContent = data.ip;
+            } catch (error) {
+                console.error('Error getting IP:', error);
+                appState.currentIP = 'unknown';
+            }
+        }
+
+        // Load security settings from localStorage
+        function loadSecuritySettings() {
+            const saved2FA = localStorage.getItem('admin2FA');
+            if (saved2FA) {
+                try {
+                    const twoFactorData = JSON.parse(saved2FA);
+                    appState.twoFactorAuth.enabled = twoFactorData.enabled || false;
+                    appState.twoFactorAuth.methods = twoFactorData.methods || { email: true };
+                    appState.twoFactorAuth.googleAuthSecret = twoFactorData.googleAuthSecret || null;
+                    appState.twoFactorAuth.recoveryCodes = twoFactorData.recoveryCodes || [];
+                } catch (e) {
+                    console.error('Error parsing 2FA settings:', e);
                 }
-            } catch (error) {
-                console.log('Creating tables with direct SQL...');
-                await createTablesManually();
             }
-        }
-
-        // Create tables manually
-        async function createTablesManually() {
-            try {
-                // Create admin_users table
-                await supabase.from('admin_users').select('*').limit(1);
-            } catch (error) {
-                console.log('Admin users table may not exist. Creating dummy data...');
+            
+            const savedIPWhitelist = localStorage.getItem('adminIPWhitelist');
+            if (savedIPWhitelist) {
+                try {
+                    appState.ipWhitelist = JSON.parse(savedIPWhitelist);
+                } catch (e) {
+                    console.error('Error parsing IP whitelist:', e);
+                }
             }
+            
+            const savedAuthLogs = localStorage.getItem('adminAuthLogs');
+            if (savedAuthLogs) {
+                try {
+                    appState.authLogs = JSON.parse(savedAuthLogs);
+                } catch (e) {
+                    console.error('Error parsing auth logs:', e);
+                }
+            }
+            
+            update2FAStatus();
         }
 
-        // ===========================================
-        // ADMIN AUTHENTICATION FUNCTIONS
-        // ===========================================
-        
-        // Show admin login modal
-        function showAdminLogin() {
-            // Reset form
-            document.getElementById('admin-login-step1').classList.remove('hidden');
-            document.getElementById('admin-login-step2').classList.add('hidden');
-            document.getElementById('admin-email').value = '';
-            clearAccessCodeInputs();
+        // Save security settings to localStorage
+        function saveSecuritySettingsToStorage() {
+            localStorage.setItem('admin2FA', JSON.stringify({
+                enabled: appState.twoFactorAuth.enabled,
+                methods: appState.twoFactorAuth.methods,
+                googleAuthSecret: appState.twoFactorAuth.googleAuthSecret,
+                recoveryCodes: appState.twoFactorAuth.recoveryCodes
+            }));
             
-            adminAuth.clearTimer();
-            showModal('admin-login-modal');
+            localStorage.setItem('adminIPWhitelist', JSON.stringify(appState.ipWhitelist));
+            
+            // Keep only last 50 auth logs
+            if (appState.authLogs.length > 50) {
+                appState.authLogs = appState.authLogs.slice(-50);
+            }
+            localStorage.setItem('adminAuthLogs', JSON.stringify(appState.authLogs));
         }
 
-        // Handle admin email submission
-        async function handleAdminEmailSubmit(event) {
-            event.preventDefault();
+        // Log authentication attempts
+        function logAuthAttempt(username, success, reason = '') {
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                username: username,
+                ip: appState.currentIP || 'unknown',
+                success: success,
+                reason: reason,
+                userAgent: navigator.userAgent
+            };
             
-            const email = document.getElementById('admin-email').value.trim();
-            const submitBtn = event.target.querySelector('button[type="submit"]');
+            appState.authLogs.push(logEntry);
+            saveSecuritySettingsToStorage();
+            updateAuthLogsDisplay();
+        }
+
+        // Update authentication logs display
+        function updateAuthLogsDisplay() {
+            const logsContainer = document.getElementById('admin-auth-logs');
+            if (!logsContainer) return;
             
-            if (!email) {
-                showToast('error', 'Validation Error', 'Please enter admin email');
+            logsContainer.innerHTML = '';
+            
+            const recentLogs = [...appState.authLogs].reverse().slice(0, 10);
+            
+            if (recentLogs.length === 0) {
+                logsContainer.innerHTML = '<p class="text-center text-zinc-400">No authentication logs</p>';
                 return;
             }
             
-            // Check rate limit
-            if (!rateLimit.check(email)) {
-                showToast('error', 'Rate Limit Exceeded', 'Too many attempts. Please wait 15 minutes.');
-                return;
-            }
-            
-            // Show loading
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Sending...';
-            
-            try {
-                // Check if email is registered as admin
-                const { data: adminData, error: adminError } = await supabase
-                    .from('admin_users')
-                    .select('email')
-                    .eq('email', email)
-                    .single();
-                
-                if (adminError || !adminData) {
-                    showToast('error', 'Access Denied', 'This email is not registered as admin');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-envelope"></i> Send Access Code';
-                    return;
-                }
-                
-                // Generate and send access code
-                const accessCode = adminAuth.generateAccessCode();
-                adminAuth.currentEmail = email;
-                adminAuth.accessCode = accessCode;
-                adminAuth.lastSent = Date.now();
-                
-                // Store code in localStorage for demo (in production, use Supabase Edge Functions)
-                localStorage.setItem(`admin_code_${email}`, JSON.stringify({
-                    code: accessCode,
-                    expires: Date.now() + 10 * 60000 // 10 minutes
-                }));
-                
-                // Simulate sending email (in production, use Supabase Edge Functions)
-                setTimeout(() => {
-                    // Show code input step
-                    document.getElementById('admin-login-step1').classList.add('hidden');
-                    document.getElementById('admin-login-step2').classList.remove('hidden');
-                    document.getElementById('admin-email-display').textContent = `Code sent to: ${email}`;
-                    
-                    // Start resend timer
-                    adminAuth.startResendTimer();
-                    
-                    showToast('success', 'Access Code Sent', `Demo code: ${accessCode} (Check console for production)`);
-                    console.log('DEMO: Access code for', email, 'is:', accessCode);
-                    console.log('IN PRODUCTION: This would be sent via email using Supabase Edge Functions');
-                    
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-envelope"></i> Send Access Code';
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Admin login error:', error);
-                showToast('error', 'Login Error', 'An error occurred. Please try again.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-envelope"></i> Send Access Code';
-            }
+            recentLogs.forEach(log => {
+                const logItem = document.createElement('div');
+                logItem.className = 'auth-log-item';
+                logItem.innerHTML = `
+                    <div>
+                        <div class="font-medium">${log.username}</div>
+                        <div class="text-xs text-zinc-400">${new Date(log.timestamp).toLocaleString()}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="${log.success ? 'auth-log-success' : 'auth-log-failed'} font-medium">
+                            ${log.success ? '✓ Success' : '✗ Failed'}
+                        </div>
+                        <div class="text-xs text-zinc-400">${log.ip}</div>
+                    </div>
+                `;
+                logsContainer.appendChild(logItem);
+            });
         }
 
-        // Handle access code verification
-        async function handleAccessCodeVerify(event) {
-            event.preventDefault();
+        // Update 2FA status display
+        function update2FAStatus() {
+            const statusElement = document.getElementById('2fa-status');
+            const currentStatusElement = document.getElementById('current-2fa-status');
             
-            const code = [
-                document.getElementById('code1').value,
-                document.getElementById('code2').value,
-                document.getElementById('code3').value,
-                document.getElementById('code4').value,
-                document.getElementById('code5').value,
-                document.getElementById('code6').value
-            ].join('');
-            
-            const submitBtn = event.target.querySelector('button[type="submit"]');
-            
-            if (code.length !== 6 || !/^\d+$/.test(code)) {
-                showToast('error', 'Invalid Code', 'Please enter a valid 6-digit code');
-                return;
-            }
-            
-            // Show loading
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Verifying...';
-            
-            try {
-                // Check if code matches
-                const storedCode = localStorage.getItem(`admin_code_${adminAuth.currentEmail}`);
-                
-                if (!storedCode) {
-                    showToast('error', 'Code Expired', 'Access code has expired. Please request a new one.');
-                    clearAccessCodeInputs();
-                    document.getElementById('code1').focus();
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Verify Code';
-                    return;
-                }
-                
-                const { code: storedCodeValue, expires } = JSON.parse(storedCode);
-                
-                if (Date.now() > expires) {
-                    showToast('error', 'Code Expired', 'Access code has expired. Please request a new one.');
-                    localStorage.removeItem(`admin_code_${adminAuth.currentEmail}`);
-                    clearAccessCodeInputs();
-                    document.getElementById('code1').focus();
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Verify Code';
-                    return;
-                }
-                
-                if (code !== storedCodeValue) {
-                    showToast('error', 'Invalid Code', 'The access code you entered is incorrect');
-                    clearAccessCodeInputs();
-                    document.getElementById('code1').focus();
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Verify Code';
-                    return;
-                }
-                
-                // Code is valid - login as admin
-                appState.isAdminLoggedIn = true;
-                appState.isLoggedIn = true;
-                appState.currentUser = {
-                    email: adminAuth.currentEmail,
-                    name: adminAuth.currentEmail.split('@')[0],
-                    role: 'admin'
-                };
-                
-                // Save to localStorage
-                localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
-                localStorage.setItem('adminToken', 'authenticated');
-                
-                // Clear used code
-                localStorage.removeItem(`admin_code_${adminAuth.currentEmail}`);
-                
-                // Clear timer
-                adminAuth.clearTimer();
-                
-                showToast('success', 'Admin Access Granted', 'Welcome to Admin Panel!');
-                closeModal('admin-login-modal');
-                
-                // Update admin button
-                updateAdminButton();
-                
-                // Load admin content
-                await loadAdminContent();
-                showPage('admin');
-                
-            } catch (error) {
-                console.error('Verification error:', error);
-                showToast('error', 'Verification Error', 'An error occurred. Please try again.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-check"></i> Verify Code';
-            }
-        }
-
-        // Clear access code inputs
-        function clearAccessCodeInputs() {
-            for (let i = 1; i <= 6; i++) {
-                const input = document.getElementById(`code${i}`);
-                if (input) {
-                    input.value = '';
-                    input.classList.remove('filled');
-                }
-            }
-        }
-
-        // Move to next input field in access code
-        function moveToNext(current, event) {
-            const input = event.target;
-            const value = input.value;
-            
-            // Update UI
-            if (value) {
-                input.classList.add('filled');
-            } else {
-                input.classList.remove('filled');
-            }
-            
-            // Auto-focus next input
-            if (value && current < 6) {
-                document.getElementById(`code${current + 1}`).focus();
-            }
-            
-            // Auto submit on last digit
-            if (current === 6 && value) {
-                const code = [
-                    document.getElementById('code1').value,
-                    document.getElementById('code2').value,
-                    document.getElementById('code3').value,
-                    document.getElementById('code4').value,
-                    document.getElementById('code5').value,
-                    document.getElementById('code6').value
-                ].join('');
-                
-                if (code.length === 6) {
-                    setTimeout(() => {
-                        document.getElementById('admin-verify-form').dispatchEvent(new Event('submit'));
-                    }, 300);
-                }
-            }
-        }
-
-        // Back to email step
-        function backToEmailStep() {
-            document.getElementById('admin-login-step2').classList.add('hidden');
-            document.getElementById('admin-login-step1').classList.remove('hidden');
-            clearAccessCodeInputs();
-            
-            adminAuth.clearTimer();
-        }
-
-        // Resend access code
-        async function resendAccessCode() {
-            const resendBtn = document.getElementById('resend-code-btn');
-            const timerElement = document.getElementById('resend-timer');
-            
-            if (!adminAuth.currentEmail || !adminAuth.canResend()) return;
-            
-            resendBtn.disabled = true;
-            resendBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Sending...';
-            
-            try {
-                // Generate new code
-                const newCode = adminAuth.generateAccessCode();
-                adminAuth.accessCode = newCode;
-                adminAuth.lastSent = Date.now();
-                
-                // Store new code
-                localStorage.setItem(`admin_code_${adminAuth.currentEmail}`, JSON.stringify({
-                    code: newCode,
-                    expires: Date.now() + 10 * 60000
-                }));
-                
-                // Simulate sending
-                setTimeout(() => {
-                    showToast('success', 'Code Resent', `New demo code: ${newCode}`);
-                    console.log('DEMO: New access code for', adminAuth.currentEmail, 'is:', newCode);
-                    
-                    adminAuth.startResendTimer();
-                    
-                    resendBtn.disabled = false;
-                    resendBtn.textContent = 'Resend Code';
-                }, 1500);
-                
-            } catch (error) {
-                showToast('error', 'Resend Error', 'An error occurred. Please try again.');
-                resendBtn.disabled = false;
-                resendBtn.textContent = 'Resend Code';
-            }
-        }
-
-        // Admin logout
-        function adminLogout() {
-            appState.isAdminLoggedIn = false;
-            localStorage.removeItem('adminToken');
-            
-            // Update admin button
-            updateAdminButton();
-            
-            showToast('success', 'Admin Logout', 'Successfully logged out from admin panel');
-            
-            // Reload admin page content
-            loadAdminContent();
-            
-            // If on admin page, redirect to home
-            if (appState.currentPage === 'admin') {
-                showPage('home');
-            }
-        }
-
-        // Update admin button state
-        function updateAdminButton() {
-            const adminBtn = document.getElementById('admin-access-btn');
-            if (adminBtn) {
-                if (appState.isAdminLoggedIn) {
-                    adminBtn.innerHTML = '<i class="fas fa-user-shield text-success"></i>';
-                    adminBtn.title = 'Admin (Logged In)';
+            if (statusElement) {
+                if (appState.twoFactorAuth.enabled) {
+                    statusElement.textContent = 'Active';
+                    statusElement.className = 'badge badge-success';
                 } else {
-                    adminBtn.innerHTML = '<i class="fas fa-user-shield"></i>';
-                    adminBtn.title = 'Admin Login';
+                    statusElement.textContent = 'Inactive';
+                    statusElement.className = 'badge badge-danger';
+                }
+            }
+            
+            if (currentStatusElement) {
+                currentStatusElement.textContent = appState.twoFactorAuth.enabled ? 'Active' : 'Not Setup';
+                currentStatusElement.className = appState.twoFactorAuth.enabled ? 'text-success' : 'text-danger';
+            }
+            
+            // Update toggles in security settings
+            document.getElementById('email-verification-toggle').checked = appState.twoFactorAuth.methods.email || false;
+            document.getElementById('sms-verification-toggle').checked = appState.twoFactorAuth.methods.phone || false;
+            document.getElementById('google-auth-toggle').checked = appState.twoFactorAuth.methods.googleAuth || false;
+            
+            // Update IP whitelist display
+            updateIPWhitelistDisplay();
+        }
+
+        // Update IP whitelist display
+        function updateIPWhitelistDisplay() {
+            const whitelistContainer = document.getElementById('ip-whitelist');
+            if (!whitelistContainer) return;
+            
+            whitelistContainer.innerHTML = '';
+            
+            if (appState.ipWhitelist.length === 0) {
+                whitelistContainer.innerHTML = '<p class="text-zinc-400 text-sm">No IPs in whitelist</p>';
+                return;
+            }
+            
+            appState.ipWhitelist.forEach((ip, index) => {
+                const ipItem = document.createElement('div');
+                ipItem.className = 'flex items-center justify-between p-2 bg-surface rounded mb-1';
+                ipItem.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-desktop text-secondary"></i>
+                        <code class="text-sm">${ip}</code>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="removeIPFromWhitelist(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                whitelistContainer.appendChild(ipItem);
+            });
+        }
+
+        // Add current IP to whitelist
+        function addCurrentIPToWhitelist() {
+            if (!appState.currentIP || appState.currentIP === 'unknown') {
+                showToast('error', 'IP Error', 'Could not detect your IP address');
+                return;
+            }
+            
+            if (!appState.ipWhitelist.includes(appState.currentIP)) {
+                appState.ipWhitelist.push(appState.currentIP);
+                saveSecuritySettingsToStorage();
+                updateIPWhitelistDisplay();
+                showToast('success', 'IP Added', 'Your IP has been added to whitelist');
+            } else {
+                showToast('info', 'IP Exists', 'Your IP is already in the whitelist');
+            }
+        }
+
+        // Remove IP from whitelist
+        function removeIPFromWhitelist(index) {
+            if (confirm('Are you sure you want to remove this IP from whitelist?')) {
+                appState.ipWhitelist.splice(index, 1);
+                saveSecuritySettingsToStorage();
+                updateIPWhitelistDisplay();
+                showToast('success', 'IP Removed', 'IP has been removed from whitelist');
+            }
+        }
+
+        // Check if IP is whitelisted
+        function isIPWhitelisted(ip) {
+            // If whitelist is empty, allow all IPs
+            if (appState.ipWhitelist.length === 0) {
+                return true;
+            }
+            return appState.ipWhitelist.includes(ip);
+        }
+
+        // Initialize video optimization
+        function initializeVideoOptimization() {
+            // Set up visibility change for video pause/play
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && appState.currentVideoPlayer) {
+                    appState.isVideoPlaying = !appState.currentVideoPlayer.paused;
+                    if (!appState.currentVideoPlayer.paused) {
+                        appState.currentVideoPlayer.pause();
+                    }
+                } else if (!document.hidden && appState.isVideoPlaying && appState.currentVideoPlayer) {
+                    appState.currentVideoPlayer.play().catch(e => console.log('Auto-play prevented'));
+                }
+            });
+            
+            // Handle fullscreen changes
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        }
+
+        // Handle fullscreen change
+        function handleFullscreenChange() {
+            const isFullscreen = document.fullscreenElement || 
+                                document.webkitFullscreenElement || 
+                                document.mozFullScreenElement || 
+                                document.msFullscreenElement;
+            
+            appState.isFullscreen = !!isFullscreen;
+            
+            if (!isFullscreen && appState.isMobile) {
+                // Exit fullscreen mode
+                const videoContainer = document.getElementById('main-video-container');
+                if (videoContainer) {
+                    videoContainer.classList.remove('video-fullscreen-mode');
                 }
             }
         }
 
-        // ===========================================
-        // SUPABASE SETUP SQL (RUN THIS IN SUPABASE SQL EDITOR)
-        // ===========================================
-        /*
-        -- Step 1: Create admin_users table
-        CREATE TABLE IF NOT EXISTS admin_users (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-            email TEXT UNIQUE NOT NULL,
-            role TEXT DEFAULT 'admin',
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
-        );
-
-        -- Step 2: Enable RLS
-        ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
-
-        -- Step 3: Create policies (admin only)
-        CREATE POLICY "Only authenticated users can view admin_users" 
-        ON admin_users FOR SELECT 
-        USING (auth.role() = 'authenticated');
-
-        CREATE POLICY "Only admins can insert admin_users" 
-        ON admin_users FOR INSERT 
-        WITH CHECK (auth.role() = 'authenticated');
-
-        -- Step 4: Create admin_access_codes table for temporary codes
-        CREATE TABLE IF NOT EXISTS admin_access_codes (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            email TEXT NOT NULL,
-            code TEXT NOT NULL,
-            expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
-        );
-
-        -- Step 5: Create indexes for better performance
-        CREATE INDEX IF NOT EXISTS idx_admin_access_codes_email 
-        ON admin_access_codes(email);
-
-        CREATE INDEX IF NOT EXISTS idx_admin_access_codes_expires 
-        ON admin_access_codes(expires_at);
-
-        -- Step 6: Add cleanup function for expired codes
-        CREATE OR REPLACE FUNCTION cleanup_expired_access_codes()
-        RETURNS void AS $$
-        BEGIN
-            DELETE FROM admin_access_codes 
-            WHERE expires_at < TIMEZONE('utc', NOW());
-        END;
-        $$ LANGUAGE plpgsql;
-
-        -- Step 7: Add your admin user (replace with your email)
-        INSERT INTO admin_users (email, role) 
-        VALUES ('your-email@example.com', 'admin')
-        ON CONFLICT (email) DO NOTHING;
-        */
-
-        // ===========================================
-        // SUPABASE EDGE FUNCTION FOR EMAIL (OPTIONAL)
-        // ===========================================
-        /*
-        // Create a file named 'send-admin-code' in Supabase Edge Functions
-        // with this content:
-
-        import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-        import { Resend } from 'npm:resend@2.0.0'
-
-        const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
-
-        serve(async (req) => {
-          try {
-            const { email, code } = await req.json()
-
-            const { data, error } = await resend.emails.send({
-              from: 'GK Store <admin@gkstore.com>',
-              to: [email],
-              subject: 'Your GK Store Admin Access Code',
-              html: `
-                <h2>GK Store Admin Access Code</h2>
-                <p>Your access code is: <strong>${code}</strong></p>
-                <p>This code will expire in 10 minutes.</p>
-                <p>If you didn't request this code, please ignore this email.</p>
-              `,
-            })
-
-            if (error) {
-              return new Response(JSON.stringify({ error }), {
-                headers: { 'Content-Type': 'application/json' },
-                status: 400,
-              })
+        // Handle orientation change
+        function handleOrientationChange() {
+            if (appState.currentVideoPlayer) {
+                // Adjust video sizing on orientation change
+                setTimeout(() => {
+                    if (appState.isFullscreen) {
+                        adjustVideoForFullscreen();
+                    }
+                }, 300);
             }
+        }
 
-            return new Response(JSON.stringify({ success: true }), {
-              headers: { 'Content-Type': 'application/json' },
-            })
-          } catch (error) {
-            return new Response(JSON.stringify({ error: error.message }), {
-              headers: { 'Content-Type': 'application/json' },
-              status: 500,
-            })
-          }
-        })
-        */
+        // Adjust video for fullscreen
+        function adjustVideoForFullscreen() {
+            if (!appState.currentVideoPlayer) return;
+            
+            const videoContainer = document.getElementById('main-video-container');
+            if (videoContainer && appState.isFullscreen) {
+                videoContainer.classList.add('video-fullscreen-mode');
+                appState.currentVideoPlayer.style.objectFit = 'contain';
+            }
+        }
 
-        // ===========================================
-        // LOAD INITIAL DATA
-        // ===========================================
+        // Load initial data from Supabase
         async function loadInitialData() {
             try {
                 await Promise.all([
@@ -3420,7 +3515,7 @@
                 
                 // Update user stats
                 appState.userStats.onlineUsers = Math.max(appState.userStats.onlineUsers || 0, 1);
-                if (appState.currentUser && appState.currentUser.role !== 'admin') {
+                if (appState.currentUser && appState.currentUser.email !== appState.adminCredentials.email) {
                     appState.userStats.registeredUsers = Math.max(appState.userStats.registeredUsers || 0, 1);
                 }
                 
@@ -3431,7 +3526,7 @@
                 console.error('Error loading initial data:', error);
                 showToast('error', 'Connection Error', 'Could not load data from server');
                 // Fallback to demo data
-                await initializeWithDemoData();
+                initializeWithDemoData();
             }
         }
 
@@ -3525,79 +3620,156 @@
             }
         }
 
-        // Initialize with demo data
+        // Initialize with demo data if Supabase is empty
         async function initializeWithDemoData() {
             // Check if we already have videos
             if (appState.videos.length > 0) return;
             
-            // Create demo videos
+            // Create demo video with reliable video URLs
             const demoVideos = [
                 {
-                    id: 'demo_001',
-                    title: 'Welcome to GK Store',
+                    video_id: 'demo_001',
+                    video_title: 'Welcome to GK Store',
                     description: 'Get started with premium accounts marketplace',
                     views: 150,
                     likes: 45,
                     shares: 12,
                     duration: '1:30',
-                    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                    tier: 'small',
+                    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    account_tier: 'small',
                     price: 199,
-                    createdAt: new Date().toISOString(),
-                    account: {
-                        id: 'demo_001',
-                        title: 'Demo Account',
-                        tier: 'small',
-                        price: 199,
-                        followers: 10000
-                    }
+                    sold: false,
+                    created_at: new Date().toISOString()
                 },
                 {
-                    id: 'demo_002',
-                    title: 'Premium Account Showcase',
+                    video_id: 'demo_002',
+                    video_title: 'Premium Account Showcase',
                     description: 'See our premium accounts in action',
                     views: 250,
                     likes: 85,
                     shares: 25,
                     duration: '2:15',
-                    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-                    tier: 'medium',
+                    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                    account_tier: 'medium',
                     price: 399,
-                    createdAt: new Date().toISOString(),
-                    account: {
+                    sold: false,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            // Try to save demo videos to Supabase
+            try {
+                const { data, error } = await supabase
+                    .from('videos')
+                    .insert(demoVideos)
+                    .select();
+                
+                if (error) throw error;
+                
+                // If successful, add to app state
+                if (data && data.length > 0) {
+                    appState.videos = data.map(video => ({
+                        id: video.video_id,
+                        title: video.video_title,
+                        description: video.description,
+                        views: video.views || 0,
+                        likes: video.likes || 0,
+                        shares: video.shares || 0,
+                        duration: video.duration || '1:30',
+                        url: video.video_url,
+                        tier: video.account_tier,
+                        price: video.price,
+                        createdAt: video.created_at,
+                        account: {
+                            id: video.video_id,
+                            title: video.video_title,
+                            tier: video.account_tier,
+                            price: video.price,
+                            followers: Math.floor(Math.random() * 100000) + 1000
+                        }
+                    }));
+                    
+                    appState.accounts = data.map(video => ({
+                        id: video.video_id,
+                        title: video.video_title,
+                        description: video.description,
+                        tier: video.account_tier,
+                        price: video.price,
+                        sold: video.sold || false,
+                        videoId: video.video_id,
+                        createdAt: video.created_at
+                    }));
+                }
+            } catch (error) {
+                console.error('Error saving demo data to Supabase:', error);
+                
+                // Fallback to local demo data with reliable video URLs
+                appState.videos = [
+                    {
+                        id: 'demo_001',
+                        title: 'Welcome to GK Store',
+                        description: 'Get started with premium accounts marketplace',
+                        views: 150,
+                        likes: 45,
+                        shares: 12,
+                        duration: '1:30',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        tier: 'small',
+                        price: 199,
+                        createdAt: new Date().toISOString(),
+                        account: {
+                            id: 'demo_001',
+                            title: 'Demo Account',
+                            tier: 'small',
+                            price: 199,
+                            followers: 10000
+                        }
+                    },
+                    {
                         id: 'demo_002',
-                        title: 'Premium Account',
+                        title: 'Premium Account Showcase',
+                        description: 'See our premium accounts in action',
+                        views: 250,
+                        likes: 85,
+                        shares: 25,
+                        duration: '2:15',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
                         tier: 'medium',
                         price: 399,
-                        followers: 25000
+                        createdAt: new Date().toISOString(),
+                        account: {
+                            id: 'demo_002',
+                            title: 'Premium Account',
+                            tier: 'medium',
+                            price: 399,
+                            followers: 25000
+                        }
                     }
-                }
-            ];
-            
-            appState.videos = demoVideos;
-            
-            appState.accounts = [
-                {
-                    id: 'demo_001',
-                    title: 'Demo Account',
-                    description: 'Get started with premium accounts',
-                    tier: 'small',
-                    price: 199,
-                    sold: false,
-                    videoId: 'demo_001',
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: 'demo_002',
-                    title: 'Premium Account',
-                    description: 'Advanced features and capabilities',
-                    tier: 'medium',
-                    price: 399,
-                    sold: false,
-                    videoId: 'demo_002',
-                    createdAt: new Date().toISOString()
-                }
-            ];
+                ];
+                
+                appState.accounts = [
+                    {
+                        id: 'demo_001',
+                        title: 'Demo Account',
+                        description: 'Get started with premium accounts',
+                        tier: 'small',
+                        price: 199,
+                        sold: false,
+                        videoId: 'demo_001',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 'demo_002',
+                        title: 'Premium Account',
+                        description: 'Advanced features and capabilities',
+                        tier: 'medium',
+                        price: 399,
+                        sold: false,
+                        videoId: 'demo_002',
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+            }
             
             appState.notifications = [{
                 id: 'notif_001',
@@ -3615,142 +3787,151 @@
             };
         }
 
-        // ===========================================
-        // PAGE MANAGEMENT
-        // ===========================================
-        async function showPage(page) {
-            const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
-            if (protectedPages.includes(page) && !appState.isLoggedIn) {
-                page = 'auth';
-            }
+        // Setup PWA Install
+        function setupPWAInstall() {
+            isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                           window.navigator.standalone === true;
             
-            if (page === 'auth' && appState.isLoggedIn) {
-                page = 'home';
-            }
-            
-            // Special handling for admin page
-            if (page === 'admin' && !appState.isAdminLoggedIn) {
-                showAdminLogin();
+            if (isAppInstalled) {
+                document.body.classList.add('pwa-installed');
+                document.getElementById('pwa-install-btn')?.classList.add('hidden');
                 return;
             }
             
-            const pages = document.querySelectorAll('[id$="-page"]');
-            pages.forEach(p => p.classList.add('hidden'));
-            
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => item.classList.remove('active'));
-            
-            const pageElement = document.getElementById(`${page}-page`);
-            if (pageElement) {
-                pageElement.classList.remove('hidden');
-                appState.currentPage = page;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
                 
-                window.history.pushState(null, null, `#${page}`);
-                
-                const activeNavItem = document.querySelector(`.nav-item[href="#${page}"]`);
-                if (activeNavItem) {
-                    activeNavItem.classList.add('active');
-                }
-                
-                switch(page) {
-                    case 'auth':
-                        showLoginForm();
-                        break;
-                    case 'home':
-                        await loadHomeContent();
-                        break;
-                    case 'accounts':
-                        await loadAccountsContent();
-                        break;
-                    case 'admin':
-                        await loadAdminContent();
-                        break;
-                    case 'notifications':
-                        await loadNotificationsContent();
-                        break;
-                }
-            }
-        }
-
-        // Load admin page content
-        async function loadAdminContent() {
-            const adminDashboard = document.getElementById('admin-dashboard');
-            const adminLoginRequired = document.getElementById('admin-login-required');
-            
-            if (appState.isAdminLoggedIn) {
-                if (adminDashboard) adminDashboard.classList.remove('hidden');
-                if (adminLoginRequired) adminLoginRequired.classList.add('hidden');
-                updateAdminStats();
-            } else {
-                if (adminDashboard) adminDashboard.classList.add('hidden');
-                if (adminLoginRequired) adminLoginRequired.classList.remove('hidden');
-            }
-        }
-
-        // ===========================================
-        // VIDEO PLAYER FUNCTIONS
-        // ===========================================
-        function initializeVideoOptimization() {
-            // Set up visibility change for video pause/play
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && appState.currentVideoPlayer) {
-                    appState.isVideoPlaying = !appState.currentVideoPlayer.paused;
-                    if (!appState.currentVideoPlayer.paused) {
-                        appState.currentVideoPlayer.pause();
+                setTimeout(() => {
+                    const installBtn = document.getElementById('pwa-install-btn');
+                    if (installBtn) {
+                        installBtn.classList.remove('hidden');
+                        installBtn.addEventListener('click', showPWAInstallModal);
                     }
-                } else if (!document.hidden && appState.isVideoPlaying && appState.currentVideoPlayer) {
-                    appState.currentVideoPlayer.play().catch(e => console.log('Auto-play prevented'));
-                }
+                }, 3000);
             });
             
-            // Handle fullscreen changes
-            document.addEventListener('fullscreenchange', handleFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-        }
-
-        function handleFullscreenChange() {
-            const isFullscreen = document.fullscreenElement || 
-                                document.webkitFullscreenElement || 
-                                document.mozFullScreenElement || 
-                                document.msFullscreenElement;
-            
-            appState.isFullscreen = !!isFullscreen;
-            
-            if (!isFullscreen && appState.isMobile) {
-                const videoContainer = document.getElementById('main-video-container');
-                if (videoContainer) {
-                    videoContainer.classList.remove('video-fullscreen-mode');
+            window.addEventListener('appinstalled', () => {
+                isAppInstalled = true;
+                document.body.classList.add('pwa-installed');
+                const installBtn = document.getElementById('pwa-install-btn');
+                if (installBtn) {
+                    installBtn.classList.add('hidden');
                 }
-            }
-        }
-
-        function handleOrientationChange() {
-            if (appState.currentVideoPlayer) {
-                setTimeout(() => {
-                    if (appState.isFullscreen) {
-                        adjustVideoForFullscreen();
-                    }
-                }, 300);
-            }
-        }
-
-        function adjustVideoForFullscreen() {
-            if (!appState.currentVideoPlayer) return;
+                closeModal('pwa-install-modal');
+                showToast('success', 'App Installed', 'GK Store has been installed successfully!');
+            });
             
-            const videoContainer = document.getElementById('main-video-container');
-            if (videoContainer && appState.isFullscreen) {
-                videoContainer.classList.add('video-fullscreen-mode');
-                appState.currentVideoPlayer.style.objectFit = 'contain';
+            const installConfirmBtn = document.getElementById('pwa-install-confirm');
+            if (installConfirmBtn) {
+                installConfirmBtn.addEventListener('click', installPWA);
             }
         }
 
-        // ===========================================
-        // EVENT LISTENERS SETUP
-        // ===========================================
+        // Show PWA install modal
+        function showPWAInstallModal() {
+            if (isAppInstalled) {
+                showToast('info', 'Already Installed', 'App is already installed on your device');
+                return;
+            }
+            
+            if (!deferredPrompt) {
+                showToast('info', 'Install Available', 'Install option will appear soon. Please wait.');
+                return;
+            }
+            
+            showModal('pwa-install-modal');
+        }
+
+        // Install PWA
+        async function installPWA() {
+            if (!deferredPrompt) {
+                showToast('error', 'Install Failed', 'Installation is not available at the moment');
+                return;
+            }
+            
+            try {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                
+                deferredPrompt = null;
+            } catch (error) {
+                console.error('Install error:', error);
+                showToast('error', 'Install Failed', 'Could not install the app. Please try again.');
+            }
+        }
+
+        // Close welcome modal and show login
+        function closeWelcomeModal() {
+            document.getElementById('welcome-modal').classList.add('hidden');
+            showPage('auth');
+        }
+
+        // Load user preferences
+        function loadPreferences() {
+            const savedLanguage = localStorage.getItem('appLanguage') || 'en';
+            const savedTheme = localStorage.getItem('appTheme') || 'dark';
+            
+            appState.language = savedLanguage;
+            appState.theme = savedTheme;
+            
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        // Update admin stats
+        function updateAdminStats() {
+            const adminVideoCount = document.getElementById('admin-video-count');
+            const adminRegisteredUsers = document.getElementById('admin-registered-users');
+            const adminOnlineUsers = document.getElementById('admin-online-users');
+            const adminSoldCount = document.getElementById('admin-sold-count');
+            
+            if (adminVideoCount) adminVideoCount.textContent = appState.videos.length;
+            if (adminRegisteredUsers) adminRegisteredUsers.textContent = appState.userStats.registeredUsers || 0;
+            if (adminOnlineUsers) adminOnlineUsers.textContent = appState.userStats.onlineUsers || 1;
+            
+            const soldAccounts = appState.accounts.filter(a => a.sold).length;
+            if (adminSoldCount) adminSoldCount.textContent = soldAccounts;
+            
+            const activityContainer = document.getElementById('admin-recent-activity');
+            if (activityContainer) {
+                activityContainer.innerHTML = '';
+                
+                // Show recent uploads
+                const recentVideos = [...appState.videos]
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .slice(0, 3);
+                
+                recentVideos.forEach(video => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
+                    activityItem.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                                <i class="fas fa-video text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">${video.title}</p>
+                                <p class="text-xs text-zinc-400">${video.tier} • $${video.price}</p>
+                            </div>
+                        </div>
+                        <span class="badge badge-primary text-xs">
+                            ${video.views} views
+                        </span>
+                    `;
+                    
+                    activityContainer.appendChild(activityItem);
+                });
+            }
+        }
+
+        // Set up event listeners
         function setupEventListeners() {
-            // Keyboard navigation for videos
             document.addEventListener('keydown', (e) => {
                 if (appState.currentPage === 'home') {
                     switch(e.key) {
@@ -3770,7 +3951,6 @@
                 }
             });
 
-            // Touch navigation for videos
             let touchStartY = 0;
             const videoSection = document.getElementById('main-video-container');
             
@@ -3793,7 +3973,6 @@
                 });
             }
 
-            // Infinite scroll
             window.addEventListener('scroll', () => {
                 if (appState.currentPage === 'home') {
                     const scrollTop = window.pageYOffset;
@@ -3840,112 +4019,1789 @@
                 showToast('error', 'Offline', 'Connection lost. Some features may not work.');
             });
             
-            // Video click to play/pause
+            // Video optimization events
             document.addEventListener('click', (e) => {
+                // Handle video play/pause on click
                 if (e.target.classList.contains('video-optimized') || 
                     e.target.closest('.video-container')) {
                     toggleVideoPlayback();
                 }
             });
             
-            // Admin form listeners
-            document.getElementById('admin-login-form')?.addEventListener('submit', handleAdminEmailSubmit);
-            document.getElementById('admin-verify-form')?.addEventListener('submit', handleAccessCodeVerify);
-        }
-
-        // ===========================================
-        // PWA INSTALLATION
-        // ===========================================
-        function setupPWAInstall() {
-            isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
-                           window.navigator.standalone === true;
-            
-            if (isAppInstalled) {
-                document.body.classList.add('pwa-installed');
-                document.getElementById('pwa-install-btn')?.classList.add('hidden');
-                return;
-            }
-            
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                
-                setTimeout(() => {
-                    const installBtn = document.getElementById('pwa-install-btn');
-                    if (installBtn) {
-                        installBtn.classList.remove('hidden');
-                        installBtn.addEventListener('click', showPWAInstallModal);
-                    }
-                }, 3000);
-            });
-            
-            window.addEventListener('appinstalled', () => {
-                isAppInstalled = true;
-                document.body.classList.add('pwa-installed');
-                const installBtn = document.getElementById('pwa-install-btn');
-                if (installBtn) {
-                    installBtn.classList.add('hidden');
+            // Verification code input listeners
+            document.addEventListener('input', (e) => {
+                if (e.target.classList.contains('verification-code-input')) {
+                    handleVerificationCodeInput(e.target);
                 }
-                closeModal('pwa-install-modal');
-                showToast('success', 'App Installed', 'GK Store has been installed successfully!');
+            });
+        }
+
+        // Handle verification code input
+        function handleVerificationCodeInput(input) {
+            const index = parseInt(input.dataset.index);
+            const inputs = document.querySelectorAll('.verification-code-input');
+            
+            // Move to next input if current is filled
+            if (input.value.length === 1 && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+            
+            // Move to previous input if backspace is pressed on empty input
+            if (input.value.length === 0 && index > 0 && event.inputType === 'deleteContentBackward') {
+                inputs[index - 1].focus();
+            }
+            
+            // Update input styling
+            inputs.forEach(inp => {
+                if (inp.value.length > 0) {
+                    inp.classList.add('filled');
+                } else {
+                    inp.classList.remove('filled');
+                }
+            });
+        }
+
+        // Show page
+        async function showPage(page) {
+            const protectedPages = ['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'];
+            if (protectedPages.includes(page) && !appState.isLoggedIn) {
+                page = 'auth';
+            }
+            
+            if (page === 'auth' && appState.isLoggedIn) {
+                page = 'home';
+            }
+            
+            const pages = document.querySelectorAll('[id$="-page"]');
+            pages.forEach(p => p.classList.add('hidden'));
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            
+            const pageElement = document.getElementById(`${page}-page`);
+            if (pageElement) {
+                pageElement.classList.remove('hidden');
+                appState.currentPage = page;
+                
+                window.history.pushState(null, null, `#${page}`);
+                
+                const activeNavItem = document.querySelector(`.nav-item[href="#${page}"]`);
+                if (activeNavItem) {
+                    activeNavItem.classList.add('active');
+                }
+                
+                switch(page) {
+                    case 'auth':
+                        showLoginForm();
+                        break;
+                    case 'home':
+                        await loadHomeContent();
+                        break;
+                    case 'accounts':
+                        await loadAccountsContent();
+                        break;
+                    case 'admin':
+                        await loadAdminContent();
+                        break;
+                    case 'notifications':
+                        await loadNotificationsContent();
+                        break;
+                }
+            }
+        }
+
+        // Load home page content
+        async function loadHomeContent() {
+            try {
+                // Refresh data from Supabase
+                await loadVideosFromSupabase();
+                
+                if (appState.videos.length > 0) {
+                    loadVideo(appState.currentVideoIndex);
+                    
+                    // Load video grid only on desktop
+                    if (!appState.isMobile) {
+                        loadVideoGrid();
+                    }
+                } else {
+                    const videoPlaceholder = document.getElementById('video-placeholder');
+                    if (videoPlaceholder) {
+                        videoPlaceholder.classList.remove('hidden');
+                        videoPlaceholder.innerHTML = `
+                            <div class="text-center">
+                                <i class="fas fa-video text-4xl text-zinc-600 mb-4"></i>
+                                <h3 class="text-xl font-semibold mb-2">No Videos Available</h3>
+                                <p class="text-zinc-400">Upload videos from the admin section</p>
+                                ${appState.isAdminLoggedIn ? `
+                                    <button class="btn btn-primary mt-4" onclick="showUploadVideo()">
+                                        <i class="fas fa-upload"></i> Upload First Video
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error loading home content:', error);
+                showToast('error', 'Load Failed', 'Could not load videos');
+            }
+        }
+
+        // Optimized video loading with full-screen support
+        function loadVideo(index) {
+            const video = appState.videos[index];
+            if (!video) return;
+            
+            const videoSection = document.getElementById('main-video-container');
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            
+            if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
+            
+            // Clear previous content
+            videoSection.innerHTML = '';
+            
+            // Create video container
+            const videoContainer = document.createElement('div');
+            videoContainer.className = 'video-container';
+            videoContainer.style.position = 'relative';
+            videoContainer.style.width = '100%';
+            videoContainer.style.height = '100%';
+            
+            // Create loading indicator
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'video-loading';
+            loadingIndicator.innerHTML = `
+                <div class="w-12 h-12 border-4 border-transparent border-t-pink-500 border-r-violet-500 rounded-full animate-spin"></div>
+            `;
+            
+            // Create error display
+            const errorDisplay = document.createElement('div');
+            errorDisplay.className = 'video-error hidden';
+            errorDisplay.innerHTML = `
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p>Video failed to load</p>
+                <button class="btn btn-sm btn-primary mt-2" onclick="retryVideoLoad(${index})">Retry</button>
+            `;
+            
+            // Create video element with optimized settings
+            const videoElement = document.createElement('video');
+            videoElement.className = 'video-optimized';
+            videoElement.setAttribute('playsinline', '');
+            videoElement.setAttribute('webkit-playsinline', '');
+            videoElement.setAttribute('preload', 'auto');
+            videoElement.setAttribute('muted', '');
+            videoElement.style.width = '100%';
+            videoElement.style.height = '100%';
+            videoElement.style.objectFit = appState.isMobile ? 'contain' : 'cover';
+            videoElement.style.background = '#000';
+            
+            // Store reference to current video player
+            appState.currentVideoPlayer = videoElement;
+            
+            // Video event listeners
+            videoElement.addEventListener('loadeddata', () => {
+                loadingIndicator.classList.add('hidden');
+                errorDisplay.classList.add('hidden');
+                // Try to autoplay
+                videoElement.play().catch(e => {
+                    console.log('Autoplay prevented:', e);
+                    // Show play button overlay
+                    showPlayButtonOverlay();
+                });
             });
             
-            const installConfirmBtn = document.getElementById('pwa-install-confirm');
-            if (installConfirmBtn) {
-                installConfirmBtn.addEventListener('click', installPWA);
+            videoElement.addEventListener('error', (e) => {
+                console.error('Video error:', e);
+                loadingIndicator.classList.add('hidden');
+                errorDisplay.classList.remove('hidden');
+                showToast('error', 'Video Error', 'Could not load video. Trying fallback...');
+                // Try fallback video
+                loadFallbackVideo(videoElement, video);
+            });
+            
+            videoElement.addEventListener('waiting', () => {
+                loadingIndicator.classList.remove('hidden');
+            });
+            
+            videoElement.addEventListener('playing', () => {
+                loadingIndicator.classList.add('hidden');
+                errorDisplay.classList.add('hidden');
+            });
+            
+            // Create video source
+            const source = document.createElement('source');
+            
+            // Try multiple video sources for better compatibility
+            const videoSources = [
+                video.url,
+                video.url.replace('http://', 'https://'),
+                video.url.replace('.mp4', '.m3u8'),
+                video.url.replace('.mov', '.mp4')
+            ].filter(url => url && url !== video.url);
+            
+            // Add primary source
+            source.src = video.url;
+            source.type = getVideoMimeType(video.url);
+            videoElement.appendChild(source);
+            
+            // Add secondary sources for fallback
+            videoSources.forEach(sourceUrl => {
+                const altSource = document.createElement('source');
+                altSource.src = sourceUrl;
+                altSource.type = getVideoMimeType(sourceUrl);
+                videoElement.appendChild(altSource);
+            });
+            
+            // Fallback message
+            const fallbackText = document.createTextNode('Your browser does not support the video tag.');
+            videoElement.appendChild(fallbackText);
+            
+            // Build video container
+            videoContainer.appendChild(loadingIndicator);
+            videoContainer.appendChild(errorDisplay);
+            videoContainer.appendChild(videoElement);
+            
+            // Create overlay with actions
+            const overlay = createVideoOverlay(video);
+            videoContainer.appendChild(overlay);
+            
+            // Add fullscreen button for mobile
+            if (appState.isMobile) {
+                const fullscreenBtn = document.createElement('button');
+                fullscreenBtn.className = 'fullscreen-toggle';
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                fullscreenBtn.onclick = toggleFullscreen;
+                videoContainer.appendChild(fullscreenBtn);
+            }
+            
+            // Add to section
+            videoSection.appendChild(videoContainer);
+            
+            // Set current account
+            appState.currentAccount = video.account;
+            
+            // Store video player reference
+            appState.videoPlayers.set(index, videoElement);
+            
+            // Preload next video for smoother navigation
+            if (index < appState.videos.length - 1) {
+                preloadVideo(index + 1);
             }
         }
 
-        function showPWAInstallModal() {
-            if (isAppInstalled) {
-                showToast('info', 'Already Installed', 'App is already installed on your device');
-                return;
-            }
-            
-            if (!deferredPrompt) {
-                showToast('info', 'Install Available', 'Install option will appear soon. Please wait.');
-                return;
-            }
-            
-            showModal('pwa-install-modal');
+        // Helper function to get video MIME type
+        function getVideoMimeType(url) {
+            if (url.includes('.mp4')) return 'video/mp4';
+            if (url.includes('.webm')) return 'video/webm';
+            if (url.includes('.ogg') || url.includes('.ogv')) return 'video/ogg';
+            if (url.includes('.m3u8')) return 'application/x-mpegURL';
+            return 'video/mp4';
         }
 
-        async function installPWA() {
-            if (!deferredPrompt) {
-                showToast('error', 'Install Failed', 'Installation is not available at the moment');
+        // Create video overlay
+        function createVideoOverlay(video) {
+            const overlay = document.createElement('div');
+            overlay.className = 'video-overlay';
+            overlay.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="video-title">${video.title}</h2>
+                        <p class="video-description">${video.description}</p>
+                    </div>
+                </div>
+                
+                <div class="video-top-actions">
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="bookAccount()">
+                            <i class="fas fa-bookmark text-white"></i>
+                        </button>
+                        <div class="action-label">Book</div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="buyNow()">
+                            <i class="fas fa-shopping-bag text-white"></i>
+                        </button>
+                        <div class="action-label">Buy</div>
+                    </div>
+                </div>
+                
+                <div class="video-share-action">
+                    <div class="flex flex-col items-center">
+                        <button class="action-button" onclick="shareVideo()">
+                            <i class="fas fa-share text-white"></i>
+                        </button>
+                        <div class="action-label">Share</div>
+                    </div>
+                </div>
+                
+                <div class="video-controls">
+                    <div class="flex justify-between items-center">
+                        <div class="video-stats">
+                            <span>${video.views.toLocaleString()} views</span>
+                            <span>•</span>
+                            <span>${video.likes.toLocaleString()} likes</span>
+                            <span>•</span>
+                            <span>${video.duration}</span>
+                        </div>
+                        <button class="action-button" onclick="toggleVideoPlayback()" id="play-pause-btn">
+                            <i class="fas fa-play text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return overlay;
+        }
+
+        // Show play button overlay
+        function showPlayButtonOverlay() {
+            const playButton = document.createElement('div');
+            playButton.className = 'absolute inset-0 flex items-center justify-center z-50';
+            playButton.innerHTML = `
+                <button class="w-20 h-20 rounded-full bg-primary bg-opacity-70 flex items-center justify-center hover:bg-opacity-90 transition-all"
+                        onclick="playCurrentVideo()">
+                    <i class="fas fa-play text-white text-3xl"></i>
+                </button>
+            `;
+            
+            const videoContainer = document.querySelector('.video-container');
+            if (videoContainer) {
+                const existingOverlay = videoContainer.querySelector('.play-button-overlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                }
+                playButton.classList.add('play-button-overlay');
+                videoContainer.appendChild(playButton);
+            }
+        }
+
+        // Play current video
+        function playCurrentVideo() {
+            if (appState.currentVideoPlayer) {
+                appState.currentVideoPlayer.play().then(() => {
+                    // Remove play button overlay
+                    const playButton = document.querySelector('.play-button-overlay');
+                    if (playButton) {
+                        playButton.remove();
+                    }
+                }).catch(e => {
+                    console.log('Play failed:', e);
+                    showToast('info', 'Tap to Play', 'Tap the video to start playback');
+                });
+            }
+        }
+
+        // Load fallback video
+        function loadFallbackVideo(videoElement, originalVideo) {
+            // Try reliable fallback videos
+            const fallbackVideos = [
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+            ];
+            
+            // Remove current sources
+            while (videoElement.firstChild) {
+                videoElement.removeChild(videoElement.firstChild);
+            }
+            
+            // Add fallback sources
+            fallbackVideos.forEach(videoUrl => {
+                const source = document.createElement('source');
+                source.src = videoUrl;
+                source.type = 'video/mp4';
+                videoElement.appendChild(source);
+            });
+            
+            // Reload video
+            videoElement.load();
+            
+            // Update video info to indicate fallback
+            const titleElement = document.querySelector('.video-title');
+            if (titleElement) {
+                titleElement.textContent = originalVideo.title + ' (Fallback Video)';
+            }
+        }
+
+        // Preload video for smoother navigation
+        function preloadVideo(index) {
+            if (index >= appState.videos.length) return;
+            
+            const video = appState.videos[index];
+            if (!video || appState.videoPlayers.has(index)) return;
+            
+            // Create hidden video element for preloading
+            const preloadVideo = document.createElement('video');
+            preloadVideo.style.display = 'none';
+            preloadVideo.preload = 'auto';
+            preloadVideo.muted = true;
+            
+            const source = document.createElement('source');
+            source.src = video.url;
+            source.type = getVideoMimeType(video.url);
+            preloadVideo.appendChild(source);
+            
+            document.body.appendChild(preloadVideo);
+            
+            // Store reference
+            appState.videoPlayers.set(index, preloadVideo);
+            
+            // Remove after some time to save memory
+            setTimeout(() => {
+                if (preloadVideo.parentNode) {
+                    preloadVideo.parentNode.removeChild(preloadVideo);
+                }
+            }, 30000); // Remove after 30 seconds
+        }
+
+        // Retry video load
+        function retryVideoLoad(index) {
+            // Clear current video player
+            if (appState.currentVideoPlayer) {
+                appState.currentVideoPlayer.pause();
+                appState.currentVideoPlayer = null;
+            }
+            
+            // Reload video
+            loadVideo(index);
+        }
+
+        // Navigate videos
+        function navigateVideo(direction) {
+            if (direction === 'prev' && appState.currentVideoIndex > 0) {
+                appState.currentVideoIndex--;
+                loadVideo(appState.currentVideoIndex);
+            } else if (direction === 'next' && appState.currentVideoIndex < appState.videos.length - 1) {
+                appState.currentVideoIndex++;
+                loadVideo(appState.currentVideoIndex);
+            }
+        }
+
+        // Toggle video playback
+        function toggleVideoPlayback() {
+            if (appState.currentVideoPlayer) {
+                if (appState.currentVideoPlayer.paused) {
+                    appState.currentVideoPlayer.play().catch(e => {
+                        console.log('Play prevented:', e);
+                        showPlayButtonOverlay();
+                    });
+                } else {
+                    appState.currentVideoPlayer.pause();
+                }
+                
+                // Update play/pause button
+                const playPauseBtn = document.getElementById('play-pause-btn');
+                if (playPauseBtn) {
+                    const icon = playPauseBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = appState.currentVideoPlayer.paused ? 
+                            'fas fa-play text-white' : 'fas fa-pause text-white';
+                    }
+                }
+            }
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            const videoContainer = document.getElementById('main-video-container');
+            if (!videoContainer) return;
+            
+            if (!appState.isFullscreen) {
+                // Enter fullscreen
+                if (videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen();
+                } else if (videoContainer.webkitRequestFullscreen) {
+                    videoContainer.webkitRequestFullscreen();
+                } else if (videoContainer.mozRequestFullScreen) {
+                    videoContainer.mozRequestFullScreen();
+                } else if (videoContainer.msRequestFullscreen) {
+                    videoContainer.msRequestFullscreen();
+                }
+                
+                // Adjust video for fullscreen
+                videoContainer.classList.add('video-fullscreen-mode');
+                if (appState.currentVideoPlayer) {
+                    appState.currentVideoPlayer.style.objectFit = 'contain';
+                }
+                
+                appState.isFullscreen = true;
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                
+                videoContainer.classList.remove('video-fullscreen-mode');
+                if (appState.currentVideoPlayer) {
+                    appState.currentVideoPlayer.style.objectFit = appState.isMobile ? 'contain' : 'cover';
+                }
+                
+                appState.isFullscreen = false;
+            }
+        }
+
+        // Load video grid (only for desktop)
+        function loadVideoGrid() {
+            const grid = document.getElementById('video-grid-desktop');
+            if (!grid || appState.isMobile) return;
+            
+            grid.innerHTML = '';
+            
+            appState.videos.forEach((video, index) => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                videoItem.innerHTML = `
+                    <div class="video-thumbnail">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="video-item-overlay">
+                        <div class="video-item-title">${video.title}</div>
+                        <div class="video-item-stats">
+                            <span><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
+                            <span><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
+                            <span>${video.duration}</span>
+                        </div>
+                    </div>
+                `;
+                
+                videoItem.addEventListener('click', () => {
+                    appState.currentVideoIndex = index;
+                    loadVideo(index);
+                });
+                
+                grid.appendChild(videoItem);
+            });
+        }
+
+        // Load more videos
+        function loadMoreVideos() {
+            showToast('info', 'No More Videos', 'All videos are loaded');
+        }
+
+        // Load accounts page content
+        async function loadAccountsContent() {
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            // Refresh accounts from Supabase
+            try {
+                await loadAccountsFromSupabase();
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+            }
+            
+            // Show accounts based on uploaded videos
+            if (appState.accounts.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-3 text-center py-12">
+                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Accounts Available</h3>
+                        <p class="text-zinc-400 mb-4">Upload videos from the admin section to see accounts here.</p>
+                        ${appState.isAdminLoggedIn ? `
+                            <button class="btn btn-primary" onclick="showUploadVideo()">
+                                <i class="fas fa-upload"></i> Upload First Video
+                            </button>
+                        ` : `
+                            <button class="btn btn-primary" onclick="showPage('home')">
+                                <i class="fas fa-video"></i> Browse Videos
+                            </button>
+                        `}
+                    </div>
+                `;
                 return;
             }
+            
+            appState.accounts.forEach(account => {
+                const accountCard = document.createElement('div');
+                accountCard.className = 'account-card';
+                
+                // Determine icon class based on tier
+                let iconClass = 'account-icon ';
+                let iconText = '';
+                if (account.tier === 'small') {
+                    iconClass += 'small';
+                    iconText = '<i class="fas fa-user"></i>';
+                } else if (account.tier === 'medium') {
+                    iconClass += 'medium';
+                    iconText = '<i class="fas fa-user-tie"></i>';
+                } else {
+                    iconClass += 'big';
+                    iconText = '<i class="fas fa-crown"></i>';
+                }
+                
+                accountCard.innerHTML = `
+                    <div class="${iconClass}">
+                        ${iconText}
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold">${account.title}</h3>
+                        <span class="badge ${account.tier === 'big' ? 'badge-primary' : account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
+                            ${account.tier}
+                        </span>
+                    </div>
+                    <p class="text-zinc-400 text-sm mb-4">${account.description || 'No description available'}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold gradient-text">$${account.price ? account.price.toLocaleString() : '0'}</span>
+                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
+                                onclick="viewAccount('${account.id}')" 
+                                ${account.sold ? 'disabled' : ''}>
+                            ${account.sold ? 'Sold' : 'View Details'}
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(accountCard);
+            });
+        }
+
+        // Filter accounts by tier
+        function filterAccounts(tier) {
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase() === tier.toLowerCase()) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            let filteredAccounts = appState.accounts;
+            if (tier !== 'all') {
+                filteredAccounts = appState.accounts.filter(account => account.tier === tier);
+            }
+            
+            if (filteredAccounts.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-3 text-center py-12">
+                        <i class="fas fa-box-open text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No ${tier} Tier Accounts</h3>
+                        <p class="text-zinc-400 mb-4">No accounts available in the ${tier} tier.</p>
+                        <button class="btn btn-primary" onclick="filterAccounts('all')">
+                            <i class="fas fa-list"></i> View All Accounts
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredAccounts.forEach(account => {
+                const accountCard = document.createElement('div');
+                accountCard.className = 'account-card';
+                
+                let iconClass = 'account-icon ';
+                let iconText = '';
+                if (account.tier === 'small') {
+                    iconClass += 'small';
+                    iconText = '<i class="fas fa-user"></i>';
+                } else if (account.tier === 'medium') {
+                    iconClass += 'medium';
+                    iconText = '<i class="fas fa-user-tie"></i>';
+                } else {
+                    iconClass += 'big';
+                    iconText = '<i class="fas fa-crown"></i>';
+                }
+                
+                accountCard.innerHTML = `
+                    <div class="${iconClass}">
+                        ${iconText}
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold">${account.title}</h3>
+                        <span class="badge ${account.tier === 'big' ? 'badge-primary' : account.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">
+                            ${account.tier}
+                        </span>
+                    </div>
+                    <p class="text-zinc-400 text-sm mb-4">${account.description || 'No description available'}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold gradient-text">$${account.price ? account.price.toLocaleString() : '0'}</span>
+                        <button class="btn btn-sm ${account.sold ? 'btn-secondary' : 'btn-primary'}" 
+                                onclick="viewAccount('${account.id}')" 
+                                ${account.sold ? 'disabled' : ''}>
+                            ${account.sold ? 'Sold' : 'View Details'}
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(accountCard);
+            });
+            
+            showToast('info', 'Filter Applied', `${tier} accounts`);
+        }
+
+        // Load admin page content
+        async function loadAdminContent() {
+            if (!appState.isAdminLoggedIn) {
+                const adminDashboard = document.getElementById('admin-dashboard');
+                if (adminDashboard) {
+                    adminDashboard.classList.add('hidden');
+                }
+            } else {
+                const adminDashboard = document.getElementById('admin-dashboard');
+                if (adminDashboard) {
+                    adminDashboard.classList.remove('hidden');
+                }
+                updateAdminStats();
+                update2FAStatus();
+                updateAuthLogsDisplay();
+                document.getElementById('last-admin-login').textContent = new Date().toLocaleString();
+            }
+        }
+
+        // View account details
+        function viewAccount(id) {
+            const account = appState.accounts.find(a => a.id === id);
+            if (account) {
+                appState.currentAccount = account;
+                showModal('book-modal');
+                
+                document.getElementById('book-account-name').textContent = account.title;
+                document.getElementById('book-account-tier').textContent = account.tier;
+                document.getElementById('book-account-price').textContent = `$${account.price ? account.price.toLocaleString() : '0'}`;
+            }
+        }
+
+        // Admin login with 2FA
+        async function adminLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            
+            // Check IP whitelist
+            if (!isIPWhitelisted(appState.currentIP)) {
+                logAuthAttempt('admin', false, 'IP not whitelisted');
+                showToast('error', 'Access Denied', 'Your IP address is not authorized to access admin panel');
+                return;
+            }
+            
+            // Verify credentials
+            if (email === appState.adminCredentials.email && password === appState.adminCredentials.password) {
+                logAuthAttempt('admin', true, 'Credentials verified');
+                
+                // Check if 2FA is enabled
+                if (appState.twoFactorAuth.enabled) {
+                    // Store temp credentials and require 2FA
+                    appState.currentVerification.tempAdminCredentials = { email, password };
+                    appState.currentVerification.expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+                    
+                    // Show 2FA verification modal
+                    show2FAVerificationModal();
+                } else {
+                    // No 2FA required, login directly
+                    completeAdminLogin(email);
+                }
+            } else {
+                logAuthAttempt('admin', false, 'Invalid credentials');
+                showToast('error', 'Admin Login', 'Invalid credentials. Use admin@gkstore.com / admin123');
+            }
+        }
+
+        // Show 2FA verification modal
+        function show2FAVerificationModal() {
+            const methodContainer = document.getElementById('verification-method-container');
+            methodContainer.innerHTML = '';
+            
+            // Show available verification methods
+            if (appState.twoFactorAuth.methods.email) {
+                const emailMethod = document.createElement('div');
+                emailMethod.className = 'verification-method active';
+                emailMethod.onclick = () => selectVerificationMethod('email');
+                emailMethod.innerHTML = `
+                    <div class="verification-method-icon email">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-medium">Email Verification</h4>
+                        <p class="text-sm text-zinc-400">Send code to admin email</p>
+                    </div>
+                    <i class="fas fa-check text-primary"></i>
+                `;
+                methodContainer.appendChild(emailMethod);
+                selectVerificationMethod('email');
+            }
+            
+            if (appState.twoFactorAuth.methods.phone) {
+                const phoneMethod = document.createElement('div');
+                phoneMethod.className = 'verification-method';
+                phoneMethod.onclick = () => selectVerificationMethod('phone');
+                phoneMethod.innerHTML = `
+                    <div class="verification-method-icon phone">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-medium">SMS Verification</h4>
+                        <p class="text-sm text-zinc-400">Send code to admin phone</p>
+                    </div>
+                    <i class="fas fa-check text-primary hidden"></i>
+                `;
+                methodContainer.appendChild(phoneMethod);
+            }
+            
+            if (appState.twoFactorAuth.methods.googleAuth) {
+                const googleMethod = document.createElement('div');
+                googleMethod.className = 'verification-method';
+                googleMethod.onclick = () => selectVerificationMethod('google');
+                googleMethod.innerHTML = `
+                    <div class="verification-method-icon google">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-medium">Google Authenticator</h4>
+                        <p class="text-sm text-zinc-400">Use 6-digit code from app</p>
+                    </div>
+                    <i class="fas fa-check text-primary hidden"></i>
+                `;
+                methodContainer.appendChild(googleMethod);
+            }
+            
+            showModal('2fa-verification-modal');
+        }
+
+        // Select verification method
+        function selectVerificationMethod(method) {
+            appState.currentVerification.method = method;
+            
+            // Update UI
+            document.querySelectorAll('.verification-method').forEach(m => {
+                m.classList.remove('active');
+                m.querySelector('.fa-check').classList.add('hidden');
+            });
+            
+            const selectedMethod = document.querySelector(`.verification-method[onclick*="${method}"]`);
+            if (selectedMethod) {
+                selectedMethod.classList.add('active');
+                selectedMethod.querySelector('.fa-check').classList.remove('hidden');
+            }
+            
+            // Show verification code input
+            document.getElementById('verification-code-container').classList.remove('hidden');
+            
+            // Clear previous inputs
+            document.querySelectorAll('.verification-code-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+            
+            // Focus first input
+            document.querySelector('.verification-code-input').focus();
+            
+            // Generate and send verification code
+            sendVerificationCode(method);
+        }
+
+        // Send verification code
+        async function sendVerificationCode(method) {
+            // Generate 6-digit code
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            appState.currentVerification.code = code;
+            
+            // Start timer (5 minutes)
+            startVerificationTimer();
+            
+            // In a real application, you would send the code via email/SMS
+            // For demo purposes, we'll show it in a toast
+            showToast('info', 'Verification Code', `Your ${method} verification code is: ${code} (This would be sent via ${method} in production)`);
+            
+            // Simulate sending the code
+            setTimeout(() => {
+                // Code would be sent to email/SMS in production
+                console.log(`Verification code ${code} sent via ${method}`);
+            }, 1000);
+        }
+
+        // Start verification timer
+        function startVerificationTimer() {
+            let timeLeft = 5 * 60; // 5 minutes in seconds
+            const timerElement = document.getElementById('verification-timer');
+            
+            const timerInterval = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerElement.textContent = 'Code expired';
+                    timerElement.classList.add('expired');
+                    appState.currentVerification.code = null;
+                    return;
+                }
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerElement.textContent = `Code expires in ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                timerElement.classList.remove('expired');
+                timeLeft--;
+            }, 1000);
+        }
+
+        // Resend verification code
+        function resendVerificationCode() {
+            if (appState.currentVerification.method) {
+                sendVerificationCode(appState.currentVerification.method);
+                showToast('info', 'Code Resent', 'New verification code sent');
+            }
+        }
+
+        // Verify 2FA code
+        function verify2FACode() {
+            // Get entered code
+            const inputs = document.querySelectorAll('.verification-code-input');
+            let enteredCode = '';
+            inputs.forEach(input => {
+                enteredCode += input.value;
+            });
+            
+            // Check if code is complete
+            if (enteredCode.length !== 6) {
+                showToast('error', 'Incomplete Code', 'Please enter all 6 digits');
+                return;
+            }
+            
+            // Check if code matches
+            if (enteredCode === appState.currentVerification.code) {
+                // Code verified successfully
+                closeModal('2fa-verification-modal');
+                completeAdminLogin(appState.currentVerification.tempAdminCredentials.email);
+            } else {
+                // Invalid code
+                showToast('error', 'Invalid Code', 'The verification code is incorrect');
+                
+                // Clear inputs
+                inputs.forEach(input => {
+                    input.value = '';
+                    input.classList.remove('filled');
+                });
+                inputs[0].focus();
+            }
+        }
+
+        // Cancel 2FA verification
+        function cancel2FA() {
+            closeModal('2fa-verification-modal');
+            appState.currentVerification = {
+                method: null,
+                code: null,
+                expiresAt: null,
+                tempAdminCredentials: null
+            };
+            showToast('info', 'Verification Cancelled', 'Admin login cancelled');
+        }
+
+        // Complete admin login after 2FA verification
+        function completeAdminLogin(email) {
+            appState.isAdminLoggedIn = true;
+            appState.isLoggedIn = true;
+            appState.currentUser = {
+                email: email,
+                name: 'Admin User',
+                role: 'admin'
+            };
+            
+            // Save session to localStorage (valid for 24 hours)
+            const sessionData = {
+                email: email,
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                ip: appState.currentIP
+            };
+            localStorage.setItem('adminSession', JSON.stringify(sessionData));
+            localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+            
+            const adminDashboard = document.getElementById('admin-dashboard');
+            if (adminDashboard) {
+                adminDashboard.classList.remove('hidden');
+            }
+            
+            showToast('success', 'Admin Login', 'Successfully logged in as admin');
+            document.getElementById('admin-login-form').reset();
+            
+            // Update admin stats
+            updateAdminStats();
+            update2FAStatus();
+            
+            // Refresh content
+            if (appState.currentPage === 'home') {
+                loadHomeContent();
+            } else if (appState.currentPage === 'accounts') {
+                loadAccountsContent();
+            }
+            
+            // Reset verification state
+            appState.currentVerification = {
+                method: null,
+                code: null,
+                expiresAt: null,
+                tempAdminCredentials: null
+            };
+        }
+
+        // Setup 2FA
+        function setup2FA() {
+            showModal('security-settings-modal');
+        }
+
+        // Show security settings
+        function showSecuritySettings() {
+            update2FAStatus();
+            updateAuthLogsDisplay();
+            showModal('security-settings-modal');
+        }
+
+        // Save security settings
+        function saveSecuritySettings() {
+            // Update 2FA methods
+            appState.twoFactorAuth.methods.email = document.getElementById('email-verification-toggle').checked;
+            appState.twoFactorAuth.methods.phone = document.getElementById('sms-verification-toggle').checked;
+            appState.twoFactorAuth.methods.googleAuth = document.getElementById('google-auth-toggle').checked;
+            
+            // Enable 2FA if at least one method is selected
+            appState.twoFactorAuth.enabled = Object.values(appState.twoFactorAuth.methods).some(method => method);
+            
+            // Save to localStorage
+            saveSecuritySettingsToStorage();
+            
+            // Update UI
+            update2FAStatus();
+            
+            showToast('success', 'Settings Saved', 'Security settings have been updated');
+            closeModal('security-settings-modal');
+        }
+
+        // Setup Google Authenticator
+        function setupGoogleAuthenticator() {
+            // Generate a secret key for Google Authenticator
+            const secret = generateGoogleAuthSecret();
+            appState.twoFactorAuth.tempSecret = secret;
+            
+            // Generate QR code
+            const qrCodeUrl = `otpauth://totp/GK%20Store:admin@gkstore.com?secret=${secret}&issuer=GK%20Store`;
+            
+            // Display QR code
+            const qrContainer = document.getElementById('qr-code-container');
+            qrContainer.innerHTML = '';
+            QRCode.toCanvas(qrContainer, qrCodeUrl, { width: 200 }, function(error) {
+                if (error) {
+                    console.error('QR code error:', error);
+                    qrContainer.innerHTML = `
+                        <div class="qr-code-placeholder">
+                            <i class="fas fa-exclamation-triangle text-3xl text-red-500"></i>
+                            <p class="mt-2 text-sm">QR Code Failed</p>
+                            <p class="text-xs">Secret: ${secret}</p>
+                        </div>
+                    `;
+                }
+            });
+            
+            // Generate recovery codes
+            generateRecoveryCodes();
+            
+            showModal('google-auth-setup-modal');
+        }
+
+        // Generate Google Authenticator secret
+        function generateGoogleAuthSecret() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            let secret = '';
+            for (let i = 0; i < 32; i++) {
+                secret += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return secret;
+        }
+
+        // Generate recovery codes
+        function generateRecoveryCodes() {
+            const codes = [];
+            for (let i = 0; i < 10; i++) {
+                const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+                codes.push(code);
+            }
+            appState.twoFactorAuth.tempRecoveryCodes = codes;
+            
+            // Display recovery codes
+            const codesList = document.getElementById('recovery-codes-list');
+            codesList.innerHTML = '';
+            codes.forEach(code => {
+                const codeElement = document.createElement('div');
+                codeElement.className = 'recovery-code';
+                codeElement.textContent = code;
+                codesList.appendChild(codeElement);
+            });
+        }
+
+        // Verify Google Authenticator setup
+        function verifyGoogleAuthSetup() {
+            // Get entered code
+            const inputs = document.querySelectorAll('.verification-code-input');
+            let enteredCode = '';
+            inputs.forEach(input => {
+                enteredCode += input.value;
+            });
+            
+            // Check if code is complete
+            if (enteredCode.length !== 6) {
+                showToast('error', 'Incomplete Code', 'Please enter all 6 digits');
+                return;
+            }
+            
+            // In a real application, you would verify the TOTP code against the secret
+            // For demo purposes, we'll accept any 6-digit code
+            if (enteredCode.length === 6 && /^\d{6}$/.test(enteredCode)) {
+                // Save Google Authenticator setup
+                appState.twoFactorAuth.googleAuthSecret = appState.twoFactorAuth.tempSecret;
+                appState.twoFactorAuth.recoveryCodes = appState.twoFactorAuth.tempRecoveryCodes;
+                appState.twoFactorAuth.methods.googleAuth = true;
+                appState.twoFactorAuth.enabled = true;
+                
+                // Save to localStorage
+                saveSecuritySettingsToStorage();
+                
+                closeModal('google-auth-setup-modal');
+                showToast('success', '2FA Setup Complete', 'Google Authenticator has been configured');
+                update2FAStatus();
+            } else {
+                showToast('error', 'Invalid Code', 'Please enter a valid 6-digit code');
+            }
+        }
+
+        // Show upload video modal
+        function showUploadVideo() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            const nextId = appState.videos.length > 0 ? `vid_${(appState.videos.length + 1).toString().padStart(3, '0')}` : 'vid_001';
+            document.getElementById('video-id').value = nextId;
+            
+            document.getElementById('video-title-input').value = '';
+            document.getElementById('video-description-input').value = '';
+            document.getElementById('video-price').value = '';
+            document.getElementById('video-tier').value = '';
+            document.getElementById('video-url-input').value = '';
+            
+            // Reset file selection
+            clearFileSelection();
+            
+            showModal('upload-video-modal');
+        }
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const maxSize = 100 * 1024 * 1024; // 100MB
+            if (file.size > maxSize) {
+                showToast('error', 'File Too Large', 'Please select a video file smaller than 100MB');
+                return;
+            }
+            
+            const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+            if (!validTypes.includes(file.type)) {
+                showToast('error', 'Invalid File Type', 'Please select a valid video file (MP4, MOV, AVI, MKV)');
+                return;
+            }
+            
+            appState.currentUpload.file = file;
+            
+            // Show file info
+            showToast('info', 'File Selected', `${file.name} (${formatFileSize(file.size)})`);
+            
+            // Show preview if it's a video file
+            if (file.type.startsWith('video/')) {
+                const videoURL = URL.createObjectURL(file);
+                document.getElementById('video-url-input').value = videoURL;
+                
+                // Create preview
+                const videoPreview = document.createElement('video');
+                videoPreview.src = videoURL;
+                videoPreview.controls = true;
+                videoPreview.style.width = '100%';
+                videoPreview.style.maxHeight = '200px';
+                videoPreview.style.borderRadius = '0.75rem';
+                
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'video-preview active';
+                previewContainer.appendChild(videoPreview);
+                
+                const existingPreview = document.querySelector('.video-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+                
+                document.getElementById('upload-video-form').appendChild(previewContainer);
+            }
+        }
+
+        // Format file size for display
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Clear file selection
+        function clearFileSelection() {
+            appState.currentUpload.file = null;
+            document.getElementById('video-file').value = '';
+            document.getElementById('upload-status').classList.remove('active');
+            
+            // Remove preview
+            const preview = document.querySelector('.video-preview');
+            if (preview) {
+                preview.remove();
+            }
+        }
+
+        // Upload video
+        async function uploadVideo() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            const id = document.getElementById('video-id').value;
+            const title = document.getElementById('video-title-input').value;
+            const description = document.getElementById('video-description-input').value;
+            const price = parseFloat(document.getElementById('video-price').value);
+            const tier = document.getElementById('video-tier').value;
+            let videoUrl = document.getElementById('video-url-input').value;
+            
+            // Validation
+            if (!id || !title || !price || !tier || !videoUrl) {
+                showToast('error', 'Validation Error', 'Please fill all required fields');
+                return;
+            }
+            
+            // Show upload status
+            const uploadStatus = document.getElementById('upload-status');
+            const uploadProgress = document.getElementById('upload-progress');
+            const uploadPercentage = document.getElementById('upload-percentage');
+            const uploadedSize = document.getElementById('uploaded-size');
+            const totalSize = document.getElementById('total-size');
+            const submitBtn = document.querySelector('#upload-video-form button[type="button"]');
+            
+            uploadStatus.classList.add('active');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
+            
+            // Reset upload state
+            appState.currentUpload.progress = 0;
             
             try {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
+                let finalVideoUrl = videoUrl;
                 
-                if (outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                } else {
-                    console.log('User dismissed the install prompt');
+                // If we have a file to upload
+                if (appState.currentUpload.file) {
+                    const file = appState.currentUpload.file;
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}-${id}.${fileExt}`;
+                    const filePath = `${tier}/${fileName}`;
+                    
+                    // Show file size
+                    totalSize.textContent = formatFileSize(file.size);
+                    
+                    // Upload to Supabase Storage
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('videos')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    // Get public URL
+                    const { data: urlData } = supabase.storage
+                        .from('videos')
+                        .getPublicUrl(filePath);
+                    
+                    finalVideoUrl = urlData.publicUrl;
+                    
+                    if (!finalVideoUrl) {
+                        throw new Error('Upload failed');
+                    }
                 }
                 
-                deferredPrompt = null;
+                // Create video object for Supabase
+                const videoData = {
+                    video_id: id,
+                    video_title: title,
+                    description: description || 'No description available',
+                    video_url: finalVideoUrl,
+                    account_tier: tier,
+                    price: price,
+                    sold: false,
+                    views: 0,
+                    likes: 0,
+                    shares: 0,
+                    duration: "2:30",
+                    created_at: new Date().toISOString()
+                };
+                
+                // Insert into Supabase
+                const { data, error } = await supabase
+                    .from('videos')
+                    .insert([videoData])
+                    .select();
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    const newVideo = data[0];
+                    
+                    // Add to local state
+                    const videoObj = {
+                        id: newVideo.video_id,
+                        title: newVideo.video_title,
+                        description: newVideo.description,
+                        views: newVideo.views || 0,
+                        likes: newVideo.likes || 0,
+                        shares: newVideo.shares || 0,
+                        duration: newVideo.duration || "2:30",
+                        url: newVideo.video_url,
+                        tier: newVideo.account_tier,
+                        price: newVideo.price,
+                        createdAt: newVideo.created_at,
+                        account: {
+                            id: newVideo.video_id,
+                            title: newVideo.video_title,
+                            tier: newVideo.account_tier,
+                            price: newVideo.price,
+                            followers: Math.floor(Math.random() * 100000) + 1000
+                        }
+                    };
+                    
+                    appState.videos.unshift(videoObj);
+                    appState.currentVideoIndex = 0;
+                    
+                    // Create corresponding account
+                    appState.accounts.unshift({
+                        id: newVideo.video_id,
+                        title: newVideo.video_title,
+                        description: newVideo.description,
+                        tier: newVideo.account_tier,
+                        price: newVideo.price,
+                        sold: newVideo.sold || false,
+                        videoId: newVideo.video_id,
+                        createdAt: newVideo.created_at
+                    });
+                    
+                    // Update UI
+                    loadHomeContent();
+                    updateAdminStats();
+                    
+                    // Reset form
+                    setTimeout(() => {
+                        document.getElementById('upload-video-form').reset();
+                        clearFileSelection();
+                        uploadStatus.classList.remove('active');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-upload"></i> Add Video';
+                        
+                        showToast('success', 'Video Uploaded', `"${title}" has been added to ${tier} tier`);
+                        closeModal('upload-video-modal');
+                        
+                        // Load the new video
+                        loadVideo(0);
+                        
+                    }, 1000);
+                }
+                
             } catch (error) {
-                console.error('Install error:', error);
-                showToast('error', 'Install Failed', 'Could not install the app. Please try again.');
+                console.error('Upload error:', error);
+                showToast('error', 'Upload Failed', error.message || 'Unknown error occurred');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-upload"></i> Add Video';
+                uploadStatus.classList.remove('active');
             }
         }
 
-        // ===========================================
-        // UTILITY FUNCTIONS
-        // ===========================================
-        function loadPreferences() {
-            const savedLanguage = localStorage.getItem('appLanguage') || 'en';
-            const savedTheme = localStorage.getItem('appTheme') || 'dark';
+        // Show manage videos modal
+        async function showManageVideos() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
             
-            appState.language = savedLanguage;
-            appState.theme = savedTheme;
-            
-            document.documentElement.setAttribute('data-theme', savedTheme);
+            await loadAdminVideos();
+            showModal('manage-videos-modal');
         }
 
+        // Load admin videos
+        async function loadAdminVideos(filter = 'all') {
+            const videosList = document.getElementById('admin-videos-list');
+            if (!videosList) return;
+            
+            videosList.innerHTML = '';
+            
+            // Refresh videos from Supabase
+            try {
+                await loadVideosFromSupabase();
+            } catch (error) {
+                console.error('Error loading videos:', error);
+                showToast('error', 'Load Failed', 'Could not load videos from server');
+            }
+            
+            const filteredVideos = filter === 'all' 
+                ? appState.videos 
+                : appState.videos.filter(video => video.tier === filter);
+            
+            if (filteredVideos.length === 0) {
+                videosList.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-video-slash text-4xl text-zinc-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Videos Found</h3>
+                        <p class="text-zinc-400">No videos in the ${filter} tier</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredVideos.forEach(video => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'flex items-center justify-between p-3 bg-surface-light rounded-lg';
+                videoItem.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium">${video.title}</span>
+                            <span class="badge ${video.tier === 'big' ? 'badge-primary' : video.tier === 'medium' ? 'badge-secondary' : 'badge-warning'} text-xs">
+                                ${video.tier}
+                            </span>
+                        </div>
+                        <p class="text-xs text-zinc-400">ID: ${video.id} • $${video.price.toLocaleString()}</p>
+                        <p class="text-xs text-zinc-400 mt-1">${video.description ? video.description.substring(0, 60) + (video.description.length > 60 ? '...' : '') : 'No description'}</p>
+                        <div class="flex gap-2 mt-2">
+                            <span class="text-xs text-zinc-500"><i class="fas fa-eye"></i> ${video.views.toLocaleString()}</span>
+                            <span class="text-xs text-zinc-500"><i class="fas fa-heart"></i> ${video.likes.toLocaleString()}</span>
+                            <span class="text-xs text-zinc-500"><i class="fas fa-share"></i> ${video.shares.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteVideo('${video.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                
+                videosList.appendChild(videoItem);
+            });
+        }
+
+        // Filter admin videos
+        function adminFilterVideos(tier) {
+            document.querySelectorAll('#manage-videos-modal .tab-item').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().includes(tier)) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            loadAdminVideos(tier);
+        }
+
+        // Delete video from Supabase
+        async function deleteVideo(videoId) {
+            if (confirm('Are you sure you want to delete this video? The corresponding account will also be removed.')) {
+                try {
+                    // Delete from Supabase
+                    const { error } = await supabase
+                        .from('videos')
+                        .delete()
+                        .eq('video_id', videoId);
+                    
+                    if (error) throw error;
+                    
+                    // Remove from local state
+                    appState.videos = appState.videos.filter(v => v.id !== videoId);
+                    appState.accounts = appState.accounts.filter(a => a.id !== videoId);
+                    
+                    loadAdminVideos('all');
+                    updateAdminStats();
+                    
+                    // Refresh home page if needed
+                    if (appState.currentPage === 'home') {
+                        loadHomeContent();
+                    }
+                    
+                    showToast('success', 'Video Deleted', 'Video and corresponding account have been removed');
+                } catch (error) {
+                    console.error('Error deleting video:', error);
+                    showToast('error', 'Delete Failed', 'Could not delete video: ' + error.message);
+                }
+            }
+        }
+
+        // Show book requests modal
+        async function showBookRequests() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            await loadAdminBookRequests();
+            showModal('book-requests-modal');
+        }
+
+        // Load admin book requests
+        async function loadAdminBookRequests() {
+            const requestsList = document.getElementById('admin-book-requests-list');
+            const emptyState = document.getElementById('admin-book-requests-empty');
+            
+            if (!requestsList || !emptyState) return;
+            
+            requestsList.innerHTML = '';
+            
+            // Load book requests from Supabase
+            try {
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    appState.bookRequests = data;
+                    requestsList.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                    
+                    data.forEach(request => {
+                        const requestItem = document.createElement('div');
+                        requestItem.className = 'card bg-surface-light';
+                        requestItem.innerHTML = `
+                            <div class="card-body">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 class="font-semibold">${request.user_name}</h4>
+                                        <p class="text-sm text-zinc-400">Video: ${request.video_id}</p>
+                                    </div>
+                                    <span class="text-xs text-zinc-400">${new Date(request.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <p class="text-sm mb-2">${request.whatsapp_number}</p>
+                                ${request.additional_notes ? `
+                                    <p class="text-sm text-zinc-400">Notes: ${request.additional_notes}</p>
+                                ` : ''}
+                                <div class="flex gap-2 mt-3">
+                                    <button class="btn btn-sm btn-primary flex-1" onclick="contactRequester('${request.whatsapp_number}')">
+                                        <i class="fab fa-whatsapp"></i> Contact
+                                    </button>
+                                    <button class="btn btn-sm btn-success flex-1" onclick="markAsCompleted('${request.id}')">
+                                        <i class="fas fa-check"></i> Complete
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        requestsList.appendChild(requestItem);
+                    });
+                } else {
+                    requestsList.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading book requests:', error);
+                requestsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-4xl text-zinc-600 mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Error Loading Requests</h3>
+                    <p class="text-zinc-400">Could not load book requests from server</p>
+                `;
+            }
+        }
+
+        // Contact requester on WhatsApp
+        function contactRequester(whatsappNumber) {
+            const message = encodeURIComponent('Hello, I saw your book request for GK Store. How can I help you?');
+            window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${message}`, '_blank');
+        }
+
+        // Mark request as completed
+        async function markAsCompleted(requestId) {
+            try {
+                const { error } = await supabase
+                    .from('book_requests')
+                    .delete()
+                    .eq('id', requestId);
+                
+                if (error) throw error;
+                
+                // Remove from local state
+                appState.bookRequests = appState.bookRequests.filter(r => r.id !== requestId);
+                
+                // Reload requests
+                await loadAdminBookRequests();
+                
+                showToast('success', 'Request Completed', 'Book request has been marked as completed');
+            } catch (error) {
+                console.error('Error marking request as completed:', error);
+                showToast('error', 'Update Failed', 'Could not update request status');
+            }
+        }
+
+        // Show manage settings modal
+        function showManageSettings() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
+            document.getElementById('new-admin-password').value = '';
+            document.getElementById('new-usdt-address').value = document.getElementById('usdt-address').textContent;
+            document.getElementById('new-whatsapp-number').value = '+93 793066322';
+            
+            showModal('manage-settings-modal');
+        }
+
+        // Save admin settings
+        function saveAdminSettings() {
+            const newPassword = document.getElementById('new-admin-password').value;
+            const newUsdtAddress = document.getElementById('new-usdt-address').value;
+            const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
+            
+            if (newPassword && newPassword.length >= 6) {
+                appState.adminCredentials.password = newPassword;
+            }
+            
+            if (newUsdtAddress) {
+                document.getElementById('usdt-address').textContent = newUsdtAddress;
+                document.getElementById('payment-address').textContent = newUsdtAddress;
+            }
+            
+            showToast('success', 'Settings Saved', 'Admin settings have been updated');
+            closeModal('manage-settings-modal');
+        }
+
+        // Load notifications content
+        function loadNotificationsContent() {
+            const list = document.getElementById('notifications-list');
+            const emptyState = document.getElementById('notifications-empty');
+            
+            if (!list || !emptyState) return;
+            
+            list.innerHTML = '';
+            
+            if (appState.notifications.length === 0) {
+                list.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            list.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            appState.notifications.forEach(notification => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = `card ${notification.read ? '' : 'border-primary'}`;
+                notificationItem.innerHTML = `
+                    <div class="card-body">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-full bg-${notification.color || 'primary'} flex items-center justify-center">
+                                <i class="${notification.icon || 'fas fa-bell'} text-white"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-semibold">${notification.title}</h4>
+                                    <span class="text-xs text-zinc-400">${notification.time}</span>
+                                </div>
+                                <p class="text-sm text-zinc-400 mt-1">${notification.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                notificationItem.addEventListener('click', () => {
+                    notification.read = true;
+                    updateNotificationCount();
+                    loadNotificationsContent();
+                });
+                
+                list.appendChild(notificationItem);
+            });
+        }
+
+        // Update notification count
+        function updateNotificationCount() {
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-count');
+            
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        // Show modal
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Toggle language
+        function toggleLanguage() {
+            showModal('language-modal');
+        }
+
+        // Set language
+        function setLanguage(lang) {
+            appState.language = lang;
+            localStorage.setItem('appLanguage', lang);
+            
+            document.querySelectorAll('[id^="lang-"]').forEach(check => {
+                check.classList.add('hidden');
+            });
+            
+            const activeCheck = document.getElementById(`lang-${lang}-check`);
+            if (activeCheck) {
+                activeCheck.classList.remove('hidden');
+            }
+            
+            const rtlLanguages = ['ar', 'fa', 'ur', 'ps'];
+            if (rtlLanguages.includes(lang)) {
+                document.body.setAttribute('dir', 'rtl');
+            } else {
+                document.body.setAttribute('dir', 'ltr');
+            }
+            
+            closeModal('language-modal');
+            showToast('success', 'Language Updated', 'Language preference saved');
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            appState.theme = appState.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('appTheme', appState.theme);
+            document.documentElement.setAttribute('data-theme', appState.theme);
+            showToast('success', 'Theme Updated', `Switched to ${appState.theme} mode`);
+        }
+
+        // Show toast notification
         function showToast(type, title, message) {
             const toast = document.getElementById('toast');
             const toastIcon = document.getElementById('toast-icon');
@@ -3985,6 +5841,7 @@
             setTimeout(hideToast, 3000);
         }
 
+        // Hide toast
         function hideToast() {
             const toast = document.getElementById('toast');
             if (toast) {
@@ -3992,40 +5849,326 @@
             }
         }
 
-        function showModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+        // Video actions
+        function shareVideo() {
+            const video = appState.videos[appState.currentVideoIndex];
+            if (video && navigator.share) {
+                navigator.share({
+                    title: video.title,
+                    text: video.description,
+                    url: window.location.href
+                });
+            } else {
+                showToast('info', 'Share', `Copy link to share: ${window.location.href}`);
             }
         }
 
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('hidden');
-                document.body.style.overflow = '';
+        // Account actions
+        function bookAccount() {
+            if (!appState.currentAccount) return;
+            
+            document.getElementById('book-account-name').textContent = appState.currentAccount.title;
+            document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
+            document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
+            
+            showModal('book-modal');
+        }
+
+        function buyNow() {
+            if (!appState.currentAccount) return;
+            
+            document.getElementById('buy-account-name').textContent = appState.currentAccount.title;
+            document.getElementById('buy-account-tier').textContent = appState.currentAccount.tier;
+            document.getElementById('buy-account-price').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
+            document.getElementById('payment-amount').textContent = `$${appState.currentAccount.price ? appState.currentAccount.price.toLocaleString() : '0'}`;
+            
+            showModal('buy-modal');
+        }
+
+        // Submit book request to Supabase
+        async function submitBookRequest() {
+            const name = document.getElementById('book-name').value;
+            const whatsapp = document.getElementById('book-whatsapp').value;
+            const notes = document.getElementById('book-notes').value;
+            
+            if (!name || !whatsapp || !appState.currentAccount) {
+                showToast('error', 'Validation Error', 'Please fill in all required fields');
+                return;
+            }
+            
+            try {
+                const bookRequestData = {
+                    video_id: appState.currentAccount.id,
+                    user_name: name,
+                    whatsapp_number: whatsapp,
+                    additional_notes: notes || null,
+                    created_at: new Date().toISOString()
+                };
+                
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .insert([bookRequestData])
+                    .select();
+                
+                if (error) throw error;
+                
+                showToast('success', 'Request Submitted', 'We will contact you shortly on WhatsApp');
+                closeModal('book-modal');
+                
+                document.getElementById('book-name').value = '';
+                document.getElementById('book-whatsapp').value = '';
+                document.getElementById('book-notes').value = '';
+                
+            } catch (error) {
+                console.error('Error submitting book request:', error);
+                showToast('error', 'Submission Failed', 'Could not submit your request. Please try again.');
             }
         }
 
-        // ===========================================
-        // REMAINING FUNCTIONS (KEEP YOUR ORIGINAL CODE)
-        // ===========================================
-        // [Include all your remaining functions here exactly as they were in your original file]
-        // This includes: loadHomeContent, loadVideo, navigateVideo, toggleVideoPlayback,
-        // loadAccountsContent, filterAccounts, showUploadVideo, uploadVideo, 
-        // showManageVideos, adminFilterVideos, deleteVideo, showBookRequests,
-        // loadAdminBookRequests, contactRequester, markAsCompleted, showManageSettings,
-        // saveAdminSettings, updateAdminStats, loadNotificationsContent, updateNotificationCount,
-        // shareVideo, bookAccount, buyNow, submitBookRequest, copyUSDTAddress, copyAddress,
-        // openWhatsApp, openPaymentChat, sendContactMessage, logout, showLoginForm,
-        // showSignupForm, showForgotPassword, login, signup, resetPassword, socialLogin,
-        // showTerms, showPrivacy, closeWelcomeModal, toggleLanguage, setLanguage, toggleTheme,
-        // and all other functions from your original file
+        // Copy USDT address
+        function copyUSDTAddress() {
+            const address = document.getElementById('usdt-address');
+            if (address) {
+                navigator.clipboard.writeText(address.textContent)
+                    .then(() => {
+                        showToast('success', 'Address Copied', 'USDT address copied to clipboard');
+                    })
+                    .catch(() => {
+                        showToast('error', 'Copy Failed', 'Could not copy address');
+                    });
+            }
+        }
 
-        // ===========================================
-        // INITIALIZE APP
-        // ===========================================
+        // Copy payment address
+        function copyAddress() {
+            const address = document.getElementById('payment-address');
+            if (address) {
+                navigator.clipboard.writeText(address.textContent)
+                    .then(() => {
+                        showToast('success', 'Address Copied', 'Payment address copied to clipboard');
+                    })
+                    .catch(() => {
+                        showToast('error', 'Copy Failed', 'Could not copy address');
+                    });
+            }
+        }
+
+        // Open WhatsApp
+        function openWhatsApp() {
+            const phone = '93793066322';
+            const message = encodeURIComponent('Hello, I need support with GK Store');
+            window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+        }
+
+        // Open payment chat
+        function openPaymentChat() {
+            if (!appState.currentAccount) return;
+            
+            const phone = '93793066322';
+            const message = encodeURIComponent(
+                `Hello, I want to buy: ${appState.currentAccount.title}\n` +
+                `Tier: ${appState.currentAccount.tier}\n` +
+                `Price: $${appState.currentAccount.price}\n` +
+                `Please provide payment confirmation.`
+            );
+            
+            window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+        }
+
+        // Send contact message
+        function sendContactMessage(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            console.log('Contact message:', Object.fromEntries(formData));
+            
+            showToast('success', 'Message Sent', 'We will respond within 24 hours');
+            form.reset();
+        }
+
+        // Logout
+        function logout() {
+            // Pause current video
+            if (appState.currentVideoPlayer) {
+                appState.currentVideoPlayer.pause();
+                appState.currentVideoPlayer = null;
+            }
+            
+            // Clear video players
+            appState.videoPlayers.clear();
+            
+            // Clear admin session
+            localStorage.removeItem('adminSession');
+            
+            appState.isLoggedIn = false;
+            appState.currentUser = null;
+            appState.isAdminLoggedIn = false;
+            localStorage.removeItem('gkStoreUser');
+            showToast('info', 'Logged Out', 'You have been logged out');
+            showPage('auth');
+        }
+
+        // Auth Functions
+        function showLoginForm() {
+            document.getElementById('login-form-container').classList.remove('hidden');
+            document.getElementById('signup-form-container').classList.add('hidden');
+            document.getElementById('forgot-password-container').classList.add('hidden');
+        }
+
+        function showSignupForm() {
+            document.getElementById('login-form-container').classList.add('hidden');
+            document.getElementById('signup-form-container').classList.remove('hidden');
+            document.getElementById('forgot-password-container').classList.add('hidden');
+        }
+
+        function showForgotPassword() {
+            document.getElementById('login-form-container').classList.add('hidden');
+            document.getElementById('signup-form-container').classList.add('hidden');
+            document.getElementById('forgot-password-container').classList.remove('hidden');
+        }
+
+        // Login function
+        async function login(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            appState.currentUser = {
+                email: email,
+                name: email.split('@')[0],
+                role: 'user'
+            };
+            
+            appState.isLoggedIn = true;
+            
+            if (rememberMe) {
+                localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+            }
+            
+            // Update user stats
+            appState.userStats.onlineUsers = (appState.userStats.onlineUsers || 0) + 1;
+            if (email !== appState.adminCredentials.email) {
+                appState.userStats.registeredUsers = (appState.userStats.registeredUsers || 0) + 1;
+            }
+            
+            // Update profile page
+            document.getElementById('user-name').textContent = appState.currentUser.name;
+            document.getElementById('user-email').textContent = appState.currentUser.email;
+            document.getElementById('member-since').textContent = new Date().toISOString().split('T')[0];
+            
+            showToast('success', 'Login Successful', `Welcome back, ${appState.currentUser.name}!`);
+            document.getElementById('login-form').reset();
+            
+            // Load initial data
+            await loadInitialData();
+            
+            setTimeout(() => {
+                showPage('home');
+            }, 500);
+        }
+
+        // Signup function
+        async function signup(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            
+            if (password !== confirmPassword) {
+                showToast('error', 'Signup Failed', 'Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('error', 'Signup Failed', 'Password must be at least 6 characters');
+                return;
+            }
+            
+            appState.currentUser = {
+                email: email,
+                name: name,
+                role: 'user'
+            };
+            
+            appState.isLoggedIn = true;
+            localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+            
+            // Update user stats
+            appState.userStats.onlineUsers = (appState.userStats.onlineUsers || 0) + 1;
+            appState.userStats.registeredUsers = (appState.userStats.registeredUsers || 0) + 1;
+            
+            document.getElementById('user-name').textContent = appState.currentUser.name;
+            document.getElementById('user-email').textContent = appState.currentUser.email;
+            document.getElementById('member-since').textContent = new Date().toISOString().split('T')[0];
+            
+            showToast('success', 'Account Created', `Welcome to GK Store, ${name}!`);
+            document.getElementById('signup-form').reset();
+            
+            // Load initial data
+            await loadInitialData();
+            
+            setTimeout(() => {
+                showPage('home');
+            }, 500);
+        }
+
+        // Reset password function
+        function resetPassword(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('reset-email').value;
+            
+            showToast('success', 'Reset Link Sent', 'Check your email for password reset instructions');
+            document.getElementById('forgot-password-form').reset();
+            showLoginForm();
+        }
+
+        // Social login function
+        async function socialLogin(provider) {
+            appState.currentUser = {
+                email: `user_${Date.now()}@${provider}.com`,
+                name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+                role: 'user'
+            };
+            
+            appState.isLoggedIn = true;
+            localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+            
+            // Update user stats
+            appState.userStats.onlineUsers = (appState.userStats.onlineUsers || 0) + 1;
+            appState.userStats.registeredUsers = (appState.userStats.registeredUsers || 0) + 1;
+            
+            document.getElementById('user-name').textContent = appState.currentUser.name;
+            document.getElementById('user-email').textContent = appState.currentUser.email;
+            document.getElementById('member-since').textContent = new Date().toISOString().split('T')[0];
+            
+            showToast('success', 'Login Successful', `Welcome, ${appState.currentUser.name}!`);
+            
+            // Load initial data
+            await loadInitialData();
+            
+            setTimeout(() => {
+                showPage('home');
+            }, 500);
+        }
+
+        // Show terms
+        function showTerms() {
+            showToast('info', 'Terms of Service', 'This is a demo app. Terms will be implemented in production.');
+        }
+
+        // Show privacy
+        function showPrivacy() {
+            showToast('info', 'Privacy Policy', 'This is a demo app. Privacy policy will be implemented in production.');
+        }
+
+        // Initialize app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
