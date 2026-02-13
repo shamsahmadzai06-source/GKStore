@@ -2832,6 +2832,146 @@
         </div>
     </div>
 
+    <!-- SQL Setup Instructions Modal (Hidden by default) -->
+    <div id="sql-setup-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Database Setup Required</h3>
+                <button class="modal-close" onclick="closeModal('sql-setup-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="bg-surface-light p-4 rounded-lg mb-4">
+                    <h4 class="font-semibold mb-2 text-primary">Step 1: Create Admin User</h4>
+                    <p class="text-sm text-zinc-400 mb-2">Run this SQL in your Supabase SQL Editor:</p>
+                    <pre class="bg-black text-green-400 p-3 rounded-lg text-xs overflow-x-auto">
+-- Create admin user (use your email)
+INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    recovery_sent_at,
+    last_sign_in_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    email_change,
+    email_change_token_new,
+    recovery_token
+) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'admin@gkstore.com',
+    crypt('Admin@123456', gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Admin User","role":"admin"}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+);</pre>
+                </div>
+                
+                <div class="bg-surface-light p-4 rounded-lg mb-4">
+                    <h4 class="font-semibold mb-2 text-primary">Step 2: Create Tables</h4>
+                    <p class="text-sm text-zinc-400 mb-2">Run this SQL to create all required tables:</p>
+                    <pre class="bg-black text-green-400 p-3 rounded-lg text-xs overflow-x-auto">
+-- Create videos table
+CREATE TABLE IF NOT EXISTS videos (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT UNIQUE NOT NULL,
+    video_title TEXT NOT NULL,
+    description TEXT,
+    views INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    shares INTEGER DEFAULT 0,
+    duration TEXT DEFAULT '2:30',
+    video_url TEXT NOT NULL,
+    account_tier TEXT CHECK (account_tier IN ('small', 'medium', 'big')) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    sold BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create book_requests table
+CREATE TABLE IF NOT EXISTS book_requests (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT REFERENCES videos(video_id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    whatsapp_number TEXT NOT NULL,
+    additional_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'contacted', 'completed'))
+);
+
+-- Create notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    icon TEXT DEFAULT 'fas fa-bell',
+    color TEXT DEFAULT 'primary',
+    time TEXT,
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE book_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for public read access
+CREATE POLICY "Allow public read access" ON videos
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public read access" ON book_requests
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert" ON book_requests
+    FOR INSERT WITH CHECK (true);
+
+-- Create policies for admin only write access
+CREATE POLICY "Allow admin insert" ON videos
+    FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));
+
+CREATE POLICY "Allow admin update" ON videos
+    FOR UPDATE USING (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));
+
+CREATE POLICY "Allow admin delete" ON videos
+    FOR DELETE USING (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));
+
+CREATE POLICY "Allow admin all" ON book_requests
+    FOR ALL USING (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));</pre>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary flex-1" onclick="closeModal('sql-setup-modal')">
+                        Close
+                    </button>
+                    <button class="btn btn-primary flex-1" onclick="copySqlToClipboard()">
+                        <i class="far fa-copy"></i> Copy SQL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Supabase Configuration - Replace with your actual credentials
         const SUPABASE_URL = 'https://ieinqlpnubtwwkldqhab.supabase.co';
@@ -2882,6 +3022,9 @@
             setupEventListeners();
             setupPWAInstall();
             
+            // Check if tables exist, if not show setup modal
+            await checkDatabaseSetup();
+            
             // Check if user is already logged in
             const savedUser = localStorage.getItem('gkStoreUser');
             if (savedUser) {
@@ -2889,9 +3032,16 @@
                     appState.currentUser = JSON.parse(savedUser);
                     appState.isLoggedIn = true;
                     
-                    // If admin was logged in, restore admin session
-                    if (localStorage.getItem('gkStoreAdmin') === 'true') {
-                        appState.isAdminLoggedIn = true;
+                    // Check if admin session exists and is still valid
+                    const adminSession = localStorage.getItem('gkStoreAdmin');
+                    if (adminSession === 'true') {
+                        // Verify admin status with Supabase
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user && user.user_metadata && user.user_metadata.role === 'admin') {
+                            appState.isAdminLoggedIn = true;
+                        } else {
+                            localStorage.removeItem('gkStoreAdmin');
+                        }
                     }
                     
                     showPage('home');
@@ -2906,6 +3056,147 @@
             
             // Setup touch controls
             setupTouchControls();
+        }
+
+        // Check database setup
+        async function checkDatabaseSetup() {
+            try {
+                const { data, error } = await supabase
+                    .from('videos')
+                    .select('count')
+                    .limit(1);
+                
+                if (error && error.code === '42P01') { // Table doesn't exist
+                    showSqlSetupModal();
+                }
+            } catch (error) {
+                console.error('Error checking database:', error);
+                showSqlSetupModal();
+            }
+        }
+
+        // Show SQL setup modal
+        function showSqlSetupModal() {
+            showModal('sql-setup-modal');
+        }
+
+        // Copy SQL to clipboard
+        function copySqlToClipboard() {
+            const sql = `-- Create admin user (use your email)
+INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    recovery_sent_at,
+    last_sign_in_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    email_change,
+    email_change_token_new,
+    recovery_token
+) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'admin@gkstore.com',
+    crypt('Admin@123456', gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Admin User","role":"admin"}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+);
+
+-- Create videos table
+CREATE TABLE IF NOT EXISTS videos (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT UNIQUE NOT NULL,
+    video_title TEXT NOT NULL,
+    description TEXT,
+    views INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    shares INTEGER DEFAULT 0,
+    duration TEXT DEFAULT '2:30',
+    video_url TEXT NOT NULL,
+    account_tier TEXT CHECK (account_tier IN ('small', 'medium', 'big')) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    sold BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create book_requests table
+CREATE TABLE IF NOT EXISTS book_requests (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT REFERENCES videos(video_id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    whatsapp_number TEXT NOT NULL,
+    additional_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'contacted', 'completed'))
+);
+
+-- Create notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    icon TEXT DEFAULT 'fas fa-bell',
+    color TEXT DEFAULT 'primary',
+    time TEXT,
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE book_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for public read access
+CREATE POLICY "Allow public read access" ON videos
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public read access" ON book_requests
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert" ON book_requests
+    FOR INSERT WITH CHECK (true);
+
+-- Create policies for admin only write access
+CREATE POLICY "Allow admin insert" ON videos
+    FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));
+
+CREATE POLICY "Allow admin update" ON videos
+    FOR UPDATE USING (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));
+
+CREATE POLICY "Allow admin delete" ON videos
+    FOR DELETE USING (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));
+
+CREATE POLICY "Allow admin all" ON book_requests
+    FOR ALL USING (auth.jwt() ->> 'email' IN (SELECT email FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'));`;
+
+            navigator.clipboard.writeText(sql)
+                .then(() => {
+                    showToast('success', 'SQL Copied', 'SQL commands copied to clipboard');
+                })
+                .catch(() => {
+                    showToast('error', 'Copy Failed', 'Could not copy SQL');
+                });
         }
 
         // Setup touch controls for mobile
@@ -4097,7 +4388,7 @@
             }
         }
 
-        // Admin login - USING SUPABASE AUTH
+        // Admin login - USING SUPABASE AUTH WITH ADMIN CHECK
         async function adminLogin(event) {
             event.preventDefault();
             
@@ -4113,10 +4404,9 @@
                 
                 if (error) throw error;
                 
-                // Check if user is admin by checking metadata or email
+                // Check if user is admin by checking user_metadata
                 const user = data.user;
-                const isAdmin = user.email === 'admin@gkstore.com' || 
-                              (user.user_metadata && user.user_metadata.role === 'admin');
+                const isAdmin = user.user_metadata && user.user_metadata.role === 'admin';
                 
                 if (!isAdmin) {
                     showToast('error', 'Admin Login', 'This account is not authorized as admin');
@@ -4155,7 +4445,7 @@
                 
             } catch (error) {
                 console.error('Admin login error:', error);
-                showToast('error', 'Admin Login', error.message || 'Invalid credentials');
+                showToast('error', 'Admin Login', error.message || 'Invalid credentials. Use admin@gkstore.com / Admin@123456');
             }
         }
 
@@ -4431,6 +4721,11 @@
 
         // Delete video from Supabase
         async function deleteVideo(videoId) {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
             if (confirm('Are you sure you want to delete this video? The corresponding account will also be removed.')) {
                 try {
                     // Delete from Supabase
@@ -4548,6 +4843,11 @@
 
         // Mark request as completed
         async function markAsCompleted(requestId) {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
             try {
                 const { error } = await supabase
                     .from('book_requests')
@@ -4585,6 +4885,11 @@
 
         // Save admin settings
         function saveAdminSettings() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
+            
             const newPassword = document.getElementById('new-admin-password').value;
             const newUsdtAddress = document.getElementById('new-usdt-address').value;
             const newWhatsappNumber = document.getElementById('new-whatsapp-number').value;
