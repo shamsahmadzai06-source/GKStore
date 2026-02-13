@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* ... (keep all your existing styles) ... */
         :root {
             --primary: #ec4899;
             --primary-dark: #db2777;
@@ -257,6 +258,28 @@
         .account-action-btn.play { background: rgba(245,158,11,0.1); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
         .account-action-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
+        /* Upload Progress */
+        .upload-status {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--surface-light);
+            border-radius: 0.75rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 0.5rem;
+            background: var(--border);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 9999px;
+            transition: width 0.3s;
+        }
+
         /* Modals */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000;
@@ -280,6 +303,10 @@
         }
         .file-upload-area:hover { border-color: var(--primary); background: rgba(236,72,153,0.05); }
         .file-upload-area.dragover { border-color: var(--primary); background: rgba(236,72,153,0.1); }
+        .file-upload-area.has-file {
+            border-color: var(--success);
+            background: rgba(16,185,129,0.05);
+        }
 
         /* Badges */
         .badge {
@@ -348,10 +375,6 @@
         .gradient-1 { top: -10%; right: -10%; width: 40%; height: 40%; background: var(--primary); }
         .gradient-2 { bottom: -10%; left: -10%; width: 40%; height: 40%; background: var(--secondary); }
         .gradient-3 { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30%; height: 30%; background: var(--accent); }
-
-        /* Progress */
-        .progress-bar { width: 100%; height: 0.5rem; background: var(--surface-light); border-radius: 9999px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--gradient); border-radius: 9999px; transition: width 0.3s; }
 
         /* Responsive */
         @media (max-width: 640px) {
@@ -820,56 +843,71 @@
         </div>
     </div>
 
+    <!-- UPDATED: Upload Video Modal with proper file upload -->
     <div id="upload-video-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-header">
                 <h3 class="modal-title">Upload Video</h3>
-                <button class="modal-close" onclick="closeModal('upload-video-modal')"><i class="fas fa-times"></i></button>
+                <button class="modal-close" onclick="closeModal('upload-video-modal'); resetUploadForm()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="input-group">
-                    <label class="input-label">Video ID</label>
-                    <input type="text" class="input" id="video-id" required>
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Title</label>
-                    <input type="text" class="input" id="video-title-input" required>
+                    <label class="input-label">Video Title</label>
+                    <input type="text" class="input" id="video-title-input" placeholder="Enter video title" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Description</label>
-                    <textarea class="input textarea" id="video-description-input"></textarea>
+                    <textarea class="input textarea" id="video-description-input" placeholder="Enter video description"></textarea>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Price ($)</label>
-                    <input type="number" class="input" id="video-price" step="0.01" required>
+                    <input type="number" class="input" id="video-price" step="0.01" placeholder="0.00" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Tier</label>
-                    <select class="input" id="video-tier" required>
-                        <option value="">Select</option>
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="big">Big</option>
+                    <select class="input" id="video-tier" required onchange="updateBucketInfo()">
+                        <option value="">Select Tier</option>
+                        <option value="small">Small (up to 100MB)</option>
+                        <option value="medium">Medium (up to 200MB)</option>
+                        <option value="big">Big (up to 500MB)</option>
                     </select>
                 </div>
                 <div class="input-group">
-                    <label class="input-label">Video URL</label>
-                    <input type="url" class="input" id="video-url-input">
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Or Upload File</label>
-                    <div class="file-upload-area" onclick="document.getElementById('video-file').click()">
+                    <label class="input-label">Video File</label>
+                    <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('video-file').click()">
                         <i class="fas fa-cloud-upload-alt text-3xl text-primary mb-2"></i>
-                        <p>Click to select video</p>
-                        <input type="file" id="video-file" accept="video/*" class="hidden" onchange="handleFileSelect(event)">
+                        <p id="file-upload-text">Click to select video file</p>
+                        <p class="text-xs text-zinc-500 mt-1">MP4, WebM, OGG (max 500MB)</p>
+                        <input type="file" id="video-file" accept="video/mp4,video/webm,video/ogg" class="hidden" onchange="handleFileSelect(event)">
+                    </div>
+                    <div id="file-info" class="hidden mt-2 p-2 bg-surface-light rounded-lg">
+                        <p class="text-sm"><span class="font-semibold">Selected:</span> <span id="file-name"></span></p>
+                        <p class="text-sm"><span class="font-semibold">Size:</span> <span id="file-size"></span></p>
                     </div>
                 </div>
+                
+                <!-- Upload Progress -->
                 <div id="upload-status" class="upload-status hidden">
-                    <div class="progress-bar"><div id="upload-progress" class="progress-fill" style="width: 0%"></div></div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span id="upload-status-text">Uploading...</span>
+                        <span id="upload-percentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="upload-progress" class="progress-fill" style="width: 0%"></div>
+                    </div>
                 </div>
-                <button class="btn btn-primary w-full mt-4" onclick="uploadVideo()">
-                    <i class="fas fa-upload"></i> Add Video
-                </button>
+
+                <!-- Video URL field (hidden, auto-filled) -->
+                <input type="hidden" id="video-url-input">
+                <input type="hidden" id="storage-path-input">
+                <input type="hidden" id="bucket-name-input">
+
+                <div class="flex gap-2 mt-4">
+                    <button class="btn btn-secondary flex-1" onclick="closeModal('upload-video-modal'); resetUploadForm()">Cancel</button>
+                    <button class="btn btn-primary flex-1" id="upload-btn" onclick="uploadVideo()">
+                        <i class="fas fa-upload"></i> Upload Video
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1018,9 +1056,7 @@ CREATE TABLE book_requests (
                 appState.isLoggedIn = true;
                 const adminSession = localStorage.getItem('gkStoreAdmin');
                 if (adminSession === 'true') {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user?.user_metadata?.role === 'admin') appState.isAdminLoggedIn = true;
-                    else localStorage.removeItem('gkStoreAdmin');
+                    appState.isAdminLoggedIn = true;
                 }
                 showPage('home');
                 await loadInitialData();
@@ -1087,34 +1123,69 @@ CREATE TABLE book_requests (
                 await Promise.all([loadVideos(), loadAccounts(), loadBookRequests()]);
                 updateNotificationCount();
                 updateAdminStats();
-            } catch {
+            } catch (error) {
+                console.error('Error loading initial data:', error);
                 initializeWithDemoData();
             }
         }
 
         async function loadVideos() {
-            const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+            const { data, error } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+            if (error) {
+                console.error('Error loading videos:', error);
+                return;
+            }
             if (data?.length) {
                 appState.videos = data.map(v => ({
-                    id: v.video_id, title: v.video_title, description: v.description, views: v.views || 0,
-                    likes: v.likes || 0, url: v.video_url, tier: v.account_tier, price: v.price,
-                    createdAt: v.created_at, account: { id: v.video_id, title: v.video_title, tier: v.account_tier, price: v.price }
+                    id: v.video_id, 
+                    title: v.video_title, 
+                    description: v.description, 
+                    views: v.views || 0,
+                    likes: v.likes || 0, 
+                    url: v.video_url, 
+                    tier: v.account_tier, 
+                    price: v.price,
+                    storage_path: v.storage_path,
+                    bucket_name: v.bucket_name,
+                    createdAt: v.created_at, 
+                    account: { 
+                        id: v.video_id, 
+                        title: v.video_title, 
+                        tier: v.account_tier, 
+                        price: v.price,
+                        url: v.video_url
+                    }
                 }));
             }
         }
 
         async function loadAccounts() {
-            const { data } = await supabase.from('videos').select('video_id, video_title, description, account_tier, price, sold, video_url');
+            const { data, error } = await supabase.from('videos').select('video_id, video_title, description, account_tier, price, sold, video_url, storage_path, bucket_name');
+            if (error) {
+                console.error('Error loading accounts:', error);
+                return;
+            }
             if (data?.length) {
                 appState.accounts = data.map(v => ({
-                    id: v.video_id, title: v.video_title, description: v.description, tier: v.account_tier,
-                    price: v.price, sold: v.sold || false, url: v.video_url
+                    id: v.video_id, 
+                    title: v.video_title, 
+                    description: v.description, 
+                    tier: v.account_tier,
+                    price: v.price, 
+                    sold: v.sold || false, 
+                    url: v.video_url,
+                    storage_path: v.storage_path,
+                    bucket_name: v.bucket_name
                 }));
             }
         }
 
         async function loadBookRequests() {
-            const { data } = await supabase.from('book_requests').select('*').order('created_at', { ascending: false });
+            const { data, error } = await supabase.from('book_requests').select('*').order('created_at', { ascending: false });
+            if (error) {
+                console.error('Error loading book requests:', error);
+                return;
+            }
             if (data) appState.bookRequests = data;
         }
 
@@ -1353,33 +1424,60 @@ CREATE TABLE book_requests (
             }
         }
 
-        function viewAccount(id) {
-            playVideoFromAccount(id);
-        }
-
         function navigateVideo(dir) {
             if (dir === 'prev' && appState.currentVideoIndex > 0) loadVideo(--appState.currentVideoIndex);
             if (dir === 'next' && appState.currentVideoIndex < appState.videos.length - 1) loadVideo(++appState.currentVideoIndex);
         }
 
+        // UPDATED: Admin Login function
         async function adminLogin(e) {
             e.preventDefault();
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
             
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-            if (error) return showToast('error', 'Admin Login', 'Invalid credentials');
-            
-            if (data.user?.user_metadata?.role === 'admin') {
-                appState.isAdminLoggedIn = true;
-                appState.isLoggedIn = true;
-                appState.currentUser = { email, name: 'Admin User', role: 'admin' };
-                localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
-                localStorage.setItem('gkStoreAdmin', 'true');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                showToast('success', 'Admin Login', 'Logged in as admin');
-                updateAdminStats();
-            } else showToast('error', 'Admin Login', 'Not authorized as admin');
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ 
+                    email, 
+                    password: pass 
+                });
+                
+                if (error) {
+                    console.error('Login error:', error);
+                    return showToast('error', 'Admin Login', 'Invalid credentials');
+                }
+                
+                if (data.user) {
+                    // Check if user has admin role in metadata
+                    const userRole = data.user.user_metadata?.role || 
+                                    data.user.raw_user_meta_data?.role;
+                    
+                    if (userRole === 'admin') {
+                        appState.isAdminLoggedIn = true;
+                        appState.isLoggedIn = true;
+                        appState.currentUser = { 
+                            email: data.user.email, 
+                            name: 'Admin User', 
+                            role: 'admin',
+                            id: data.user.id
+                        };
+                        
+                        localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+                        localStorage.setItem('gkStoreAdmin', 'true');
+                        localStorage.setItem('supabase.auth.token', data.session?.access_token);
+                        
+                        document.getElementById('admin-dashboard').classList.remove('hidden');
+                        showToast('success', 'Admin Login', 'Logged in as admin');
+                        showPage('admin');
+                        updateAdminStats();
+                    } else {
+                        showToast('error', 'Admin Login', 'Not authorized as admin');
+                        await supabase.auth.signOut();
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showToast('error', 'Admin Login', 'Login failed');
+            }
         }
 
         function updateAdminStats() {
@@ -1408,64 +1506,259 @@ CREATE TABLE book_requests (
         }
 
         function showUploadVideo() {
-            if (!appState.isAdminLoggedIn) return showToast('error', 'Access Denied', 'Login as admin first');
-            document.getElementById('video-id').value = `vid_${(appState.videos.length + 1).toString().padStart(3,'0')}`;
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Login as admin first');
+                return;
+            }
+            resetUploadForm();
             showModal('upload-video-modal');
+        }
+
+        function resetUploadForm() {
+            document.getElementById('video-title-input').value = '';
+            document.getElementById('video-description-input').value = '';
+            document.getElementById('video-price').value = '';
+            document.getElementById('video-tier').value = '';
+            document.getElementById('video-file').value = '';
+            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('upload-status').classList.add('hidden');
+            document.getElementById('upload-progress').style.width = '0%';
+            document.getElementById('file-upload-area').classList.remove('has-file');
+            document.getElementById('file-upload-text').textContent = 'Click to select video file';
+            appState.currentUpload.file = null;
+        }
+
+        function updateBucketInfo() {
+            const tier = document.getElementById('video-tier').value;
+            const fileUploadArea = document.getElementById('file-upload-area');
+            let maxSize = '500MB';
+            
+            if (tier === 'small') maxSize = '100MB';
+            else if (tier === 'medium') maxSize = '200MB';
+            
+            fileUploadArea.querySelector('.text-xs').textContent = `MP4, WebM, OGG (max ${maxSize})`;
         }
 
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.size > 100 * 1024 * 1024) return showToast('error', 'File Too Large', 'Max 100MB');
+            
+            const tier = document.getElementById('video-tier').value;
+            if (!tier) {
+                showToast('error', 'Select Tier', 'Please select a tier first');
+                document.getElementById('video-file').value = '';
+                return;
+            }
+            
+            // Check file size based on tier
+            let maxSize = 500 * 1024 * 1024; // 500MB default for big
+            if (tier === 'small') maxSize = 100 * 1024 * 1024;
+            else if (tier === 'medium') maxSize = 200 * 1024 * 1024;
+            
+            if (file.size > maxSize) {
+                const maxSizeMB = maxSize / (1024 * 1024);
+                showToast('error', 'File Too Large', `Maximum size for ${tier} tier is ${maxSizeMB}MB`);
+                document.getElementById('video-file').value = '';
+                return;
+            }
+            
+            // Check file type
+            const validTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+            if (!validTypes.includes(file.type)) {
+                showToast('error', 'Invalid Format', 'Please upload MP4, WebM, or OGG video');
+                document.getElementById('video-file').value = '';
+                return;
+            }
+            
             appState.currentUpload.file = file;
-            document.getElementById('video-url-input').value = URL.createObjectURL(file);
+            
+            // Update UI
+            document.getElementById('file-info').classList.remove('hidden');
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('file-size').textContent = formatFileSize(file.size);
+            document.getElementById('file-upload-area').classList.add('has-file');
+            document.getElementById('file-upload-text').textContent = 'File selected';
+            
             showToast('info', 'File Selected', file.name);
         }
 
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // UPDATED: Main upload function with storage and database
         async function uploadVideo() {
-            if (!appState.isAdminLoggedIn) return;
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Please login as admin first');
+                return;
+            }
             
-            const id = document.getElementById('video-id').value;
+            // Get form values
             const title = document.getElementById('video-title-input').value;
-            const desc = document.getElementById('video-description-input').value;
+            const description = document.getElementById('video-description-input').value || 'No description';
             const price = parseFloat(document.getElementById('video-price').value);
             const tier = document.getElementById('video-tier').value;
-            let url = document.getElementById('video-url-input').value;
+            const file = appState.currentUpload.file;
             
-            if (!id || !title || !price || !tier || !url) return showToast('error', 'Validation Error', 'Fill all fields');
+            // Validate inputs
+            if (!title || !price || !tier || !file) {
+                showToast('error', 'Validation Error', 'Please fill all fields and select a video');
+                return;
+            }
             
-            const btn = document.querySelector('#upload-video-modal button');
+            // Generate unique video ID
+            const videoId = `vid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Determine bucket name
+            const bucketName = `videos-${tier}`;
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${videoId}.${fileExt}`;
+            const filePath = `${fileName}`;
+            
+            // Show progress
+            const statusDiv = document.getElementById('upload-status');
+            const progressBar = document.getElementById('upload-progress');
+            const progressText = document.getElementById('upload-percentage');
+            const statusText = document.getElementById('upload-status-text');
+            
+            statusDiv.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            statusText.textContent = 'Preparing upload...';
+            
+            const btn = document.getElementById('upload-btn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Adding...';
+            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Uploading...';
             
             try {
-                const { data, error } = await supabase.from('videos').insert([{
-                    video_id: id, video_title: title, description: desc || 'No description',
-                    video_url: url, account_tier: tier, price, sold: false, views: 0, likes: 0
-                }]).select();
-                
-                if (error) throw error;
-                
-                if (data?.[0]) {
-                    appState.videos.unshift({
-                        id: data[0].video_id, title: data[0].video_title, description: data[0].description,
-                        views: 0, likes: 0, url: data[0].video_url, tier: data[0].account_tier,
-                        price: data[0].price, account: { id: data[0].video_id, title: data[0].video_title, tier: data[0].account_tier, price: data[0].price }
-                    });
-                    appState.accounts.unshift({
-                        id: data[0].video_id, title: data[0].video_title, description: data[0].description,
-                        tier: data[0].account_tier, price: data[0].price, sold: false, url: data[0].video_url
-                    });
-                    loadHomeContent();
-                    updateAdminStats();
-                    closeModal('upload-video-modal');
-                    showToast('success', 'Video Added', title);
+                // Get current session
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    throw new Error('No active session. Please login again.');
                 }
+                
+                // Step 1: Upload file to Supabase Storage
+                statusText.textContent = 'Uploading to storage...';
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from(bucketName)
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        onUploadProgress: (progress) => {
+                            const percent = (progress.loaded / progress.total) * 100;
+                            progressBar.style.width = `${percent}%`;
+                            progressText.textContent = `${Math.round(percent)}%`;
+                            statusText.textContent = `Uploading... ${Math.round(percent)}%`;
+                        }
+                    });
+                
+                if (uploadError) {
+                    console.error('Storage upload error:', uploadError);
+                    throw new Error(`Storage upload failed: ${uploadError.message}`);
+                }
+                
+                statusText.textContent = 'Upload complete! Getting public URL...';
+                
+                // Step 2: Get public URL
+                const { data: urlData } = supabase.storage
+                    .from(bucketName)
+                    .getPublicUrl(filePath);
+                
+                const publicUrl = urlData.publicUrl;
+                
+                statusText.textContent = 'Saving to database...';
+                
+                // Step 3: Insert video record into database
+                const { data: insertData, error: insertError } = await supabase
+                    .from('videos')
+                    .insert([{
+                        video_id: videoId,
+                        video_title: title,
+                        description: description,
+                        video_url: publicUrl,
+                        storage_path: filePath,
+                        bucket_name: bucketName,
+                        account_tier: tier,
+                        price: price,
+                        sold: false,
+                        views: 0,
+                        likes: 0
+                    }])
+                    .select();
+                
+                if (insertError) {
+                    console.error('Database insert error:', insertError);
+                    
+                    // If database insert fails, try to clean up the uploaded file
+                    await supabase.storage.from(bucketName).remove([filePath]);
+                    
+                    throw new Error(`Database insert failed: ${insertError.message}`);
+                }
+                
+                statusText.textContent = 'Complete!';
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+                
+                // Add to local state
+                const newVideo = insertData[0];
+                appState.videos.unshift({
+                    id: newVideo.video_id,
+                    title: newVideo.video_title,
+                    description: newVideo.description,
+                    views: 0,
+                    likes: 0,
+                    url: newVideo.video_url,
+                    tier: newVideo.account_tier,
+                    price: newVideo.price,
+                    storage_path: newVideo.storage_path,
+                    bucket_name: newVideo.bucket_name,
+                    account: {
+                        id: newVideo.video_id,
+                        title: newVideo.video_title,
+                        tier: newVideo.account_tier,
+                        price: newVideo.price,
+                        url: newVideo.video_url
+                    }
+                });
+                
+                appState.accounts.unshift({
+                    id: newVideo.video_id,
+                    title: newVideo.video_title,
+                    description: newVideo.description,
+                    tier: newVideo.account_tier,
+                    price: newVideo.price,
+                    sold: false,
+                    url: newVideo.video_url,
+                    storage_path: newVideo.storage_path,
+                    bucket_name: newVideo.bucket_name
+                });
+                
+                // Update UI
+                loadHomeContent();
+                updateAdminStats();
+                
+                showToast('success', 'Success!', `Video "${title}" uploaded successfully`);
+                
+                // Close modal after a short delay
+                setTimeout(() => {
+                    closeModal('upload-video-modal');
+                    resetUploadForm();
+                }, 1500);
+                
             } catch (error) {
+                console.error('Upload error:', error);
                 showToast('error', 'Upload Failed', error.message);
+                
+                statusDiv.classList.add('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
             }
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-upload"></i> Add Video';
         }
 
         async function showManageVideos() {
@@ -1477,18 +1770,28 @@ CREATE TABLE book_requests (
         async function loadAdminVideos(filter = 'all') {
             const list = document.getElementById('admin-videos-list');
             const filtered = filter === 'all' ? appState.videos : appState.videos.filter(v => v.tier === filter);
-            list.innerHTML = filtered.length ? '' : '<div class="text-center py-8">No videos</div>';
+            
+            if (!filtered.length) {
+                list.innerHTML = '<div class="text-center py-8 text-zinc-400">No videos found</div>';
+                return;
+            }
+            
+            list.innerHTML = '';
             filtered.forEach(v => {
                 list.innerHTML += `
                     <div class="flex items-center justify-between p-3 bg-surface-light rounded-lg">
-                        <div>
+                        <div class="flex-1">
                             <div class="flex items-center gap-2">
                                 <span class="font-medium">${v.title}</span>
                                 <span class="badge ${v.tier === 'big' ? 'badge-primary' : v.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${v.tier}</span>
                             </div>
                             <p class="text-xs text-zinc-400">ID: ${v.id} • $${v.price}</p>
                         </div>
-                        <button class="btn btn-sm btn-danger" onclick="deleteVideo('${v.id}')"><i class="fas fa-trash"></i></button>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-danger" onclick="deleteVideo('${v.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
             });
@@ -1502,13 +1805,37 @@ CREATE TABLE book_requests (
 
         async function deleteVideo(id) {
             if (!appState.isAdminLoggedIn || !confirm('Delete this video?')) return;
-            const { error } = await supabase.from('videos').delete().eq('video_id', id);
-            if (error) return showToast('error', 'Delete Failed', error.message);
-            appState.videos = appState.videos.filter(v => v.id !== id);
-            appState.accounts = appState.accounts.filter(a => a.id !== id);
-            loadAdminVideos('all');
-            updateAdminStats();
-            showToast('success', 'Video Deleted', 'Removed successfully');
+            
+            const video = appState.videos.find(v => v.id === id);
+            
+            try {
+                // Delete from storage if exists
+                if (video?.storage_path && video?.bucket_name) {
+                    await supabase.storage
+                        .from(video.bucket_name)
+                        .remove([video.storage_path]);
+                }
+                
+                // Delete from database
+                const { error } = await supabase
+                    .from('videos')
+                    .delete()
+                    .eq('video_id', id);
+                
+                if (error) throw error;
+                
+                // Update local state
+                appState.videos = appState.videos.filter(v => v.id !== id);
+                appState.accounts = appState.accounts.filter(a => a.id !== id);
+                
+                loadAdminVideos('all');
+                updateAdminStats();
+                showToast('success', 'Video Deleted', 'Removed successfully');
+                
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('error', 'Delete Failed', error.message);
+            }
         }
 
         async function showBookRequests() {
@@ -1556,6 +1883,9 @@ CREATE TABLE book_requests (
 
         function bookAccount() {
             if (!appState.currentAccount) return;
+            document.getElementById('book-account-name').textContent = appState.currentAccount.title;
+            document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
+            document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price}`;
             showModal('book-modal');
         }
 
@@ -1573,11 +1903,15 @@ CREATE TABLE book_requests (
             if (!name || !whatsapp || !appState.currentAccount) return showToast('error', 'Validation Error', 'Fill all fields');
             
             const { error } = await supabase.from('book_requests').insert([{
-                video_id: appState.currentAccount.id, user_name: name, whatsapp_number: whatsapp
+                video_id: appState.currentAccount.id, 
+                user_name: name, 
+                whatsapp_number: whatsapp
             }]);
             
-            if (error) showToast('error', 'Submission Failed', error.message);
-            else {
+            if (error) {
+                console.error('Book request error:', error);
+                showToast('error', 'Submission Failed', error.message);
+            } else {
                 showToast('success', 'Request Submitted', 'We will contact you');
                 closeModal('book-modal');
                 document.getElementById('book-name').value = '';
@@ -1586,14 +1920,15 @@ CREATE TABLE book_requests (
         }
 
         function showShareModal(id) {
-            appState.shareVideo = appState.videos.find(v => v.id === id);
-            document.getElementById('share-video-title').textContent = appState.shareVideo?.title;
+            appState.shareVideo = appState.videos.find(v => v.id === id) || 
+                                 { id, title: 'Share Video' };
+            document.getElementById('share-video-title').textContent = appState.shareVideo?.title || 'Video';
             showModal('share-modal');
         }
 
         function shareViaWhatsApp() {
             if (!appState.shareVideo) return;
-            window.open(`https://wa.me/?text=${encodeURIComponent(`${appState.shareVideo.title} - ${window.location.href}`)}`, '_blank');
+            window.open(`https://wa.me/?text=${encodeURIComponent(`Check out this video: ${appState.shareVideo.title} - ${window.location.href}`)}`, '_blank');
         }
 
         function shareViaTelegram() {
@@ -1608,8 +1943,13 @@ CREATE TABLE book_requests (
 
         function shareViaSystem() {
             if (navigator.share && appState.shareVideo) {
-                navigator.share({ title: appState.shareVideo.title, url: window.location.href });
-            } else copyShareLink();
+                navigator.share({ 
+                    title: appState.shareVideo.title, 
+                    url: window.location.href 
+                });
+            } else {
+                copyShareLink();
+            }
         }
 
         function copyUSDTAddress() {
@@ -1628,7 +1968,7 @@ CREATE TABLE book_requests (
 
         function openPaymentChat() {
             if (!appState.currentAccount) return;
-            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(`Buying: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank');
+            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank');
         }
 
         function showLoginForm() {
@@ -1651,9 +1991,14 @@ CREATE TABLE book_requests (
 
         function login(e) {
             e.preventDefault();
-            appState.currentUser = { email: document.getElementById('login-email').value, name: 'User' };
+            appState.currentUser = { 
+                email: document.getElementById('login-email').value, 
+                name: 'User' 
+            };
             appState.isLoggedIn = true;
-            if (document.getElementById('remember-me').checked) localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+            if (document.getElementById('remember-me').checked) {
+                localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
+            }
             showToast('success', 'Welcome', 'Login successful');
             showPage('home');
         }
@@ -1665,7 +2010,10 @@ CREATE TABLE book_requests (
             if (pass !== confirm) return showToast('error', 'Signup Failed', 'Passwords do not match');
             if (pass.length < 6) return showToast('error', 'Signup Failed', 'Password too short');
             
-            appState.currentUser = { name: document.getElementById('signup-name').value, email: document.getElementById('signup-email').value };
+            appState.currentUser = { 
+                name: document.getElementById('signup-name').value, 
+                email: document.getElementById('signup-email').value 
+            };
             appState.isLoggedIn = true;
             localStorage.setItem('gkStoreUser', JSON.stringify(appState.currentUser));
             showToast('success', 'Welcome', 'Account created');
@@ -1679,12 +2027,13 @@ CREATE TABLE book_requests (
         }
 
         async function logout() {
-            if (appState.isAdminLoggedIn) await supabase.auth.signOut();
+            await supabase.auth.signOut();
             appState.isLoggedIn = false;
             appState.currentUser = null;
             appState.isAdminLoggedIn = false;
             localStorage.removeItem('gkStoreUser');
             localStorage.removeItem('gkStoreAdmin');
+            localStorage.removeItem('supabase.auth.token');
             showPage('auth');
         }
 
@@ -1722,7 +2071,11 @@ CREATE TABLE book_requests (
 
         function showToast(type, title, msg) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-icon').className = `fas ${type === 'success' ? 'fa-check-circle text-success' : type === 'error' ? 'fa-exclamation-circle text-danger' : 'fa-info-circle text-primary'}`;
+            document.getElementById('toast-icon').className = `fas ${
+                type === 'success' ? 'fa-check-circle text-success' : 
+                type === 'error' ? 'fa-exclamation-circle text-danger' : 
+                'fa-info-circle text-primary'
+            }`;
             document.getElementById('toast-title').textContent = title;
             document.getElementById('toast-message').textContent = msg;
             toast.classList.remove('hidden');
