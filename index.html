@@ -165,14 +165,26 @@
             padding-top: 60px; 
             padding-bottom: 70px; 
             height: 100%; 
-            overflow-y: auto;  /* Changed to auto to ensure scroll when needed */
-            position: relative;
+            overflow-y: auto !important;  /* Force scroll when needed */
             -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
+            position: relative;
         }
 
-        /* Additional fix for admin page content to scroll properly */
-        #admin-page .px-4 {
+        /* Additional fix for admin page and other pages to scroll properly */
+        .page {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            height: 100%;
+        }
+        
+        /* Ensure inner containers also scroll if needed */
+        #admin-page .px-4,
+        #accounts-page .px-4,
+        #profile-page .px-4,
+        #contact-page .px-4,
+        #notifications-page .px-4 {
             padding-bottom: 20px; /* ensure bottom padding so last items visible */
+            overflow-y: visible;
         }
 
         .input-group { margin-bottom: 1.5rem; }
@@ -226,9 +238,27 @@
         #toast { position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 3000; display: flex; justify-content: center; pointer-events: none; }
         #toast > div { max-width: 400px; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); padding: 1rem; }
 
-        /* Offline indicator */
-        .offline-indicator { position: fixed; top: 60px; left: 16px; right: 16px; background: var(--danger); color: white; padding: 0.75rem; border-radius: 0.75rem; text-align: center; font-size: 0.875rem; z-index: 2000; transform: translateY(-100px); transition: transform 0.3s; }
-        .offline-indicator.show { transform: translateY(0); }
+        /* Offline indicator - fixed to show only when actually offline */
+        .offline-indicator { 
+            position: fixed; 
+            top: 60px; 
+            left: 16px; 
+            right: 16px; 
+            background: var(--danger); 
+            color: white; 
+            padding: 0.75rem; 
+            border-radius: 0.75rem; 
+            text-align: center; 
+            font-size: 0.875rem; 
+            z-index: 2000; 
+            transform: translateY(-100px); 
+            transition: transform 0.3s; 
+            display: none; /* Hidden by default, shown via JS when offline */
+        }
+        .offline-indicator.show { 
+            transform: translateY(0); 
+            display: block; /* Ensure it's visible when .show is applied */
+        }
 
         /* Notification bell */
         .notification-bell { position: fixed; bottom: 90px; right: 16px; width: 48px; height: 48px; background: var(--gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem; cursor: pointer; z-index: 1500; box-shadow: 0 4px 12px rgba(236,72,153,0.4); }
@@ -239,7 +269,7 @@
     </style>
 </head>
 <body>
-    <!-- Offline Indicator -->
+    <!-- Offline Indicator - Fixed: initially hidden, only shows when offline -->
     <div id="offline-indicator" class="offline-indicator">
         <i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be limited.
     </div>
@@ -273,7 +303,7 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Main Content - now with proper scrolling -->
     <div id="content-container" class="content">
         <!-- Auth Page -->
         <div id="auth-page" class="page">
@@ -1316,7 +1346,21 @@ CREATE TABLE book_requests (
         function loadPreferences() { appState.language = localStorage.getItem('appLanguage') || 'en'; appState.theme = localStorage.getItem('appTheme') || 'dark'; document.documentElement.setAttribute('data-theme', appState.theme); }
         function setupPWAInstall() { const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; if (isInstalled) { document.getElementById('pwa-install-btn')?.classList.add('hidden'); return; } window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); appState.deferredPrompt = e; showInstallButton(); }); }
         function showInstallButton() { const btn = document.getElementById('pwa-install-btn'); if (btn) { btn.classList.remove('hidden'); btn.onclick = async () => { if (appState.deferredPrompt) { appState.deferredPrompt.prompt(); const { outcome } = await appState.deferredPrompt.userChoice; console.log(`User response to install: ${outcome}`); appState.deferredPrompt = null; btn.classList.add('hidden'); } }; } }
-        function setupEventListeners() { document.getElementById('reels-container')?.addEventListener('scroll', () => { clearTimeout(appState.scrollTimeout); appState.scrollTimeout = setTimeout(handleReelScroll, 100); }); window.addEventListener('online', () => { document.getElementById('offline-indicator').classList.remove('show'); showToast('success', 'Back Online', 'Connection restored'); }); window.addEventListener('offline', () => { document.getElementById('offline-indicator').classList.add('show'); showToast('error', 'Offline', 'Connection lost'); }); }
+        function setupEventListeners() { 
+            document.getElementById('reels-container')?.addEventListener('scroll', () => { clearTimeout(appState.scrollTimeout); appState.scrollTimeout = setTimeout(handleReelScroll, 100); }); 
+            window.addEventListener('online', () => { 
+                document.getElementById('offline-indicator').classList.remove('show'); 
+                showToast('success', 'Back Online', 'Connection restored'); 
+            }); 
+            window.addEventListener('offline', () => { 
+                document.getElementById('offline-indicator').classList.add('show'); 
+                showToast('error', 'Offline', 'Connection lost'); 
+            }); 
+            // Initial offline check
+            if (!navigator.onLine) {
+                document.getElementById('offline-indicator').classList.add('show');
+            }
+        }
         function setupOrientationHandling() { window.addEventListener('orientationchange', () => { clearTimeout(appState.orientationTimeout); appState.orientationTimeout = setTimeout(() => { if (appState.currentPage === 'home' && window.innerWidth > window.innerHeight && !document.fullscreenElement) rotateToFullscreen(); }, 100); }); }
         function showPlayPauseIndicator(action) { const indicator = document.getElementById('play-pause-indicator'); indicator.innerHTML = `<i class="fas fa-${action === 'play' ? 'play' : 'pause'}"></i>`; indicator.classList.add('show'); setTimeout(() => indicator.classList.remove('show'), 500); }
         async function checkDatabaseSetup() { try { const { error } = await supabase.from('videos').select('count').limit(1); if (error?.code === '42P01') showModal('sql-setup-modal'); } catch { showModal('sql-setup-modal'); } }
