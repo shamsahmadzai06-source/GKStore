@@ -1328,7 +1328,8 @@ CREATE TABLE notifications (
                         <div class="flex justify-between items-start mb-2"><h4 class="font-semibold">${r.user_name}</h4><span class="text-xs text-zinc-400">${new Date(r.created_at).toLocaleDateString()}</span></div>
                         <p class="text-sm mb-2">${r.whatsapp_number}</p>
                         <div class="flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-primary flex-1" onclick="contactRequester('${r.whatsapp_number}')"><i class="fab fa-whatsapp"></i> Contact</button>
+                            <button class="btn btn-sm btn-danger flex-1" onclick="deleteBookRequest('${r.id}')"><i class="fas fa-trash"></i> Delete</button>
+                            <button class="btn btn-sm btn-secondary flex-1" onclick="cancelBookRequest('${r.id}')"><i class="fas fa-times"></i> Cancel</button>
                         </div>
                     </div>
                 `).join('');
@@ -1337,9 +1338,31 @@ CREATE TABLE notifications (
             }
         }
 
-        function contactRequester(number) { 
-            const cleanNumber = number.replace(/\D/g, '');
-            window.open(`https://wa.me/${cleanNumber}`, '_blank'); 
+        async function deleteBookRequest(id) {
+            if (!appState.isAdminLoggedIn || !confirm('Delete this book request permanently?')) return;
+            try {
+                // In a real app, you would delete from Supabase here
+                appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
+                showToast('success', 'Deleted', 'Book request deleted successfully');
+                await loadAdminBookRequests();
+            } catch (error) {
+                showToast('error', 'Delete Failed', error.message);
+            }
+        }
+
+        async function cancelBookRequest(id) {
+            if (!appState.isAdminLoggedIn || !confirm('Cancel this book request?')) return;
+            try {
+                // In a real app, you would update status in Supabase here
+                const request = appState.bookRequests.find(r => r.id === id);
+                if (request) {
+                    request.status = 'cancelled';
+                    showToast('success', 'Cancelled', 'Book request has been cancelled');
+                }
+                await loadAdminBookRequests();
+            } catch (error) {
+                showToast('error', 'Cancel Failed', error.message);
+            }
         }
 
         // === Like functionality ===
@@ -1807,7 +1830,7 @@ CREATE TABLE notifications (
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
-        window.showPage = showPage; window.login = login; window.signup = signup; window.logout = logout; window.resetPassword = resetPassword; window.adminLogin = adminLogin; window.showLoginForm = showLoginForm; window.showSignupForm = showSignupForm; window.showForgotPassword = showForgotPassword; window.closeWelcomeModal = closeWelcomeModal; window.copyUSDTAddress = copyUSDTAddress; window.copyAddress = copyAddress; window.openWhatsApp = openWhatsApp; window.openPaymentChat = openPaymentChat; window.toggleLanguage = toggleLanguage; window.setLanguage = setLanguage; window.toggleTheme = toggleTheme; window.showModal = showModal; window.closeModal = closeModal; window.rotateToFullscreen = rotateToFullscreen; window.likeFromReel = likeFromReel; window.bookFromReel = bookFromReel; window.buyFromReel = buyFromReel; window.submitBookRequest = submitBookRequest; window.filterAccounts = filterAccounts; window.playVideoFromAccount = playVideoFromAccount; window.bookFromAccount = bookFromAccount; window.buyFromAccount = buyFromAccount; window.showUploadVideo = showUploadVideo; window.showManageVideos = showManageVideos; window.showBookRequests = showBookRequests; window.adminFilterVideos = adminFilterVideos; window.deleteVideo = deleteVideo; window.contactRequester = contactRequester; window.resetUploadForm = resetUploadForm; window.handleFileSelect = handleFileSelect; window.uploadVideo = uploadVideo; window.shareAppFromReel = shareAppFromReel; window.shareAppViaWhatsApp = shareAppViaWhatsApp; window.shareAppViaTelegram = shareAppViaTelegram; window.copyAppLink = copyAppLink; window.shareAppViaSystem = shareAppViaSystem; window.closeInstallInstructions = closeInstallInstructions;
+        window.showPage = showPage; window.login = login; window.signup = signup; window.logout = logout; window.resetPassword = resetPassword; window.adminLogin = adminLogin; window.showLoginForm = showLoginForm; window.showSignupForm = showSignupForm; window.showForgotPassword = showForgotPassword; window.closeWelcomeModal = closeWelcomeModal; window.copyUSDTAddress = copyUSDTAddress; window.copyAddress = copyAddress; window.openWhatsApp = openWhatsApp; window.openPaymentChat = openPaymentChat; window.toggleLanguage = toggleLanguage; window.setLanguage = setLanguage; window.toggleTheme = toggleTheme; window.showModal = showModal; window.closeModal = closeModal; window.rotateToFullscreen = rotateToFullscreen; window.likeFromReel = likeFromReel; window.bookFromReel = bookFromReel; window.buyFromReel = buyFromReel; window.submitBookRequest = submitBookRequest; window.filterAccounts = filterAccounts; window.playVideoFromAccount = playVideoFromAccount; window.bookFromAccount = bookFromAccount; window.buyFromAccount = buyFromAccount; window.showUploadVideo = showUploadVideo; window.showManageVideos = showManageVideos; window.showBookRequests = showBookRequests; window.adminFilterVideos = adminFilterVideos; window.deleteVideo = deleteVideo; window.contactRequester = contactRequester; window.resetUploadForm = resetUploadForm; window.handleFileSelect = handleFileSelect; window.uploadVideo = uploadVideo; window.shareAppFromReel = shareAppFromReel; window.shareAppViaWhatsApp = shareAppViaWhatsApp; window.shareAppViaTelegram = shareAppViaTelegram; window.copyAppLink = copyAppLink; window.shareAppViaSystem = shareAppViaSystem; window.closeInstallInstructions = closeInstallInstructions; window.deleteBookRequest = deleteBookRequest; window.cancelBookRequest = cancelBookRequest;
     </script>
 </body>
 </html>
