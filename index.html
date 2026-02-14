@@ -622,7 +622,7 @@
                     </div>
                     <div class="input-group">
                         <label class="input-label">WhatsApp Number</label>
-                        <input type="tel" class="input" id="book-whatsapp" required>
+                        <input type="tel" class="input" id="book-whatsapp" required placeholder="e.g. 93793066322">
                     </div>
                 </form>
             </div>
@@ -1048,7 +1048,11 @@ CREATE TABLE book_requests (
             }
         }
 
-        function contactRequester(number) { window.open(`https://wa.me/${number.replace(/\D/g, '')}`, '_blank'); }
+        function contactRequester(number) { 
+            // Clean the number: remove any non-digit characters
+            const cleanNumber = number.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanNumber}`, '_blank'); 
+        }
 
         // === Like functionality ===
         async function likeFromReel(index) {
@@ -1069,29 +1073,46 @@ CREATE TABLE book_requests (
             } catch (error) { showToast('error', 'Like Failed', error.message); }
         }
 
-        // === Rotate/Fullscreen fix ===
+        // === Rotate/Fullscreen fix - now with proper exit handling ===
         function rotateToFullscreen() {
             const video = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
             if (!video) return;
-            if (!document.fullscreenElement) {
-                if (video.requestFullscreen) video.requestFullscreen();
-                else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-                else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
-                video.classList.add('fullscreen-mode');
-                document.body.classList.add('video-playing');
-                const indicator = document.getElementById('rotate-indicator');
-                indicator.classList.remove('hidden');
-                setTimeout(() => indicator.classList.add('hidden'), 3000);
-            } else {
+            
+            // If already in fullscreen, exit
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                 video.classList.remove('fullscreen-mode');
                 document.body.classList.remove('video-playing');
+                return;
             }
+            
+            // Enter fullscreen
+            if (video.requestFullscreen) video.requestFullscreen();
+            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+            else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+            
+            video.classList.add('fullscreen-mode');
+            document.body.classList.add('video-playing');
+            
+            // Show rotate indicator briefly
+            const indicator = document.getElementById('rotate-indicator');
+            indicator.classList.remove('hidden');
+            setTimeout(() => indicator.classList.add('hidden'), 3000);
         }
 
-        document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('video-playing'); });
-        document.addEventListener('webkitfullscreenchange', () => { if (!document.webkitFullscreenElement) document.body.classList.remove('video-playing'); });
+        // Listen for fullscreen change events to clean up
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        
+        function handleFullscreenChange() {
+            const video = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // Exited fullscreen
+                if (video) video.classList.remove('fullscreen-mode');
+                document.body.classList.remove('video-playing');
+            }
+        }
 
         // === Data loading ===
         async function loadInitialData() {
@@ -1119,8 +1140,16 @@ CREATE TABLE book_requests (
 
         async function loadBookRequests() {
             const { data, error } = await supabase.from('book_requests').select('*').order('created_at', { ascending: false });
-            if (error) { appState.bookRequests = []; return; }
-            if (data) appState.bookRequests = data;
+            if (error) { 
+                console.log('Error loading book requests:', error);
+                appState.bookRequests = []; 
+                return; 
+            }
+            if (data) {
+                appState.bookRequests = data;
+                // Update notification badge if needed
+                updateNotificationBadge();
+            }
         }
 
         function initializeWithDemoData() {
@@ -1238,13 +1267,48 @@ CREATE TABLE book_requests (
             const name = document.getElementById('book-name').value;
             const whatsapp = document.getElementById('book-whatsapp').value;
             if (!name || !whatsapp || !appState.currentAccount) return showToast('error', 'Validation Error', 'Please fill all fields');
+            
             try {
-                const { error } = await supabase.from('book_requests').insert([{ video_id: appState.currentAccount.id, user_name: name, whatsapp_number: whatsapp }]);
+                // Insert the book request
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .insert([{ 
+                        video_id: appState.currentAccount.id, 
+                        user_name: name, 
+                        whatsapp_number: whatsapp 
+                    }])
+                    .select();
+                    
                 if (error) throw error;
+                
+                // Success - refresh book requests in admin panel
                 showToast('success', 'Request Submitted', 'We will contact you soon');
                 closeModal('book-modal');
-                document.getElementById('book-name').value = ''; document.getElementById('book-whatsapp').value = '';
-            } catch (error) { showToast('error', 'Submission Failed', error.message); }
+                document.getElementById('book-name').value = ''; 
+                document.getElementById('book-whatsapp').value = '';
+                
+                // Reload book requests to update admin view
+                await loadBookRequests();
+                
+                // Show notification badge if admin is logged in
+                if (appState.isAdminLoggedIn && appState.bookRequests.length > 0) {
+                    document.getElementById('notification-count').textContent = appState.bookRequests.length;
+                    document.getElementById('notification-count').classList.remove('hidden');
+                }
+                
+            } catch (error) { 
+                console.error('Submission error:', error);
+                showToast('error', 'Submission Failed', error.message); 
+            }
+        }
+
+        function updateNotificationBadge() {
+            if (appState.bookRequests.length > 0) {
+                document.getElementById('notification-count').textContent = appState.bookRequests.length;
+                document.getElementById('notification-count').classList.remove('hidden');
+            } else {
+                document.getElementById('notification-count').classList.add('hidden');
+            }
         }
 
         // === Page navigation ===
@@ -1259,6 +1323,8 @@ CREATE TABLE book_requests (
             if (page === 'home') { setTimeout(() => { pauseAllVideos(); playVideoAtIndex(appState.currentVideoIndex); }, 100); }
             if (page === 'accounts') loadAccountsContent();
             if (page === 'profile') updateProfileInfo();
+            if (page === 'admin') loadAdminBookRequests();
+            if (page === 'notifications') loadNotificationsPage();
         }
 
         function loadAccountsContent(filterTier = 'all') {
@@ -1320,6 +1386,32 @@ CREATE TABLE book_requests (
             }
         }
 
+        function loadNotificationsPage() {
+            const list = document.getElementById('notifications-list');
+            const empty = document.getElementById('notifications-empty');
+            
+            if (appState.bookRequests.length > 0) {
+                list.classList.remove('hidden');
+                empty.classList.add('hidden');
+                list.innerHTML = appState.bookRequests.map(r => `
+                    <div class="card p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-semibold">New Booking Request</h4>
+                            <span class="text-xs text-zinc-400">${new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p class="text-sm mb-2"><span class="font-medium">${r.user_name}</span> wants to book an account</p>
+                        <p class="text-sm mb-3">WhatsApp: ${r.whatsapp_number}</p>
+                        <button class="btn btn-sm btn-primary" onclick="contactRequester('${r.whatsapp_number}')">
+                            <i class="fab fa-whatsapp"></i> Contact
+                        </button>
+                    </div>
+                `).join('');
+            } else {
+                list.classList.add('hidden');
+                empty.classList.remove('hidden');
+            }
+        }
+
         // === UI Helpers ===
         function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.body.style.overflow = ''; }
@@ -1338,8 +1430,15 @@ CREATE TABLE book_requests (
         function closeWelcomeModal() { closeModal('welcome-modal'); showPage('auth'); }
         function copyUSDTAddress() { navigator.clipboard.writeText(document.getElementById('usdt-address').textContent); showToast('success', 'Copied!', 'Address copied to clipboard'); }
         function copyAddress() { navigator.clipboard.writeText(document.getElementById('payment-address').textContent); showToast('success', 'Copied!', 'Address copied to clipboard'); }
-        function openWhatsApp() { window.open('https://wa.me/93793066322?text=Hello%20GK%20Store', '_blank'); }
-        function openPaymentChat() { if (!appState.currentAccount) return; window.open(`https://wa.me/93793066322?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank'); }
+        function openWhatsApp() { 
+            const number = '93793066322';
+            window.open(`https://wa.me/${number}?text=Hello%20GK%20Store`, '_blank'); 
+        }
+        function openPaymentChat() { 
+            if (!appState.currentAccount) return; 
+            const number = '93793066322';
+            window.open(`https://wa.me/${number}?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank'); 
+        }
         function toggleLanguage() { showModal('language-modal'); }
         function setLanguage(lang) { appState.language = lang; localStorage.setItem('appLanguage', lang); document.querySelectorAll('[id^="lang-"]').forEach(c => c.classList.add('hidden')); document.getElementById(`lang-${lang}-check`).classList.remove('hidden'); document.body.dir = ['ar','fa','ur','ps'].includes(lang) ? 'rtl' : 'ltr'; closeModal('language-modal'); }
         function toggleTheme() { appState.theme = appState.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('appTheme', appState.theme); document.documentElement.setAttribute('data-theme', appState.theme); }
@@ -1361,7 +1460,17 @@ CREATE TABLE book_requests (
                 document.getElementById('offline-indicator').classList.add('show');
             }
         }
-        function setupOrientationHandling() { window.addEventListener('orientationchange', () => { clearTimeout(appState.orientationTimeout); appState.orientationTimeout = setTimeout(() => { if (appState.currentPage === 'home' && window.innerWidth > window.innerHeight && !document.fullscreenElement) rotateToFullscreen(); }, 100); }); }
+        function setupOrientationHandling() { 
+            window.addEventListener('orientationchange', () => { 
+                clearTimeout(appState.orientationTimeout); 
+                appState.orientationTimeout = setTimeout(() => { 
+                    // Only auto-rotate if we're on home page and not already in fullscreen
+                    if (appState.currentPage === 'home' && window.innerWidth > window.innerHeight && !document.fullscreenElement && !document.webkitFullscreenElement) {
+                        rotateToFullscreen(); 
+                    }
+                }, 100); 
+            }); 
+        }
         function showPlayPauseIndicator(action) { const indicator = document.getElementById('play-pause-indicator'); indicator.innerHTML = `<i class="fas fa-${action === 'play' ? 'play' : 'pause'}"></i>`; indicator.classList.add('show'); setTimeout(() => indicator.classList.remove('show'), 500); }
         async function checkDatabaseSetup() { try { const { error } = await supabase.from('videos').select('count').limit(1); if (error?.code === '42P01') showModal('sql-setup-modal'); } catch { showModal('sql-setup-modal'); } }
         function shareAppFromReel() { showModal('share-modal'); }
