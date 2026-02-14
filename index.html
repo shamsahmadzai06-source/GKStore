@@ -173,6 +173,42 @@
             background: #000;
         }
 
+        /* Fullscreen video styles */
+        .reel-video.fullscreen-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            object-fit: contain;
+            background: #000;
+        }
+
+        /* Landscape orientation handling */
+        @media (orientation: landscape) {
+            .reel-video.auto-rotate {
+                object-fit: cover;
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            /* Hide navigation in landscape when video is playing */
+            body.video-playing .top-nav,
+            body.video-playing .bottom-nav,
+            body.video-playing .notification-bell,
+            body.video-playing .pwa-install-btn {
+                transform: translateY(-100%);
+                opacity: 0;
+                transition: all 0.3s;
+            }
+            
+            /* Show controls on tap in landscape */
+            body.video-playing .reel-actions {
+                opacity: 1;
+            }
+        }
+
         /* Video overlay - TikTok style */
         .reel-overlay {
             position: absolute;
@@ -243,6 +279,7 @@
             gap: 20px;
             z-index: 20;
             pointer-events: none;
+            transition: opacity 0.3s;
         }
 
         .reel-action-btn {
@@ -277,6 +314,34 @@
         .reel-action-btn span {
             font-size: 0.7rem;
             font-weight: 600;
+        }
+
+        /* Rotate screen indicator */
+        .rotate-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: fadeInOut 3s forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
         }
 
         /* Top gradient */
@@ -346,6 +411,7 @@
         .top-nav {
             position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 1rem;
             background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+            transition: transform 0.3s ease;
         }
         .nav-content { display: flex; align-items: center; justify-content: space-between; }
         .logo { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; text-decoration: none; color: var(--text); }
@@ -355,6 +421,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; padding: 0.75rem 1rem;
             background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--border);
+            transition: transform 0.3s ease;
         }
         .nav-items { display: flex; justify-content: space-around; align-items: center; max-width: 400px; margin: 0 auto; }
         .nav-item {
@@ -1009,6 +1076,11 @@
         <div id="notification-count" class="notification-badge hidden">0</div>
     </div>
 
+    <!-- Rotate Screen Indicator -->
+    <div id="rotate-indicator" class="rotate-indicator hidden">
+        <i class="fas fa-undo-alt"></i> Rotate device for fullscreen
+    </div>
+
     <!-- Modals (keep all existing modals) -->
     <div id="book-modal" class="modal-overlay hidden">
         <div class="modal">
@@ -1312,13 +1384,16 @@ CREATE TABLE book_requests (
             currentAccount: null,
             isPlaying: true,
             scrollTimeout: null,
-            deferredPrompt: null
+            deferredPrompt: null,
+            orientationTimeout: null,
+            wasPlayingBeforeRotate: false
         };
 
         // Initialize app
         async function initApp() {
             loadPreferences();
             setupEventListeners();
+            setupOrientationHandling();
             setupPWAInstall();
             await checkDatabaseSetup();
             
@@ -1333,6 +1408,107 @@ CREATE TABLE book_requests (
                 showPage('home');
                 await loadInitialData();
             } else showPage('auth');
+        }
+
+        // Setup orientation handling for fullscreen video
+        function setupOrientationHandling() {
+            window.addEventListener('orientationchange', () => {
+                // Clear previous timeout
+                if (appState.orientationTimeout) {
+                    clearTimeout(appState.orientationTimeout);
+                }
+                
+                // Handle orientation change after a short delay
+                appState.orientationTimeout = setTimeout(() => {
+                    handleOrientationChange();
+                }, 100);
+            });
+
+            // Also listen for resize events (for browsers that don't support orientationchange well)
+            window.addEventListener('resize', () => {
+                if (appState.orientationTimeout) {
+                    clearTimeout(appState.orientationTimeout);
+                }
+                appState.orientationTimeout = setTimeout(() => {
+                    handleOrientationChange();
+                }, 100);
+            });
+        }
+
+        // Handle orientation change
+        function handleOrientationChange() {
+            if (appState.currentPage !== 'home') return;
+            
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const currentVideo = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
+            
+            if (isLandscape) {
+                // Enter landscape mode - show fullscreen video
+                enterFullscreenMode(currentVideo);
+                
+                // Show rotate indicator briefly
+                const indicator = document.getElementById('rotate-indicator');
+                indicator.classList.remove('hidden');
+                setTimeout(() => {
+                    indicator.classList.add('hidden');
+                }, 3000);
+            } else {
+                // Exit landscape mode - return to normal
+                exitFullscreenMode(currentVideo);
+            }
+        }
+
+        // Enter fullscreen mode
+        function enterFullscreenMode(videoElement) {
+            if (!videoElement) return;
+            
+            // Save current play state
+            appState.wasPlayingBeforeRotate = !videoElement.paused;
+            
+            // Add fullscreen class
+            videoElement.classList.add('fullscreen-mode', 'auto-rotate');
+            
+            // Hide navigation
+            document.body.classList.add('video-playing');
+            
+            // Try native fullscreen API
+            if (videoElement.requestFullscreen) {
+                videoElement.requestFullscreen();
+            } else if (videoElement.webkitRequestFullscreen) {
+                videoElement.webkitRequestFullscreen();
+            } else if (videoElement.webkitEnterFullscreen) {
+                videoElement.webkitEnterFullscreen();
+            }
+            
+            // Ensure video continues playing
+            if (appState.wasPlayingBeforeRotate) {
+                videoElement.play().catch(e => console.log('Play after rotate failed:', e));
+            }
+        }
+
+        // Exit fullscreen mode
+        function exitFullscreenMode(videoElement) {
+            if (!videoElement) return;
+            
+            // Remove fullscreen class
+            videoElement.classList.remove('fullscreen-mode', 'auto-rotate');
+            
+            // Show navigation again
+            document.body.classList.remove('video-playing');
+            
+            // Exit native fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.webkitCancelFullScreen) {
+                document.webkitCancelFullScreen();
+            }
+            
+            // Ensure video continues playing
+            if (appState.wasPlayingBeforeRotate) {
+                videoElement.play().catch(e => console.log('Play after rotate exit failed:', e));
+            }
         }
 
         // Check database setup
@@ -1459,6 +1635,33 @@ CREATE TABLE book_requests (
                 document.getElementById('offline-indicator').classList.add('show');
                 showToast('error', 'Offline', 'Connection lost');
             });
+
+            // Listen for fullscreen change events
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        }
+
+        // Handle fullscreen change
+        function handleFullscreenChange() {
+            const isFullscreen = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
+            
+            if (!isFullscreen && appState.currentPage === 'home') {
+                // Exited fullscreen, ensure navigation is visible
+                document.body.classList.remove('video-playing');
+                
+                // Remove fullscreen class from video
+                const video = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
+                if (video) {
+                    video.classList.remove('fullscreen-mode', 'auto-rotate');
+                }
+            }
         }
 
         // Handle reel scroll
