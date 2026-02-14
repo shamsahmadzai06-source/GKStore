@@ -173,7 +173,7 @@
             background: #000;
         }
 
-        /* Fullscreen video styles */
+        /* Fullscreen video styles - FIXED for mobile */
         .reel-video.fullscreen-mode {
             position: fixed;
             top: 0;
@@ -185,7 +185,27 @@
             background: #000;
         }
 
-        /* Landscape orientation handling */
+        /* Mobile-specific fullscreen fixes */
+        @media (max-width: 768px) {
+            .reel-video.fullscreen-mode {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                object-fit: contain;
+                z-index: 10000;
+            }
+            
+            body.video-playing {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        /* Landscape orientation handling - FIXED for mobile */
         @media (orientation: landscape) {
             .reel-video.auto-rotate {
                 object-fit: cover;
@@ -201,6 +221,7 @@
                 transform: translateY(-100%);
                 opacity: 0;
                 transition: all 0.3s;
+                pointer-events: none;
             }
             
             /* Show controls on tap in landscape */
@@ -1410,18 +1431,19 @@ CREATE TABLE book_requests (
             } else showPage('auth');
         }
 
-        // Setup orientation handling for fullscreen video
+        // Setup orientation handling for fullscreen video - FIXED for mobile
         function setupOrientationHandling() {
+            // Use both orientationchange and resize events for better mobile support
             window.addEventListener('orientationchange', () => {
                 // Clear previous timeout
                 if (appState.orientationTimeout) {
                     clearTimeout(appState.orientationTimeout);
                 }
                 
-                // Handle orientation change after a short delay
+                // Handle orientation change after a short delay to allow device to settle
                 appState.orientationTimeout = setTimeout(() => {
                     handleOrientationChange();
-                }, 100);
+                }, 200);
             });
 
             // Also listen for resize events (for browsers that don't support orientationchange well)
@@ -1431,16 +1453,24 @@ CREATE TABLE book_requests (
                 }
                 appState.orientationTimeout = setTimeout(() => {
                     handleOrientationChange();
-                }, 100);
+                }, 200);
             });
+
+            // Handle fullscreen change events
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         }
 
-        // Handle orientation change
+        // Handle orientation change - FIXED for mobile
         function handleOrientationChange() {
             if (appState.currentPage !== 'home') return;
             
             const isLandscape = window.innerWidth > window.innerHeight;
             const currentVideo = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
+            
+            if (!currentVideo) return;
             
             if (isLandscape) {
                 // Enter landscape mode - show fullscreen video
@@ -1458,7 +1488,7 @@ CREATE TABLE book_requests (
             }
         }
 
-        // Enter fullscreen mode
+        // Enter fullscreen mode - FIXED for mobile
         function enterFullscreenMode(videoElement) {
             if (!videoElement) return;
             
@@ -1471,13 +1501,29 @@ CREATE TABLE book_requests (
             // Hide navigation
             document.body.classList.add('video-playing');
             
-            // Try native fullscreen API
-            if (videoElement.requestFullscreen) {
-                videoElement.requestFullscreen();
-            } else if (videoElement.webkitRequestFullscreen) {
-                videoElement.webkitRequestFullscreen();
-            } else if (videoElement.webkitEnterFullscreen) {
-                videoElement.webkitEnterFullscreen();
+            // Try native fullscreen API for better mobile support
+            try {
+                if (videoElement.requestFullscreen) {
+                    videoElement.requestFullscreen();
+                } else if (videoElement.webkitRequestFullscreen) {
+                    videoElement.webkitRequestFullscreen();
+                } else if (videoElement.webkitEnterFullscreen) {
+                    // iOS Safari
+                    videoElement.webkitEnterFullscreen();
+                } else if (videoElement.mozRequestFullScreen) {
+                    videoElement.mozRequestFullScreen();
+                } else if (videoElement.msRequestFullscreen) {
+                    videoElement.msRequestFullscreen();
+                }
+            } catch (e) {
+                console.log('Fullscreen request failed:', e);
+                // Fallback: just use CSS fullscreen
+                videoElement.style.position = 'fixed';
+                videoElement.style.top = '0';
+                videoElement.style.left = '0';
+                videoElement.style.width = '100vw';
+                videoElement.style.height = '100vh';
+                videoElement.style.zIndex = '10000';
             }
             
             // Ensure video continues playing
@@ -1486,28 +1532,73 @@ CREATE TABLE book_requests (
             }
         }
 
-        // Exit fullscreen mode
+        // Exit fullscreen mode - FIXED for mobile
         function exitFullscreenMode(videoElement) {
             if (!videoElement) return;
             
             // Remove fullscreen class
             videoElement.classList.remove('fullscreen-mode', 'auto-rotate');
             
+            // Reset CSS fallback
+            videoElement.style.position = '';
+            videoElement.style.top = '';
+            videoElement.style.left = '';
+            videoElement.style.width = '';
+            videoElement.style.height = '';
+            videoElement.style.zIndex = '';
+            
             // Show navigation again
             document.body.classList.remove('video-playing');
             
             // Exit native fullscreen
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.webkitCancelFullScreen) {
-                document.webkitCancelFullScreen();
+            try {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.webkitCancelFullScreen) {
+                    document.webkitCancelFullScreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            } catch (e) {
+                console.log('Exit fullscreen failed:', e);
             }
             
             // Ensure video continues playing
             if (appState.wasPlayingBeforeRotate) {
                 videoElement.play().catch(e => console.log('Play after rotate exit failed:', e));
+            }
+        }
+
+        // Handle fullscreen change - FIXED for mobile
+        function handleFullscreenChange() {
+            const isFullscreen = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
+            
+            if (!isFullscreen && appState.currentPage === 'home') {
+                // Exited fullscreen, ensure navigation is visible
+                document.body.classList.remove('video-playing');
+                
+                // Remove fullscreen class from video
+                const video = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
+                if (video) {
+                    video.classList.remove('fullscreen-mode', 'auto-rotate');
+                    
+                    // Reset CSS fallback
+                    video.style.position = '';
+                    video.style.top = '';
+                    video.style.left = '';
+                    video.style.width = '';
+                    video.style.height = '';
+                    video.style.zIndex = '';
+                }
             }
         }
 
@@ -1635,33 +1726,6 @@ CREATE TABLE book_requests (
                 document.getElementById('offline-indicator').classList.add('show');
                 showToast('error', 'Offline', 'Connection lost');
             });
-
-            // Listen for fullscreen change events
-            document.addEventListener('fullscreenchange', handleFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-        }
-
-        // Handle fullscreen change
-        function handleFullscreenChange() {
-            const isFullscreen = !!(
-                document.fullscreenElement ||
-                document.webkitFullscreenElement ||
-                document.mozFullScreenElement ||
-                document.msFullscreenElement
-            );
-            
-            if (!isFullscreen && appState.currentPage === 'home') {
-                // Exited fullscreen, ensure navigation is visible
-                document.body.classList.remove('video-playing');
-                
-                // Remove fullscreen class from video
-                const video = document.querySelector(`.reel-video[data-index="${appState.currentVideoIndex}"]`);
-                if (video) {
-                    video.classList.remove('fullscreen-mode', 'auto-rotate');
-                }
-            }
         }
 
         // Handle reel scroll
