@@ -374,41 +374,44 @@
         .play-pause-indicator.show { opacity: 1; animation: fadeOut 0.5s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
 
-        /* === Seek overlay styles === */
-        .seek-overlay {
+        /* === Seek bar (progress bar) styles === */
+        .video-progress-container {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            pointer-events: none;
-            z-index: 20;
+            bottom: 70px; /* just above the info section */
+            left: 16px;
+            right: 80px; /* avoid overlapping with action buttons */
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            z-index: 50;
+            cursor: pointer;
+            pointer-events: auto;
         }
-        .seek-overlay-left, .seek-overlay-right {
-            width: 80px;
-            height: 80px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
+        .video-progress-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.1s linear;
+            pointer-events: none;
+        }
+        .video-progress-handle {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border: 2px solid var(--primary);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            color: white;
-            opacity: 0;
-            transition: opacity 0.1s ease;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            left: 0%;
             pointer-events: none;
-            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.2s;
         }
-        .seek-overlay-left.show, .seek-overlay-right.show {
+        .video-progress-container:hover .video-progress-handle {
             opacity: 1;
-        }
-        .seek-overlay-left i, .seek-overlay-right i {
-            filter: drop-shadow(0 2px 4px black);
         }
 
         /* === Navigation & Cards === */
@@ -1380,12 +1383,6 @@
         <i class="fas fa-play"></i>
     </div>
 
-    <!-- Seek Overlay (Left & Right) -->
-    <div id="seek-overlay" class="seek-overlay">
-        <div id="seek-left" class="seek-overlay-left"><i class="fas fa-backward"></i></div>
-        <div id="seek-right" class="seek-overlay-right"><i class="fas fa-forward"></i></div>
-    </div>
-
     <!-- Toast -->
     <div id="toast" class="hidden">
         <div class="bg-surface border border-border rounded-lg shadow-xl p-4">
@@ -2246,69 +2243,37 @@
             }
         }
 
-        // Seek functionality
-        function setupSeekControls(videoEl, container) {
-            let touchStartX = 0;
-            let touchEndX = 0;
-            let seekTimeout;
+        // Progress bar functionality
+        function setupProgressBar(videoEl, container) {
+            // Create progress bar elements if not exist
+            let progressContainer = container.querySelector('.video-progress-container');
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.className = 'video-progress-container';
+                progressContainer.innerHTML = '<div class="video-progress-fill"></div><div class="video-progress-handle"></div>';
+                container.appendChild(progressContainer);
+            }
+            const progressFill = progressContainer.querySelector('.video-progress-fill');
+            const progressHandle = progressContainer.querySelector('.video-progress-handle');
 
-            const showSeekIcon = (direction) => {
-                const leftIcon = document.getElementById('seek-left');
-                const rightIcon = document.getElementById('seek-right');
-                if (direction === 'left') {
-                    leftIcon.classList.add('show');
-                    setTimeout(() => leftIcon.classList.remove('show'), 300);
-                } else if (direction === 'right') {
-                    rightIcon.classList.add('show');
-                    setTimeout(() => rightIcon.classList.remove('show'), 300);
+            const updateProgress = () => {
+                if (videoEl.duration) {
+                    const percent = (videoEl.currentTime / videoEl.duration) * 100;
+                    progressFill.style.width = percent + '%';
+                    progressHandle.style.left = percent + '%';
                 }
             };
 
-            const handleSeek = (seconds) => {
-                if (!videoEl) return;
-                videoEl.currentTime = Math.max(0, Math.min(videoEl.duration, videoEl.currentTime + seconds));
-                // Show indicator
-                showSeekIcon(seconds < 0 ? 'left' : 'right');
-            };
+            videoEl.addEventListener('timeupdate', updateProgress);
+            videoEl.addEventListener('loadedmetadata', updateProgress);
 
-            container.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-            }, { passive: true });
-
-            container.addEventListener('touchend', (e) => {
-                if (!touchStartX) return;
-                touchEndX = e.changedTouches[0].clientX;
-                const diffX = touchEndX - touchStartX;
-                const screenWidth = window.innerWidth;
-                
-                // Double tap detection (quick touch)
-                if (Math.abs(diffX) < 30) {
-                    // Double tap for play/pause is already handled by click, we can ignore
-                    return;
-                }
-
-                // Seek based on swipe direction and distance
-                if (Math.abs(diffX) > 50) { // Minimum swipe distance
-                    const seekSeconds = diffX > 0 ? -10 : 10; // left swipe = backward, right swipe = forward
-                    handleSeek(seekSeconds);
-                }
-
-                touchStartX = 0;
-                touchEndX = 0;
-            }, { passive: true });
-
-            // Also handle simple double-tap sides for quick seek
-            container.addEventListener('dblclick', (e) => {
-                const rect = container.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const threshold = rect.width / 3;
-                
-                if (x < threshold) {
-                    // Left third - backward 10s
-                    handleSeek(-10);
-                } else if (x > rect.width - threshold) {
-                    // Right third - forward 10s
-                    handleSeek(10);
+            // Seek on click
+            progressContainer.addEventListener('click', (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percent = clickX / rect.width;
+                if (videoEl.duration) {
+                    videoEl.currentTime = percent * videoEl.duration;
                 }
             });
         }
@@ -2383,8 +2348,8 @@
                 const videoEl = reelItem.querySelector('.reel-video');
                 const videoContainer = reelItem.querySelector('.reel-video-container');
                 
-                // Attach seek controls
-                setupSeekControls(videoEl, videoContainer);
+                // Attach progress bar
+                setupProgressBar(videoEl, videoContainer);
 
                 videoEl.addEventListener('click', (e) => {
                     e.stopPropagation();
