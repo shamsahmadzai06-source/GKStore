@@ -1357,7 +1357,48 @@
             <div class="modal-body">
                 <p class="mb-4">Run this SQL in Supabase SQL Editor:</p>
                 <pre class="bg-black text-green-400 p-3 rounded-lg text-xs overflow-x-auto">
--- Your existing SQL setup here
+-- First, create the book_requests table if it doesn't exist
+CREATE TABLE IF NOT EXISTS book_requests (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    whatsapp_number TEXT NOT NULL,
+    user_id TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE book_requests ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to insert (for public booking)
+CREATE POLICY "Allow public insert"
+ON book_requests
+FOR INSERT
+TO public
+WITH CHECK (true);
+
+-- Allow authenticated users to view all requests
+CREATE POLICY "Allow authenticated users to view"
+ON book_requests
+FOR SELECT
+TO authenticated
+USING (true);
+
+-- Allow authenticated users to delete requests
+CREATE POLICY "Allow authenticated users to delete"
+ON book_requests
+FOR DELETE
+TO authenticated
+USING (true);
+
+-- Allow authenticated users to update requests (for cancel)
+CREATE POLICY "Allow authenticated users to update"
+ON book_requests
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
                 </pre>
                 <button class="btn btn-primary w-full mt-4" onclick="closeModal('sql-setup-modal')">Close</button>
             </div>
@@ -1628,32 +1669,29 @@
             try {
                 appState.lastSignupAttempt = now;
                 
-                const demoUser = {
-                    id: 'demo_' + Date.now(),
-                    email: email,
-                    user_metadata: { full_name: name },
-                    created_at: new Date().toISOString()
-                };
+                const { data, error } = await supabase.auth.signUp({ 
+                    email, 
+                    password, 
+                    options: { data: { full_name: name } } 
+                });
                 
-                appState.currentUser = demoUser;
-                appState.isLoggedIn = true;
-                appState.isAdminLoggedIn = true;
-                
-                showToast('success', 'Welcome!', 'Account created successfully (Demo Mode)');
-                showPage('home');
-                await loadInitialData();
-                
-                try {
-                    const { error } = await supabase.auth.signUp({ 
-                        email, 
-                        password, 
-                        options: { data: { full_name: name } } 
-                    });
-                    if (error && !error.message.includes('rate limit')) {
-                        console.log('Supabase signup error:', error);
+                if (error) {
+                    if (error.message.includes('rate limit')) {
+                        showToast('error', 'Rate Limited', 'Please wait a moment before trying again');
+                    } else {
+                        throw error;
                     }
-                } catch (e) {
-                    console.log('Supabase signup skipped due to rate limit');
+                    return;
+                }
+                
+                if (data.user) {
+                    appState.currentUser = data.user;
+                    appState.isLoggedIn = true;
+                    appState.isAdminLoggedIn = true;
+                    
+                    showToast('success', 'Welcome!', 'Account created successfully');
+                    showPage('home');
+                    await loadInitialData();
                 }
                 
             } catch (error) { 
@@ -1857,7 +1895,7 @@
             try {
                 showToast('info', 'Deleting...', 'Removing book request');
                 
-                // Use the authenticated user's session to delete - should respect RLS
+                // Use the authenticated user's session to delete
                 const { error } = await supabase
                     .from('book_requests')
                     .delete()
@@ -1865,23 +1903,27 @@
                     
                 if (error) {
                     console.error('Supabase delete error:', error);
-                    // If it's an RLS error, inform user
+                    // If it's an RLS error, inform user and show setup modal
                     if (error.code === '42501' || error.message.includes('policy')) {
-                        showToast('error', 'Permission Denied', 'Your RLS policies might be blocking this. Check Supabase settings.');
+                        showToast('error', 'Permission Denied', 'Check RLS policies');
+                        showModal('sql-setup-modal');
                     } else {
                         throw error;
                     }
                     return;
                 }
                 
+                // Also delete from local state
                 appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
                 appState.userBookedAccounts = appState.userBookedAccounts.filter(acc => acc.requestId !== id);
                 
+                // Remove from DOM
                 const requestElement = document.getElementById(`request-${id}`);
                 if (requestElement) {
                     requestElement.remove();
                 }
                 
+                // Check if list is empty
                 const list = document.getElementById('admin-book-requests-list');
                 const empty = document.getElementById('admin-book-requests-empty');
                 
@@ -1912,48 +1954,47 @@
             if (!confirm('Cancel this book request?')) return;
             
             try {
-                // Update status to cancelled (if your table has a status column, else just delete)
+                // Instead of updating, we'll delete it since status might not exist
                 const { error } = await supabase
                     .from('book_requests')
-                    .update({ status: 'cancelled' })
+                    .delete()
                     .eq('id', id);
                     
                 if (error) {
                     console.error('Cancel error:', error);
                     if (error.code === '42501' || error.message.includes('policy')) {
-                        showToast('error', 'Permission Denied', 'RLS policy may be blocking update. Try deleting instead.');
+                        showToast('error', 'Permission Denied', 'Check RLS policies');
+                        showModal('sql-setup-modal');
                     } else {
                         throw error;
                     }
                     return;
                 }
                 
-                const requestIndex = appState.bookRequests.findIndex(r => r.id === id);
-                if (requestIndex !== -1) {
-                    appState.bookRequests[requestIndex].status = 'cancelled';
-                    
-                    const requestElement = document.getElementById(`request-${id}`);
-                    if (requestElement) {
-                        const cancelledDiv = document.createElement('div');
-                        cancelledDiv.className = 'text-xs text-warning mt-2 font-semibold';
-                        cancelledDiv.innerHTML = '<i class="fas fa-ban mr-1"></i> Cancelled';
-                        
-                        const whatsappPara = requestElement.querySelector('p.text-sm');
-                        if (whatsappPara) {
-                            whatsappPara.after(cancelledDiv);
-                        }
-                        
-                        const buttons = requestElement.querySelectorAll('button');
-                        buttons.forEach(btn => {
-                            btn.disabled = true;
-                            btn.classList.add('opacity-50', 'cursor-not-allowed');
-                            btn.removeAttribute('onclick');
-                        });
-                    }
-                    
-                    showToast('success', 'Cancelled', 'Book request has been cancelled');
+                // Remove from local state
+                appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
+                appState.userBookedAccounts = appState.userBookedAccounts.filter(acc => acc.requestId !== id);
+                
+                // Remove from DOM
+                const requestElement = document.getElementById(`request-${id}`);
+                if (requestElement) {
+                    requestElement.remove();
                 }
+                
+                // Check if list is empty
+                const list = document.getElementById('admin-book-requests-list');
+                const empty = document.getElementById('admin-book-requests-empty');
+                
+                if (appState.bookRequests.length === 0) {
+                    list.innerHTML = '';
+                    list.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                }
+                
+                showToast('success', 'Cancelled', 'Book request has been cancelled');
+                
             } catch (error) {
+                console.error('Cancel error:', error);
                 showToast('error', 'Cancel Failed', error.message);
             }
         }
@@ -2233,7 +2274,7 @@
             
             appState.bookRequests = [
                 {
-                    id: 'demo_req_1',
+                    id: 1,
                     video_id: 'demo_001',
                     user_name: 'John Doe',
                     whatsapp_number: '+93793066322',
@@ -2241,7 +2282,7 @@
                     created_at: new Date().toISOString()
                 },
                 {
-                    id: 'demo_req_2',
+                    id: 2,
                     video_id: 'demo_002',
                     user_name: 'Jane Smith',
                     whatsapp_number: '+93793123456',
@@ -2510,54 +2551,56 @@
             if (!name || !phoneNumber || !appState.currentAccount) return showToast('error', 'Validation Error', 'Please fill all fields');
             
             try {
-                const newRequest = {
-                    id: 'req_' + Date.now(),
-                    video_id: appState.currentAccount.id,
-                    user_name: name,
-                    whatsapp_number: fullNumber,
-                    user_id: appState.currentUser ? appState.currentUser.id : 'guest_' + Date.now(),
-                    created_at: new Date().toISOString()
-                };
-                
-                try {
-                    const { data, error } = await supabase
-                        .from('book_requests')
-                        .insert([{ 
-                            video_id: appState.currentAccount.id, 
-                            user_name: name, 
-                            whatsapp_number: fullNumber,
-                            user_id: appState.currentUser ? appState.currentUser.id : null
-                        }])
-                        .select();
-                        
-                    if (!error && data && data[0]) {
-                        newRequest.id = data[0].id;
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .insert([{ 
+                        video_id: appState.currentAccount.id, 
+                        user_name: name, 
+                        whatsapp_number: fullNumber,
+                        user_id: appState.currentUser ? appState.currentUser.id : null,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select();
+                    
+                if (error) {
+                    console.error('Supabase insert error:', error);
+                    if (error.code === '42P01') {
+                        showToast('error', 'Table Not Found', 'Please run the SQL setup first');
+                        showModal('sql-setup-modal');
+                    } else if (error.code === '42501') {
+                        showToast('error', 'Permission Denied', 'Check RLS policies');
+                        showModal('sql-setup-modal');
+                    } else {
+                        throw error;
                     }
-                } catch (e) {
-                    console.log('Using local storage for book request', e);
+                    return;
                 }
                 
-                appState.bookRequests.unshift(newRequest);
-                
-                if (appState.currentUser) {
-                    appState.userBookedAccounts.unshift({
-                        requestId: newRequest.id,
-                        videoId: appState.currentAccount.id,
-                        title: appState.currentAccount.title,
-                        tier: appState.currentAccount.tier,
-                        price: appState.currentAccount.price,
-                        created_at: newRequest.created_at,
-                        whatsapp: fullNumber
-                    });
+                if (data && data[0]) {
+                    const newRequest = data[0];
+                    
+                    appState.bookRequests.unshift(newRequest);
+                    
+                    if (appState.currentUser) {
+                        appState.userBookedAccounts.unshift({
+                            requestId: newRequest.id,
+                            videoId: newRequest.video_id,
+                            title: appState.currentAccount.title,
+                            tier: appState.currentAccount.tier,
+                            price: appState.currentAccount.price,
+                            created_at: newRequest.created_at,
+                            whatsapp: fullNumber
+                        });
+                    }
+                    
+                    showToast('success', 'Request Submitted', 'We will contact you soon');
+                    closeModal('book-modal');
+                    document.getElementById('book-name').value = ''; 
+                    document.getElementById('book-whatsapp').value = '';
+                    
+                    await loadAdminBookRequests();
+                    updateProfileInfo();
                 }
-                
-                showToast('success', 'Request Submitted', 'We will contact you soon');
-                closeModal('book-modal');
-                document.getElementById('book-name').value = ''; 
-                document.getElementById('book-whatsapp').value = '';
-                
-                await loadAdminBookRequests();
-                updateProfileInfo();
                 
             } catch (error) { 
                 console.error('Submission error:', error);
@@ -2936,10 +2979,13 @@
         
         async function checkDatabaseSetup() { 
             try { 
-                const { error } = await supabase.from('videos').select('count').limit(1); 
-                if (error?.code === '42P01') showModal('sql-setup-modal'); 
+                const { error } = await supabase.from('book_requests').select('count').limit(1); 
+                if (error?.code === '42P01') {
+                    console.log('Book requests table not found');
+                    showModal('sql-setup-modal');
+                }
             } catch { 
-                showModal('sql-setup-modal'); 
+                // Ignore
             } 
         }
         
