@@ -137,6 +137,82 @@
         .reel-action-btn.liked .icon-circle i { color: var(--liked-color) !important; }
         .reel-action-btn.liked .icon-circle { border-color: var(--liked-color) !important; }
 
+        /* Video Info Button */
+        .video-info-btn {
+            position: absolute;
+            top: 60px;
+            right: 16px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            z-index: 30;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.2s;
+        }
+        
+        .video-info-btn:hover {
+            transform: scale(1.1);
+            background: var(--primary);
+        }
+
+        /* Video Info Panel */
+        .video-info-panel {
+            position: absolute;
+            top: 110px;
+            right: 16px;
+            left: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem;
+            z-index: 35;
+            max-width: 300px;
+            margin-left: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            backdrop-filter: blur(20px);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .video-info-panel.hidden {
+            display: none;
+        }
+        
+        .video-info-panel h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        .video-info-panel p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .video-info-panel .close-info {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
         .rotate-indicator { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); color: white; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; z-index: 30; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); animation: fadeInOut 3s forwards; pointer-events: none; }
         @keyframes fadeInOut { 0% { opacity: 0; transform: translateX(-50%) translateY(-10px); } 10% { opacity: 1; transform: translateX(-50%) translateY(0); } 90% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
         .reel-top-gradient { position: absolute; top: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); z-index: 15; pointer-events: none; }
@@ -207,6 +283,7 @@
         .input-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-secondary); }
         .input { width: 100%; padding: 0.75rem 1rem; background: var(--surface-light); border: 1px solid var(--border); border-radius: 0.75rem; color: var(--text); font-size: 0.875rem; transition: border 0.2s; }
         .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(236,72,153,0.2); }
+        .textarea { min-height: 80px; resize: vertical; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
         .modal { background: var(--surface); border-radius: 1.5rem; border: 1px solid var(--border); width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
@@ -971,8 +1048,8 @@
                     <input type="text" class="input" id="video-title-input" placeholder="Enter video title" required>
                 </div>
                 <div class="input-group">
-                    <label class="input-label">Description</label>
-                    <textarea class="input textarea" id="video-description-input" placeholder="Enter video description"></textarea>
+                    <label class="input-label">Description / Info</label>
+                    <textarea class="input textarea" id="video-description-input" placeholder="Write video information, details, or any text you want to display" rows="4"></textarea>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Price ($)</label>
@@ -1114,15 +1191,59 @@ CREATE TABLE book_requests (
 
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    user_id TEXT,
     type TEXT NOT NULL,
     message TEXT NOT NULL,
     video_id TEXT REFERENCES videos(video_id),
     read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create storage bucket for videos
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('videos', 'videos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow public access to videos bucket
+CREATE POLICY "Give public access to videos"
+ON storage.objects
+FOR SELECT
+USING (bucket_id = 'videos');
+
+-- Allow authenticated users to upload to videos bucket
+CREATE POLICY "Allow authenticated users to upload videos"
+ON storage.objects
+FOR INSERT
+WITH CHECK (
+    bucket_id = 'videos' 
+    AND auth.role() = 'authenticated'
+);
+
+-- Allow authenticated users to delete from videos bucket
+CREATE POLICY "Allow authenticated users to delete videos"
+ON storage.objects
+FOR DELETE
+USING (
+    bucket_id = 'videos' 
+    AND auth.role() = 'authenticated'
 );</pre>
                 <button class="btn btn-primary w-full mt-4" onclick="closeModal('sql-setup-modal')">Close</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Video Info Panel (for home screen) -->
+    <div id="video-info-panel" class="video-info-panel hidden">
+        <button class="close-info" onclick="closeVideoInfo()"><i class="fas fa-times"></i></button>
+        <h4 id="video-info-title"></h4>
+        <p id="video-info-description"></p>
+        <div class="flex justify-between mt-2 text-sm">
+            <span><i class="fas fa-tag text-primary"></i> <span id="video-info-price"></span></span>
+            <span><i class="fas fa-layer-group text-secondary"></i> <span id="video-info-tier"></span></span>
+        </div>
+        <div class="flex gap-2 mt-3">
+            <button class="btn btn-sm btn-primary flex-1" onclick="bookCurrentVideo()"><i class="fas fa-bookmark"></i> Book</button>
+            <button class="btn btn-sm btn-secondary flex-1" onclick="buyCurrentVideo()"><i class="fas fa-shopping-bag"></i> Buy</button>
         </div>
     </div>
 
@@ -1152,14 +1273,32 @@ CREATE TABLE notifications (
 
         // App state
         const appState = {
-            currentPage: 'auth', currentVideoIndex: 0, videos: [], accounts: [], notifications: [],
-            bookRequests: [], language: 'en', theme: 'dark', isLoggedIn: false, currentUser: null,
-            isAdminLoggedIn: false, userStats: { registeredUsers: 0, onlineUsers: 0 },
-            currentUpload: { file: null, progress: 0 }, shareVideo: null,
-            currentVideoPlayer: null, isFullscreen: false, currentAccount: null,
-            isPlaying: true, scrollTimeout: null, deferredPrompt: null, orientationTimeout: null,
-            wasPlayingBeforeRotate: false, likedVideos: new Set(), sessionCheckInterval: null,
-            unseenVideosCount: 0, lastVideoCheck: null,
+            currentPage: 'auth', 
+            currentVideoIndex: 0, 
+            videos: [], 
+            accounts: [], 
+            notifications: [],
+            bookRequests: [], 
+            language: 'en', 
+            theme: 'dark', 
+            isLoggedIn: false, 
+            currentUser: null,
+            isAdminLoggedIn: false, 
+            userStats: { registeredUsers: 0, onlineUsers: 0 },
+            currentUpload: { file: null, progress: 0 }, 
+            shareVideo: null,
+            currentVideoPlayer: null, 
+            isFullscreen: false, 
+            currentAccount: null,
+            isPlaying: true, 
+            scrollTimeout: null, 
+            deferredPrompt: null, 
+            orientationTimeout: null,
+            wasPlayingBeforeRotate: false, 
+            likedVideos: new Set(), 
+            sessionCheckInterval: null,
+            unseenVideosCount: 0, 
+            lastVideoCheck: null,
             installInstructionsShown: false,
             lastSignupAttempt: 0,
             userBookedAccounts: []
@@ -1196,7 +1335,9 @@ CREATE TABLE notifications (
                     loadInitialData();
                     startVideoCheckInterval();
                 } else if (event === 'SIGNED_OUT') {
-                    appState.isLoggedIn = false; appState.currentUser = null; appState.isAdminLoggedIn = false;
+                    appState.isLoggedIn = false; 
+                    appState.currentUser = null; 
+                    appState.isAdminLoggedIn = false;
                     appState.unseenVideosCount = 0;
                     appState.userBookedAccounts = [];
                     updateNotificationBadge();
@@ -1391,7 +1532,9 @@ CREATE TABLE notifications (
 
         async function logout() {
             await supabase.auth.signOut();
-            appState.isLoggedIn = false; appState.currentUser = null; appState.isAdminLoggedIn = false;
+            appState.isLoggedIn = false; 
+            appState.currentUser = null; 
+            appState.isAdminLoggedIn = false;
             appState.likedVideos.clear();
             appState.unseenVideosCount = 0;
             appState.userBookedAccounts = [];
@@ -1466,12 +1609,69 @@ CREATE TABLE notifications (
         }
 
         async function deleteVideo(id) {
-            if (!appState.isAdminLoggedIn || !confirm('Delete this video?')) return;
-            appState.videos = appState.videos.filter(v => v.id !== id);
-            appState.accounts = appState.accounts.filter(a => a.id !== id);
-            showToast('success', 'Deleted', 'Video removed (demo)');
-            loadAdminVideos();
-            renderReels();
+            if (!appState.isAdminLoggedIn || !confirm('Delete this video permanently?')) return;
+            
+            try {
+                showToast('info', 'Deleting...', 'Removing video from database');
+                
+                // First, delete related book requests
+                const { error: bookRequestsError } = await supabase
+                    .from('book_requests')
+                    .delete()
+                    .eq('video_id', id);
+                    
+                if (bookRequestsError) {
+                    console.error('Error deleting book requests:', bookRequestsError);
+                }
+                
+                // Delete related notifications
+                const { error: notificationsError } = await supabase
+                    .from('notifications')
+                    .delete()
+                    .eq('video_id', id);
+                    
+                if (notificationsError) {
+                    console.error('Error deleting notifications:', notificationsError);
+                }
+                
+                // Find video to get URL for storage deletion
+                const video = appState.videos.find(v => v.id === id);
+                if (video && video.url) {
+                    // Extract file path from URL
+                    const urlParts = video.url.split('/');
+                    const fileName = urlParts[urlParts.length - 1];
+                    const filePath = `videos/${fileName}`;
+                    
+                    // Delete from storage
+                    await supabase.storage.from('videos').remove([filePath]);
+                }
+                
+                // Delete from videos table
+                const { error } = await supabase
+                    .from('videos')
+                    .delete()
+                    .eq('video_id', id);
+                    
+                if (error) {
+                    throw error;
+                }
+                
+                // Update local state
+                appState.videos = appState.videos.filter(v => v.id !== id);
+                appState.accounts = appState.accounts.filter(a => a.id !== id);
+                
+                showToast('success', 'Deleted', 'Video permanently removed');
+                loadAdminVideos();
+                renderReels();
+                
+                if (appState.currentPage === 'accounts') {
+                    loadAccountsContent();
+                }
+                
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('error', 'Delete Failed', error.message);
+            }
         }
 
         async function showBookRequests() {
@@ -1511,7 +1711,6 @@ CREATE TABLE notifications (
             }
         }
 
-        // FIXED: Delete book request function - Now works properly
         async function deleteBookRequest(id) {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -1521,19 +1720,25 @@ CREATE TABLE notifications (
             if (!confirm('Delete this book request permanently?')) return;
             
             try {
-                // Remove from local state
-                appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
+                showToast('info', 'Deleting...', 'Removing book request');
                 
-                // Remove from user's booked accounts if exists
+                const { error } = await supabase
+                    .from('book_requests')
+                    .delete()
+                    .eq('id', id);
+                    
+                if (error) {
+                    throw error;
+                }
+                
+                appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
                 appState.userBookedAccounts = appState.userBookedAccounts.filter(acc => acc.requestId !== id);
                 
-                // Find and remove the element from DOM
                 const requestElement = document.getElementById(`request-${id}`);
                 if (requestElement) {
                     requestElement.remove();
                 }
                 
-                // Check if list is now empty and show empty message
                 const list = document.getElementById('admin-book-requests-list');
                 const empty = document.getElementById('admin-book-requests-empty');
                 
@@ -1545,24 +1750,16 @@ CREATE TABLE notifications (
                 
                 showToast('success', 'Deleted', 'Book request deleted successfully');
                 
-                // Update profile if needed
                 if (appState.currentPage === 'profile') {
                     updateProfileInfo();
                 }
                 
-                // Try to delete from Supabase if possible
-                try {
-                    await supabase.from('book_requests').delete().eq('id', id);
-                } catch (e) {
-                    console.log('Supabase delete failed, using local only', e);
-                }
-                
             } catch (error) {
+                console.error('Delete error:', error);
                 showToast('error', 'Delete Failed', error.message);
             }
         }
 
-        // FIXED: Cancel book request function - Now works properly
         async function cancelBookRequest(id) {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -1572,27 +1769,21 @@ CREATE TABLE notifications (
             if (!confirm('Cancel this book request?')) return;
             
             try {
-                // Find the request
                 const requestIndex = appState.bookRequests.findIndex(r => r.id === id);
                 if (requestIndex !== -1) {
-                    // Update status in local state
                     appState.bookRequests[requestIndex].status = 'cancelled';
                     
-                    // Update DOM to show cancelled status
                     const requestElement = document.getElementById(`request-${id}`);
                     if (requestElement) {
-                        // Add cancelled badge
                         const cancelledDiv = document.createElement('div');
                         cancelledDiv.className = 'text-xs text-warning mt-2 font-semibold';
                         cancelledDiv.innerHTML = '<i class="fas fa-ban mr-1"></i> Cancelled';
                         
-                        // Insert after the whatsapp number
                         const whatsappPara = requestElement.querySelector('p.text-sm');
                         if (whatsappPara) {
                             whatsappPara.after(cancelledDiv);
                         }
                         
-                        // Disable all buttons in this request
                         const buttons = requestElement.querySelectorAll('button');
                         buttons.forEach(btn => {
                             btn.disabled = true;
@@ -1658,6 +1849,46 @@ CREATE TABLE notifications (
             setTimeout(() => indicator.classList.add('hidden'), 3000);
         }
 
+        function showVideoInfo(index) {
+            const video = appState.videos[index];
+            if (!video) return;
+            
+            const panel = document.getElementById('video-info-panel');
+            document.getElementById('video-info-title').textContent = video.title;
+            document.getElementById('video-info-description').textContent = video.description || 'No additional information available';
+            document.getElementById('video-info-price').textContent = `$${video.price}`;
+            document.getElementById('video-info-tier').textContent = video.tier.charAt(0).toUpperCase() + video.tier.slice(1);
+            
+            panel.classList.remove('hidden');
+            
+            // Store current video for actions
+            appState.currentAccount = video.account || video;
+        }
+
+        function closeVideoInfo() {
+            document.getElementById('video-info-panel').classList.add('hidden');
+        }
+
+        function bookCurrentVideo() {
+            if (appState.currentAccount) {
+                document.getElementById('book-account-name').textContent = appState.currentAccount.title;
+                document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
+                document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price}`;
+                showModal('book-modal');
+                closeVideoInfo();
+            }
+        }
+
+        function buyCurrentVideo() {
+            if (appState.currentAccount) {
+                document.getElementById('buy-account-name').textContent = appState.currentAccount.title;
+                document.getElementById('buy-account-tier').textContent = appState.currentAccount.tier;
+                document.getElementById('buy-account-price').textContent = `$${appState.currentAccount.price}`;
+                showModal('buy-modal');
+                closeVideoInfo();
+            }
+        }
+
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
         
@@ -1677,29 +1908,90 @@ CREATE TABLE notifications (
         }
 
         async function loadVideos() {
-            const { data, error } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
-            if (error || !data?.length) { initializeWithDemoData(); return; }
-            appState.videos = data.map(v => ({
-                id: v.video_id, title: v.video_title, description: v.description, views: v.views || 0, likes: v.likes || 0,
-                url: v.video_url, tier: v.account_tier, price: v.price, viewTracked: false, created_at: v.created_at,
-                account: { id: v.video_id, title: v.video_title, tier: v.account_tier, price: v.price, url: v.video_url }
-            }));
+            try {
+                const { data, error } = await supabase
+                    .from('videos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                    
+                if (error) {
+                    console.error('Error loading videos:', error);
+                    if (error.code === '42P01') {
+                        initializeWithDemoData();
+                    }
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    appState.videos = data.map(v => ({
+                        id: v.video_id,
+                        title: v.video_title,
+                        description: v.description,
+                        views: v.views || 0,
+                        likes: v.likes || 0,
+                        url: v.video_url,
+                        tier: v.account_tier,
+                        price: v.price,
+                        viewTracked: false,
+                        created_at: v.created_at,
+                        account: {
+                            id: v.video_id,
+                            title: v.video_title,
+                            tier: v.account_tier,
+                            price: v.price,
+                            url: v.video_url
+                        }
+                    }));
+                } else {
+                    console.log('No videos found in database');
+                    appState.videos = [];
+                    appState.accounts = [];
+                }
+            } catch (error) {
+                console.error('Error in loadVideos:', error);
+                appState.videos = [];
+                appState.accounts = [];
+            }
         }
 
         async function loadAccounts() {
-            const { data, error } = await supabase.from('videos').select('video_id, video_title, description, account_tier, price, sold, video_url');
-            if (error || !data) return;
-            appState.accounts = data.map(v => ({ id: v.video_id, title: v.video_title, description: v.description, tier: v.account_tier, price: v.price, sold: v.sold || false, url: v.video_url }));
+            try {
+                const { data, error } = await supabase
+                    .from('videos')
+                    .select('video_id, video_title, description, account_tier, price, sold, video_url');
+                    
+                if (error || !data) {
+                    console.error('Error loading accounts:', error);
+                    return;
+                }
+                
+                appState.accounts = data.map(v => ({ 
+                    id: v.video_id, 
+                    title: v.video_title, 
+                    description: v.description, 
+                    tier: v.account_tier, 
+                    price: v.price, 
+                    sold: v.sold || false, 
+                    url: v.video_url 
+                }));
+            } catch (error) {
+                console.error('Error in loadAccounts:', error);
+            }
         }
 
         async function loadBookRequests() {
             try {
-                const { data, error } = await supabase.from('book_requests').select('*').order('created_at', { ascending: false });
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                    
                 if (error) { 
                     console.log('Error loading book requests:', error);
                     appState.bookRequests = []; 
                     return; 
                 }
+                
                 if (data) {
                     appState.bookRequests = data;
                     
@@ -1730,12 +2022,11 @@ CREATE TABLE notifications (
 
         function initializeWithDemoData() {
             appState.videos = [
-                { id: 'demo_001', title: 'Welcome to GK Store', description: 'Premium accounts marketplace', views: 150, likes: 45, url: 'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-blue-tit-1257-large.mp4', tier: 'small', price: 199, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_001', title: 'Welcome to GK Store', tier: 'small', price: 199 } },
-                { id: 'demo_002', title: 'Premium Content', description: 'Exclusive videos', views: 89, likes: 23, url: 'https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-flowers-1173-large.mp4', tier: 'medium', price: 299, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_002', title: 'Premium Content', tier: 'medium', price: 299 } }
+                { id: 'demo_001', title: 'Welcome to GK Store', description: 'Premium accounts marketplace - This is your first video with detailed information about our services. We offer premium video content at affordable prices.', views: 150, likes: 45, url: 'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-blue-tit-1257-large.mp4', tier: 'small', price: 199, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_001', title: 'Welcome to GK Store', tier: 'small', price: 199 } },
+                { id: 'demo_002', title: 'Premium Content', description: 'Exclusive videos with high quality - Watch this amazing content and enjoy the best video experience on our platform. Book now to get access.', views: 89, likes: 23, url: 'https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-flowers-1173-large.mp4', tier: 'medium', price: 299, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_002', title: 'Premium Content', tier: 'medium', price: 299 } }
             ];
             appState.accounts = appState.videos.map(v => ({ id: v.id, title: v.title, description: v.description, tier: v.tier, price: v.price, sold: false, url: v.url }));
             
-            // Add demo book requests for testing with proper IDs
             appState.bookRequests = [
                 {
                     id: 'demo_req_1',
@@ -1777,49 +2068,91 @@ CREATE TABLE notifications (
             const container = document.getElementById('reels-container');
             if (!container) return;
             container.innerHTML = '';
+            
             if (!appState.videos.length) {
                 container.innerHTML = '<div class="reel-item"><div class="text-center"><i class="fas fa-video text-4xl text-zinc-600 mb-4"></i><p class="text-zinc-400">No videos available</p></div></div>';
                 return;
             }
+            
             appState.videos.forEach((video, index) => {
-                const reelItem = document.createElement('div'); reelItem.className = 'reel-item'; reelItem.setAttribute('data-index', index);
+                const reelItem = document.createElement('div'); 
+                reelItem.className = 'reel-item'; 
+                reelItem.setAttribute('data-index', index);
+                
                 const likedClass = appState.likedVideos.has(video.id) ? 'liked' : '';
+                
                 reelItem.innerHTML = `
                     <div class="reel-video-container">
                         <video class="reel-video" data-index="${index}" src="${video.url}" loop playsinline preload="metadata"></video>
                         <div class="reel-top-gradient"></div>
+                        
+                        <!-- Video Info Button -->
+                        <div class="video-info-btn" onclick="event.stopPropagation(); showVideoInfo(${index})">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        
                         <div class="reel-info">
                             <div class="reel-title"><i class="fas fa-music"></i><span>${video.title}</span></div>
                             <div class="reel-description">${video.description || 'Premium video content'}</div>
-                            <div class="reel-stats"><span><i class="fas fa-eye"></i> ${video.views || 0}</span><span class="like-count"><i class="fas fa-heart"></i> ${video.likes || 0}</span><span><i class="fas fa-tag"></i> $${video.price}</span></div>
+                            <div class="reel-stats">
+                                <span><i class="fas fa-eye"></i> ${video.views || 0}</span>
+                                <span class="like-count"><i class="fas fa-heart"></i> ${video.likes || 0}</span>
+                                <span><i class="fas fa-tag"></i> $${video.price}</span>
+                            </div>
                         </div>
+                        
                         <div class="reel-actions">
-                            <div class="reel-action-btn" onclick="rotateToFullscreen()"><div class="icon-circle"><i class="fas fa-undo-alt"></i></div><span>Rotate</span></div>
-                            <div class="reel-action-btn" onclick="bookFromReel(${index})"><div class="icon-circle"><i class="fas fa-bookmark"></i></div><span>Book</span></div>
-                            <div class="reel-action-btn" onclick="buyFromReel(${index})"><div class="icon-circle"><i class="fas fa-shopping-bag"></i></div><span>Buy</span></div>
-                            <div class="reel-action-btn ${likedClass}" onclick="likeFromReel(${index})"><div class="icon-circle"><i class="fas fa-heart"></i></div><span class="like-count">${video.likes || 0}</span></div>
-                            <div class="reel-action-btn" onclick="shareAppFromReel()"><div class="icon-circle"><i class="fas fa-share"></i></div><span>Share</span></div>
+                            <div class="reel-action-btn" onclick="rotateToFullscreen()">
+                                <div class="icon-circle"><i class="fas fa-undo-alt"></i></div>
+                                <span>Rotate</span>
+                            </div>
+                            <div class="reel-action-btn" onclick="bookFromReel(${index})">
+                                <div class="icon-circle"><i class="fas fa-bookmark"></i></div>
+                                <span>Book</span>
+                            </div>
+                            <div class="reel-action-btn" onclick="buyFromReel(${index})">
+                                <div class="icon-circle"><i class="fas fa-shopping-bag"></i></div>
+                                <span>Buy</span>
+                            </div>
+                            <div class="reel-action-btn ${likedClass}" onclick="likeFromReel(${index})">
+                                <div class="icon-circle"><i class="fas fa-heart"></i></div>
+                                <span class="like-count">${video.likes || 0}</span>
+                            </div>
+                            <div class="reel-action-btn" onclick="shareAppFromReel()">
+                                <div class="icon-circle"><i class="fas fa-share"></i></div>
+                                <span>Share</span>
+                            </div>
                         </div>
+                        
                         <div class="reel-overlay"></div>
                     </div>
                 `;
+                
                 container.appendChild(reelItem);
+                
                 const videoEl = reelItem.querySelector('.reel-video');
                 videoEl.addEventListener('click', (e) => {
                     e.stopPropagation();
                     videoEl.paused ? videoEl.play() : videoEl.pause();
                     showPlayPauseIndicator(videoEl.paused ? 'pause' : 'play');
                 });
+                
                 videoEl.addEventListener('play', () => {
-                    if (!video.viewTracked) { video.views = (video.views || 0) + 1; video.viewTracked = true; updateReelStats(index, 'views', video.views); }
+                    if (!video.viewTracked) { 
+                        video.views = (video.views || 0) + 1; 
+                        video.viewTracked = true; 
+                        updateReelStats(index, 'views', video.views); 
+                    }
                 });
             });
+            
             setTimeout(() => playVideoAtIndex(0), 500);
         }
 
         function updateReelStats(index, stat, value) {
             const reel = document.querySelector(`.reel-item[data-index="${index}"]`);
             if (!reel) return;
+            
             if (stat === 'views') {
                 const viewsEl = reel.querySelector('.fa-eye').parentElement;
                 viewsEl.innerHTML = `<i class="fas fa-eye"></i> ${value}`;
@@ -1833,10 +2166,15 @@ CREATE TABLE notifications (
 
         function playVideoAtIndex(index) {
             const video = document.querySelector(`.reel-video[data-index="${index}"]`);
-            if (video) { video.play().catch(() => {}); appState.currentVideoPlayer = video; }
+            if (video) { 
+                video.play().catch(() => {}); 
+                appState.currentVideoPlayer = video; 
+            }
         }
 
-        function pauseAllVideos() { document.querySelectorAll('.reel-video').forEach(v => v.pause()); }
+        function pauseAllVideos() { 
+            document.querySelectorAll('.reel-video').forEach(v => v.pause()); 
+        }
 
         function handleReelScroll() {
             const container = document.getElementById('reels-container');
@@ -1845,10 +2183,12 @@ CREATE TABLE notifications (
             const scrollTop = container.scrollTop;
             let activeIndex = Math.round(scrollTop / containerHeight);
             activeIndex = Math.max(0, Math.min(activeIndex, reels.length - 1));
+            
             if (activeIndex !== appState.currentVideoIndex) {
                 pauseAllVideos();
                 appState.currentVideoIndex = activeIndex;
                 playVideoAtIndex(activeIndex);
+                closeVideoInfo(); // Close info panel when switching videos
             }
         }
 
@@ -1941,14 +2281,20 @@ CREATE TABLE notifications (
         function showPage(page) {
             if (['home', 'accounts', 'profile', 'contact', 'admin', 'notifications'].includes(page) && !appState.isLoggedIn) page = 'auth';
             if (page === 'auth' && appState.isLoggedIn) page = 'home';
+            
             document.querySelectorAll('[id$="-page"]').forEach(p => p.classList.add('hidden'));
             document.getElementById(`${page}-page`).classList.remove('hidden');
             appState.currentPage = page;
+            
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.querySelector(`.nav-item[href="#${page}"]`)?.classList.add('active');
             
             if (page === 'home') { 
-                setTimeout(() => { pauseAllVideos(); playVideoAtIndex(appState.currentVideoIndex); }, 100); 
+                setTimeout(() => { 
+                    pauseAllVideos(); 
+                    playVideoAtIndex(appState.currentVideoIndex); 
+                }, 100); 
+                closeVideoInfo();
             }
             if (page === 'accounts') loadAccountsContent();
             if (page === 'profile') updateProfileInfo();
@@ -1966,16 +2312,29 @@ CREATE TABLE notifications (
         function loadAccountsContent(filterTier = 'all') {
             const grid = document.getElementById('accounts-grid');
             if (!grid) return;
+            
             const filtered = filterTier === 'all' ? appState.accounts : appState.accounts.filter(a => a.tier === filterTier);
             grid.innerHTML = '';
-            if (!filtered.length) { grid.innerHTML = '<div class="col-span-2 text-center py-12">No accounts available</div>'; return; }
+            
+            if (!filtered.length) { 
+                grid.innerHTML = '<div class="col-span-2 text-center py-12">No accounts available</div>'; 
+                return; 
+            }
+            
             filtered.forEach(a => {
                 grid.innerHTML += `
                     <div class="account-card">
-                        <div class="account-icon ${a.tier}" onclick="playVideoFromAccount('${a.id}')"><i class="fas ${a.tier === 'small' ? 'fa-user' : a.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i></div>
-                        <div class="flex justify-between items-start mb-2"><h3 class="font-semibold">${a.title}</h3><span class="badge ${a.tier === 'big' ? 'badge-primary' : a.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${a.tier}</span></div>
+                        <div class="account-icon ${a.tier}" onclick="playVideoFromAccount('${a.id}')">
+                            <i class="fas ${a.tier === 'small' ? 'fa-user' : a.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i>
+                        </div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold">${a.title}</h3>
+                            <span class="badge ${a.tier === 'big' ? 'badge-primary' : a.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${a.tier}</span>
+                        </div>
                         <p class="text-zinc-400 text-sm mb-4">${a.description || 'Premium account'}</p>
-                        <div class="flex justify-between items-center mb-3"><span class="text-2xl font-bold gradient-text">$${a.price}</span></div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-2xl font-bold gradient-text">$${a.price}</span>
+                        </div>
                         <div class="account-actions">
                             <button class="account-action-btn book" onclick="bookFromAccount('${a.id}')"><i class="fas fa-bookmark"></i> Book</button>
                             <button class="account-action-btn buy" onclick="buyFromAccount('${a.id}')"><i class="fas fa-shopping-bag"></i> Buy</button>
@@ -1997,18 +2356,35 @@ CREATE TABLE notifications (
             if (index !== -1) {
                 appState.currentVideoIndex = index;
                 showPage('home');
-                setTimeout(() => { document.getElementById('reels-container').scrollTo({ top: index * document.getElementById('reels-container').clientHeight, behavior: 'smooth' }); }, 100);
+                setTimeout(() => { 
+                    document.getElementById('reels-container').scrollTo({ 
+                        top: index * document.getElementById('reels-container').clientHeight, 
+                        behavior: 'smooth' 
+                    }); 
+                }, 100);
             }
         }
 
         function bookFromAccount(id) {
             const account = appState.accounts.find(a => a.id === id);
-            if (account) { appState.currentAccount = account; document.getElementById('book-account-name').textContent = account.title; document.getElementById('book-account-tier').textContent = account.tier; document.getElementById('book-account-price').textContent = `$${account.price}`; showModal('book-modal'); }
+            if (account) { 
+                appState.currentAccount = account; 
+                document.getElementById('book-account-name').textContent = account.title; 
+                document.getElementById('book-account-tier').textContent = account.tier; 
+                document.getElementById('book-account-price').textContent = `$${account.price}`; 
+                showModal('book-modal'); 
+            }
         }
 
         function buyFromAccount(id) {
             const account = appState.accounts.find(a => a.id === id);
-            if (account) { appState.currentAccount = account; document.getElementById('buy-account-name').textContent = account.title; document.getElementById('buy-account-tier').textContent = account.tier; document.getElementById('buy-account-price').textContent = `$${account.price}`; showModal('buy-modal'); }
+            if (account) { 
+                appState.currentAccount = account; 
+                document.getElementById('buy-account-name').textContent = account.title; 
+                document.getElementById('buy-account-tier').textContent = account.tier; 
+                document.getElementById('buy-account-price').textContent = `$${account.price}`; 
+                showModal('buy-modal'); 
+            }
         }
 
         function updateProfileInfo() {
@@ -2017,6 +2393,7 @@ CREATE TABLE notifications (
                 document.getElementById('user-email').textContent = appState.currentUser.email;
                 document.getElementById('profile-name').textContent = appState.currentUser.user_metadata?.full_name || 'User Profile';
                 document.getElementById('profile-email').textContent = appState.currentUser.email;
+                
                 const created = new Date(appState.currentUser.created_at);
                 document.getElementById('member-since').textContent = created.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                 
@@ -2080,8 +2457,16 @@ CREATE TABLE notifications (
             }
         }
 
-        function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.body.style.overflow = ''; }
+        function showModal(id) { 
+            document.getElementById(id).classList.remove('hidden'); 
+            document.body.style.overflow = 'hidden'; 
+        }
+        
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden'); 
+            document.body.style.overflow = ''; 
+        }
+        
         function showToast(type, title, message) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-icon').className = `fas ${type === 'success' ? 'fa-check-circle text-success' : type === 'error' ? 'fa-exclamation-circle text-danger' : 'fa-info-circle text-primary'}`;
@@ -2091,25 +2476,74 @@ CREATE TABLE notifications (
             setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-        function showLoginForm() { document.getElementById('login-form-container').classList.remove('hidden'); document.getElementById('signup-form-container').classList.add('hidden'); document.getElementById('forgot-password-container').classList.add('hidden'); }
-        function showSignupForm() { document.getElementById('login-form-container').classList.add('hidden'); document.getElementById('signup-form-container').classList.remove('hidden'); document.getElementById('forgot-password-container').classList.add('hidden'); }
-        function showForgotPassword() { document.getElementById('login-form-container').classList.add('hidden'); document.getElementById('signup-form-container').classList.add('hidden'); document.getElementById('forgot-password-container').classList.remove('hidden'); }
-        function closeWelcomeModal() { closeModal('welcome-modal'); showPage('auth'); }
-        function copyUSDTAddress() { navigator.clipboard.writeText(document.getElementById('usdt-address').textContent); showToast('success', 'Copied!', 'Address copied to clipboard'); }
-        function copyAddress() { navigator.clipboard.writeText(document.getElementById('payment-address').textContent); showToast('success', 'Copied!', 'Address copied to clipboard'); }
+        function showLoginForm() { 
+            document.getElementById('login-form-container').classList.remove('hidden'); 
+            document.getElementById('signup-form-container').classList.add('hidden'); 
+            document.getElementById('forgot-password-container').classList.add('hidden'); 
+        }
+        
+        function showSignupForm() { 
+            document.getElementById('login-form-container').classList.add('hidden'); 
+            document.getElementById('signup-form-container').classList.remove('hidden'); 
+            document.getElementById('forgot-password-container').classList.add('hidden'); 
+        }
+        
+        function showForgotPassword() { 
+            document.getElementById('login-form-container').classList.add('hidden'); 
+            document.getElementById('signup-form-container').classList.add('hidden'); 
+            document.getElementById('forgot-password-container').classList.remove('hidden'); 
+        }
+        
+        function closeWelcomeModal() { 
+            closeModal('welcome-modal'); 
+            showPage('auth'); 
+        }
+        
+        function copyUSDTAddress() { 
+            navigator.clipboard.writeText(document.getElementById('usdt-address').textContent); 
+            showToast('success', 'Copied!', 'Address copied to clipboard'); 
+        }
+        
+        function copyAddress() { 
+            navigator.clipboard.writeText(document.getElementById('payment-address').textContent); 
+            showToast('success', 'Copied!', 'Address copied to clipboard'); 
+        }
+        
         function openWhatsApp() { 
             const number = '93793066322';
             window.open(`https://wa.me/${number}?text=Hello%20GK%20Store`, '_blank'); 
         }
+        
         function openPaymentChat() { 
             if (!appState.currentAccount) return; 
             const number = '93793066322';
             window.open(`https://wa.me/${number}?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank'); 
         }
-        function toggleLanguage() { showModal('language-modal'); }
-        function setLanguage(lang) { appState.language = lang; localStorage.setItem('appLanguage', lang); document.querySelectorAll('[id^="lang-"]').forEach(c => c.classList.add('hidden')); document.getElementById(`lang-${lang}-check`).classList.remove('hidden'); document.body.dir = ['ar','fa','ur','ps'].includes(lang) ? 'rtl' : 'ltr'; closeModal('language-modal'); }
-        function toggleTheme() { appState.theme = appState.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('appTheme', appState.theme); document.documentElement.setAttribute('data-theme', appState.theme); }
-        function loadPreferences() { appState.language = localStorage.getItem('appLanguage') || 'en'; appState.theme = localStorage.getItem('appTheme') || 'dark'; document.documentElement.setAttribute('data-theme', appState.theme); }
+        
+        function toggleLanguage() { 
+            showModal('language-modal'); 
+        }
+        
+        function setLanguage(lang) { 
+            appState.language = lang; 
+            localStorage.setItem('appLanguage', lang); 
+            document.querySelectorAll('[id^="lang-"]').forEach(c => c.classList.add('hidden')); 
+            document.getElementById(`lang-${lang}-check`).classList.remove('hidden'); 
+            document.body.dir = ['ar','fa','ur','ps'].includes(lang) ? 'rtl' : 'ltr'; 
+            closeModal('language-modal'); 
+        }
+        
+        function toggleTheme() { 
+            appState.theme = appState.theme === 'dark' ? 'light' : 'dark'; 
+            localStorage.setItem('appTheme', appState.theme); 
+            document.documentElement.setAttribute('data-theme', appState.theme); 
+        }
+        
+        function loadPreferences() { 
+            appState.language = localStorage.getItem('appLanguage') || 'en'; 
+            appState.theme = localStorage.getItem('appTheme') || 'dark'; 
+            document.documentElement.setAttribute('data-theme', appState.theme); 
+        }
         
         function setupPWAInstall() { 
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
@@ -2168,19 +2602,36 @@ CREATE TABLE notifications (
         }
         
         function setupEventListeners() { 
-            document.getElementById('reels-container')?.addEventListener('scroll', () => { clearTimeout(appState.scrollTimeout); appState.scrollTimeout = setTimeout(handleReelScroll, 100); }); 
+            document.getElementById('reels-container')?.addEventListener('scroll', () => { 
+                clearTimeout(appState.scrollTimeout); 
+                appState.scrollTimeout = setTimeout(handleReelScroll, 100); 
+            }); 
+            
             window.addEventListener('online', () => { 
                 document.getElementById('offline-indicator').classList.remove('show'); 
                 showToast('success', 'Back Online', 'Connection restored'); 
             }); 
+            
             window.addEventListener('offline', () => { 
                 document.getElementById('offline-indicator').classList.add('show'); 
                 showToast('error', 'Offline', 'Connection lost'); 
             }); 
+            
             if (!navigator.onLine) {
                 document.getElementById('offline-indicator').classList.add('show');
             }
+            
+            // Close video info when clicking outside
+            document.addEventListener('click', (e) => {
+                const panel = document.getElementById('video-info-panel');
+                const infoBtn = e.target.closest('.video-info-btn');
+                
+                if (!panel.contains(e.target) && !infoBtn) {
+                    panel.classList.add('hidden');
+                }
+            });
         }
+        
         function setupOrientationHandling() { 
             window.addEventListener('orientationchange', () => { 
                 clearTimeout(appState.orientationTimeout); 
@@ -2191,22 +2642,369 @@ CREATE TABLE notifications (
                 }, 100); 
             }); 
         }
-        function showPlayPauseIndicator(action) { const indicator = document.getElementById('play-pause-indicator'); indicator.innerHTML = `<i class="fas fa-${action === 'play' ? 'play' : 'pause'}"></i>`; indicator.classList.add('show'); setTimeout(() => indicator.classList.remove('show'), 500); }
-        async function checkDatabaseSetup() { try { const { error } = await supabase.from('videos').select('count').limit(1); if (error?.code === '42P01') showModal('sql-setup-modal'); } catch { showModal('sql-setup-modal'); } }
-        function shareAppFromReel() { showModal('share-modal'); }
-        function shareAppViaWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent('Check out GK Store: ' + window.location.href)}`, '_blank'); closeModal('share-modal'); }
-        function shareAppViaTelegram() { window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=GK%20Store`, '_blank'); closeModal('share-modal'); }
-        function copyAppLink() { navigator.clipboard.writeText(window.location.href); showToast('success', 'Copied!', 'App link copied to clipboard'); closeModal('share-modal'); }
-        function shareAppViaSystem() { if (navigator.share) { navigator.share({ title: 'GK Store', text: 'Check out GK Store - Premium Video Marketplace', url: window.location.href }).catch(console.error); } else { copyAppLink(); } closeModal('share-modal'); }
-        function showUploadVideo() { if (!appState.isAdminLoggedIn) { showToast('error', 'Access Denied', 'Login as admin first'); return; } resetUploadForm(); showModal('upload-video-modal'); }
-        function resetUploadForm() { document.getElementById('video-title-input').value = ''; document.getElementById('video-description-input').value = ''; document.getElementById('video-price').value = ''; document.getElementById('video-tier').value = ''; document.getElementById('video-file').value = ''; document.getElementById('file-info').classList.add('hidden'); document.getElementById('upload-status').classList.add('hidden'); document.getElementById('file-upload-area').classList.remove('has-file'); appState.currentUpload.file = null; }
-        function handleFileSelect(e) { const file = e.target.files[0]; if (!file) return; appState.currentUpload.file = file; document.getElementById('file-info').classList.remove('hidden'); document.getElementById('file-name').textContent = file.name; document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB'; document.getElementById('file-upload-area').classList.add('has-file'); }
-        async function uploadVideo() { 
-            showToast('info', 'Coming Soon', 'Video upload will be implemented'); 
+        
+        function showPlayPauseIndicator(action) { 
+            const indicator = document.getElementById('play-pause-indicator'); 
+            indicator.innerHTML = `<i class="fas fa-${action === 'play' ? 'play' : 'pause'}"></i>`; 
+            indicator.classList.add('show'); 
+            setTimeout(() => indicator.classList.remove('show'), 500); 
+        }
+        
+        async function checkDatabaseSetup() { 
+            try { 
+                const { error } = await supabase.from('videos').select('count').limit(1); 
+                if (error?.code === '42P01') showModal('sql-setup-modal'); 
+            } catch { 
+                showModal('sql-setup-modal'); 
+            } 
+        }
+        
+        function shareAppFromReel() { 
+            showModal('share-modal'); 
+        }
+        
+        function shareAppViaWhatsApp() { 
+            window.open(`https://wa.me/?text=${encodeURIComponent('Check out GK Store: ' + window.location.href)}`, '_blank'); 
+            closeModal('share-modal'); 
+        }
+        
+        function shareAppViaTelegram() { 
+            window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=GK%20Store`, '_blank'); 
+            closeModal('share-modal'); 
+        }
+        
+        function copyAppLink() { 
+            navigator.clipboard.writeText(window.location.href); 
+            showToast('success', 'Copied!', 'App link copied to clipboard'); 
+            closeModal('share-modal'); 
+        }
+        
+        function shareAppViaSystem() { 
+            if (navigator.share) { 
+                navigator.share({ 
+                    title: 'GK Store', 
+                    text: 'Check out GK Store - Premium Video Marketplace', 
+                    url: window.location.href 
+                }).catch(console.error); 
+            } else { 
+                copyAppLink(); 
+            } 
+            closeModal('share-modal'); 
+        }
+        
+        function showUploadVideo() { 
+            if (!appState.isAdminLoggedIn) { 
+                showToast('error', 'Access Denied', 'Login as admin first'); 
+                return; 
+            } 
+            resetUploadForm(); 
+            showModal('upload-video-modal'); 
+        }
+        
+        function resetUploadForm() { 
+            document.getElementById('video-title-input').value = ''; 
+            document.getElementById('video-description-input').value = ''; 
+            document.getElementById('video-price').value = ''; 
+            document.getElementById('video-tier').value = ''; 
+            document.getElementById('video-file').value = ''; 
+            
+            const fileInfo = document.getElementById('file-info');
+            const uploadStatus = document.getElementById('upload-status');
+            const fileUploadArea = document.getElementById('file-upload-area');
+            const uploadProgress = document.getElementById('upload-progress');
+            const uploadPercentage = document.getElementById('upload-percentage');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            fileInfo.classList.add('hidden');
+            uploadStatus.classList.add('hidden');
+            fileUploadArea.classList.remove('has-file');
+            
+            if (uploadProgress) uploadProgress.style.width = '0%';
+            if (uploadPercentage) uploadPercentage.textContent = '0%';
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50');
+            }
+            
+            appState.currentUpload.file = null; 
+        }
+        
+        function handleFileSelect(e) { 
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            
+            appState.currentUpload.file = file; 
+            document.getElementById('file-info').classList.remove('hidden'); 
+            document.getElementById('file-name').textContent = file.name; 
+            document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB'; 
+            document.getElementById('file-upload-area').classList.add('has-file'); 
+        }
+        
+        async function uploadVideo() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Login as admin first');
+                return;
+            }
+            
+            // Get form values
+            const title = document.getElementById('video-title-input').value.trim();
+            const description = document.getElementById('video-description-input').value.trim();
+            const price = parseFloat(document.getElementById('video-price').value);
+            const tier = document.getElementById('video-tier').value;
+            const file = appState.currentUpload.file;
+            
+            // Validate inputs
+            if (!title) {
+                showToast('error', 'Validation Error', 'Please enter a video title');
+                return;
+            }
+            
+            if (!price || price <= 0) {
+                showToast('error', 'Validation Error', 'Please enter a valid price');
+                return;
+            }
+            
+            if (!tier) {
+                showToast('error', 'Validation Error', 'Please select a tier');
+                return;
+            }
+            
+            if (!file) {
+                showToast('error', 'Validation Error', 'Please select a video file');
+                return;
+            }
+            
+            // Check file size based on tier
+            const maxSize = tier === 'small' ? 100 : tier === 'medium' ? 200 : 500;
+            if (file.size > maxSize * 1024 * 1024) {
+                showToast('error', 'File Too Large', `Maximum size for ${tier} tier is ${maxSize}MB`);
+                return;
+            }
+            
+            // Show upload status
+            const uploadStatus = document.getElementById('upload-status');
+            const uploadProgress = document.getElementById('upload-progress');
+            const uploadPercentage = document.getElementById('upload-percentage');
+            const uploadStatusText = document.getElementById('upload-status-text');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            uploadStatus.classList.remove('hidden');
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50');
+            
+            try {
+                // Generate unique video ID
+                const videoId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                // Upload to Supabase Storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${videoId}.${fileExt}`;
+                const filePath = `videos/${fileName}`;
+                
+                uploadStatusText.textContent = 'Uploading to storage...';
+                
+                // Use XMLHttpRequest for progress tracking
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const { data: storageData, error: storageError } = await supabase.storage
+                    .from('videos')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (storageError) {
+                    throw new Error(`Storage error: ${storageError.message}`);
+                }
+                
+                // Get public URL
+                uploadStatusText.textContent = 'Getting video URL...';
+                const { data: { publicUrl } } = supabase.storage
+                    .from('videos')
+                    .getPublicUrl(filePath);
+                
+                // Insert video record in database
+                uploadStatusText.textContent = 'Saving to database...';
+                
+                const { data: dbData, error: dbError } = await supabase
+                    .from('videos')
+                    .insert([{
+                        video_id: videoId,
+                        video_title: title,
+                        description: description || 'Premium video content',
+                        account_tier: tier,
+                        price: price,
+                        video_url: publicUrl,
+                        views: 0,
+                        likes: 0,
+                        sold: false,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select();
+                
+                if (dbError) {
+                    // If database insert fails, clean up the uploaded file
+                    await supabase.storage.from('videos').remove([filePath]);
+                    throw new Error(`Database error: ${dbError.message}`);
+                }
+                
+                // Success!
+                uploadProgress.style.width = '100%';
+                uploadPercentage.textContent = '100%';
+                uploadStatusText.textContent = 'Upload complete!';
+                
+                // Add to local state
+                const newVideo = {
+                    id: videoId,
+                    title: title,
+                    description: description || 'Premium video content',
+                    views: 0,
+                    likes: 0,
+                    url: publicUrl,
+                    tier: tier,
+                    price: price,
+                    viewTracked: false,
+                    created_at: new Date().toISOString(),
+                    account: {
+                        id: videoId,
+                        title: title,
+                        tier: tier,
+                        price: price,
+                        url: publicUrl
+                    }
+                };
+                
+                appState.videos.unshift(newVideo);
+                appState.accounts.unshift({
+                    id: videoId,
+                    title: title,
+                    description: description || 'Premium video content',
+                    tier: tier,
+                    price: price,
+                    sold: false,
+                    url: publicUrl
+                });
+                
+                // Create notification for users
+                await createVideoUploadNotification(newVideo);
+                
+                showToast('success', 'Upload Complete', 'Video uploaded successfully');
+                
+                // Close modal and reset form
+                setTimeout(() => {
+                    closeModal('upload-video-modal');
+                    resetUploadForm();
+                    
+                    // Refresh views
+                    renderReels();
+                    if (appState.currentPage === 'accounts') {
+                        loadAccountsContent();
+                    }
+                    updateAdminStats();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('error', 'Upload Failed', error.message);
+                
+                // Reset progress
+                uploadProgress.style.width = '0%';
+                uploadPercentage.textContent = '0%';
+                uploadStatusText.textContent = 'Upload failed';
+                
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50');
+            }
+        }
+
+        async function createVideoUploadNotification(video) {
+            try {
+                const { error } = await supabase
+                    .from('notifications')
+                    .insert([{
+                        type: 'new_video',
+                        message: video.title,
+                        video_id: video.id,
+                        read: false,
+                        created_at: new Date().toISOString()
+                    }]);
+                    
+                if (error) {
+                    console.error('Error creating notification:', error);
+                }
+                
+                appState.notifications.unshift({
+                    id: `notif_${Date.now()}`,
+                    type: 'new_video',
+                    title: 'New Video Uploaded',
+                    message: video.title,
+                    description: video.description,
+                    video_id: video.id,
+                    created_at: new Date().toISOString()
+                });
+                
+                appState.unseenVideosCount++;
+                updateNotificationBadge();
+                
+            } catch (error) {
+                console.error('Error in notification creation:', error);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
-        window.showPage = showPage; window.login = login; window.signup = signup; window.logout = logout; window.resetPassword = resetPassword; window.adminLogin = adminLogin; window.showLoginForm = showLoginForm; window.showSignupForm = showSignupForm; window.showForgotPassword = showForgotPassword; window.closeWelcomeModal = closeWelcomeModal; window.copyUSDTAddress = copyUSDTAddress; window.copyAddress = copyAddress; window.openWhatsApp = openWhatsApp; window.openPaymentChat = openPaymentChat; window.toggleLanguage = toggleLanguage; window.setLanguage = setLanguage; window.toggleTheme = toggleTheme; window.showModal = showModal; window.closeModal = closeModal; window.rotateToFullscreen = rotateToFullscreen; window.likeFromReel = likeFromReel; window.bookFromReel = bookFromReel; window.buyFromReel = buyFromReel; window.submitBookRequest = submitBookRequest; window.filterAccounts = filterAccounts; window.playVideoFromAccount = playVideoFromAccount; window.bookFromAccount = bookFromAccount; window.buyFromAccount = buyFromAccount; window.showUploadVideo = showUploadVideo; window.showManageVideos = showManageVideos; window.showBookRequests = showBookRequests; window.adminFilterVideos = adminFilterVideos; window.deleteVideo = deleteVideo; window.contactRequester = contactRequester; window.resetUploadForm = resetUploadForm; window.handleFileSelect = handleFileSelect; window.uploadVideo = uploadVideo; window.shareAppFromReel = shareAppFromReel; window.shareAppViaWhatsApp = shareAppViaWhatsApp; window.shareAppViaTelegram = shareAppViaTelegram; window.copyAppLink = copyAppLink; window.shareAppViaSystem = shareAppViaSystem; window.closeInstallInstructions = closeInstallInstructions; window.deleteBookRequest = deleteBookRequest; window.cancelBookRequest = cancelBookRequest;
+        
+        // Expose functions to global scope
+        window.showPage = showPage; 
+        window.login = login; 
+        window.signup = signup; 
+        window.logout = logout; 
+        window.resetPassword = resetPassword; 
+        window.adminLogin = adminLogin; 
+        window.showLoginForm = showLoginForm; 
+        window.showSignupForm = showSignupForm; 
+        window.showForgotPassword = showForgotPassword; 
+        window.closeWelcomeModal = closeWelcomeModal; 
+        window.copyUSDTAddress = copyUSDTAddress; 
+        window.copyAddress = copyAddress; 
+        window.openWhatsApp = openWhatsApp; 
+        window.openPaymentChat = openPaymentChat; 
+        window.toggleLanguage = toggleLanguage; 
+        window.setLanguage = setLanguage; 
+        window.toggleTheme = toggleTheme; 
+        window.showModal = showModal; 
+        window.closeModal = closeModal; 
+        window.rotateToFullscreen = rotateToFullscreen; 
+        window.likeFromReel = likeFromReel; 
+        window.bookFromReel = bookFromReel; 
+        window.buyFromReel = buyFromReel; 
+        window.submitBookRequest = submitBookRequest; 
+        window.filterAccounts = filterAccounts; 
+        window.playVideoFromAccount = playVideoFromAccount; 
+        window.bookFromAccount = bookFromAccount; 
+        window.buyFromAccount = buyFromAccount; 
+        window.showUploadVideo = showUploadVideo; 
+        window.showManageVideos = showManageVideos; 
+        window.showBookRequests = showBookRequests; 
+        window.adminFilterVideos = adminFilterVideos; 
+        window.deleteVideo = deleteVideo; 
+        window.contactRequester = contactRequester; 
+        window.resetUploadForm = resetUploadForm; 
+        window.handleFileSelect = handleFileSelect; 
+        window.uploadVideo = uploadVideo; 
+        window.shareAppFromReel = shareAppFromReel; 
+        window.shareAppViaWhatsApp = shareAppViaWhatsApp; 
+        window.shareAppViaTelegram = shareAppViaTelegram; 
+        window.copyAppLink = copyAppLink; 
+        window.shareAppViaSystem = shareAppViaSystem; 
+        window.closeInstallInstructions = closeInstallInstructions; 
+        window.deleteBookRequest = deleteBookRequest; 
+        window.cancelBookRequest = cancelBookRequest;
+        window.showVideoInfo = showVideoInfo;
+        window.closeVideoInfo = closeVideoInfo;
+        window.bookCurrentVideo = bookCurrentVideo;
+        window.buyCurrentVideo = buyCurrentVideo;
     </script>
 </body>
 </html>
