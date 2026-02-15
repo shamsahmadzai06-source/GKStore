@@ -2543,35 +2543,61 @@ WITH CHECK (true);
         }
 
         async function submitBookRequest() {
-            const name = document.getElementById('book-name').value;
+            if (!appState.currentAccount) {
+                showToast('error', 'Error', 'No account selected');
+                return;
+            }
+
+            const name = document.getElementById('book-name').value.trim();
             const countryCode = document.getElementById('book-country-code').value;
-            const phoneNumber = document.getElementById('book-whatsapp').value;
-            const fullNumber = countryCode + phoneNumber;
+            const phoneNumber = document.getElementById('book-whatsapp').value.trim();
             
-            if (!name || !phoneNumber || !appState.currentAccount) return showToast('error', 'Validation Error', 'Please fill all fields');
+            if (!name) {
+                showToast('error', 'Validation Error', 'Please enter your name');
+                return;
+            }
+            
+            if (!phoneNumber) {
+                showToast('error', 'Validation Error', 'Please enter your WhatsApp number');
+                return;
+            }
+            
+            // Format phone number
+            const fullNumber = countryCode + phoneNumber.replace(/^0+/, '');
             
             try {
+                showToast('info', 'Submitting...', 'Please wait');
+                
+                // Prepare the request data
+                const requestData = {
+                    video_id: appState.currentAccount.id,
+                    user_name: name,
+                    whatsapp_number: fullNumber,
+                    user_id: appState.currentUser ? appState.currentUser.id : null,
+                    status: 'pending',
+                    created_at: new Date().toISOString()
+                };
+                
+                // Insert the book request
                 const { data, error } = await supabase
                     .from('book_requests')
-                    .insert([{ 
-                        video_id: appState.currentAccount.id, 
-                        user_name: name, 
-                        whatsapp_number: fullNumber,
-                        user_id: appState.currentUser ? appState.currentUser.id : null,
-                        created_at: new Date().toISOString()
-                    }])
+                    .insert([requestData])
                     .select();
                     
                 if (error) {
                     console.error('Supabase insert error:', error);
+                    
+                    // Check for specific error types
                     if (error.code === '42P01') {
                         showToast('error', 'Table Not Found', 'Please run the SQL setup first');
                         showModal('sql-setup-modal');
-                    } else if (error.code === '42501') {
-                        showToast('error', 'Permission Denied', 'Check RLS policies');
+                    } else if (error.code === '42501' || error.message.includes('permission denied') || error.message.includes('policy')) {
+                        showToast('error', 'Permission Denied', 'Please run the SQL setup to fix permissions');
                         showModal('sql-setup-modal');
+                    } else if (error.code === '23505') {
+                        showToast('error', 'Duplicate Request', 'You have already booked this account');
                     } else {
-                        throw error;
+                        showToast('error', 'Submission Failed', error.message || 'Unknown error occurred');
                     }
                     return;
                 }
@@ -2579,8 +2605,10 @@ WITH CHECK (true);
                 if (data && data[0]) {
                     const newRequest = data[0];
                     
+                    // Add to local state
                     appState.bookRequests.unshift(newRequest);
                     
+                    // Add to user's booked accounts if logged in
                     if (appState.currentUser) {
                         appState.userBookedAccounts.unshift({
                             requestId: newRequest.id,
@@ -2593,18 +2621,23 @@ WITH CHECK (true);
                         });
                     }
                     
-                    showToast('success', 'Request Submitted', 'We will contact you soon');
+                    // Show success message
+                    showToast('success', 'Request Submitted!', 'We will contact you on WhatsApp soon');
+                    
+                    // Close modal and reset form
                     closeModal('book-modal');
-                    document.getElementById('book-name').value = ''; 
+                    document.getElementById('book-name').value = '';
                     document.getElementById('book-whatsapp').value = '';
                     
+                    // Refresh data
+                    await loadBookRequests();
                     await loadAdminBookRequests();
                     updateProfileInfo();
                 }
                 
             } catch (error) { 
                 console.error('Submission error:', error);
-                showToast('error', 'Submission Failed', error.message); 
+                showToast('error', 'Submission Failed', error.message || 'Network error occurred'); 
             }
         }
 
