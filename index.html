@@ -374,30 +374,30 @@
         .play-pause-indicator.show { opacity: 1; animation: fadeOut 0.5s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
 
-        /* === Seek bar (progress bar) styles === */
+        /* === Draggable progress bar (scrubber) styles === */
         .video-progress-container {
             position: absolute;
             bottom: 70px; /* just above the info section */
             left: 16px;
             right: 80px; /* avoid overlapping with action buttons */
-            height: 4px;
+            height: 5px;
             background: rgba(255,255,255,0.2);
-            border-radius: 4px;
+            border-radius: 5px;
             z-index: 50;
             cursor: pointer;
             pointer-events: auto;
+            touch-action: none; /* Prevent page scroll while dragging */
         }
         .video-progress-fill {
             height: 100%;
             background: var(--gradient);
-            border-radius: 4px;
+            border-radius: 5px;
             width: 0%;
-            transition: width 0.1s linear;
             pointer-events: none;
         }
         .video-progress-handle {
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
             background: white;
             border: 2px solid var(--primary);
             border-radius: 50%;
@@ -406,10 +406,11 @@
             transform: translate(-50%, -50%);
             left: 0%;
             pointer-events: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
             opacity: 0;
             transition: opacity 0.2s;
         }
+        .video-progress-container.dragging .video-progress-handle,
         .video-progress-container:hover .video-progress-handle {
             opacity: 1;
         }
@@ -1856,13 +1857,21 @@
             try {
                 showToast('info', 'Deleting...', 'Removing book request');
                 
+                // Use the authenticated user's session to delete - should respect RLS
                 const { error } = await supabase
                     .from('book_requests')
                     .delete()
                     .eq('id', id);
                     
                 if (error) {
-                    throw error;
+                    console.error('Supabase delete error:', error);
+                    // If it's an RLS error, inform user
+                    if (error.code === '42501' || error.message.includes('policy')) {
+                        showToast('error', 'Permission Denied', 'Your RLS policies might be blocking this. Check Supabase settings.');
+                    } else {
+                        throw error;
+                    }
+                    return;
                 }
                 
                 appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
@@ -1903,6 +1912,22 @@
             if (!confirm('Cancel this book request?')) return;
             
             try {
+                // Update status to cancelled (if your table has a status column, else just delete)
+                const { error } = await supabase
+                    .from('book_requests')
+                    .update({ status: 'cancelled' })
+                    .eq('id', id);
+                    
+                if (error) {
+                    console.error('Cancel error:', error);
+                    if (error.code === '42501' || error.message.includes('policy')) {
+                        showToast('error', 'Permission Denied', 'RLS policy may be blocking update. Try deleting instead.');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
                 const requestIndex = appState.bookRequests.findIndex(r => r.id === id);
                 if (requestIndex !== -1) {
                     appState.bookRequests[requestIndex].status = 'cancelled';
@@ -2243,8 +2268,8 @@
             }
         }
 
-        // Progress bar functionality
-        function setupProgressBar(videoEl, container) {
+        // Draggable progress bar (scrubber) functionality
+        function setupDraggableProgressBar(videoEl, container) {
             // Create progress bar elements if not exist
             let progressContainer = container.querySelector('.video-progress-container');
             if (!progressContainer) {
@@ -2256,26 +2281,68 @@
             const progressFill = progressContainer.querySelector('.video-progress-fill');
             const progressHandle = progressContainer.querySelector('.video-progress-handle');
 
+            let isDragging = false;
+
             const updateProgress = () => {
-                if (videoEl.duration) {
+                if (!isDragging && videoEl.duration) {
                     const percent = (videoEl.currentTime / videoEl.duration) * 100;
                     progressFill.style.width = percent + '%';
                     progressHandle.style.left = percent + '%';
                 }
             };
 
+            const setPositionFromEvent = (e) => {
+                if (!videoEl.duration) return;
+                const rect = progressContainer.getBoundingClientRect();
+                let clientX;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                } else {
+                    clientX = e.clientX;
+                }
+                // Clamp between left and right
+                let x = Math.max(rect.left, Math.min(clientX, rect.right));
+                let percent = (x - rect.left) / rect.width;
+                percent = Math.max(0, Math.min(1, percent));
+                progressFill.style.width = percent * 100 + '%';
+                progressHandle.style.left = percent * 100 + '%';
+                // Update video time
+                videoEl.currentTime = percent * videoEl.duration;
+            };
+
+            const startDrag = (e) => {
+                e.preventDefault(); // Prevent default touch actions
+                isDragging = true;
+                progressContainer.classList.add('dragging');
+                setPositionFromEvent(e);
+            };
+
+            const onDrag = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                setPositionFromEvent(e);
+            };
+
+            const stopDrag = (e) => {
+                if (isDragging) {
+                    isDragging = false;
+                    progressContainer.classList.remove('dragging');
+                }
+            };
+
+            // Mouse events
+            progressContainer.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', onDrag);
+            window.addEventListener('mouseup', stopDrag);
+
+            // Touch events
+            progressContainer.addEventListener('touchstart', startDrag, { passive: false });
+            window.addEventListener('touchmove', onDrag, { passive: false });
+            window.addEventListener('touchend', stopDrag);
+            window.addEventListener('touchcancel', stopDrag);
+
             videoEl.addEventListener('timeupdate', updateProgress);
             videoEl.addEventListener('loadedmetadata', updateProgress);
-
-            // Seek on click
-            progressContainer.addEventListener('click', (e) => {
-                const rect = progressContainer.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const percent = clickX / rect.width;
-                if (videoEl.duration) {
-                    videoEl.currentTime = percent * videoEl.duration;
-                }
-            });
         }
 
         function renderReels() {
@@ -2348,8 +2415,8 @@
                 const videoEl = reelItem.querySelector('.reel-video');
                 const videoContainer = reelItem.querySelector('.reel-video-container');
                 
-                // Attach progress bar
-                setupProgressBar(videoEl, videoContainer);
+                // Attach draggable progress bar
+                setupDraggableProgressBar(videoEl, videoContainer);
 
                 videoEl.addEventListener('click', (e) => {
                     e.stopPropagation();
