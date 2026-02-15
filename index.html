@@ -2803,10 +2803,7 @@ USING (
                 
                 uploadStatusText.textContent = 'Uploading to storage...';
                 
-                // Use XMLHttpRequest for progress tracking
-                const formData = new FormData();
-                formData.append('file', file);
-                
+                // Use the Supabase storage upload with proper error handling
                 const { data: storageData, error: storageError } = await supabase.storage
                     .from('videos')
                     .upload(filePath, file, {
@@ -2815,11 +2812,16 @@ USING (
                     });
                 
                 if (storageError) {
-                    throw new Error(`Storage error: ${storageError.message}`);
+                    console.error('Storage upload error:', storageError);
+                    throw new Error(`Upload failed: ${storageError.message || 'Storage error'}`);
                 }
                 
-                // Get public URL
+                // Update progress to 100% after upload completes
+                uploadProgress.style.width = '100%';
+                uploadPercentage.textContent = '100%';
                 uploadStatusText.textContent = 'Getting video URL...';
+                
+                // Get public URL
                 const { data: { publicUrl } } = supabase.storage
                     .from('videos')
                     .getPublicUrl(filePath);
@@ -2844,14 +2846,17 @@ USING (
                     .select();
                 
                 if (dbError) {
+                    console.error('Database insert error:', dbError);
                     // If database insert fails, clean up the uploaded file
-                    await supabase.storage.from('videos').remove([filePath]);
-                    throw new Error(`Database error: ${dbError.message}`);
+                    try {
+                        await supabase.storage.from('videos').remove([filePath]);
+                    } catch (cleanupError) {
+                        console.error('Cleanup error:', cleanupError);
+                    }
+                    throw new Error(`Database error: ${dbError.message || 'Failed to save video info'}`);
                 }
                 
                 // Success!
-                uploadProgress.style.width = '100%';
-                uploadPercentage.textContent = '100%';
                 uploadStatusText.textContent = 'Upload complete!';
                 
                 // Add to local state
@@ -2905,8 +2910,8 @@ USING (
                 }, 1500);
                 
             } catch (error) {
-                console.error('Upload error:', error);
-                showToast('error', 'Upload Failed', error.message);
+                console.error('Upload error details:', error);
+                showToast('error', 'Upload Failed', error.message || 'Unknown error occurred');
                 
                 // Reset progress
                 uploadProgress.style.width = '0%';
