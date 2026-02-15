@@ -99,6 +99,8 @@
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
         @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
 
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         .animate-slide-in { animation: slideIn 0.3s ease-out; }
@@ -137,7 +139,7 @@
         .reel-action-btn.liked .icon-circle i { color: var(--liked-color) !important; }
         .reel-action-btn.liked .icon-circle { border-color: var(--liked-color) !important; }
 
-        /* Video Info Button */
+        /* Video Info Button - Three Dots Style (Facebook-like) */
         .video-info-btn {
             position: absolute;
             top: 60px;
@@ -163,54 +165,161 @@
             background: var(--primary);
         }
 
-        /* Video Info Panel */
-        .video-info-panel {
-            position: absolute;
-            top: 110px;
-            right: 16px;
-            left: 16px;
+        /* Video Info Drawer - Facebook Style (scrollable full screen) */
+        .video-info-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .video-info-drawer {
             background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            padding: 1rem;
-            z-index: 35;
-            max-width: 300px;
-            margin-left: auto;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            backdrop-filter: blur(20px);
-            animation: slideDown 0.3s ease-out;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            animation: slideUp 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
         }
         
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .video-info-drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
         }
         
-        .video-info-panel.hidden {
-            display: none;
+        .video-info-drawer-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
         
-        .video-info-panel h4 {
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-            color: var(--primary);
-        }
-        
-        .video-info-panel p {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .video-info-panel .close-info {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: none;
+        .video-info-drawer-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface-light);
             border: none;
-            color: var(--text-secondary);
+            color: var(--text);
+            font-size: 1.2rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .video-info-drawer-close:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .video-info-drawer-content {
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            max-height: calc(85vh - 80px);
+        }
+        
+        .video-info-section {
+            margin-bottom: 24px;
+        }
+        
+        .video-info-section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .video-info-section-content {
             font-size: 1rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .video-info-price-tag {
+            display: inline-block;
+            background: var(--gradient);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white;
+            margin-top: 8px;
+        }
+        
+        .video-info-tier-badge {
+            display: inline-block;
+            background: var(--surface-light);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .video-info-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .video-info-action-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .video-info-action-btn.book {
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .video-info-action-btn.book:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .video-info-action-btn.buy {
+            background: var(--gradient);
+            color: white;
+        }
+        
+        .video-info-action-btn.buy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(236,72,153,0.3);
         }
 
         .rotate-indicator { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); color: white; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; z-index: 30; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); animation: fadeInOut 3s forwards; pointer-events: none; }
@@ -478,10 +587,6 @@
             z-index: 1600;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
         .install-instructions.hidden {
             display: none;
@@ -1173,18 +1278,18 @@
         </div>
     </div>
 
-    <!-- Video Info Panel (for home screen) -->
-    <div id="video-info-panel" class="video-info-panel hidden">
-        <button class="close-info" onclick="closeVideoInfo()"><i class="fas fa-times"></i></button>
-        <h4 id="video-info-title"></h4>
-        <p id="video-info-description"></p>
-        <div class="flex justify-between mt-2 text-sm">
-            <span><i class="fas fa-tag text-primary"></i> <span id="video-info-price"></span></span>
-            <span><i class="fas fa-layer-group text-secondary"></i> <span id="video-info-tier"></span></span>
-        </div>
-        <div class="flex gap-2 mt-3">
-            <button class="btn btn-sm btn-primary flex-1" onclick="bookCurrentVideo()"><i class="fas fa-bookmark"></i> Book</button>
-            <button class="btn btn-sm btn-secondary flex-1" onclick="buyCurrentVideo()"><i class="fas fa-shopping-bag"></i> Buy</button>
+    <!-- Video Info Drawer (Facebook Style) -->
+    <div id="video-info-drawer" class="video-info-drawer-overlay hidden">
+        <div class="video-info-drawer">
+            <div class="video-info-drawer-header">
+                <h3>Video Information</h3>
+                <button class="video-info-drawer-close" onclick="closeVideoDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="video-info-drawer-content" id="video-drawer-content">
+                <!-- Content will be dynamically populated -->
+            </div>
         </div>
     </div>
 
@@ -1793,43 +1898,88 @@
             setTimeout(() => indicator.classList.add('hidden'), 3000);
         }
 
-        function showVideoInfo(index) {
+        // New function to show video info drawer (Facebook style)
+        function showVideoDrawer(index) {
             const video = appState.videos[index];
             if (!video) return;
             
-            const panel = document.getElementById('video-info-panel');
-            document.getElementById('video-info-title').textContent = video.title;
-            document.getElementById('video-info-description').textContent = video.description || 'No additional information available';
-            document.getElementById('video-info-price').textContent = `$${video.price}`;
-            document.getElementById('video-info-tier').textContent = video.tier.charAt(0).toUpperCase() + video.tier.slice(1);
-            
-            panel.classList.remove('hidden');
-            
-            // Store current video for actions
             appState.currentAccount = video.account || video;
+            
+            const drawer = document.getElementById('video-info-drawer');
+            const content = document.getElementById('video-drawer-content');
+            
+            // Create formatted description with paragraphs
+            const description = video.description || 'No additional information available for this video.';
+            const descriptionHtml = description.split('\n').map(para => `<p>${para}</p>`).join('');
+            
+            content.innerHTML = `
+                <div class="video-info-section">
+                    <div class="video-info-section-title">Title</div>
+                    <div class="video-info-section-content">${video.title}</div>
+                </div>
+                
+                <div class="video-info-section">
+                    <div class="video-info-section-title">Description</div>
+                    <div class="video-info-section-content">${descriptionHtml}</div>
+                </div>
+                
+                <div class="video-info-section">
+                    <div class="video-info-section-title">Price</div>
+                    <div class="video-info-price-tag">$${video.price}</div>
+                </div>
+                
+                <div class="video-info-section">
+                    <div class="video-info-section-title">Tier</div>
+                    <div class="video-info-tier-badge">
+                        <i class="fas ${video.tier === 'small' ? 'fa-user' : video.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i>
+                        ${video.tier.charAt(0).toUpperCase() + video.tier.slice(1)}
+                    </div>
+                </div>
+                
+                <div class="video-info-section">
+                    <div class="video-info-section-title">Stats</div>
+                    <div class="flex gap-4">
+                        <span><i class="fas fa-eye text-primary"></i> ${video.views || 0} views</span>
+                        <span><i class="fas fa-heart text-danger"></i> ${video.likes || 0} likes</span>
+                    </div>
+                </div>
+                
+                <div class="video-info-actions">
+                    <button class="video-info-action-btn book" onclick="bookFromDrawer()">
+                        <i class="fas fa-bookmark"></i> Book Now
+                    </button>
+                    <button class="video-info-action-btn buy" onclick="buyFromDrawer()">
+                        <i class="fas fa-shopping-bag"></i> Buy Now
+                    </button>
+                </div>
+            `;
+            
+            drawer.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
-
-        function closeVideoInfo() {
-            document.getElementById('video-info-panel').classList.add('hidden');
+        
+        function closeVideoDrawer() {
+            document.getElementById('video-info-drawer').classList.add('hidden');
+            document.body.style.overflow = '';
         }
-
-        function bookCurrentVideo() {
+        
+        function bookFromDrawer() {
             if (appState.currentAccount) {
                 document.getElementById('book-account-name').textContent = appState.currentAccount.title;
                 document.getElementById('book-account-tier').textContent = appState.currentAccount.tier;
                 document.getElementById('book-account-price').textContent = `$${appState.currentAccount.price}`;
                 showModal('book-modal');
-                closeVideoInfo();
+                closeVideoDrawer();
             }
         }
-
-        function buyCurrentVideo() {
+        
+        function buyFromDrawer() {
             if (appState.currentAccount) {
                 document.getElementById('buy-account-name').textContent = appState.currentAccount.title;
                 document.getElementById('buy-account-tier').textContent = appState.currentAccount.tier;
                 document.getElementById('buy-account-price').textContent = `$${appState.currentAccount.price}`;
                 showModal('buy-modal');
-                closeVideoInfo();
+                closeVideoDrawer();
             }
         }
 
@@ -2030,9 +2180,9 @@
                         <video class="reel-video" data-index="${index}" src="${video.url}" loop playsinline preload="metadata"></video>
                         <div class="reel-top-gradient"></div>
                         
-                        <!-- Video Info Button -->
-                        <div class="video-info-btn" onclick="event.stopPropagation(); showVideoInfo(${index})">
-                            <i class="fas fa-info-circle"></i>
+                        <!-- Three Dots Info Button (Facebook Style) -->
+                        <div class="video-info-btn" onclick="event.stopPropagation(); showVideoDrawer(${index})">
+                            <i class="fas fa-ellipsis-h"></i>
                         </div>
                         
                         <div class="reel-info">
@@ -2132,7 +2282,7 @@
                 pauseAllVideos();
                 appState.currentVideoIndex = activeIndex;
                 playVideoAtIndex(activeIndex);
-                closeVideoInfo(); // Close info panel when switching videos
+                closeVideoDrawer(); // Close drawer when switching videos
             }
         }
 
@@ -2238,7 +2388,7 @@
                     pauseAllVideos(); 
                     playVideoAtIndex(appState.currentVideoIndex); 
                 }, 100); 
-                closeVideoInfo();
+                closeVideoDrawer();
             }
             if (page === 'accounts') loadAccountsContent();
             if (page === 'profile') updateProfileInfo();
@@ -2565,13 +2715,10 @@
                 document.getElementById('offline-indicator').classList.add('show');
             }
             
-            // Close video info when clicking outside
-            document.addEventListener('click', (e) => {
-                const panel = document.getElementById('video-info-panel');
-                const infoBtn = e.target.closest('.video-info-btn');
-                
-                if (!panel.contains(e.target) && !infoBtn) {
-                    panel.classList.add('hidden');
+            // Close video drawer when clicking outside
+            document.getElementById('video-info-drawer')?.addEventListener('click', (e) => {
+                if (e.target.classList.contains('video-info-drawer-overlay')) {
+                    closeVideoDrawer();
                 }
             });
         }
@@ -2979,10 +3126,10 @@
         window.closeInstallInstructions = closeInstallInstructions; 
         window.deleteBookRequest = deleteBookRequest; 
         window.cancelBookRequest = cancelBookRequest;
-        window.showVideoInfo = showVideoInfo;
-        window.closeVideoInfo = closeVideoInfo;
-        window.bookCurrentVideo = bookCurrentVideo;
-        window.buyCurrentVideo = buyCurrentVideo;
+        window.showVideoDrawer = showVideoDrawer;
+        window.closeVideoDrawer = closeVideoDrawer;
+        window.bookFromDrawer = bookFromDrawer;
+        window.buyFromDrawer = buyFromDrawer;
     </script>
 </body>
 </html>
