@@ -131,19 +131,59 @@
         .reel-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
         .reel-description { font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .reel-stats { display: flex; gap: 16px; font-size: 0.85rem; color: rgba(255,255,255,0.8); }
-        .reel-actions { position: absolute; right: 12px; bottom: 120px; display: flex; flex-direction: column; gap: 20px; z-index: 20; pointer-events: none; }
-        .reel-action-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3); pointer-events: auto; cursor: pointer; transition: transform 0.2s; }
+        
+        /* Reel Actions - Fixed positioning and spacing */
+        .reel-actions { 
+            position: absolute; 
+            right: 12px; 
+            bottom: 120px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            z-index: 30; 
+            pointer-events: none;
+            max-height: calc(100% - 200px);
+            overflow-y: visible;
+        }
+        
+        .reel-action-btn { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; 
+            color: white; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+            pointer-events: auto; 
+            cursor: pointer; 
+            transition: transform 0.2s;
+            position: relative;
+            z-index: 35;
+        }
+        
         .reel-action-btn:hover { transform: scale(1.1); }
-        .reel-action-btn .icon-circle { width: 48px; height: 48px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; border: 1px solid rgba(255,255,255,0.2); }
+        
+        .reel-action-btn .icon-circle { 
+            width: 48px; 
+            height: 48px; 
+            background: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(10px); 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.4rem; 
+            border: 1px solid rgba(255,255,255,0.2); 
+        }
+        
         .reel-action-btn span { font-size: 0.7rem; font-weight: 600; }
         .reel-action-btn.liked .icon-circle i { color: var(--liked-color) !important; }
         .reel-action-btn.liked .icon-circle { border-color: var(--liked-color) !important; }
 
-        /* Video Info Button - Three Dots Style (Facebook-like) */
+        /* Video Info Button - Positioned on the left side to avoid overlap */
         .video-info-btn {
             position: absolute;
             top: 60px;
-            right: 16px;
+            left: 16px; /* Changed from right to left */
             width: 44px;
             height: 44px;
             background: rgba(0,0,0,0.7);
@@ -154,7 +194,7 @@
             justify-content: center;
             color: white;
             font-size: 1.2rem;
-            z-index: 30;
+            z-index: 40; /* Higher z-index */
             cursor: pointer;
             border: 1px solid rgba(255,255,255,0.2);
             transition: all 0.2s;
@@ -163,6 +203,11 @@
         .video-info-btn:hover {
             transform: scale(1.1);
             background: var(--primary);
+        }
+
+        /* Rotate button now positioned on the right side */
+        .reel-action-btn.rotate-btn {
+            margin-top: 0; /* Reset any margin */
         }
 
         /* Video Info Drawer - Facebook Style (scrollable full screen) */
@@ -322,7 +367,7 @@
             box-shadow: 0 6px 12px rgba(236,72,153,0.3);
         }
 
-        .rotate-indicator { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); color: white; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; z-index: 30; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); animation: fadeInOut 3s forwards; pointer-events: none; }
+        .rotate-indicator { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); color: white; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; z-index: 45; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); animation: fadeInOut 3s forwards; pointer-events: none; }
         @keyframes fadeInOut { 0% { opacity: 0; transform: translateX(-50%) translateY(-10px); } 10% { opacity: 1; transform: translateX(-50%) translateY(0); } 90% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
         .reel-top-gradient { position: absolute; top: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); z-index: 15; pointer-events: none; }
         .play-pause-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 25; }
@@ -2180,7 +2225,7 @@
                         <video class="reel-video" data-index="${index}" src="${video.url}" loop playsinline preload="metadata"></video>
                         <div class="reel-top-gradient"></div>
                         
-                        <!-- Three Dots Info Button (Facebook Style) -->
+                        <!-- Three Dots Info Button (Facebook Style) - Now on LEFT side -->
                         <div class="video-info-btn" onclick="event.stopPropagation(); showVideoDrawer(${index})">
                             <i class="fas fa-ellipsis-h"></i>
                         </div>
@@ -2196,7 +2241,8 @@
                         </div>
                         
                         <div class="reel-actions">
-                            <div class="reel-action-btn" onclick="rotateToFullscreen()">
+                            <!-- Rotate button now at the top with proper spacing -->
+                            <div class="reel-action-btn rotate-btn" onclick="rotateToFullscreen()">
                                 <div class="icon-circle"><i class="fas fa-undo-alt"></i></div>
                                 <span>Rotate</span>
                             </div>
