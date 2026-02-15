@@ -325,7 +325,7 @@
             padding: 0 4px; 
         }
 
-        /* PWA install button - Always visible on mobile browsers */
+        /* PWA install button - Firefox compatible */
         .pwa-install-btn { 
             position: fixed; 
             bottom: 90px; 
@@ -384,11 +384,11 @@
         /* iOS specific styles */
         @supports (-webkit-touch-callout: none) {
             .pwa-install-btn {
-                bottom: 100px; /* Adjust for iOS home indicator */
+                bottom: 100px;
             }
         }
 
-        /* Manual install instructions for when beforeinstallprompt doesn't fire */
+        /* Manual install instructions */
         .install-instructions {
             position: fixed;
             bottom: 150px;
@@ -486,7 +486,7 @@
         <i class="fas fa-download"></i> Install App
     </button>
 
-    <!-- Manual Install Instructions (for when automatic install isn't available) -->
+    <!-- Manual Install Instructions -->
     <div id="install-instructions" class="install-instructions hidden">
         <button class="close-instructions" onclick="closeInstallInstructions()"><i class="fas fa-times"></i></button>
         <h4><i class="fas fa-mobile-alt"></i> Install GK Store</h4>
@@ -514,7 +514,7 @@
                 <li>Select "Install" or "Add to Home screen"</li>
                 <li>Follow the prompts to install</li>
             </ol>
-            <p class="text-xs text-zinc-400 mt-2">Note: Firefox may require additional permissions for installation</p>
+            <p class="text-xs text-zinc-400 mt-2">Note: Firefox may require additional permissions</p>
         </div>
     </div>
 
@@ -544,7 +544,7 @@
 
     <!-- Main Content -->
     <div id="content-container" class="content">
-        <!-- Auth Page - Enhanced Design -->
+        <!-- Auth Page -->
         <div id="auth-page" class="page">
             <div class="auth-container">
                 <div class="auth-card">
@@ -591,7 +591,7 @@
                         </div>
                     </div>
                     
-                    <!-- Signup - Enhanced Design -->
+                    <!-- Signup -->
                     <div id="signup-form-container" class="hidden">
                         <div class="auth-header">
                             <div class="auth-logo">
@@ -637,7 +637,7 @@
                         </div>
                     </div>
                     
-                    <!-- Forgot Password - Enhanced Design -->
+                    <!-- Forgot Password -->
                     <div id="forgot-password-container" class="hidden">
                         <div class="auth-header">
                             <div class="auth-logo">
@@ -667,7 +667,7 @@
             </div>
         </div>
 
-        <!-- Home Page - TikTok/Reels Style -->
+        <!-- Home Page -->
         <div id="home-page" class="page hidden">
             <div class="reels-container" id="reels-container">
                 <!-- Videos dynamically inserted -->
@@ -819,7 +819,7 @@
             </div>
         </div>
 
-        <!-- Notifications Page - Now shows video upload notifications -->
+        <!-- Notifications Page -->
         <div id="notifications-page" class="page hidden">
             <div class="px-4">
                 <h2 class="text-2xl font-bold mb-6">New Videos</h2>
@@ -855,7 +855,7 @@
         </div>
     </nav>
 
-    <!-- Notification Bell - Shows new video uploads only -->
+    <!-- Notification Bell -->
     <div class="notification-bell" onclick="showPage('notifications')">
         <i class="far fa-bell"></i>
         <div id="notification-count" class="notification-badge hidden">0</div>
@@ -1511,7 +1511,7 @@ CREATE TABLE notifications (
             }
         }
 
-        // FIXED: Delete book request function
+        // FIXED: Delete book request function - Now works properly
         async function deleteBookRequest(id) {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -1527,7 +1527,7 @@ CREATE TABLE notifications (
                 // Remove from user's booked accounts if exists
                 appState.userBookedAccounts = appState.userBookedAccounts.filter(acc => acc.requestId !== id);
                 
-                // Remove from DOM
+                // Find and remove the element from DOM
                 const requestElement = document.getElementById(`request-${id}`);
                 if (requestElement) {
                     requestElement.remove();
@@ -1538,11 +1538,17 @@ CREATE TABLE notifications (
                 const empty = document.getElementById('admin-book-requests-empty');
                 
                 if (appState.bookRequests.length === 0) {
+                    list.innerHTML = '';
                     list.classList.add('hidden');
                     empty.classList.remove('hidden');
                 }
                 
                 showToast('success', 'Deleted', 'Book request deleted successfully');
+                
+                // Update profile if needed
+                if (appState.currentPage === 'profile') {
+                    updateProfileInfo();
+                }
                 
                 // Try to delete from Supabase if possible
                 try {
@@ -1556,7 +1562,7 @@ CREATE TABLE notifications (
             }
         }
 
-        // FIXED: Cancel book request function
+        // FIXED: Cancel book request function - Now works properly
         async function cancelBookRequest(id) {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -1566,24 +1572,32 @@ CREATE TABLE notifications (
             if (!confirm('Cancel this book request?')) return;
             
             try {
-                // Update status in local state
+                // Find the request
                 const requestIndex = appState.bookRequests.findIndex(r => r.id === id);
                 if (requestIndex !== -1) {
+                    // Update status in local state
                     appState.bookRequests[requestIndex].status = 'cancelled';
                     
                     // Update DOM to show cancelled status
                     const requestElement = document.getElementById(`request-${id}`);
                     if (requestElement) {
-                        const statusDiv = document.createElement('div');
-                        statusDiv.className = 'text-xs text-warning mt-2';
-                        statusDiv.innerHTML = '<i class="fas fa-ban"></i> Cancelled';
-                        requestElement.querySelector('.flex.justify-between').after(statusDiv);
+                        // Add cancelled badge
+                        const cancelledDiv = document.createElement('div');
+                        cancelledDiv.className = 'text-xs text-warning mt-2 font-semibold';
+                        cancelledDiv.innerHTML = '<i class="fas fa-ban mr-1"></i> Cancelled';
                         
-                        // Disable buttons
+                        // Insert after the whatsapp number
+                        const whatsappPara = requestElement.querySelector('p.text-sm');
+                        if (whatsappPara) {
+                            whatsappPara.after(cancelledDiv);
+                        }
+                        
+                        // Disable all buttons in this request
                         const buttons = requestElement.querySelectorAll('button');
                         buttons.forEach(btn => {
                             btn.disabled = true;
                             btn.classList.add('opacity-50', 'cursor-not-allowed');
+                            btn.removeAttribute('onclick');
                         });
                     }
                     
@@ -1721,7 +1735,7 @@ CREATE TABLE notifications (
             ];
             appState.accounts = appState.videos.map(v => ({ id: v.id, title: v.title, description: v.description, tier: v.tier, price: v.price, sold: false, url: v.url }));
             
-            // Add demo book requests for testing
+            // Add demo book requests for testing with proper IDs
             appState.bookRequests = [
                 {
                     id: 'demo_req_1',
