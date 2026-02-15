@@ -374,6 +374,43 @@
         .play-pause-indicator.show { opacity: 1; animation: fadeOut 0.5s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
 
+        /* === Seek overlay styles === */
+        .seek-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .seek-overlay-left, .seek-overlay-right {
+            width: 80px;
+            height: 80px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+            pointer-events: none;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .seek-overlay-left.show, .seek-overlay-right.show {
+            opacity: 1;
+        }
+        .seek-overlay-left i, .seek-overlay-right i {
+            filter: drop-shadow(0 2px 4px black);
+        }
+
         /* === Navigation & Cards === */
         .top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 1rem; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
         .nav-content { display: flex; align-items: center; justify-content: space-between; }
@@ -1343,6 +1380,12 @@
         <i class="fas fa-play"></i>
     </div>
 
+    <!-- Seek Overlay (Left & Right) -->
+    <div id="seek-overlay" class="seek-overlay">
+        <div id="seek-left" class="seek-overlay-left"><i class="fas fa-backward"></i></div>
+        <div id="seek-right" class="seek-overlay-right"><i class="fas fa-forward"></i></div>
+    </div>
+
     <!-- Toast -->
     <div id="toast" class="hidden">
         <div class="bg-surface border border-border rounded-lg shadow-xl p-4">
@@ -2203,6 +2246,73 @@
             }
         }
 
+        // Seek functionality
+        function setupSeekControls(videoEl, container) {
+            let touchStartX = 0;
+            let touchEndX = 0;
+            let seekTimeout;
+
+            const showSeekIcon = (direction) => {
+                const leftIcon = document.getElementById('seek-left');
+                const rightIcon = document.getElementById('seek-right');
+                if (direction === 'left') {
+                    leftIcon.classList.add('show');
+                    setTimeout(() => leftIcon.classList.remove('show'), 300);
+                } else if (direction === 'right') {
+                    rightIcon.classList.add('show');
+                    setTimeout(() => rightIcon.classList.remove('show'), 300);
+                }
+            };
+
+            const handleSeek = (seconds) => {
+                if (!videoEl) return;
+                videoEl.currentTime = Math.max(0, Math.min(videoEl.duration, videoEl.currentTime + seconds));
+                // Show indicator
+                showSeekIcon(seconds < 0 ? 'left' : 'right');
+            };
+
+            container.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                if (!touchStartX) return;
+                touchEndX = e.changedTouches[0].clientX;
+                const diffX = touchEndX - touchStartX;
+                const screenWidth = window.innerWidth;
+                
+                // Double tap detection (quick touch)
+                if (Math.abs(diffX) < 30) {
+                    // Double tap for play/pause is already handled by click, we can ignore
+                    return;
+                }
+
+                // Seek based on swipe direction and distance
+                if (Math.abs(diffX) > 50) { // Minimum swipe distance
+                    const seekSeconds = diffX > 0 ? -10 : 10; // left swipe = backward, right swipe = forward
+                    handleSeek(seekSeconds);
+                }
+
+                touchStartX = 0;
+                touchEndX = 0;
+            }, { passive: true });
+
+            // Also handle simple double-tap sides for quick seek
+            container.addEventListener('dblclick', (e) => {
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const threshold = rect.width / 3;
+                
+                if (x < threshold) {
+                    // Left third - backward 10s
+                    handleSeek(-10);
+                } else if (x > rect.width - threshold) {
+                    // Right third - forward 10s
+                    handleSeek(10);
+                }
+            });
+        }
+
         function renderReels() {
             const container = document.getElementById('reels-container');
             if (!container) return;
@@ -2271,6 +2381,11 @@
                 container.appendChild(reelItem);
                 
                 const videoEl = reelItem.querySelector('.reel-video');
+                const videoContainer = reelItem.querySelector('.reel-video-container');
+                
+                // Attach seek controls
+                setupSeekControls(videoEl, videoContainer);
+
                 videoEl.addEventListener('click', (e) => {
                     e.stopPropagation();
                     videoEl.paused ? videoEl.play() : videoEl.pause();
