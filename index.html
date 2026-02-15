@@ -1166,67 +1166,8 @@
             <div class="modal-body">
                 <p class="mb-4">Run this SQL in Supabase SQL Editor:</p>
                 <pre class="bg-black text-green-400 p-3 rounded-lg text-xs overflow-x-auto">
-CREATE TABLE videos (
-    id SERIAL PRIMARY KEY,
-    video_id TEXT UNIQUE NOT NULL,
-    video_title TEXT NOT NULL,
-    description TEXT,
-    views INTEGER DEFAULT 0,
-    likes INTEGER DEFAULT 0,
-    video_url TEXT NOT NULL,
-    account_tier TEXT CHECK (account_tier IN ('small','medium','big')) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    sold BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE book_requests (
-    id SERIAL PRIMARY KEY,
-    video_id TEXT REFERENCES videos(video_id),
-    user_name TEXT NOT NULL,
-    whatsapp_number TEXT NOT NULL,
-    user_id TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE notifications (
-    id SERIAL PRIMARY KEY,
-    user_id TEXT,
-    type TEXT NOT NULL,
-    message TEXT NOT NULL,
-    video_id TEXT REFERENCES videos(video_id),
-    read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Create storage bucket for videos
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('videos', 'videos', true)
-ON CONFLICT (id) DO NOTHING;
-
--- Allow public access to videos bucket
-CREATE POLICY "Give public access to videos"
-ON storage.objects
-FOR SELECT
-USING (bucket_id = 'videos');
-
--- Allow authenticated users to upload to videos bucket
-CREATE POLICY "Allow authenticated users to upload videos"
-ON storage.objects
-FOR INSERT
-WITH CHECK (
-    bucket_id = 'videos' 
-    AND auth.role() = 'authenticated'
-);
-
--- Allow authenticated users to delete from videos bucket
-CREATE POLICY "Allow authenticated users to delete videos"
-ON storage.objects
-FOR DELETE
-USING (
-    bucket_id = 'videos' 
-    AND auth.role() = 'authenticated'
-);</pre>
+-- Your existing SQL setup here
+                </pre>
                 <button class="btn btn-primary w-full mt-4" onclick="closeModal('sql-setup-modal')">Close</button>
             </div>
         </div>
@@ -1640,10 +1581,13 @@ USING (
                     // Extract file path from URL
                     const urlParts = video.url.split('/');
                     const fileName = urlParts[urlParts.length - 1];
-                    const filePath = `videos/${fileName}`;
+                    
+                    // Determine which bucket the video is in based on tier
+                    const bucketName = video.tier === 'small' ? 'videos-small' : 
+                                      video.tier === 'medium' ? 'videos-medium' : 'videos-big';
                     
                     // Delete from storage
-                    await supabase.storage.from('videos').remove([filePath]);
+                    await supabase.storage.from(bucketName).remove([fileName]);
                 }
                 
                 // Delete from videos table
@@ -2774,8 +2718,29 @@ USING (
                 return;
             }
             
-            // Check file size based on tier
-            const maxSize = tier === 'small' ? 100 : tier === 'medium' ? 200 : 500;
+            // Determine which bucket to use based on tier
+            let bucketName;
+            let maxSize;
+            
+            switch(tier) {
+                case 'small':
+                    bucketName = 'videos-small';
+                    maxSize = 100; // MB
+                    break;
+                case 'medium':
+                    bucketName = 'videos-medium';
+                    maxSize = 200; // MB
+                    break;
+                case 'big':
+                    bucketName = 'videos-big';
+                    maxSize = 500; // MB
+                    break;
+                default:
+                    showToast('error', 'Invalid Tier', 'Please select a valid tier');
+                    return;
+            }
+            
+            // Check file size
             if (file.size > maxSize * 1024 * 1024) {
                 showToast('error', 'File Too Large', `Maximum size for ${tier} tier is ${maxSize}MB`);
                 return;
@@ -2799,13 +2764,13 @@ USING (
                 // Upload to Supabase Storage
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${videoId}.${fileExt}`;
-                const filePath = `videos/${fileName}`;
+                const filePath = fileName; // Just the filename
                 
-                uploadStatusText.textContent = 'Uploading to storage...';
+                uploadStatusText.textContent = `Uploading to ${bucketName}...`;
                 
-                // Use the Supabase storage upload with proper error handling
+                // Use the correct bucket name based on tier
                 const { data: storageData, error: storageError } = await supabase.storage
-                    .from('videos')
+                    .from(bucketName)
                     .upload(filePath, file, {
                         cacheControl: '3600',
                         upsert: false
@@ -2813,17 +2778,24 @@ USING (
                 
                 if (storageError) {
                     console.error('Storage upload error:', storageError);
-                    throw new Error(`Upload failed: ${storageError.message || 'Storage error'}`);
+                    
+                    // Check for bucket not found error
+                    if (storageError.message && storageError.message.includes('bucket')) {
+                        showToast('error', 'Bucket Error', `Bucket '${bucketName}' not found. Please run the SQL setup first.`);
+                    } else {
+                        throw new Error(`Upload failed: ${storageError.message || 'Storage error'}`);
+                    }
+                    return;
                 }
                 
-                // Update progress to 100% after upload completes
+                // Update progress
                 uploadProgress.style.width = '100%';
                 uploadPercentage.textContent = '100%';
                 uploadStatusText.textContent = 'Getting video URL...';
                 
-                // Get public URL
+                // Get public URL from the correct bucket
                 const { data: { publicUrl } } = supabase.storage
-                    .from('videos')
+                    .from(bucketName)
                     .getPublicUrl(filePath);
                 
                 // Insert video record in database
@@ -2838,6 +2810,7 @@ USING (
                         account_tier: tier,
                         price: price,
                         video_url: publicUrl,
+                        bucket_name: bucketName,
                         views: 0,
                         likes: 0,
                         sold: false,
@@ -2849,7 +2822,7 @@ USING (
                     console.error('Database insert error:', dbError);
                     // If database insert fails, clean up the uploaded file
                     try {
-                        await supabase.storage.from('videos').remove([filePath]);
+                        await supabase.storage.from(bucketName).remove([filePath]);
                     } catch (cleanupError) {
                         console.error('Cleanup error:', cleanupError);
                     }
