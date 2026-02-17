@@ -1438,133 +1438,6 @@ WITH CHECK (true);
         </div>
     </div>
 
-    <!-- Service Worker Registration - FIXED -->
-    <script>
-        // Register service worker for PWA functionality
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                // Create a comprehensive service worker with caching
-                const swCode = `
-                    const CACHE_NAME = 'gk-store-v2';
-                    const urlsToCache = [
-                        './',
-                        './index.html',
-                        './manifest.json',
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-                        'https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js',
-                        'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png',
-                        'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png',
-                        'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png',
-                        'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png',
-                        'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png'
-                    ];
-
-                    // Install event - cache core assets
-                    self.addEventListener('install', event => {
-                        console.log('Service Worker: Installing...');
-                        event.waitUntil(
-                            caches.open(CACHE_NAME)
-                                .then(cache => {
-                                    console.log('Service Worker: Caching files');
-                                    return cache.addAll(urlsToCache);
-                                })
-                                .then(() => self.skipWaiting())
-                        );
-                    });
-
-                    // Activate event - clean up old caches
-                    self.addEventListener('activate', event => {
-                        console.log('Service Worker: Activating...');
-                        event.waitUntil(
-                            caches.keys().then(cacheNames => {
-                                return Promise.all(
-                                    cacheNames.map(cacheName => {
-                                        if (cacheName !== CACHE_NAME) {
-                                            console.log('Service Worker: Clearing old cache:', cacheName);
-                                            return caches.delete(cacheName);
-                                        }
-                                    })
-                                );
-                            }).then(() => self.clients.claim())
-                        );
-                    });
-
-                    // Fetch event - serve from cache, fallback to network
-                    self.addEventListener('fetch', event => {
-                        // Skip cross-origin requests like Supabase API
-                        if (event.request.url.includes('supabase.co') || 
-                            event.request.url.includes('unpkg.com') && !event.request.url.includes('supabase.js')) {
-                            return;
-                        }
-                        
-                        event.respondWith(
-                            caches.match(event.request)
-                                .then(response => {
-                                    // Return cached response if found
-                                    if (response) {
-                                        return response;
-                                    }
-                                    
-                                    // Clone the request because it's a stream that can only be used once
-                                    const fetchRequest = event.request.clone();
-                                    
-                                    return fetch(fetchRequest).then(
-                                        networkResponse => {
-                                            // Check if we received a valid response
-                                            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                                                return networkResponse;
-                                            }
-                                            
-                                            // Clone the response because it's a stream that can only be used once
-                                            const responseToCache = networkResponse.clone();
-                                            
-                                            caches.open(CACHE_NAME)
-                                                .then(cache => {
-                                                    cache.put(event.request, responseToCache);
-                                                });
-                                            
-                                            return networkResponse;
-                                        }
-                                    ).catch(error => {
-                                        console.log('Service Worker: Fetch failed:', error);
-                                        // You could return a fallback offline page here
-                                    });
-                                })
-                        );
-                    });
-                `;
-
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-
-                navigator.serviceWorker.register(swUrl)
-                    .then(function(registration) {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    })
-                    .catch(function(err) {
-                        console.log('ServiceWorker registration failed: ', err);
-                    });
-                    
-                // Also try to register from a proper URL for better compatibility
-                // Create a simple inline service worker as fallback
-                const swInlineCode = `
-                    self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-                    self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-                    self.addEventListener('fetch', e => e.respondWith(
-                        caches.match(e.request) || fetch(e.request)
-                    ));
-                `;
-                
-                const inlineBlob = new Blob([swInlineCode], { type: 'application/javascript' });
-                const inlineSwUrl = URL.createObjectURL(inlineBlob);
-                
-                navigator.serviceWorker.register(inlineSwUrl).catch(err => {
-                    console.log('Inline SW registration failed:', err);
-                });
-            });
-        }
-    </script>
-
     <script>
         // === YOUR COMPLETE ORIGINAL JAVASCRIPT CODE ===
         // Supabase config - FIXED KEY
@@ -3532,25 +3405,20 @@ WITH CHECK (true);
         window.bookFromDrawer = bookFromDrawer;
         window.buyFromDrawer = buyFromDrawer;
     </script>
-</body<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
-    });
-  }
-</script>
-</body><script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/GKStore/sw.js').then(function(registration) {
-        console.log('Service Worker registered with scope:', registration.scope);
-      }).catch(function(error) {
-        console.log('Service Worker registration failed:', error);
-      });
-    });
-  }
-</script>
+
+    <!-- Simple Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/GKStore/sw.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
-
-
