@@ -11,8 +11,8 @@
     <meta name="apple-mobile-web-app-title" content="GK Store">
     <meta name="application-name" content="GK Store">
     
-    <!-- Web Manifest - Fixed data URI (properly formatted) -->
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkdLIFN0b3JlIiwKICAic2hvcnRfbmFtZSI6ICJHSyBTdG9yZSIsCiAgImRlc2NyaXB0aW9uIjogIkV4Y2x1c2l2ZSB2aWRlbyBtYXJrZXRwbGFjZSAtIGJ1eSBhbmQgYm9vayBwcmVtaXVtIGFjY291bnRzIiwKICAic3RhcnRfdXJsIjogIi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjZWM0ODk5IiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL3NoYW1zYWhtYWR6YWkwNi1zb3VyY2UuZ2l0aHViLmlvL0dLU3RvcmUvYW5kcm9pZC1sYXVuY2hlcmljb24tNzItNzIucG5nIiwKICAgICAgInNpemVzIjogIjcyeDcyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL3NoYW1zYWhtYWR6YWkwNi1zb3VyY2UuZ2l0aHViLmlvL0dLU3RvcmUvYW5kcm9pZC1sYXVuY2hlcmljb24tOTYtOTYucG5nIiwKICAgICAgInNpemVzIjogIjk2eDk2IiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL3NoYW1zYWhtYWR6YWkwNi1zb3VyY2UuZ2l0aHViLmlvL0dLU3RvcmUvYW5kcm9pZC1sYXVuY2hlcmljb24tMTQ0LTE0NC5wbmciLAogICAgICAic2l6ZXMiOiAiMTQ0eDE0NCIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJwdXJwb3NlIjogImFueSIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9zaGFtc2FobWFkemFpMDYtc291cmNlLmdpdGh1Yi5pby9HS1N0b3JlL2FuZHJvaWQtbGF1bmNoZXJpY29uLTE5Mi0xOTIucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkiCiAgICB9LAogICAgewogICAgICAic3JjIjogImh0dHBzOi8vc2hhbXNhaG1hZHphaTA2LXNvdXJjZS5naXRodWIuaW8vR0tTdG9yZS9hbmRyb2lkLWxhdW5jaGVyaWNvbi01MTItNTEyLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IgogICAgfQogIF0sCiAgInNjb3BlIjogIi8iLAogICJkaXNwbGF5X292ZXJyaWRlIjogInN0YW5kYWxvbmUiLAogICJsYW5nIjogImVuLVVTIiwKICAiZGlyIjogImx0ciIsCiAgInByZ2ZfbXNiX2NvbmZpZyI6IHsKICAgICJzdGF0aWNfZGlyIjogIi4iLAogICAgInNwbGFzaCI6ICJpbmRleC5odG1sIgogIH0KfQ==">
+    <!-- Web Manifest - linked externally -->
+    <link rel="manifest" href="manifest.json">
     
     <!-- iOS icons - using correct GitHub paths -->
     <link rel="apple-touch-icon" sizes="72x72" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png">
@@ -1449,6 +1449,7 @@ WITH CHECK (true);
                     const urlsToCache = [
                         './',
                         './index.html',
+                        './manifest.json',
                         'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
                         'https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js',
                         'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png',
@@ -1546,13 +1547,13 @@ WITH CHECK (true);
                     
                 // Also try to register from a proper URL for better compatibility
                 // Create a simple inline service worker as fallback
-                const swInlineCode = `
+                const swInlineCode = \`
                     self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
                     self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
                     self.addEventListener('fetch', e => e.respondWith(
                         caches.match(e.request) || fetch(e.request)
                     ));
-                `;
+                \`;
                 
                 const inlineBlob = new Blob([swInlineCode], { type: 'application/javascript' });
                 const inlineSwUrl = URL.createObjectURL(inlineBlob);
@@ -1568,7 +1569,7 @@ WITH CHECK (true);
         // === YOUR COMPLETE ORIGINAL JAVASCRIPT CODE ===
         // Supabase config
         const SUPABASE_URL = 'https://ieinqlpnubtwwkldqhab.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllaW5xbHBudGJ3d3drbGRxaGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1MzA3ODcsImV4cCI6MjA4NjEwNjc4N30.sJsoTu1bHBgconNOPfXZk33Ttuy1ZKC2oW2SonBnQ4o';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllaW5xbHBudJ3d3drbGRxaGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MzA3ODcsImV4cCI6MjA4NjEwNjc4N30.sJsoTu1bHBgconNOPfXZk33Ttuy1ZKC2oW2SonBnQ4o';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // App state
