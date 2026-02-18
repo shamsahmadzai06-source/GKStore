@@ -1,17 +1,14 @@
-const CACHE_NAME = 'gkstore-v1';
-const urlsToCache = [
+const CACHE_NAME = 'gkstore-v2';
+const APP_SHELL = [
   '/GKStore/index.html',
-  '/GKStore/manifest.json',
-  '/GKStore/style.css', // your CSS
-  '/GKStore/app.js',    // your main JS
-  // any other local assets
+  '/GKStore/manifest.json'
 ];
 
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -19,14 +16,13 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Only navigation requests go to index.html
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/GKStore/index.html') || fetch(event.request)
+      caches.match('/GKStore/index.html')
     );
     return;
   }
   event.respondWith(
-    caches.match(event.request) || fetch(event.request)
+    caches.match(event.request).then(r => r || fetch(event.request))
   );
 });
