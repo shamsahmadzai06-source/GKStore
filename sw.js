@@ -1,17 +1,15 @@
 const CACHE_NAME = 'gkstore-v1';
-const urlsToCache = [
+
+const CORE_ASSETS = [
   '/GKStore/',
   '/GKStore/index.html',
-  '/GKStore/manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js'
+  '/GKStore/manifest.json'
 ];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS))
   );
 });
 
@@ -20,8 +18,17 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Required for Android TWA
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/GKStore/index.html')
+        .then(res => res || fetch(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then(res => res || fetch(event.request))
   );
 });
