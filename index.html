@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <!-- PWA primary tags -->
     <meta name="theme-color" content="#ec4899">
-    <meta name="description" content="GK Store - Exclusive Video Marketplace. Buy & book premium video accounts.">
+    <meta name="description" content="GK Store - Exclusive Video Marketplace.-* Buy & book premium video accounts.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GK Store">
@@ -1526,13 +1527,30 @@ WITH CHECK (true);
         }
 
         function checkAndShowInstallButton() {
+            // Detect if running in GoNative.io WebView
+            const isGoNative = navigator.userAgent.includes('gonative') || 
+                               navigator.userAgent.includes('GoNative') ||
+                               window.location.href.includes('gonative') ||
+                               document.referrer.includes('gonative') ||
+                               window.name === 'gonative';
+            
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                                 window.navigator.standalone || 
                                 document.referrer.includes('android-app://') ||
                                 window.matchMedia('(display-mode: fullscreen)').matches ||
-                                window.matchMedia('(display-mode: minimal-ui)').matches;
+                                window.matchMedia('(display-mode: minimal-ui)').matches ||
+                                isGoNative;
             
-            if (isStandalone) {
+            // Also check for WebView
+            const isWebView = /wv|WebView|Android.*Version\/[0-9]+\.[0-9]+/i.test(navigator.userAgent);
+            
+            if (isStandalone || isWebView || isGoNative) {
+                // Hide install button permanently if in installed mode
+                const installBtn = document.getElementById('pwa-install-btn');
+                if (installBtn) {
+                    installBtn.classList.add('hidden');
+                    installBtn.style.display = 'none';
+                }
                 return;
             }
             
@@ -1580,6 +1598,81 @@ WITH CHECK (true);
 
         function closeInstallInstructions() {
             document.getElementById('install-instructions').classList.add('hidden');
+        }
+
+        function setupPWAInstall() { 
+            // Detect if running in GoNative.io WebView
+            const isGoNative = navigator.userAgent.includes('gonative') || 
+                               navigator.userAgent.includes('GoNative') ||
+                               window.location.href.includes('gonative') ||
+                               document.referrer.includes('gonative') ||
+                               window.name === 'gonative';
+            
+            // Detect if running as installed app (standalone, fullscreen, or GoNative)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone ||
+                                window.matchMedia('(display-mode: fullscreen)').matches ||
+                                window.matchMedia('(display-mode: minimal-ui)').matches ||
+                                isGoNative; // Treat GoNative as installed
+            
+            // Also check if we're in a WebView (common for APKs)
+            const isWebView = /wv|WebView|Android.*Version\/[0-9]+\.[0-9]+/i.test(navigator.userAgent);
+            
+            // If any of these are true, hide install button permanently
+            if (isStandalone || isWebView || isGoNative) { 
+                const installBtn = document.getElementById('pwa-install-btn');
+                if (installBtn) {
+                    installBtn.classList.add('hidden');
+                    installBtn.style.display = 'none';
+                }
+                return; // Exit early, no need for further setup
+            }
+            
+            // Only show install button for regular browsers
+            window.addEventListener('beforeinstallprompt', (e) => { 
+                e.preventDefault(); 
+                appState.deferredPrompt = e; 
+                showInstallButton(); 
+            });
+            
+            // Fallback for mobile browsers that don't support beforeinstallprompt
+            setTimeout(() => {
+                if (!appState.deferredPrompt && !isStandalone) {
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    if (isMobile) {
+                        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+                        if (isFirefox) {
+                            showInstallInstructions();
+                        } else {
+                            const btn = document.getElementById('pwa-install-btn');
+                            if (btn) {
+                                btn.classList.remove('hidden');
+                                btn.onclick = () => {
+                                    showInstallInstructions();
+                                };
+                            }
+                        }
+                    }
+                }
+            }, 3000);
+        }
+
+        function showInstallButton() { 
+            const btn = document.getElementById('pwa-install-btn'); 
+            if (btn) { 
+                btn.classList.remove('hidden'); 
+                btn.onclick = async () => { 
+                    if (appState.deferredPrompt) { 
+                        appState.deferredPrompt.prompt(); 
+                        const { outcome } = await appState.deferredPrompt.userChoice; 
+                        console.log(`User response to install: ${outcome}`); 
+                        appState.deferredPrompt = null; 
+                        btn.classList.add('hidden'); 
+                    } else {
+                        showInstallInstructions();
+                    }
+                }; 
+            } 
         }
 
         function startVideoCheckInterval() {
@@ -2907,62 +3000,6 @@ WITH CHECK (true);
             appState.language = localStorage.getItem('appLanguage') || 'en'; 
             appState.theme = localStorage.getItem('appTheme') || 'dark'; 
             document.documentElement.setAttribute('data-theme', appState.theme); 
-        }
-        
-        function setupPWAInstall() { 
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                window.navigator.standalone ||
-                                window.matchMedia('(display-mode: fullscreen)').matches ||
-                                window.matchMedia('(display-mode: minimal-ui)').matches;
-            
-            if (isStandalone) { 
-                document.getElementById('pwa-install-btn')?.classList.add('hidden'); 
-                return; 
-            }
-            
-            window.addEventListener('beforeinstallprompt', (e) => { 
-                e.preventDefault(); 
-                appState.deferredPrompt = e; 
-                showInstallButton(); 
-            });
-            
-            setTimeout(() => {
-                if (!appState.deferredPrompt && !isStandalone) {
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                    if (isMobile) {
-                        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-                        if (isFirefox) {
-                            showInstallInstructions();
-                        } else {
-                            const btn = document.getElementById('pwa-install-btn');
-                            if (btn) {
-                                btn.classList.remove('hidden');
-                                btn.onclick = () => {
-                                    showInstallInstructions();
-                                };
-                            }
-                        }
-                    }
-                }
-            }, 3000);
-        }
-        
-        function showInstallButton() { 
-            const btn = document.getElementById('pwa-install-btn'); 
-            if (btn) { 
-                btn.classList.remove('hidden'); 
-                btn.onclick = async () => { 
-                    if (appState.deferredPrompt) { 
-                        appState.deferredPrompt.prompt(); 
-                        const { outcome } = await appState.deferredPrompt.userChoice; 
-                        console.log(`User response to install: ${outcome}`); 
-                        appState.deferredPrompt = null; 
-                        btn.classList.add('hidden'); 
-                    } else {
-                        showInstallInstructions();
-                    }
-                }; 
-            } 
         }
         
         function setupEventListeners() { 
