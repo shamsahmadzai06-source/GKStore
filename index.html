@@ -1105,12 +1105,12 @@
             </div>
         </div>
 
-        <!-- Images Page - NEW Facebook-style image gallery -->
+        <!-- Images Page - Facebook-style image gallery -->
         <div id="images-page" class="page hidden">
             <div class="px-4">
                 <h2 class="text-2xl font-bold mb-6">Image Gallery</h2>
                 
-                <!-- Admin upload button (only visible to admin) -->
+                <!-- Admin upload button (only visible to admin) - FIXED: Now only shows when admin is logged in -->
                 <div id="admin-image-upload-section" class="hidden mb-6">
                     <button class="btn btn-primary w-full" onclick="showUploadImageModal()">
                         <i class="fas fa-cloud-upload-alt"></i> Upload New Image
@@ -1701,7 +1701,7 @@
         </div>
     </div>
 
-    <!-- SQL Setup Modal -->
+    <!-- SQL Setup Modal - FIXED: Updated with all required tables -->
     <div id="sql-setup-modal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 600px;">
             <div class="modal-header">
@@ -1711,6 +1711,82 @@
             <div class="modal-body">
                 <p class="mb-4 text-warning"><i class="fas fa-exclamation-triangle"></i> Important: Run this SQL in Supabase SQL Editor:</p>
                 <pre class="bg-black text-green-400 p-3 rounded-lg text-xs overflow-x-auto" style="max-height: 300px;">
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT UNIQUE NOT NULL,
+    device_info TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    installed BOOLEAN DEFAULT false,
+    visits_count INTEGER DEFAULT 1,
+    first_visit TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create install_tracking table
+CREATE TABLE IF NOT EXISTS install_tracking (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT,
+    device_type TEXT,
+    platform TEXT,
+    installed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create page_views table
+CREATE TABLE IF NOT EXISTS page_views (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT,
+    page TEXT,
+    session_id TEXT,
+    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create video_stats table
+CREATE TABLE IF NOT EXISTS video_stats (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT,
+    user_id TEXT,
+    action_type TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create videos table
+CREATE TABLE IF NOT EXISTS videos (
+    video_id TEXT PRIMARY KEY,
+    video_title TEXT NOT NULL,
+    description TEXT,
+    account_tier TEXT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    video_url TEXT NOT NULL,
+    bucket_name TEXT,
+    views INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    sold BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create book_requests table
+CREATE TABLE IF NOT EXISTS book_requests (
+    id SERIAL PRIMARY KEY,
+    video_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    whatsapp_number TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    video_id TEXT,
+    read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create contact_images table
 CREATE TABLE IF NOT EXISTS contact_images (
     id SERIAL PRIMARY KEY,
@@ -1723,7 +1799,7 @@ CREATE TABLE IF NOT EXISTS contact_images (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create gallery_images table for image gallery
+-- Create gallery_images table
 CREATE TABLE IF NOT EXISTS gallery_images (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
@@ -1737,93 +1813,69 @@ CREATE TABLE IF NOT EXISTS gallery_images (
 );
 
 -- Enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE install_tracking ENABLE ROW LEVEL SECURITY;
+ALTER TABLE page_views ENABLE ROW LEVEL SECURITY;
+ALTER TABLE video_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE book_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gallery_images ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies
-DROP POLICY IF EXISTS "Allow public select on contact_images" ON contact_images;
-DROP POLICY IF EXISTS "Allow authenticated insert on contact_images" ON contact_images;
-DROP POLICY IF EXISTS "Allow authenticated delete on contact_images" ON contact_images;
+DROP POLICY IF EXISTS "Allow all on users" ON users;
+DROP POLICY IF EXISTS "Allow all on install_tracking" ON install_tracking;
+DROP POLICY IF EXISTS "Allow all on page_views" ON page_views;
+DROP POLICY IF EXISTS "Allow all on video_stats" ON video_stats;
+DROP POLICY IF EXISTS "Allow all on videos" ON videos;
+DROP POLICY IF EXISTS "Allow all on book_requests" ON book_requests;
+DROP POLICY IF EXISTS "Allow all on notifications" ON notifications;
+DROP POLICY IF EXISTS "Allow all on contact_images" ON contact_images;
+DROP POLICY IF EXISTS "Allow all on gallery_images" ON gallery_images;
 
-DROP POLICY IF EXISTS "Allow public select on gallery_images" ON gallery_images;
-DROP POLICY IF EXISTS "Allow authenticated insert on gallery_images" ON gallery_images;
-DROP POLICY IF EXISTS "Allow authenticated delete on gallery_images" ON gallery_images;
+-- Create policies for all tables (allow all operations for simplicity)
+CREATE POLICY "Allow all on users" ON users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on install_tracking" ON install_tracking FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on page_views" ON page_views FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on video_stats" ON video_stats FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on videos" ON videos FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on book_requests" ON book_requests FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on notifications" ON notifications FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on contact_images" ON contact_images FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on gallery_images" ON gallery_images FOR ALL USING (true) WITH CHECK (true);
 
--- Create policies for contact_images
-CREATE POLICY "Allow public select on contact_images" 
-    ON contact_images FOR SELECT 
-    TO public 
-    USING (true);
-
-CREATE POLICY "Allow authenticated insert on contact_images" 
-    ON contact_images FOR INSERT 
-    TO authenticated 
-    WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated delete on contact_images" 
-    ON contact_images FOR DELETE 
-    TO authenticated 
-    USING (true);
-
--- Create policies for gallery_images
-CREATE POLICY "Allow public select on gallery_images" 
-    ON gallery_images FOR SELECT 
-    TO public 
-    USING (true);
-
-CREATE POLICY "Allow authenticated insert on gallery_images" 
-    ON gallery_images FOR INSERT 
-    TO authenticated 
-    WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated delete on gallery_images" 
-    ON gallery_images FOR DELETE 
-    TO authenticated 
-    USING (true);
-
--- Create storage bucket for gallery images
+-- Create storage buckets
+INSERT INTO storage.buckets (id, name, public) VALUES ('videos-small', 'videos-small', true)
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('videos-medium', 'videos-medium', true)
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('videos-big', 'videos-big', true)
+ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('gallery-images', 'gallery-images', true)
 ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('contact-images', 'contact-images', true)
+ON CONFLICT (id) DO NOTHING;
 
--- Storage policies for gallery-images bucket
-DROP POLICY IF EXISTS "Give public access to gallery-images" ON storage.objects;
-DROP POLICY IF EXISTS "Allow authenticated upload to gallery-images" ON storage.objects;
-DROP POLICY IF EXISTS "Allow authenticated delete from gallery-images" ON storage.objects;
+-- Storage policies for all buckets
+DROP POLICY IF EXISTS "Give public access to all buckets" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated upload to all buckets" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated delete from all buckets" ON storage.objects;
 
-CREATE POLICY "Give public access to gallery-images" 
+CREATE POLICY "Give public access to all buckets" 
     ON storage.objects FOR SELECT 
     TO public 
-    USING (bucket_id = 'gallery-images');
+    USING (true);
 
-CREATE POLICY "Allow authenticated upload to gallery-images" 
+CREATE POLICY "Allow authenticated upload to all buckets" 
     ON storage.objects FOR INSERT 
     TO authenticated 
-    WITH CHECK (bucket_id = 'gallery-images');
+    WITH CHECK (true);
 
-CREATE POLICY "Allow authenticated delete from gallery-images" 
+CREATE POLICY "Allow authenticated delete from all buckets" 
     ON storage.objects FOR DELETE 
     TO authenticated 
-    USING (bucket_id = 'gallery-images');
-
--- Storage policies for contact-images bucket
-DROP POLICY IF EXISTS "Give public access to contact-images" ON storage.objects;
-DROP POLICY IF EXISTS "Allow authenticated upload to contact-images" ON storage.objects;
-DROP POLICY IF EXISTS "Allow authenticated delete from contact-images" ON storage.objects;
-
-CREATE POLICY "Give public access to contact-images" 
-    ON storage.objects FOR SELECT 
-    TO public 
-    USING (bucket_id = 'contact-images');
-
-CREATE POLICY "Allow authenticated upload to contact-images" 
-    ON storage.objects FOR INSERT 
-    TO authenticated 
-    WITH CHECK (bucket_id = 'contact-images');
-
-CREATE POLICY "Allow authenticated delete from contact-images" 
-    ON storage.objects FOR DELETE 
-    TO authenticated 
-    USING (bucket_id = 'contact-images');
+    USING (true);
                 </pre>
                 <div class="flex gap-2 mt-4">
                     <button class="btn btn-primary flex-1" onclick="window.open('https://app.supabase.com', '_blank')">
@@ -1869,7 +1921,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
     </div>
 
     <script>
-        // === COMPLETE JAVASCRIPT CODE WITH IMAGE GALLERY ===
+        // === COMPLETE JAVASCRIPT CODE WITH FIXES ===
         
         // Supabase config
         const SUPABASE_URL = 'https://ieinqlpnubtwwkldqhab.supabase.co';
@@ -1881,12 +1933,13 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             currentPage: 'home',
             currentVideoIndex: 0,
             videos: [],
-            images: [], // NEW: Store gallery images
+            images: [],
             accounts: [],
             notifications: [],
             bookRequests: [],
             contacts: [],
-            likedImages: new Set(), // NEW: Track liked images
+            likedImages: new Set(),
+            likedVideos: new Set(),
             language: 'en',
             theme: 'dark',
             isAdminLoggedIn: false,
@@ -1896,10 +1949,10 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                 installedUsers: 0,
                 totalViews: 0,
                 totalLikes: 0,
-                imageLikes: 0 // NEW
+                imageLikes: 0 
             },
             currentUpload: { file: null, progress: 0 },
-            currentImageUpload: { file: null, progress: 0 }, // NEW
+            currentImageUpload: { file: null, progress: 0 },
             currentContactUpload: { file: null, progress: 0 },
             shareVideo: null,
             currentVideoPlayer: null,
@@ -1910,12 +1963,11 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             deferredPrompt: null,
             orientationTimeout: null,
             wasPlayingBeforeRotate: false,
-            likedVideos: new Set(),
             sessionCheckInterval: null,
             unseenVideosCount: 0,
-            unseenImagesCount: 0, // NEW
-            lastVideoCheck: null,
-            lastImageCheck: null, // NEW
+            unseenImagesCount: 0,
+            lastVideoCheck: new Date(),
+            lastImageCheck: new Date(),
             installInstructionsShown: false,
             userId: null,
             sessionId: null
@@ -1935,7 +1987,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             
             showPage('home');
             await loadInitialData();
-            startContentCheckInterval(); // Updated
+            startContentCheckInterval();
             startOnlineUsersTracking();
             
             setTimeout(checkAndShowInstallButton, 2000);
@@ -1964,7 +2016,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                     .from('users')
                     .select('*')
                     .eq('user_id', appState.userId)
-                    .single();
+                    .maybeSingle();
 
                 if (existingUser) {
                     await supabase
@@ -2122,7 +2174,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                         .update({ likes: image.likes })
                         .eq('id', imageId);
                     
-                    appState.userStats.imageLikes++;
+                    appState.userStats.imageLikes = (appState.userStats.imageLikes || 0) + 1;
                 }
             } catch (error) {
                 console.error('Error tracking image like:', error);
@@ -2139,7 +2191,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                         .update({ likes: image.likes })
                         .eq('id', imageId);
                     
-                    appState.userStats.imageLikes = Math.max(0, appState.userStats.imageLikes - 1);
+                    appState.userStats.imageLikes = Math.max(0, (appState.userStats.imageLikes || 0) - 1);
                 }
             } catch (error) {
                 console.error('Error tracking image unlike:', error);
@@ -2161,8 +2213,33 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                         .gt('last_seen', fiveMinutesAgo);
 
                     appState.userStats.onlineUsers = count || 0;
+                    
+                    // Get installed users count
+                    const { count: installedCount } = await supabase
+                        .from('users')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('installed', true);
+                    
+                    appState.userStats.installedUsers = installedCount || 0;
+                    
+                    // Get total views
+                    const { count: viewsCount } = await supabase
+                        .from('video_stats')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('action_type', 'view');
+                    
+                    appState.userStats.totalViews = viewsCount || 0;
+                    
+                    // Get total likes
+                    const { count: likesCount } = await supabase
+                        .from('video_stats')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('action_type', 'like');
+                    
+                    appState.userStats.totalLikes = likesCount || 0;
+                    
                     if (appState.isAdminLoggedIn) {
-                        document.getElementById('admin-online-users').textContent = appState.userStats.onlineUsers;
+                        updateAdminStats();
                     }
 
                 } catch (error) {
@@ -2174,12 +2251,12 @@ CREATE POLICY "Allow authenticated delete from contact-images"
         async function checkDatabaseSetup() {
             try {
                 const { error } = await supabase
-                    .from('contact_images')
+                    .from('users')
                     .select('count')
                     .limit(1);
                     
                 if (error?.code === '42P01') {
-                    console.log('Contact images table not found');
+                    console.log('Users table not found');
                     showModal('sql-setup-modal');
                 }
             } catch {
@@ -2207,6 +2284,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             if (page === 'accounts') loadAccountsContent();
             if (page === 'images') {
                 loadImages();
+                // FIXED: Only show upload button when admin is logged in
                 if (appState.isAdminLoggedIn) {
                     document.getElementById('admin-image-upload-section').classList.remove('hidden');
                 } else {
@@ -2340,7 +2418,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             }
         }
 
-        // NEW: Load gallery images
+        // Load gallery images
         async function loadImages() {
             try {
                 const { data, error } = await supabase
@@ -2362,9 +2440,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                 
                 // Update admin stats
                 if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-image-count').textContent = appState.images.length;
-                    const totalImageLikes = appState.images.reduce((sum, img) => sum + (img.likes || 0), 0);
-                    document.getElementById('admin-image-likes').textContent = totalImageLikes;
+                    updateAdminStats();
                 }
 
             } catch (error) {
@@ -2372,7 +2448,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             }
         }
 
-        // NEW: Render images in gallery
+        // Render images in gallery
         function renderImages() {
             const grid = document.getElementById('images-grid');
             const empty = document.getElementById('images-empty');
@@ -2424,7 +2500,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             }).join('');
         }
 
-        // NEW: Like image
+        // Like image
         async function likeImage(imageId) {
             const image = appState.images.find(img => img.id === imageId);
             if (!image) return;
@@ -2453,9 +2529,13 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                     likeBtn.classList.remove('liked');
                 }
             }
+            
+            if (appState.isAdminLoggedIn) {
+                updateAdminStats();
+            }
         }
 
-        // NEW: Book image
+        // Book image
         async function bookImage(imageId) {
             const image = appState.images.find(img => img.id === imageId);
             if (!image) return;
@@ -2473,7 +2553,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             showModal('book-modal');
         }
 
-        // NEW: Buy image
+        // Buy image
         function buyImage(imageId) {
             const image = appState.images.find(img => img.id === imageId);
             if (!image) return;
@@ -2491,7 +2571,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             showModal('buy-modal');
         }
 
-        // NEW: Preview image
+        // Preview image
         function previewImage(imageUrl) {
             const previewModal = document.getElementById('image-preview-modal');
             const previewImg = document.getElementById('preview-image');
@@ -2500,13 +2580,13 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             document.body.style.overflow = 'hidden';
         }
 
-        // NEW: Close image preview
+        // Close image preview
         function closeImagePreview() {
             document.getElementById('image-preview-modal').classList.add('hidden');
             document.body.style.overflow = '';
         }
 
-        // NEW: Show upload image modal
+        // Show upload image modal
         function showUploadImageModal() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -2516,7 +2596,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             showModal('upload-image-modal');
         }
 
-        // NEW: Reset image upload form
+        // Reset image upload form
         function resetImageUploadForm() {
             document.getElementById('image-title-input').value = '';
             document.getElementById('image-description-input').value = '';
@@ -2536,7 +2616,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             appState.currentImageUpload.file = null;
         }
 
-        // NEW: Handle image file selection
+        // Handle image file selection
         function handleImageSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -2575,7 +2655,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             reader.readAsDataURL(file);
         }
 
-        // NEW: Upload image to gallery
+        // Upload image to gallery
         async function uploadImage() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -2698,7 +2778,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             }
         }
 
-        // NEW: Show manage images modal
+        // Show manage images modal
         function showManageImages() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -2708,7 +2788,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             showModal('manage-images-modal');
         }
 
-        // NEW: Render admin images list
+        // Render admin images list
         function renderAdminImagesList() {
             const list = document.getElementById('admin-images-list');
             const empty = document.getElementById('admin-images-empty');
@@ -2742,7 +2822,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             `).join('');
         }
 
-        // NEW: Delete image
+        // Delete image
         async function deleteImage(id) {
             if (!appState.isAdminLoggedIn || !confirm('Delete this image permanently?')) return;
 
@@ -2780,7 +2860,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             }
         }
 
-        // Updated: Load contacts with better error handling
+        // Load contacts with better error handling
         async function loadContacts() {
             try {
                 const { data, error } = await supabase
@@ -3172,6 +3252,10 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                     }
                 }
             }
+            
+            if (appState.isAdminLoggedIn) {
+                updateAdminStats();
+            }
         }
 
         function rotateToFullscreen() {
@@ -3412,10 +3496,6 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                 document.getElementById('contact-image-icon').style.display = 'none';
             };
             reader.readAsDataURL(file);
-            
-            // Show file info
-            const fileSize = (file.size / 1024).toFixed(2) + ' KB';
-            console.log('Selected image:', file.name, fileSize);
         }
 
         async function saveContact() {
@@ -3585,7 +3665,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             renderAdminContactsList();
         }
 
-        // NEW: Function to help create bucket
+        // Function to help create bucket
         async function createContactImagesBucket() {
             if (!appState.isAdminLoggedIn) {
                 showToast('error', 'Access Denied', 'Login as admin first');
@@ -3614,10 +3694,18 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                 if (error) throw error;
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-dashboard').classList.remove('hidden');
+                
+                // Show admin upload section in images page
+                if (appState.currentPage === 'images') {
+                    document.getElementById('admin-image-upload-section').classList.remove('hidden');
+                }
+                
                 showToast('success', 'Admin Login', 'Welcome admin');
                 showPage('admin');
                 updateAdminStats();
-            } catch (error) { showToast('error', 'Admin Login Failed', error.message); }
+            } catch (error) { 
+                showToast('error', 'Admin Login Failed', error.message); 
+            }
         }
 
         async function logout() {
@@ -3627,6 +3715,10 @@ CREATE POLICY "Allow authenticated delete from contact-images"
             appState.unseenVideosCount = 0;
             appState.unseenImagesCount = 0;
             updateNotificationBadge();
+            
+            // Hide admin upload section in images page
+            document.getElementById('admin-image-upload-section').classList.add('hidden');
+            
             showPage('home');
             showToast('success', 'Logged Out', 'Admin logged out');
         }
@@ -3634,6 +3726,10 @@ CREATE POLICY "Allow authenticated delete from contact-images"
         async function updateAdminStats() {
             document.getElementById('admin-video-count').textContent = appState.videos.length;
             document.getElementById('admin-image-count').textContent = appState.images.length;
+            document.getElementById('admin-online-users').textContent = appState.userStats.onlineUsers || 0;
+            document.getElementById('admin-installed-users').textContent = appState.userStats.installedUsers || 0;
+            document.getElementById('admin-total-views').textContent = appState.userStats.totalViews || 0;
+            document.getElementById('admin-total-likes').textContent = appState.userStats.totalLikes || 0;
 
             try {
                 const { count: userCount } = await supabase
@@ -3641,29 +3737,6 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                     .select('*', { count: 'exact', head: true });
 
                 document.getElementById('admin-registered-users').textContent = userCount || 0;
-
-                const { count: installedCount } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('installed', true);
-
-                document.getElementById('admin-installed-users').textContent = installedCount || 0;
-
-                const { count: viewsCount } = await supabase
-                    .from('video_stats')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('action_type', 'view');
-
-                document.getElementById('admin-total-views').textContent = viewsCount || 0;
-
-                const { count: likesCount } = await supabase
-                    .from('video_stats')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('action_type', 'like');
-
-                document.getElementById('admin-total-likes').textContent = likesCount || 0;
-
-                document.getElementById('admin-online-users').textContent = appState.userStats.onlineUsers || 0;
 
                 const totalImageLikes = appState.images.reduce((sum, img) => sum + (img.likes || 0), 0);
                 document.getElementById('admin-image-likes').textContent = totalImageLikes;
@@ -3747,6 +3820,8 @@ CREATE POLICY "Allow authenticated delete from contact-images"
                 if (appState.currentPage === 'accounts') {
                     loadAccountsContent();
                 }
+                
+                updateAdminStats();
                 
             } catch (error) {
                 console.error('Delete error:', error);
@@ -4255,7 +4330,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
         // ========== NOTIFICATIONS ==========
         
         function startContentCheckInterval() {
-            appState.videoCheckInterval = setInterval(checkForNewContent, 60000);
+            setInterval(checkForNewContent, 60000);
         }
 
         async function checkForNewContent() {
@@ -4670,7 +4745,7 @@ CREATE POLICY "Allow authenticated delete from contact-images"
         window.showContactManagement = showContactManagement;
         window.createContactImagesBucket = createContactImagesBucket;
         
-        // NEW: Image gallery functions
+        // Image gallery functions
         window.showUploadImageModal = showUploadImageModal;
         window.handleImageSelect = handleImageSelect;
         window.uploadImage = uploadImage;
