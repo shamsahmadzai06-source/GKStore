@@ -1033,7 +1033,7 @@
             </div>
         </div>
 
-        <!-- Contact Page - Only two WhatsApp contacts -->
+        <!-- Contact Page - Only two WhatsApp contacts (NO ADD CONTACT, NO BUCKET) -->
         <div id="contact-page" class="page hidden">
             <div class="px-4">
                 <h2 class="text-2xl font-bold mb-6">Contact Us</h2>
@@ -2069,9 +2069,9 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
             if (page === 'admin') {
                 if (appState.isAdminLoggedIn) {
                     document.getElementById('admin-dashboard').classList.remove('hidden');
+                    updateAdminStats(); // Update stats immediately when admin page is shown
                 }
                 loadAdminBookRequests();
-                updateAdminStats();
             }
             if (page === 'notifications') {
                 appState.unseenVideosCount = 0;
@@ -2085,7 +2085,9 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
         
         async function loadInitialData() {
             await Promise.all([loadVideos(), loadAccounts(), loadBookRequests(), loadImages()]);
-            updateAdminStats();
+            if (appState.isAdminLoggedIn) {
+                updateAdminStats();
+            }
             renderReels();
             renderImages();
         }
@@ -3098,20 +3100,41 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
         async function adminLogin() {
             const email = document.getElementById('admin-email').value;
             const password = document.getElementById('admin-password').value;
+            
+            if (!email || !password) {
+                showToast('error', 'Login Failed', 'Please enter email and password');
+                return;
+            }
+            
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                appState.isAdminLoggedIn = true;
-                document.getElementById('admin-dashboard').classList.remove('hidden');
+                const { data, error } = await supabase.auth.signInWithPassword({ 
+                    email: email, 
+                    password: password 
+                });
                 
-                if (appState.currentPage === 'images') {
-                    document.getElementById('admin-image-upload-section').classList.remove('hidden');
+                if (error) {
+                    console.error('Login error:', error);
+                    showToast('error', 'Admin Login Failed', error.message);
+                    return;
                 }
                 
-                showToast('success', 'Admin Login', 'Welcome admin');
-                showPage('admin');
-                updateAdminStats();
+                if (data.user) {
+                    appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    
+                    if (appState.currentPage === 'images') {
+                        document.getElementById('admin-image-upload-section').classList.remove('hidden');
+                    }
+                    
+                    showToast('success', 'Admin Login', 'Welcome admin');
+                    
+                    // Update stats immediately after login
+                    await updateUserStats();
+                    showPage('admin');
+                }
+                
             } catch (error) { 
+                console.error('Login exception:', error);
                 showToast('error', 'Admin Login Failed', error.message); 
             }
         }
@@ -3124,6 +3147,7 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
             appState.unseenImagesCount = 0;
             updateNotificationBadge();
             
+            document.getElementById('admin-dashboard').classList.add('hidden');
             document.getElementById('admin-image-upload-section').classList.add('hidden');
             
             showPage('home');
@@ -3132,24 +3156,35 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
 
         async function updateAdminStats() {
             try {
-                document.getElementById('admin-video-count').textContent = appState.videos.length || 0;
-                document.getElementById('admin-image-count').textContent = appState.images.length || 0;
+                const videoCountEl = document.getElementById('admin-video-count');
+                const imageCountEl = document.getElementById('admin-image-count');
+                const registeredUsersEl = document.getElementById('admin-registered-users');
+                const onlineUsersEl = document.getElementById('admin-online-users');
+                const installedUsersEl = document.getElementById('admin-installed-users');
+                const totalViewsEl = document.getElementById('admin-total-views');
+                const totalLikesEl = document.getElementById('admin-total-likes');
+                const imageLikesEl = document.getElementById('admin-image-likes');
                 
-                document.getElementById('admin-registered-users').textContent = appState.userStats.registeredUsers || 0;
-                document.getElementById('admin-online-users').textContent = appState.userStats.onlineUsers || 0;
-                document.getElementById('admin-installed-users').textContent = appState.userStats.installedUsers || 0;
-                document.getElementById('admin-total-views').textContent = appState.userStats.totalViews || 0;
-                document.getElementById('admin-total-likes').textContent = appState.userStats.totalLikes || 0;
-                document.getElementById('admin-image-likes').textContent = appState.userStats.imageLikes || 0;
+                if (videoCountEl) videoCountEl.textContent = appState.videos.length || 0;
+                if (imageCountEl) imageCountEl.textContent = appState.images.length || 0;
+                if (registeredUsersEl) registeredUsersEl.textContent = appState.userStats.registeredUsers || 0;
+                if (onlineUsersEl) onlineUsersEl.textContent = appState.userStats.onlineUsers || 0;
+                if (installedUsersEl) installedUsersEl.textContent = appState.userStats.installedUsers || 0;
+                if (totalViewsEl) totalViewsEl.textContent = appState.userStats.totalViews || 0;
+                if (totalLikesEl) totalLikesEl.textContent = appState.userStats.totalLikes || 0;
+                if (imageLikesEl) imageLikesEl.textContent = appState.userStats.imageLikes || 0;
 
-                console.log('Admin stats updated');
+                console.log('Admin stats updated:', appState.userStats);
             } catch (error) {
                 console.error('Error updating admin stats:', error);
             }
         }
 
         async function showManageVideos() {
-            if (!appState.isAdminLoggedIn) { showToast('error', 'Access Denied', 'Login as admin first'); return; }
+            if (!appState.isAdminLoggedIn) { 
+                showToast('error', 'Access Denied', 'Login as admin first'); 
+                return; 
+            }
             await loadAdminVideos();
             showModal('manage-videos-modal');
         }
@@ -3157,7 +3192,10 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
         async function loadAdminVideos(filter = 'all') {
             const list = document.getElementById('admin-videos-list');
             const filtered = filter === 'all' ? appState.videos : appState.videos.filter(v => v.tier === filter);
-            if (!filtered.length) { list.innerHTML = '<div class="text-center py-8 text-zinc-400">No videos found</div>'; return; }
+            if (!filtered.length) { 
+                list.innerHTML = '<div class="text-center py-8 text-zinc-400">No videos found</div>'; 
+                return; 
+            }
             list.innerHTML = '';
             filtered.forEach(v => {
                 list.innerHTML += `
@@ -3232,7 +3270,10 @@ CREATE POLICY "Allow authenticated delete from gallery-images"
         }
 
         async function showBookRequests() {
-            if (!appState.isAdminLoggedIn) { showToast('error', 'Access Denied', 'Login as admin first'); return; }
+            if (!appState.isAdminLoggedIn) { 
+                showToast('error', 'Access Denied', 'Login as admin first'); 
+                return; 
+            }
             await loadAdminBookRequests();
             showModal('book-requests-modal');
         }
