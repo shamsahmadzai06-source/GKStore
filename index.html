@@ -1800,6 +1800,7 @@ ON CONFLICT (id) DO NOTHING;
         };
 
         async function initApp() {
+            console.log('🚀 Initializing app...');
             loadPreferences();
             setupEventListeners();
             setupOrientationHandling();
@@ -1825,7 +1826,7 @@ ON CONFLICT (id) DO NOTHING;
                 localStorage.setItem('userId', userId);
             }
             appState.userId = userId;
-            appState.sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            console.log('👤 User ID:', appState.userId);
         }
 
         async function checkInstallStatus() {
@@ -1840,6 +1841,7 @@ ON CONFLICT (id) DO NOTHING;
                         .from('users')
                         .update({ installed: true })
                         .eq('user_id', appState.userId);
+                    console.log('📱 User marked as installed');
                 }
             } catch (error) {
                 console.error('Error checking install status:', error);
@@ -1881,9 +1883,12 @@ ON CONFLICT (id) DO NOTHING;
             }
         }
 
+        // ========== FIXED VIEW TRACKING ==========
         async function trackVideoView(videoId) {
             try {
-                const { data: existingView } = await supabase
+                console.log('📺 Tracking view for video:', videoId);
+                
+                const { data: existingView, error: checkError } = await supabase
                     .from('video_stats')
                     .select('id')
                     .eq('video_id', videoId)
@@ -1891,39 +1896,77 @@ ON CONFLICT (id) DO NOTHING;
                     .eq('action_type', 'view')
                     .maybeSingle();
 
+                if (checkError) {
+                    console.error('Error checking existing view:', checkError);
+                }
+
+                console.log('Existing view:', existingView);
+
                 if (!existingView) {
-                    await supabase
+                    const { error: insertError } = await supabase
                         .from('video_stats')
                         .insert([{
                             video_id: videoId,
                             user_id: appState.userId,
                             action_type: 'view'
                         }]);
+                    
+                    if (insertError) {
+                        console.error('Error inserting view:', insertError);
+                        throw insertError;
+                    }
+                    
+                    console.log('✅ View recorded successfully');
 
-                    const { count } = await supabase
+                    const { count, error: countError } = await supabase
                         .from('video_stats')
                         .select('*', { count: 'exact', head: true })
                         .eq('video_id', videoId)
                         .eq('action_type', 'view');
                     
+                    if (countError) {
+                        console.error('Error getting view count:', countError);
+                    }
+                    
+                    const newViewCount = count || 0;
+                    console.log('New view count:', newViewCount);
+                    
                     const video = appState.videos.find(v => v.id === videoId);
                     if (video) {
-                        video.views = count || 0;
-                        await supabase
+                        video.views = newViewCount;
+                        
+                        const { error: updateError } = await supabase
                             .from('videos')
-                            .update({ views: video.views })
+                            .update({ views: newViewCount })
                             .eq('video_id', videoId);
+                        
+                        if (updateError) {
+                            console.error('Error updating video views:', updateError);
+                        } else {
+                            console.log('✅ Video view count updated in database');
+                        }
                     }
+                    
+                    const index = appState.videos.findIndex(v => v.id === videoId);
+                    if (index !== -1 && index === appState.currentVideoIndex) {
+                        updateReelStats(index, 'views', newViewCount);
+                    }
+                    
                     updateUserStats();
+                } else {
+                    console.log('👁️ User already viewed this video, not counting again');
                 }
             } catch (error) {
-                console.error('Error tracking view:', error);
+                console.error('❌ Error in trackVideoView:', error);
             }
         }
 
+        // ========== FIXED LIKE TRACKING ==========
         async function trackVideoLike(videoId) {
             try {
-                const { data: existingLike } = await supabase
+                console.log('❤️ Attempting to like video:', videoId);
+                
+                const { data: existingLike, error: checkError } = await supabase
                     .from('video_stats')
                     .select('id')
                     .eq('video_id', videoId)
@@ -1931,62 +1974,126 @@ ON CONFLICT (id) DO NOTHING;
                     .eq('action_type', 'like')
                     .maybeSingle();
 
+                if (checkError) {
+                    console.error('Error checking existing like:', checkError);
+                }
+
+                console.log('Existing like:', existingLike);
+
                 if (!existingLike) {
-                    await supabase
+                    const { error: insertError } = await supabase
                         .from('video_stats')
                         .insert([{
                             video_id: videoId,
                             user_id: appState.userId,
                             action_type: 'like'
                         }]);
+                    
+                    if (insertError) {
+                        console.error('Error inserting like:', insertError);
+                        throw insertError;
+                    }
+                    
+                    console.log('✅ Like recorded successfully');
 
-                    const { count } = await supabase
+                    const { count, error: countError } = await supabase
                         .from('video_stats')
                         .select('*', { count: 'exact', head: true })
                         .eq('video_id', videoId)
                         .eq('action_type', 'like');
                     
+                    if (countError) {
+                        console.error('Error getting like count:', countError);
+                    }
+                    
+                    const newLikeCount = count || 0;
+                    console.log('New like count:', newLikeCount);
+                    
                     const video = appState.videos.find(v => v.id === videoId);
                     if (video) {
-                        video.likes = count || 0;
-                        await supabase
+                        video.likes = newLikeCount;
+                        
+                        const { error: updateError } = await supabase
                             .from('videos')
-                            .update({ likes: video.likes })
+                            .update({ likes: newLikeCount })
                             .eq('video_id', videoId);
+                        
+                        if (updateError) {
+                            console.error('Error updating video likes:', updateError);
+                        } else {
+                            console.log('✅ Video like count updated in database');
+                        }
                     }
+                    
                     updateUserStats();
+                    showToast('success', 'Liked!', 'Video liked successfully');
+                    return true;
+                } else {
+                    console.log('❤️ User already liked this video');
+                    showToast('info', 'Already Liked', 'You have already liked this video');
+                    return false;
                 }
             } catch (error) {
-                console.error('Error tracking like:', error);
+                console.error('❌ Error in trackVideoLike:', error);
+                showToast('error', 'Like Failed', error.message);
+                return false;
             }
         }
 
         async function trackVideoUnlike(videoId) {
             try {
-                await supabase
+                console.log('💔 Attempting to unlike video:', videoId);
+                
+                const { error: deleteError } = await supabase
                     .from('video_stats')
                     .delete()
                     .eq('video_id', videoId)
                     .eq('user_id', appState.userId)
                     .eq('action_type', 'like');
 
-                const { count } = await supabase
+                if (deleteError) {
+                    console.error('Error deleting like:', deleteError);
+                    throw deleteError;
+                }
+                
+                console.log('✅ Unlike recorded successfully');
+
+                const { count, error: countError } = await supabase
                     .from('video_stats')
                     .select('*', { count: 'exact', head: true })
                     .eq('video_id', videoId)
                     .eq('action_type', 'like');
                 
+                if (countError) {
+                    console.error('Error getting like count:', countError);
+                }
+                
+                const newLikeCount = count || 0;
+                console.log('New like count after unlike:', newLikeCount);
+                
                 const video = appState.videos.find(v => v.id === videoId);
                 if (video) {
-                    video.likes = count || 0;
-                    await supabase
+                    video.likes = newLikeCount;
+                    
+                    const { error: updateError } = await supabase
                         .from('videos')
-                        .update({ likes: video.likes })
+                        .update({ likes: newLikeCount })
                         .eq('video_id', videoId);
+                    
+                    if (updateError) {
+                        console.error('Error updating video likes:', updateError);
+                    } else {
+                        console.log('✅ Video like count updated in database');
+                    }
                 }
+                
                 updateUserStats();
+                showToast('success', 'Unliked!', 'Video unliked successfully');
+                return true;
             } catch (error) {
-                console.error('Error tracking unlike:', error);
+                console.error('❌ Error in trackVideoUnlike:', error);
+                showToast('error', 'Unlike Failed', error.message);
+                return false;
             }
         }
 
@@ -2167,6 +2274,7 @@ ON CONFLICT (id) DO NOTHING;
                     sold: false, 
                     url: v.url 
                 }));
+                console.log('📹 Videos loaded:', appState.videos.length);
             } catch (error) {
                 console.error('Error in loadVideos:', error);
                 appState.videos = appState.accounts = [];
@@ -2298,6 +2406,40 @@ ON CONFLICT (id) DO NOTHING;
             if (likeBtn) likeBtn.classList.toggle('liked', appState.likedImages.has(imageId));
             
             if (appState.isAdminLoggedIn) updateAdminStats();
+        }
+
+        function bookImage(imageId) {
+            const image = appState.images.find(img => img.id === imageId);
+            if (!image) return;
+
+            appState.currentAccount = {
+                id: `image_${imageId}`,
+                title: image.title,
+                tier: 'image',
+                price: image.price || 0
+            };
+
+            document.getElementById('book-account-name').textContent = image.title;
+            document.getElementById('book-account-tier').textContent = 'Image';
+            document.getElementById('book-account-price').textContent = `$${image.price || 0}`;
+            showModal('book-modal');
+        }
+
+        function buyImage(imageId) {
+            const image = appState.images.find(img => img.id === imageId);
+            if (!image) return;
+
+            appState.currentAccount = {
+                id: `image_${imageId}`,
+                title: image.title,
+                tier: 'image',
+                price: image.price || 0
+            };
+
+            document.getElementById('buy-account-name').textContent = image.title;
+            document.getElementById('buy-account-tier').textContent = 'Image';
+            document.getElementById('buy-account-price').textContent = `$${image.price || 0}`;
+            showModal('buy-modal');
         }
 
         function previewImage(imageUrl) {
@@ -2567,6 +2709,7 @@ ON CONFLICT (id) DO NOTHING;
                 });
 
                 videoEl.addEventListener('play', () => {
+                    console.log('🎬 Video playing:', video.id, 'View tracked:', video.viewTracked);
                     if (!video.viewTracked) {
                         video.viewTracked = true;
                         trackVideoView(video.id);
@@ -2574,6 +2717,21 @@ ON CONFLICT (id) DO NOTHING;
                 });
             });
             setTimeout(() => playVideoAtIndex(0), 500);
+        }
+
+        function updateReelStats(index, stat, value) {
+            const reel = document.querySelector(`.reel-item[data-index="${index}"]`);
+            if (!reel) return;
+            
+            if (stat === 'views') {
+                const viewsEl = reel.querySelector('.fa-eye').parentElement;
+                if (viewsEl) viewsEl.innerHTML = `<i class="fas fa-eye"></i> ${value}`;
+            } else if (stat === 'likes') {
+                const likesEl = reel.querySelector('.fa-heart').parentElement;
+                const likeSpan = reel.querySelector('.like-count');
+                if (likesEl) likesEl.innerHTML = `<i class="fas fa-heart"></i> ${value}`;
+                if (likeSpan) likeSpan.textContent = value;
+            }
         }
 
         function playVideoAtIndex(index) {
@@ -2686,22 +2844,40 @@ ON CONFLICT (id) DO NOTHING;
             const video = appState.videos[index];
             if (!video) return;
 
-            if (appState.likedVideos.has(video.id)) {
-                appState.likedVideos.delete(video.id);
-                video.likes = Math.max(0, (video.likes || 0) - 1);
-                await trackVideoUnlike(video.id);
-            } else {
-                appState.likedVideos.add(video.id);
-                video.likes = (video.likes || 0) + 1;
-                await trackVideoLike(video.id);
-            }
+            console.log('likeFromReel called for video:', video.id, 'Current liked state:', appState.likedVideos.has(video.id));
 
-            const reel = document.querySelector(`.reel-item[data-index="${index}"]`);
-            if (reel) {
-                const likeBtn = reel.querySelector('.reel-action-btn[onclick*="likeFromReel"]');
-                const likeSpan = reel.querySelector('.like-count');
-                if (likeBtn) likeBtn.classList.toggle('liked', appState.likedVideos.has(video.id));
-                if (likeSpan) likeSpan.textContent = video.likes;
+            if (appState.likedVideos.has(video.id)) {
+                const success = await trackVideoUnlike(video.id);
+                if (success) {
+                    appState.likedVideos.delete(video.id);
+                    
+                    const reel = document.querySelector(`.reel-item[data-index="${index}"]`);
+                    if (reel) {
+                        const likeBtn = reel.querySelector('.reel-action-btn[onclick*="likeFromReel"]');
+                        const likeSpan = reel.querySelector('.like-count');
+                        const statsSpan = reel.querySelector('.fa-heart')?.parentElement;
+                        
+                        if (likeBtn) likeBtn.classList.remove('liked');
+                        if (likeSpan) likeSpan.textContent = video.likes;
+                        if (statsSpan) statsSpan.innerHTML = `<i class="fas fa-heart"></i> ${video.likes}`;
+                    }
+                }
+            } else {
+                const success = await trackVideoLike(video.id);
+                if (success) {
+                    appState.likedVideos.add(video.id);
+                    
+                    const reel = document.querySelector(`.reel-item[data-index="${index}"]`);
+                    if (reel) {
+                        const likeBtn = reel.querySelector('.reel-action-btn[onclick*="likeFromReel"]');
+                        const likeSpan = reel.querySelector('.like-count');
+                        const statsSpan = reel.querySelector('.fa-heart')?.parentElement;
+                        
+                        if (likeBtn) likeBtn.classList.add('liked');
+                        if (likeSpan) likeSpan.textContent = video.likes;
+                        if (statsSpan) statsSpan.innerHTML = `<i class="fas fa-heart"></i> ${video.likes}`;
+                    }
+                }
             }
         }
 
