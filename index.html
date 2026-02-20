@@ -1766,7 +1766,7 @@
     </div>
 
     <script>
-        // === COMPLETE FIXED JAVASCRIPT CODE - WORKS WITH YOUR EXISTING DATABASE ===
+        // === COMPLETE FIXED JAVASCRIPT CODE WITH IMAGE GALLERY WORKING ===
         
         // Supabase config
         const SUPABASE_URL = 'https://ieinqlpnubtwwkldqhab.supabase.co';
@@ -1938,7 +1938,7 @@
                     await supabase
                         .from('videos')
                         .update({ views: video.views })
-                        .eq('id', video.id);
+                        .eq('video_id', videoId);
                 }
 
             } catch (error) {
@@ -1954,7 +1954,7 @@
                     await supabase
                         .from('gallery_images')
                         .update({ views: image.views })
-                        .eq('id', image.id);
+                        .eq('id', imageId);
                 }
             } catch (error) {
                 console.error('Error tracking image view:', error);
@@ -1977,7 +1977,7 @@
                     await supabase
                         .from('videos')
                         .update({ likes: video.likes })
-                        .eq('id', video.id);
+                        .eq('video_id', videoId);
                 }
 
             } catch (error) {
@@ -2001,7 +2001,7 @@
                     await supabase
                         .from('videos')
                         .update({ likes: video.likes })
-                        .eq('id', video.id);
+                        .eq('video_id', videoId);
                 }
 
             } catch (error) {
@@ -2137,7 +2137,7 @@
             }
         }
 
-        // ========== FIXED DATA LOADING FUNCTIONS - WORKS WITH YOUR DB ==========
+        // ========== FIXED DATA LOADING FUNCTIONS ==========
         
         async function loadInitialData() {
             await Promise.all([loadVideos(), loadAccounts(), loadBookRequests(), loadContacts(), loadImages()]);
@@ -2162,30 +2162,25 @@
                 }
                 
                 if (data && data.length > 0) {
-                    console.log('Raw video data from DB:', data[0]); // Debug: see actual column names
-                    
-                    appState.videos = data.map(v => {
-                        // Map whatever columns exist in your database
-                        return {
-                            id: v.video_id || v.id || `vid_${Date.now()}`,
-                            title: v.video_title || v.title || v.name || 'Untitled',
-                            description: v.description || '',
-                            views: v.views || 0,
-                            likes: v.likes || 0,
-                            url: v.video_url || v.url || '',
+                    appState.videos = data.map(v => ({
+                        id: v.video_id || v.id,
+                        title: v.video_title || v.title || 'Untitled',
+                        description: v.description || 'Premium video content',
+                        views: v.views || 0,
+                        likes: v.likes || 0,
+                        url: v.video_url || v.url,
+                        tier: v.account_tier || v.tier || 'small',
+                        price: v.price || 0,
+                        viewTracked: false,
+                        created_at: v.created_at,
+                        account: {
+                            id: v.video_id || v.id,
+                            title: v.video_title || v.title,
                             tier: v.account_tier || v.tier || 'small',
                             price: v.price || 0,
-                            viewTracked: false,
-                            created_at: v.created_at || new Date().toISOString(),
-                            account: {
-                                id: v.video_id || v.id,
-                                title: v.video_title || v.title,
-                                tier: v.account_tier || v.tier || 'small',
-                                price: v.price || 0,
-                                url: v.video_url || v.url
-                            }
-                        };
-                    });
+                            url: v.video_url || v.url
+                        }
+                    }));
                     console.log('Videos loaded:', appState.videos.length);
                 } else {
                     console.log('No videos found in database');
@@ -2201,7 +2196,7 @@
             try {
                 const { data, error } = await supabase
                     .from('videos')
-                    .select('*');
+                    .select('video_id, video_title, description, account_tier, price, sold, video_url');
                     
                 if (error) {
                     console.error('Error loading accounts:', error);
@@ -2251,6 +2246,8 @@
             }
         }
 
+        // ========== FIXED IMAGE FUNCTIONS ==========
+        
         async function loadImages() {
             try {
                 const { data, error } = await supabase
@@ -2261,16 +2258,39 @@
                 if (error) {
                     console.error('Error loading images:', error);
                     if (error.code === '42P01') {
-                        // Table doesn't exist, show setup modal
                         showModal('sql-setup-modal');
                     }
                     return;
                 }
 
-                appState.images = data || [];
+                console.log('Raw image data from DB:', data);
+                
+                if (data && data.length > 0) {
+                    appState.images = data.map(img => {
+                        return {
+                            id: img.id,
+                            title: img.title || 'Untitled',
+                            description: img.description || '',
+                            tier: img.account_tier || img.tier || 'small',
+                            price: img.price || 0,
+                            image_url: img.image_url || '',
+                            image_path: img.image_path || '',
+                            bucket_name: img.bucket_name || '',
+                            views: img.views || 0,
+                            likes: img.likes || 0,
+                            downloads: img.downloads || 0,
+                            sold: img.sold || false,
+                            created_at: img.created_at || new Date().toISOString()
+                        };
+                    });
+                    console.log('Images loaded:', appState.images.length);
+                } else {
+                    console.log('No images found in database');
+                    appState.images = [];
+                }
+                
                 renderImages();
                 
-                // Update admin stats
                 if (appState.isAdminLoggedIn) {
                     document.getElementById('admin-image-count').textContent = appState.images.length;
                     const totalImageLikes = appState.images.reduce((sum, img) => sum + (img.likes || 0), 0);
@@ -2279,37 +2299,466 @@
 
             } catch (error) {
                 console.error('Error in loadImages:', error);
+                appState.images = [];
             }
         }
 
-        function initializeWithDemoData() {
-            console.log('Using demo data');
-            appState.videos = [
-                { id: 'demo_001', title: 'Welcome to GK Store', description: 'Premium accounts marketplace - This is your first video with detailed information about our services. We offer premium video content at affordable prices.', views: 150, likes: 45, url: 'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-blue-tit-1257-large.mp4', tier: 'small', price: 199, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_001', title: 'Welcome to GK Store', tier: 'small', price: 199 } },
-                { id: 'demo_002', title: 'Premium Content', description: 'Exclusive videos with high quality - Watch this amazing content and enjoy the best video experience on our platform. Book now to get access.', views: 89, likes: 23, url: 'https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-flowers-1173-large.mp4', tier: 'medium', price: 299, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_002', title: 'Premium Content', tier: 'medium', price: 299 } }
-            ];
-            appState.accounts = appState.videos.map(v => ({ id: v.id, title: v.title, description: v.description, tier: v.tier, price: v.price, sold: false, url: v.url }));
+        function renderImages() {
+            const grid = document.getElementById('images-grid');
+            const empty = document.getElementById('images-empty');
             
-            appState.bookRequests = [
-                {
-                    id: 1,
-                    video_id: 'demo_001',
-                    user_name: 'John Doe',
-                    whatsapp_number: '+93793066322',
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 2,
-                    video_id: 'demo_002',
-                    user_name: 'Jane Smith',
-                    whatsapp_number: '+93749949041',
-                    created_at: new Date().toISOString()
+            if (!grid) return;
+
+            if (!appState.images || appState.images.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            
+            grid.innerHTML = appState.images.map(img => {
+                const likedClass = appState.likedImages.has(img.id) ? 'liked' : '';
+                return `
+                    <div class="image-card" data-id="${img.id}">
+                        <img src="${img.image_url}" class="image-card-media" onclick="previewImage('${img.image_url}')" alt="${img.title}">
+                        <div class="image-card-info">
+                            <h3 class="image-card-title">${img.title}</h3>
+                            <p class="image-card-description">${img.description || 'No description'}</p>
+                            <div class="image-card-stats">
+                                <span><i class="fas fa-eye"></i> ${img.views || 0}</span>
+                                <span class="like-count-${img.id}"><i class="fas fa-heart"></i> ${img.likes || 0}</span>
+                                ${img.price > 0 ? `<span><i class="fas fa-tag"></i> $${img.price}</span>` : ''}
+                                <span class="badge ${img.tier === 'big' ? 'badge-primary' : img.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${img.tier}</span>
+                            </div>
+                            <div class="image-card-actions">
+                                <button class="image-action-btn like ${likedClass}" onclick="likeImage(${img.id})">
+                                    <i class="fas fa-heart"></i> Like
+                                </button>
+                                ${img.price > 0 ? `
+                                    <button class="image-action-btn book" onclick="bookImage(${img.id})">
+                                        <i class="fas fa-bookmark"></i> Book
+                                    </button>
+                                    <button class="image-action-btn buy" onclick="buyImage(${img.id})">
+                                        <i class="fas fa-shopping-bag"></i> Buy
+                                    </button>
+                                ` : ''}
+                                ${appState.isAdminLoggedIn ? `
+                                    <button class="image-action-btn" style="background: var(--danger); color: white;" onclick="deleteImage(${img.id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function likeImage(imageId) {
+            const image = appState.images.find(img => img.id === imageId);
+            if (!image) return;
+
+            if (appState.likedImages.has(imageId)) {
+                appState.likedImages.delete(imageId);
+                image.likes = Math.max(0, (image.likes || 0) - 1);
+                await trackImageUnlike(imageId);
+            } else {
+                appState.likedImages.add(imageId);
+                image.likes = (image.likes || 0) + 1;
+                await trackImageLike(imageId);
+            }
+
+            const likeCountEl = document.querySelector(`.like-count-${imageId}`);
+            if (likeCountEl) {
+                likeCountEl.innerHTML = `<i class="fas fa-heart"></i> ${image.likes}`;
+            }
+            
+            const likeBtn = document.querySelector(`.image-card[data-id="${imageId}"] .image-action-btn.like`);
+            if (likeBtn) {
+                if (appState.likedImages.has(imageId)) {
+                    likeBtn.classList.add('liked');
+                } else {
+                    likeBtn.classList.remove('liked');
                 }
-            ];
+            }
+        }
+
+        async function bookImage(imageId) {
+            const image = appState.images.find(img => img.id === imageId);
+            if (!image) return;
+
+            appState.currentAccount = {
+                id: imageId,
+                title: image.title,
+                tier: image.tier,
+                price: image.price || 0
+            };
+
+            document.getElementById('book-account-name').textContent = image.title;
+            document.getElementById('book-account-tier').textContent = image.tier;
+            document.getElementById('book-account-price').textContent = `$${image.price || 0}`;
+            showModal('book-modal');
+        }
+
+        function buyImage(imageId) {
+            const image = appState.images.find(img => img.id === imageId);
+            if (!image) return;
+
+            appState.currentAccount = {
+                id: imageId,
+                title: image.title,
+                tier: image.tier,
+                price: image.price || 0
+            };
+
+            document.getElementById('buy-account-name').textContent = image.title;
+            document.getElementById('buy-account-tier').textContent = image.tier;
+            document.getElementById('buy-account-price').textContent = `$${image.price || 0}`;
+            showModal('buy-modal');
+        }
+
+        function previewImage(imageUrl) {
+            const previewModal = document.getElementById('image-preview-modal');
+            const previewImg = document.getElementById('preview-image');
+            previewImg.src = imageUrl;
+            previewModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImagePreview() {
+            document.getElementById('image-preview-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // ========== UPLOAD IMAGE FUNCTION ==========
+        
+        function showUploadImageModal() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Login as admin first');
+                return;
+            }
+            resetImageUploadForm();
+            showModal('upload-image-modal');
+        }
+
+        function resetImageUploadForm() {
+            document.getElementById('image-title-input').value = '';
+            document.getElementById('image-description-input').value = '';
+            document.getElementById('image-price').value = '';
+            document.getElementById('image-tier').value = '';
+            document.getElementById('image-file').value = '';
+            
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('image-file-info').classList.add('hidden');
+            document.getElementById('image-upload-status').classList.add('hidden');
+            document.getElementById('image-upload-area').classList.remove('has-file');
+            
+            const progress = document.getElementById('image-upload-progress');
+            const percentage = document.getElementById('image-upload-percentage');
+            if (progress) progress.style.width = '0%';
+            if (percentage) percentage.textContent = '0%';
+            
+            appState.currentImageUpload.file = null;
+        }
+
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showToast('error', 'Invalid File', 'Please select a valid image (JPG, PNG, GIF, WEBP)');
+                document.getElementById('image-file').value = '';
+                return;
+            }
+
+            const tier = document.getElementById('image-tier').value;
+            let maxSize = 10;
+            
+            if (tier === 'small') maxSize = 2;
+            else if (tier === 'medium') maxSize = 5;
+            else if (tier === 'big') maxSize = 10;
+
+            if (file.size > maxSize * 1024 * 1024) {
+                showToast('error', 'File Too Large', `Image must be less than ${maxSize}MB for ${tier} tier`);
+                document.getElementById('image-file').value = '';
+                return;
+            }
+
+            appState.currentImageUpload.file = file;
+
+            document.getElementById('image-file-info').classList.remove('hidden');
+            document.getElementById('image-file-name').textContent = file.name;
+            document.getElementById('image-file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            document.getElementById('image-upload-area').classList.add('has-file');
+            document.getElementById('image-upload-text').textContent = 'Change image';
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const preview = document.getElementById('image-preview');
+                preview.src = event.target.result;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadImage() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Login as admin first');
+                return;
+            }
+
+            const title = document.getElementById('image-title-input').value.trim();
+            const description = document.getElementById('image-description-input').value.trim();
+            const price = parseFloat(document.getElementById('image-price').value) || 0;
+            const tier = document.getElementById('image-tier').value;
+            const file = appState.currentImageUpload.file;
+
+            if (!title) {
+                showToast('error', 'Validation Error', 'Please enter image title');
+                return;
+            }
+
+            if (!tier) {
+                showToast('error', 'Validation Error', 'Please select a tier');
+                return;
+            }
+
+            if (!file) {
+                showToast('error', 'Validation Error', 'Please select an image file');
+                return;
+            }
+
+            let bucketName;
+            switch(tier) {
+                case 'small':
+                    bucketName = 'images-small';
+                    break;
+                case 'medium':
+                    bucketName = 'images-medium';
+                    break;
+                case 'big':
+                    bucketName = 'images-big';
+                    break;
+                default:
+                    showToast('error', 'Invalid Tier', 'Please select a valid tier');
+                    return;
+            }
+
+            const uploadStatus = document.getElementById('image-upload-status');
+            const uploadProgress = document.getElementById('image-upload-progress');
+            const uploadPercentage = document.getElementById('image-upload-percentage');
+            const uploadStatusText = document.getElementById('image-upload-status-text');
+            const uploadBtn = document.getElementById('image-upload-btn');
+
+            uploadStatus.classList.remove('hidden');
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50');
+
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = fileName;
+
+                uploadStatusText.textContent = `Uploading to ${bucketName}...`;
+
+                const { data: storageData, error: storageError } = await supabase.storage
+                    .from(bucketName)
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (storageError) {
+                    console.error('Storage upload error:', storageError);
+                    
+                    if (storageError.message.includes('bucket') || storageError.message.includes('not found')) {
+                        showToast('error', 'Bucket Not Found', `Please create "${bucketName}" bucket in Supabase dashboard first`);
+                        showModal('sql-setup-modal');
+                    } else {
+                        throw new Error('Failed to upload image: ' + storageError.message);
+                    }
+                    return;
+                }
+
+                uploadProgress.style.width = '100%';
+                uploadPercentage.textContent = '100%';
+                uploadStatusText.textContent = 'Getting image URL...';
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from(bucketName)
+                    .getPublicUrl(filePath);
+
+                uploadStatusText.textContent = 'Saving to database...';
+
+                const { data, error } = await supabase
+                    .from('gallery_images')
+                    .insert([{
+                        title: title,
+                        description: description,
+                        account_tier: tier,
+                        price: price,
+                        image_url: publicUrl,
+                        image_path: filePath,
+                        bucket_name: bucketName,
+                        views: 0,
+                        likes: 0,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select();
+
+                if (error) {
+                    console.error('Database insert error:', error);
+                    
+                    await supabase.storage
+                        .from(bucketName)
+                        .remove([filePath]);
+                    
+                    if (error.code === '42P01') {
+                        showToast('error', 'Table Not Found', 'Please run the SQL setup first');
+                        showModal('sql-setup-modal');
+                    } else {
+                        throw new Error('Database error: ' + error.message);
+                    }
+                    return;
+                }
+
+                uploadStatusText.textContent = 'Upload complete!';
+
+                showToast('success', 'Success', 'Image uploaded successfully');
+
+                await loadImages();
+                closeModal('upload-image-modal');
+                resetImageUploadForm();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('error', 'Upload Failed', error.message);
+                
+                uploadStatus.classList.add('hidden');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50');
+            }
+        }
+
+        function showManageImages() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Login as admin first');
+                return;
+            }
+            renderAdminImagesList();
+            showModal('manage-images-modal');
+        }
+
+        function renderAdminImagesList() {
+            const list = document.getElementById('admin-images-list');
+            const empty = document.getElementById('admin-images-empty');
+            
+            if (!list) return;
+
+            if (!appState.images || appState.images.length === 0) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            
+            list.innerHTML = appState.images.map(img => `
+                <div class="flex items-center justify-between p-3 bg-surface-light rounded-lg">
+                    <div class="flex items-center gap-3 flex-1">
+                        <img src="${img.image_url}" class="w-12 h-12 rounded-lg object-cover" alt="${img.title}">
+                        <div>
+                            <div class="font-medium">${img.title}</div>
+                            <div class="text-xs text-zinc-400">${img.description || 'No description'}</div>
+                            <div class="text-xs text-zinc-400">Tier: ${img.tier} • Price: $${img.price} • Views: ${img.views || 0} • Likes: ${img.likes || 0}</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-danger" onclick="deleteImage(${img.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteImage(id) {
+            if (!appState.isAdminLoggedIn || !confirm('Delete this image permanently?')) return;
+
+            try {
+                const image = appState.images.find(img => img.id === id);
+
+                if (image && image.image_path && image.bucket_name) {
+                    await supabase.storage
+                        .from(image.bucket_name)
+                        .remove([image.image_path]);
+                }
+
+                const { error } = await supabase
+                    .from('gallery_images')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                showToast('success', 'Deleted', 'Image deleted successfully');
+                
+                await loadImages();
+                
+                if (!document.getElementById('manage-images-modal').classList.contains('hidden')) {
+                    renderAdminImagesList();
+                }
+
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('error', 'Delete Failed', error.message);
+            }
         }
 
         // ========== RENDER FUNCTIONS ==========
         
+        function loadAccountsContent(filterTier = 'all') {
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            const filtered = filterTier === 'all' ? appState.accounts : appState.accounts.filter(a => a.tier === filterTier);
+            
+            if (!filtered.length) { 
+                grid.innerHTML = '<div class="col-span-2 text-center py-12"><i class="fas fa-shopping-bag text-4xl text-zinc-600 mb-4"></i><p class="text-zinc-400">No accounts available</p></div>'; 
+                return; 
+            }
+            
+            grid.innerHTML = filtered.map(a => `
+                <div class="account-card">
+                    <div class="account-icon ${a.tier}" onclick="playVideoFromAccount('${a.id}')">
+                        <i class="fas ${a.tier === 'small' ? 'fa-user' : a.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i>
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold">${a.title}</h3>
+                        <span class="badge ${a.tier === 'big' ? 'badge-primary' : a.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${a.tier}</span>
+                    </div>
+                    <p class="text-zinc-400 text-sm mb-4">${a.description || 'Premium account'}</p>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-2xl font-bold gradient-text">$${a.price}</span>
+                    </div>
+                    <div class="account-actions">
+                        <button class="account-action-btn book" onclick="bookFromAccount('${a.id}')"><i class="fas fa-bookmark"></i> Book</button>
+                        <button class="account-action-btn buy" onclick="buyFromAccount('${a.id}')"><i class="fas fa-shopping-bag"></i> Buy</button>
+                        <button class="account-action-btn share" onclick="shareAppFromReel()"><i class="fas fa-share"></i> Share</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterAccounts(tier) {
+            document.querySelectorAll('#accounts-page .tab-item').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            loadAccountsContent(tier);
+        }
+
         function renderReels() {
             const container = document.getElementById('reels-container');
             if (!container) return;
@@ -2397,100 +2846,6 @@
             });
             
             setTimeout(() => playVideoAtIndex(0), 500);
-        }
-
-        function renderImages() {
-            const grid = document.getElementById('images-grid');
-            const empty = document.getElementById('images-empty');
-            
-            if (!grid) return;
-
-            if (!appState.images || appState.images.length === 0) {
-                grid.innerHTML = '';
-                empty.classList.remove('hidden');
-                return;
-            }
-
-            empty.classList.add('hidden');
-            
-            grid.innerHTML = appState.images.map(img => {
-                const likedClass = appState.likedImages.has(img.id) ? 'liked' : '';
-                return `
-                    <div class="image-card" data-id="${img.id}">
-                        <img src="${img.image_url}" class="image-card-media" onclick="previewImage('${img.image_url}')" alt="${img.title}">
-                        <div class="image-card-info">
-                            <h3 class="image-card-title">${img.title}</h3>
-                            <p class="image-card-description">${img.description || 'No description'}</p>
-                            <div class="image-card-stats">
-                                <span><i class="fas fa-eye"></i> ${img.views || 0}</span>
-                                <span class="like-count-${img.id}"><i class="fas fa-heart"></i> ${img.likes || 0}</span>
-                                ${img.price > 0 ? `<span><i class="fas fa-tag"></i> $${img.price}</span>` : ''}
-                                <span class="badge ${img.tier === 'big' ? 'badge-primary' : img.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${img.tier || 'small'}</span>
-                            </div>
-                            <div class="image-card-actions">
-                                <button class="image-action-btn like ${likedClass}" onclick="likeImage(${img.id})">
-                                    <i class="fas fa-heart"></i> Like
-                                </button>
-                                ${img.price > 0 ? `
-                                    <button class="image-action-btn book" onclick="bookImage(${img.id})">
-                                        <i class="fas fa-bookmark"></i> Book
-                                    </button>
-                                    <button class="image-action-btn buy" onclick="buyImage(${img.id})">
-                                        <i class="fas fa-shopping-bag"></i> Buy
-                                    </button>
-                                ` : ''}
-                                ${appState.isAdminLoggedIn ? `
-                                    <button class="image-action-btn" style="background: var(--danger); color: white;" onclick="deleteImage(${img.id})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function loadAccountsContent(filterTier = 'all') {
-            const grid = document.getElementById('accounts-grid');
-            if (!grid) return;
-            
-            // Make sure we have accounts to display
-            console.log('Loading accounts content:', appState.accounts.length, 'accounts');
-            
-            const filtered = filterTier === 'all' ? appState.accounts : appState.accounts.filter(a => a.tier === filterTier);
-            
-            if (!filtered.length) { 
-                grid.innerHTML = '<div class="col-span-2 text-center py-12"><i class="fas fa-shopping-bag text-4xl text-zinc-600 mb-4"></i><p class="text-zinc-400">No accounts available</p></div>'; 
-                return; 
-            }
-            
-            grid.innerHTML = filtered.map(a => `
-                <div class="account-card">
-                    <div class="account-icon ${a.tier}" onclick="playVideoFromAccount('${a.id}')">
-                        <i class="fas ${a.tier === 'small' ? 'fa-user' : a.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i>
-                    </div>
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-semibold">${a.title}</h3>
-                        <span class="badge ${a.tier === 'big' ? 'badge-primary' : a.tier === 'medium' ? 'badge-secondary' : 'badge-warning'}">${a.tier}</span>
-                    </div>
-                    <p class="text-zinc-400 text-sm mb-4">${a.description || 'Premium account'}</p>
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-2xl font-bold gradient-text">$${a.price}</span>
-                    </div>
-                    <div class="account-actions">
-                        <button class="account-action-btn book" onclick="bookFromAccount('${a.id}')"><i class="fas fa-bookmark"></i> Book</button>
-                        <button class="account-action-btn buy" onclick="buyFromAccount('${a.id}')"><i class="fas fa-shopping-bag"></i> Buy</button>
-                        <button class="account-action-btn share" onclick="shareAppFromReel()"><i class="fas fa-share"></i> Share</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function filterAccounts(tier) {
-            document.querySelectorAll('#accounts-page .tab-item').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            loadAccountsContent(tier);
         }
 
         function setupDraggableProgressBar(videoEl, container) {
@@ -2829,386 +3184,30 @@
             }
         }
 
-        // ========== IMAGE FUNCTIONS ==========
-        
-        async function likeImage(imageId) {
-            const image = appState.images.find(img => img.id === imageId);
-            if (!image) return;
-
-            if (appState.likedImages.has(imageId)) {
-                appState.likedImages.delete(imageId);
-                image.likes = Math.max(0, (image.likes || 0) - 1);
-                await trackImageUnlike(imageId);
-            } else {
-                appState.likedImages.add(imageId);
-                image.likes = (image.likes || 0) + 1;
-                await trackImageLike(imageId);
-            }
-
-            // Update UI
-            const likeCountEl = document.querySelector(`.like-count-${imageId}`);
-            if (likeCountEl) {
-                likeCountEl.innerHTML = `<i class="fas fa-heart"></i> ${image.likes}`;
-            }
+        function initializeWithDemoData() {
+            console.log('Using demo data');
+            appState.videos = [
+                { id: 'demo_001', title: 'Welcome to GK Store', description: 'Premium accounts marketplace - This is your first video with detailed information about our services. We offer premium video content at affordable prices.', views: 150, likes: 45, url: 'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-blue-tit-1257-large.mp4', tier: 'small', price: 199, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_001', title: 'Welcome to GK Store', tier: 'small', price: 199 } },
+                { id: 'demo_002', title: 'Premium Content', description: 'Exclusive videos with high quality - Watch this amazing content and enjoy the best video experience on our platform. Book now to get access.', views: 89, likes: 23, url: 'https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-flowers-1173-large.mp4', tier: 'medium', price: 299, viewTracked: false, created_at: new Date().toISOString(), account: { id: 'demo_002', title: 'Premium Content', tier: 'medium', price: 299 } }
+            ];
+            appState.accounts = appState.videos.map(v => ({ id: v.id, title: v.title, description: v.description, tier: v.tier, price: v.price, sold: false, url: v.url }));
             
-            const likeBtn = document.querySelector(`.image-card[data-id="${imageId}"] .image-action-btn.like`);
-            if (likeBtn) {
-                if (appState.likedImages.has(imageId)) {
-                    likeBtn.classList.add('liked');
-                } else {
-                    likeBtn.classList.remove('liked');
+            appState.bookRequests = [
+                {
+                    id: 1,
+                    video_id: 'demo_001',
+                    user_name: 'John Doe',
+                    whatsapp_number: '+93793066322',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    video_id: 'demo_002',
+                    user_name: 'Jane Smith',
+                    whatsapp_number: '+93749949041',
+                    created_at: new Date().toISOString()
                 }
-            }
-        }
-
-        async function bookImage(imageId) {
-            const image = appState.images.find(img => img.id === imageId);
-            if (!image) return;
-
-            appState.currentAccount = {
-                id: imageId,
-                title: image.title,
-                tier: image.tier || 'small',
-                price: image.price || 0
-            };
-
-            document.getElementById('book-account-name').textContent = image.title;
-            document.getElementById('book-account-tier').textContent = image.tier || 'small';
-            document.getElementById('book-account-price').textContent = `$${image.price || 0}`;
-            showModal('book-modal');
-        }
-
-        function buyImage(imageId) {
-            const image = appState.images.find(img => img.id === imageId);
-            if (!image) return;
-
-            appState.currentAccount = {
-                id: imageId,
-                title: image.title,
-                tier: image.tier || 'small',
-                price: image.price || 0
-            };
-
-            document.getElementById('buy-account-name').textContent = image.title;
-            document.getElementById('buy-account-tier').textContent = image.tier || 'small';
-            document.getElementById('buy-account-price').textContent = `$${image.price || 0}`;
-            showModal('buy-modal');
-        }
-
-        function previewImage(imageUrl) {
-            const previewModal = document.getElementById('image-preview-modal');
-            const previewImg = document.getElementById('preview-image');
-            previewImg.src = imageUrl;
-            previewModal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeImagePreview() {
-            document.getElementById('image-preview-modal').classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        // ========== IMAGE UPLOAD ==========
-        
-        function showUploadImageModal() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Login as admin first');
-                return;
-            }
-            resetImageUploadForm();
-            showModal('upload-image-modal');
-        }
-
-        function resetImageUploadForm() {
-            document.getElementById('image-title-input').value = '';
-            document.getElementById('image-description-input').value = '';
-            document.getElementById('image-price').value = '';
-            document.getElementById('image-tier').value = '';
-            document.getElementById('image-file').value = '';
-            
-            document.getElementById('image-preview-container').classList.add('hidden');
-            document.getElementById('image-file-info').classList.add('hidden');
-            document.getElementById('image-upload-status').classList.add('hidden');
-            document.getElementById('image-upload-area').classList.remove('has-file');
-            
-            const progress = document.getElementById('image-upload-progress');
-            const percentage = document.getElementById('image-upload-percentage');
-            if (progress) progress.style.width = '0%';
-            if (percentage) percentage.textContent = '0%';
-            
-            appState.currentImageUpload.file = null;
-        }
-
-        function handleImageSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Validate file type
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!validTypes.includes(file.type)) {
-                showToast('error', 'Invalid File', 'Please select a valid image (JPG, PNG, GIF, WEBP)');
-                document.getElementById('image-file').value = '';
-                return;
-            }
-
-            // Get tier and validate size
-            const tier = document.getElementById('image-tier').value;
-            let maxSize = 10; // default max 10MB
-            
-            if (tier === 'small') maxSize = 2;
-            else if (tier === 'medium') maxSize = 5;
-            else if (tier === 'big') maxSize = 10;
-
-            // Validate file size
-            if (file.size > maxSize * 1024 * 1024) {
-                showToast('error', 'File Too Large', `Image must be less than ${maxSize}MB for ${tier} tier`);
-                document.getElementById('image-file').value = '';
-                return;
-            }
-
-            appState.currentImageUpload.file = file;
-
-            // Show file info
-            document.getElementById('image-file-info').classList.remove('hidden');
-            document.getElementById('image-file-name').textContent = file.name;
-            document.getElementById('image-file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-            document.getElementById('image-upload-area').classList.add('has-file');
-            document.getElementById('image-upload-text').textContent = 'Change image';
-
-            // Preview image
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const preview = document.getElementById('image-preview');
-                preview.src = event.target.result;
-                document.getElementById('image-preview-container').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function uploadImage() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Login as admin first');
-                return;
-            }
-
-            const title = document.getElementById('image-title-input').value.trim();
-            const description = document.getElementById('image-description-input').value.trim();
-            const price = parseFloat(document.getElementById('image-price').value) || 0;
-            const tier = document.getElementById('image-tier').value;
-            const file = appState.currentImageUpload.file;
-
-            if (!title) {
-                showToast('error', 'Validation Error', 'Please enter image title');
-                return;
-            }
-
-            if (!tier) {
-                showToast('error', 'Validation Error', 'Please select a tier');
-                return;
-            }
-
-            if (!file) {
-                showToast('error', 'Validation Error', 'Please select an image file');
-                return;
-            }
-
-            let bucketName;
-            switch(tier) {
-                case 'small':
-                    bucketName = 'images-small';
-                    break;
-                case 'medium':
-                    bucketName = 'images-medium';
-                    break;
-                case 'big':
-                    bucketName = 'images-big';
-                    break;
-                default:
-                    showToast('error', 'Invalid Tier', 'Please select a valid tier');
-                    return;
-            }
-
-            const uploadStatus = document.getElementById('image-upload-status');
-            const uploadProgress = document.getElementById('image-upload-progress');
-            const uploadPercentage = document.getElementById('image-upload-percentage');
-            const uploadStatusText = document.getElementById('image-upload-status-text');
-            const uploadBtn = document.getElementById('image-upload-btn');
-
-            uploadStatus.classList.remove('hidden');
-            uploadBtn.disabled = true;
-            uploadBtn.classList.add('opacity-50');
-
-            try {
-                // Create unique filename
-                const imageId = Date.now();
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${imageId}.${fileExt}`;
-                const filePath = fileName;
-
-                uploadStatusText.textContent = `Uploading to ${bucketName}...`;
-
-                // Upload to storage
-                const { data: storageData, error: storageError } = await supabase.storage
-                    .from(bucketName)
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
-
-                if (storageError) {
-                    console.error('Storage upload error:', storageError);
-                    
-                    if (storageError.message.includes('bucket') || storageError.message.includes('not found')) {
-                        showToast('error', 'Bucket Not Found', `Please create "${bucketName}" bucket in Supabase dashboard first`);
-                        showModal('sql-setup-modal');
-                    } else {
-                        throw new Error('Failed to upload image: ' + storageError.message);
-                    }
-                    return;
-                }
-
-                uploadProgress.style.width = '100%';
-                uploadPercentage.textContent = '100%';
-                uploadStatusText.textContent = 'Getting image URL...';
-
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from(bucketName)
-                    .getPublicUrl(filePath);
-
-                uploadStatusText.textContent = 'Saving to database...';
-
-                // Save to database
-                const { data, error } = await supabase
-                    .from('gallery_images')
-                    .insert([{
-                        title: title,
-                        description: description,
-                        tier: tier,
-                        price: price,
-                        image_url: publicUrl,
-                        image_path: filePath,
-                        bucket_name: bucketName,
-                        views: 0,
-                        likes: 0,
-                        created_at: new Date().toISOString()
-                    }])
-                    .select();
-
-                if (error) {
-                    console.error('Database insert error:', error);
-                    
-                    // Cleanup uploaded file
-                    await supabase.storage
-                        .from(bucketName)
-                        .remove([filePath]);
-                    
-                    if (error.code === '42P01') {
-                        showToast('error', 'Table Not Found', 'Please run the SQL setup first');
-                        showModal('sql-setup-modal');
-                    } else {
-                        throw new Error('Database error: ' + error.message);
-                    }
-                    return;
-                }
-
-                uploadStatusText.textContent = 'Upload complete!';
-
-                showToast('success', 'Success', 'Image uploaded successfully');
-
-                // Reload images and close modal
-                await loadImages();
-                closeModal('upload-image-modal');
-                resetImageUploadForm();
-
-            } catch (error) {
-                console.error('Upload error:', error);
-                showToast('error', 'Upload Failed', error.message);
-                
-                uploadStatus.classList.add('hidden');
-            } finally {
-                uploadBtn.disabled = false;
-                uploadBtn.classList.remove('opacity-50');
-            }
-        }
-
-        function showManageImages() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Login as admin first');
-                return;
-            }
-            renderAdminImagesList();
-            showModal('manage-images-modal');
-        }
-
-        function renderAdminImagesList() {
-            const list = document.getElementById('admin-images-list');
-            const empty = document.getElementById('admin-images-empty');
-            
-            if (!list) return;
-
-            if (!appState.images || appState.images.length === 0) {
-                list.innerHTML = '';
-                empty.classList.remove('hidden');
-                return;
-            }
-
-            empty.classList.add('hidden');
-            
-            list.innerHTML = appState.images.map(img => `
-                <div class="flex items-center justify-between p-3 bg-surface-light rounded-lg">
-                    <div class="flex items-center gap-3 flex-1">
-                        <img src="${img.image_url}" class="w-12 h-12 rounded-lg object-cover" alt="${img.title}">
-                        <div>
-                            <div class="font-medium">${img.title}</div>
-                            <div class="text-xs text-zinc-400">${img.description || 'No description'}</div>
-                            <div class="text-xs text-zinc-400">Tier: ${img.tier || 'small'} • Price: $${img.price} • Views: ${img.views || 0} • Likes: ${img.likes || 0}</div>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="btn btn-sm btn-danger" onclick="deleteImage(${img.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function deleteImage(id) {
-            if (!appState.isAdminLoggedIn || !confirm('Delete this image permanently?')) return;
-
-            try {
-                const image = appState.images.find(img => img.id === id);
-
-                // Delete from storage
-                if (image && image.image_path && image.bucket_name) {
-                    await supabase.storage
-                        .from(image.bucket_name)
-                        .remove([image.image_path]);
-                }
-
-                // Delete from database
-                const { error } = await supabase
-                    .from('gallery_images')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) throw error;
-
-                showToast('success', 'Deleted', 'Image deleted successfully');
-                
-                // Reload images
-                await loadImages();
-                
-                // Update admin list if open
-                if (!document.getElementById('manage-images-modal').classList.contains('hidden')) {
-                    renderAdminImagesList();
-                }
-
-            } catch (error) {
-                console.error('Delete error:', error);
-                showToast('error', 'Delete Failed', error.message);
-            }
+            ];
         }
 
         // ========== CONTACTS FUNCTIONS ==========
@@ -3322,7 +3321,6 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // Validate file type
             const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             if (!validTypes.includes(file.type)) {
                 showToast('error', 'Invalid File', 'Please select a valid image (JPG, PNG, GIF, WEBP)');
@@ -3330,7 +3328,6 @@
                 return;
             }
 
-            // Validate file size (max 2MB)
             if (file.size > 2 * 1024 * 1024) {
                 showToast('error', 'File Too Large', 'Image must be less than 2MB');
                 document.getElementById('contact-image').value = '';
@@ -3339,7 +3336,6 @@
 
             appState.currentContactUpload.file = file;
 
-            // Preview image
             const reader = new FileReader();
             reader.onload = function(event) {
                 const preview = document.getElementById('contact-image-preview');
@@ -3381,7 +3377,6 @@
                 let imagePath = null;
 
                 if (file) {
-                    // Show upload status
                     const status = document.getElementById('contact-upload-status');
                     const progress = document.getElementById('contact-upload-progress');
                     const percentage = document.getElementById('contact-upload-percentage');
@@ -3390,12 +3385,10 @@
                     progress.style.width = '0%';
                     percentage.textContent = '0%';
 
-                    // Create unique filename
                     const fileExt = file.name.split('.').pop();
                     const fileName = `contact_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                     const filePath = fileName;
 
-                    // Upload to storage
                     const { data: storageData, error: storageError } = await supabase.storage
                         .from('contact-images')
                         .upload(filePath, file, {
@@ -3406,7 +3399,6 @@
                     if (storageError) {
                         console.error('Storage upload error:', storageError);
                         
-                        // Check if bucket exists
                         if (storageError.message.includes('bucket') || storageError.message.includes('not found')) {
                             showToast('error', 'Bucket Not Found', 'Please create "contact-images" bucket in Supabase dashboard first');
                             showModal('sql-setup-modal');
@@ -3420,7 +3412,6 @@
                     progress.style.width = '100%';
                     percentage.textContent = '100%';
 
-                    // Get public URL
                     const { data: { publicUrl } } = supabase.storage
                         .from('contact-images')
                         .getPublicUrl(filePath);
@@ -3429,7 +3420,6 @@
                     imagePath = filePath;
                 }
 
-                // Save to database
                 const { data, error } = await supabase
                     .from('contact_images')
                     .insert([{
@@ -3445,7 +3435,6 @@
                 if (error) {
                     console.error('Database insert error:', error);
                     
-                    // If database error, cleanup uploaded image
                     if (imagePath) {
                         await supabase.storage
                             .from('contact-images')
@@ -3464,7 +3453,6 @@
 
                 showToast('success', 'Success', 'Contact saved successfully');
 
-                // Reload contacts and close modal
                 await loadContacts();
                 closeModal('add-contact-modal');
                 resetContactForm();
@@ -3473,7 +3461,6 @@
                 console.error('Save contact error:', error);
                 showToast('error', 'Save Failed', error.message);
                 
-                // Hide upload status on error
                 document.getElementById('contact-upload-status').classList.add('hidden');
             }
         }
@@ -3526,10 +3513,8 @@
             showToast('info', 'Manual Action Required', 
                 'Please create "contact-images" bucket in Supabase dashboard');
             
-            // Open Supabase dashboard
             window.open('https://app.supabase.com/project/ieinqlpnubtwwkldqhab/storage/buckets', '_blank');
             
-            // Show SQL modal
             setTimeout(() => {
                 showModal('sql-setup-modal');
             }, 1000);
@@ -3669,7 +3654,7 @@
                 const { error } = await supabase
                     .from('videos')
                     .delete()
-                    .eq('id', id);
+                    .eq('video_id', id);
                     
                 if (error) throw error;
                 
@@ -4198,7 +4183,6 @@
         }
 
         async function checkForNewContent() {
-            // Check for new videos
             const lastVideoCheck = appState.lastVideoCheck || new Date(0);
             const newVideos = appState.videos.filter(v => new Date(v.created_at) > lastVideoCheck);
             
@@ -4218,7 +4202,6 @@
                 });
             }
             
-            // Check for new images
             const lastImageCheck = appState.lastImageCheck || new Date(0);
             const newImages = appState.images.filter(i => new Date(i.created_at) > lastImageCheck);
             
