@@ -1,30 +1,36 @@
-const CACHE_NAME = 'gkstore-v3';
+const CACHE_NAME = 'gkstore-v5';
+const VIDEO_CACHE = 'videos-v2';
+const IMAGE_CACHE = 'images-v2';
+const API_CACHE = 'api-v2';
+const DYNAMIC_CACHE = 'dynamic-v2';
+
 const APP_SHELL = [
   '/GKStore/index.html',
   '/GKStore/manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.woff2',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-brands-400.woff2',
   'https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js'
 ];
 
 self.addEventListener('install', event => {
+  console.log('Service Worker installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('Caching app shell');
-      return cache.addAll(APP_SHELL);
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
+  console.log('Service Worker activating...');
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
-      // Clean up old caches
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
+            if (![CACHE_NAME, VIDEO_CACHE, IMAGE_CACHE, API_CACHE, DYNAMIC_CACHE].includes(cacheName)) {
               console.log('Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -36,7 +42,8 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // For navigation requests (HTML pages)
+  const url = new URL(event.request.url);
+  
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -45,37 +52,21 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For other requests (CSS, JS, images, etc.)
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
-        // Return cached response if found
         if (cachedResponse) {
           return cachedResponse;
         }
-
-        // Otherwise fetch from network
         return fetch(event.request)
           .then(response => {
-            // Don't cache if not a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
+            if (!response || response.status !== 200) {
               return response;
             }
-
-            // Cache the fetched response
             const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
+            caches.open(DYNAMIC_CACHE)
+              .then(cache => cache.put(event.request, responseToCache));
             return response;
-          })
-          .catch(() => {
-            // Return offline fallback for image requests if needed
-            if (event.request.url.match(/\.(jpg|jpeg|png|gif|svg)$/)) {
-              // You could return a default offline image here
-            }
           });
       })
   );
