@@ -1766,7 +1766,7 @@
     </div>
 
     <script>
-        // === COMPLETE FIXED JAVASCRIPT CODE WITH IMAGE GALLERY WORKING ===
+        // === COMPLETE FIXED JAVASCRIPT CODE WITH ACCOUNT_TIER HANDLING ===
         
         // Supabase config
         const SUPABASE_URL = 'https://ieinqlpnubtwwkldqhab.supabase.co';
@@ -1948,7 +1948,7 @@
 
         async function trackImageView(imageId) {
             try {
-                const image = appState.images.find(img => img.id === imageId);
+                const image = appState.images.find(img => img.id == imageId);
                 if (image) {
                     image.views = (image.views || 0) + 1;
                     await supabase
@@ -2011,7 +2011,7 @@
 
         async function trackImageLike(imageId) {
             try {
-                const image = appState.images.find(img => img.id === imageId);
+                const image = appState.images.find(img => img.id == imageId);
                 if (image) {
                     image.likes = (image.likes || 0) + 1;
                     await supabase
@@ -2028,7 +2028,7 @@
 
         async function trackImageUnlike(imageId) {
             try {
-                const image = appState.images.find(img => img.id === imageId);
+                const image = appState.images.find(img => img.id == imageId);
                 if (image) {
                     image.likes = Math.max(0, (image.likes || 0) - 1);
                     await supabase
@@ -2246,7 +2246,7 @@
             }
         }
 
-        // ========== FIXED IMAGE FUNCTIONS ==========
+        // ========== FIXED IMAGE FUNCTIONS WITH ACCOUNT_TIER ==========
         
         async function loadImages() {
             try {
@@ -2272,6 +2272,7 @@
                             title: img.title || 'Untitled',
                             description: img.description || '',
                             tier: img.account_tier || img.tier || 'small',
+                            account_tier: img.account_tier || img.tier || 'small',
                             price: img.price || 0,
                             image_url: img.image_url || '',
                             image_path: img.image_path || '',
@@ -2356,7 +2357,7 @@
         }
 
         async function likeImage(imageId) {
-            const image = appState.images.find(img => img.id === imageId);
+            const image = appState.images.find(img => img.id == imageId);
             if (!image) return;
 
             if (appState.likedImages.has(imageId)) {
@@ -2385,7 +2386,7 @@
         }
 
         async function bookImage(imageId) {
-            const image = appState.images.find(img => img.id === imageId);
+            const image = appState.images.find(img => img.id == imageId);
             if (!image) return;
 
             appState.currentAccount = {
@@ -2402,7 +2403,7 @@
         }
 
         function buyImage(imageId) {
-            const image = appState.images.find(img => img.id === imageId);
+            const image = appState.images.find(img => img.id == imageId);
             if (!image) return;
 
             appState.currentAccount = {
@@ -2431,7 +2432,7 @@
             document.body.style.overflow = '';
         }
 
-        // ========== UPLOAD IMAGE FUNCTION ==========
+        // ========== FIXED UPLOAD IMAGE FUNCTION WITH ACCOUNT_TIER ==========
         
         function showUploadImageModal() {
             if (!appState.isAdminLoggedIn) {
@@ -2592,18 +2593,21 @@
 
                 uploadStatusText.textContent = 'Saving to database...';
 
+                // Save to database with account_tier column (THIS IS THE KEY FIX)
                 const { data, error } = await supabase
                     .from('gallery_images')
                     .insert([{
                         title: title,
                         description: description,
-                        account_tier: tier,
+                        account_tier: tier,  // Using account_tier column, NOT tier
                         price: price,
                         image_url: publicUrl,
                         image_path: filePath,
                         bucket_name: bucketName,
                         views: 0,
                         likes: 0,
+                        downloads: 0,
+                        sold: false,
                         created_at: new Date().toISOString()
                     }])
                     .select();
@@ -2611,6 +2615,7 @@
                 if (error) {
                     console.error('Database insert error:', error);
                     
+                    // Cleanup uploaded file
                     await supabase.storage
                         .from(bucketName)
                         .remove([filePath]);
@@ -2628,6 +2633,7 @@
 
                 showToast('success', 'Success', 'Image uploaded successfully');
 
+                // Reload images and close modal
                 await loadImages();
                 closeModal('upload-image-modal');
                 resetImageUploadForm();
@@ -2689,7 +2695,12 @@
             if (!appState.isAdminLoggedIn || !confirm('Delete this image permanently?')) return;
 
             try {
-                const image = appState.images.find(img => img.id === id);
+                const image = appState.images.find(img => img.id == id);
+
+                if (!image) {
+                    showToast('error', 'Not Found', 'Image not found');
+                    return;
+                }
 
                 if (image && image.image_path && image.bucket_name) {
                     await supabase.storage
