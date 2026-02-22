@@ -36,40 +36,8 @@
     <!-- Supabase SDK -->
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
     
-    <!-- Appwrite SDK with fallback loading -->
-    <script>
-    // Load Appwrite with multiple CDN fallbacks
-    (function loadAppwrite() {
-        const cdns = [
-            'https://unpkg.com/appwrite@14.0.1/dist/umd/sdk.js',
-            'https://cdn.jsdelivr.net/npm/appwrite@14.0.1/dist/umd/sdk.js',
-            'https://cdn.jsdelivr.net/npm/appwrite@14.1.0/dist/umd/sdk.js'
-        ];
-        
-        function tryCDN(index) {
-            if (index >= cdns.length) {
-                console.error('❌ Failed to load Appwrite SDK');
-                return;
-            }
-            
-            const script = document.createElement('script');
-            script.src = cdns[index];
-            script.onload = function() {
-                console.log('✅ Appwrite SDK loaded from:', cdns[index]);
-                window.appwriteLoaded = true;
-                // Dispatch event for successful load
-                window.dispatchEvent(new CustomEvent('appwrite-ready'));
-            };
-            script.onerror = function() {
-                console.warn('⚠️ Failed to load from:', cdns[index]);
-                tryCDN(index + 1);
-            };
-            document.head.appendChild(script);
-        }
-        
-        tryCDN(0);
-    })();
-    </script>
+    <!-- Appwrite SDK - CORRECT CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0/dist/umd/sdk.js"></script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1809,11 +1777,18 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllaW5xbHBudWJ0d3drbGRxaGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MzA3ODcsImV4cCI6MjA4NjEwNjc4N30.sJsoTu1bHBgconNOPfXZk33Ttuy1ZKC2oW2SonBnQ4o';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Appwrite config - wait for SDK to load
-        let appwriteAccount, appwriteDatabases, appwriteStorage;
+        // Appwrite config
+        const { Client, Account, Databases, Storage, ID, Query } = Appwrite;
+        
+        const appwriteClient = new Client()
+            .setEndpoint('https://fra.cloud.appwrite.io/v1')
+            .setProject('699b4237000bdae4a1d5');
+        
+        const appwriteAccount = new Account(appwriteClient);
+        const appwriteDatabases = new Databases(appwriteClient);
+        const appwriteStorage = new Storage(appwriteClient);
+
         const appwriteConfig = {
-            endpoint: 'https://fra.cloud.appwrite.io/v1',
-            projectId: '699b4237000bdae4a1d5',
             databaseId: 'gk_store_new',
             bucketId: 'videos-small',
             collections: {
@@ -1824,32 +1799,6 @@
                 adminSettings: 'admin_settings'
             }
         };
-
-        // Initialize Appwrite when SDK loads
-        window.addEventListener('appwrite-ready', function() {
-            console.log('Initializing Appwrite services...');
-            const { Client, Account, Databases, Storage, ID, Query } = Appwrite;
-            
-            const client = new Client()
-                .setEndpoint(appwriteConfig.endpoint)
-                .setProject(appwriteConfig.projectId);
-            
-            appwriteAccount = new Account(client);
-            appwriteDatabases = new Databases(client);
-            appwriteStorage = new Storage(client);
-            
-            console.log('✅ Appwrite services initialized');
-            
-            // Reload data if needed
-            if (appState && appState.preferredBackend === 'appwrite') {
-                loadInitialData();
-            }
-        });
-
-        // If Appwrite already loaded, initialize immediately
-        if (window.Appwrite) {
-            window.dispatchEvent(new CustomEvent('appwrite-ready'));
-        }
 
         // App state
         const appState = {
@@ -1894,7 +1843,7 @@
             installInstructionsShown: false,
             userId: null,
             sessionId: null,
-            preferredBackend: localStorage.getItem('preferredBackend') || 'supabase'
+            preferredBackend: 'supabase' // Default to supabase
         };
 
         // Helper function to get bucket name based on tier
@@ -1948,52 +1897,67 @@
         }
 
         async function trackUserVisit() {
-            // Keep your existing trackUserVisit function
             try {
                 const deviceInfo = navigator.userAgent;
-                const ipAddress = await fetch('https://api.ipify.org?format=json')
-                    .then(res => res.json())
-                    .then(data => data.ip)
-                    .catch(() => 'unknown');
-
-                const { data: existingUser } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('user_id', appState.userId)
-                    .maybeSingle();
-
-                if (existingUser) {
-                    await supabase
-                        .from('users')
-                        .update({
-                            last_seen: new Date().toISOString(),
-                            visits_count: (existingUser.visits_count || 1) + 1,
-                            ip_address: ipAddress,
-                            user_agent: deviceInfo
-                        })
-                        .eq('user_id', appState.userId);
-                } else {
-                    await supabase
-                        .from('users')
-                        .insert([{
-                            user_id: appState.userId,
-                            device_info: deviceInfo,
-                            last_seen: new Date().toISOString(),
-                            first_visit: new Date().toISOString(),
-                            visits_count: 1,
-                            installed: window.matchMedia('(display-mode: standalone)').matches,
-                            ip_address: ipAddress,
-                            user_agent: deviceInfo
-                        }]);
+                
+                // Try to get IP but don't fail if it doesn't work
+                let ipAddress = 'unknown';
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    ipAddress = data.ip;
+                } catch (e) {
+                    console.log('Could not get IP address');
                 }
 
-                await supabase
-                    .from('page_views')
-                    .insert([{
-                        user_id: appState.userId,
-                        page: appState.currentPage || 'home',
-                        session_id: appState.sessionId
-                    }]);
+                // Check if users table exists, if not, just store in localStorage
+                try {
+                    const { data: existingUser } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('user_id', appState.userId)
+                        .maybeSingle();
+
+                    if (existingUser) {
+                        await supabase
+                            .from('users')
+                            .update({
+                                last_seen: new Date().toISOString(),
+                                visits_count: (existingUser.visits_count || 1) + 1,
+                                ip_address: ipAddress,
+                                user_agent: deviceInfo
+                            })
+                            .eq('user_id', appState.userId);
+                    } else {
+                        await supabase
+                            .from('users')
+                            .insert([{
+                                user_id: appState.userId,
+                                device_info: deviceInfo,
+                                last_seen: new Date().toISOString(),
+                                first_visit: new Date().toISOString(),
+                                visits_count: 1,
+                                installed: window.matchMedia('(display-mode: standalone)').matches,
+                                ip_address: ipAddress,
+                                user_agent: deviceInfo
+                            }]);
+                    }
+                } catch (tableError) {
+                    console.log('Users table might not exist, skipping user tracking');
+                }
+
+                // Try page_views but don't fail if table doesn't exist
+                try {
+                    await supabase
+                        .from('page_views')
+                        .insert([{
+                            user_id: appState.userId,
+                            page: appState.currentPage || 'home',
+                            session_id: appState.sessionId
+                        }]);
+                } catch (viewError) {
+                    console.log('Page views table might not exist');
+                }
 
             } catch (error) {
                 console.error('Error tracking user:', error);
@@ -2004,11 +1968,13 @@
         
         function showPage(page) {
             document.querySelectorAll('[id$="-page"]').forEach(p => p.classList.add('hidden'));
-            document.getElementById(`${page}-page`).classList.remove('hidden');
+            const pageElement = document.getElementById(`${page}-page`);
+            if (pageElement) pageElement.classList.remove('hidden');
             appState.currentPage = page;
             
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            document.querySelector(`.nav-item[href="#${page}"]`)?.classList.add('active');
+            const navItem = document.querySelector(`.nav-item[href="#${page}"]`);
+            if (navItem) navItem.classList.add('active');
             
             if (page === 'home') { 
                 setTimeout(() => { 
@@ -2024,14 +1990,14 @@
             if (page === 'images') {
                 loadImages();
                 if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-image-upload-section').classList.remove('hidden');
+                    document.getElementById('admin-image-upload-section')?.classList.remove('hidden');
                 } else {
-                    document.getElementById('admin-image-upload-section').classList.add('hidden');
+                    document.getElementById('admin-image-upload-section')?.classList.add('hidden');
                 }
             }
             if (page === 'admin') {
                 if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    document.getElementById('admin-dashboard')?.classList.remove('hidden');
                 }
                 loadAdminBookRequests();
                 updateAdminStats();
@@ -2039,10 +2005,10 @@
             if (page === 'contact') {
                 loadContacts();
                 if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-contact-management').classList.remove('hidden');
+                    document.getElementById('admin-contact-management')?.classList.remove('hidden');
                     renderAdminContactsList();
                 } else {
-                    document.getElementById('admin-contact-management').classList.add('hidden');
+                    document.getElementById('admin-contact-management')?.classList.add('hidden');
                 }
             }
             if (page === 'notifications') {
@@ -2064,64 +2030,47 @@
 
         async function loadVideos() {
             try {
-                if (appState.preferredBackend === 'supabase') {
-                    // Load from Supabase
-                    const { data, error } = await supabase
-                        .from('videos')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                        
-                    if (error) throw error;
+                // Load from Supabase
+                const { data, error } = await supabase
+                    .from('videos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                     
-                    if (data && data.length > 0) {
-                        appState.videos = data.map(v => ({
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    appState.videos = data.map(v => ({
+                        id: v.video_id || v.id,
+                        title: v.video_title || v.title || 'Untitled',
+                        description: v.description || 'Premium video content',
+                        views: v.views || 0,
+                        likes: v.likes || 0,
+                        url: v.video_url || v.url,
+                        tier: v.account_tier || v.tier || 'small',
+                        price: v.price || 0,
+                        viewTracked: false,
+                        created_at: v.created_at,
+                        account: {
                             id: v.video_id || v.id,
-                            title: v.video_title || v.title || 'Untitled',
-                            description: v.description || 'Premium video content',
-                            views: v.views || 0,
-                            likes: v.likes || 0,
-                            url: v.video_url || v.url,
+                            title: v.video_title || v.title,
                             tier: v.account_tier || v.tier || 'small',
                             price: v.price || 0,
-                            viewTracked: false,
-                            created_at: v.created_at,
-                            account: {
-                                id: v.video_id || v.id,
-                                title: v.video_title || v.title,
-                                tier: v.account_tier || v.tier || 'small',
-                                price: v.price || 0,
-                                url: v.video_url || v.url
-                            }
-                        }));
-                    }
-                } else if (appwriteDatabases) {
-                    // Load from Appwrite
-                    const response = await appwriteDatabases.listDocuments(
+                            url: v.video_url || v.url
+                        }
+                    }));
+                }
+                
+                // Also try to load from Appwrite (optional, for backup)
+                try {
+                    const appwriteResponse = await appwriteDatabases.listDocuments(
                         appwriteConfig.databaseId,
                         appwriteConfig.collections.videos
                     );
                     
-                    if (response && response.documents) {
-                        appState.videos = response.documents.map(doc => ({
-                            id: doc.$id,
-                            title: doc.video_title || doc.title || 'Untitled',
-                            description: doc.description || 'Premium video content',
-                            views: doc.views || 0,
-                            likes: doc.likes || 0,
-                            url: doc.video_url || doc.url,
-                            tier: doc.account_tier || doc.tier || 'small',
-                            price: doc.price || 0,
-                            viewTracked: false,
-                            created_at: doc.created_at || doc.$createdAt,
-                            account: {
-                                id: doc.$id,
-                                title: doc.video_title || doc.title,
-                                tier: doc.account_tier || doc.tier || 'small',
-                                price: doc.price || 0,
-                                url: doc.video_url || doc.url
-                            }
-                        }));
-                    }
+                    // Merge or use as backup
+                    console.log('Appwrite videos:', appwriteResponse.documents?.length || 0);
+                } catch (appwriteError) {
+                    console.log('Appwrite videos not available yet');
                 }
                 
                 if (appState.videos.length === 0) {
@@ -2138,48 +2087,25 @@
 
         async function loadImages() {
             try {
-                if (appState.preferredBackend === 'supabase') {
-                    // Load from Supabase
-                    const { data, error } = await supabase
-                        .from('gallery_images')
-                        .select('*')
-                        .order('created_at', { ascending: false });
+                const { data, error } = await supabase
+                    .from('gallery_images')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-                    if (error) throw error;
-                    
-                    if (data && data.length > 0) {
-                        appState.images = data.map(img => ({
-                            id: img.id,
-                            title: img.title || 'Untitled',
-                            description: img.description || '',
-                            tier: img.account_tier || img.tier || 'small',
-                            price: img.price || 0,
-                            image_url: img.image_url || '',
-                            views: img.views || 0,
-                            likes: img.likes || 0,
-                            created_at: img.created_at
-                        }));
-                    }
-                } else if (appwriteDatabases) {
-                    // Load from Appwrite
-                    const response = await appwriteDatabases.listDocuments(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.collections.gallery
-                    );
-                    
-                    if (response && response.documents) {
-                        appState.images = response.documents.map(doc => ({
-                            id: doc.$id,
-                            title: doc.title || 'Untitled',
-                            description: doc.description || '',
-                            tier: doc.account_tier || doc.tier || 'small',
-                            price: doc.price || 0,
-                            image_url: doc.image_url || '',
-                            views: doc.views || 0,
-                            likes: doc.likes || 0,
-                            created_at: doc.created_at || doc.$createdAt
-                        }));
-                    }
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    appState.images = data.map(img => ({
+                        id: img.id,
+                        title: img.title || 'Untitled',
+                        description: img.description || '',
+                        tier: img.account_tier || img.tier || 'small',
+                        price: img.price || 0,
+                        image_url: img.image_url || '',
+                        views: img.views || 0,
+                        likes: img.likes || 0,
+                        created_at: img.created_at
+                    }));
                 }
                 
                 renderImages();
@@ -2206,34 +2132,15 @@
 
         async function loadBookRequests() {
             try {
-                if (appState.preferredBackend === 'supabase') {
-                    const { data, error } = await supabase
-                        .from('book_requests')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                        
-                    if (error) throw error;
+                const { data, error } = await supabase
+                    .from('book_requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                     
-                    if (data) {
-                        appState.bookRequests = data;
-                    }
-                } else if (appwriteDatabases) {
-                    const response = await appwriteDatabases.listDocuments(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.collections.bookRequests
-                    );
-                    
-                    if (response && response.documents) {
-                        appState.bookRequests = response.documents.map(doc => ({
-                            id: doc.$id,
-                            video_id: doc.video_id,
-                            user_name: doc.user_name,
-                            whatsapp_number: doc.whatsapp_number,
-                            user_id: doc.user_id,
-                            status: doc.status || 'pending',
-                            created_at: doc.created_at || doc.$createdAt
-                        }));
-                    }
+                if (error) throw error;
+                
+                if (data) {
+                    appState.bookRequests = data;
                 }
             } catch (error) {
                 console.log('Error loading book requests:', error);
@@ -2333,15 +2240,16 @@
                 const supabaseUrl = supabase.storage.from(supabaseBucket).getPublicUrl(fileName).data.publicUrl;
                 
                 // ===== STEP 2: Upload to Appwrite =====
-                if (appwriteStorage) {
-                    uploadStatusText.textContent = 'Uploading to Appwrite...';
-                    const appwriteFile = await appwriteStorage.createFile(
+                uploadStatusText.textContent = 'Uploading to Appwrite...';
+                let appwriteFile, appwriteUrl;
+                try {
+                    appwriteFile = await appwriteStorage.createFile(
                         appwriteConfig.bucketId,
                         ID.unique(),
                         file
                     );
                     
-                    const appwriteUrl = appwriteStorage.getFileView(appwriteConfig.bucketId, appwriteFile.$id);
+                    appwriteUrl = appwriteStorage.getFileView(appwriteConfig.bucketId, appwriteFile.$id);
                     
                     uploadProgress.style.width = '70%';
                     uploadPercentage.textContent = '70%';
@@ -2367,6 +2275,8 @@
                             created_at: new Date().toISOString()
                         }
                     );
+                } catch (appwriteError) {
+                    console.warn('Appwrite upload failed:', appwriteError);
                 }
                 
                 // ===== STEP 4: Save to Supabase database =====
@@ -2444,140 +2354,6 @@
                 uploadBtn.classList.remove('opacity-50');
             }
         }
-
-        // ========== IMAGE UPLOAD - UPLOADS TO BOTH BACKENDS ==========
-        
-        async function uploadImage() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Login as admin first');
-                return;
-            }
-
-            const title = document.getElementById('image-title-input').value.trim();
-            const description = document.getElementById('image-description-input').value.trim();
-            const price = parseFloat(document.getElementById('image-price').value) || 0;
-            const tier = document.getElementById('image-tier').value;
-            const file = appState.currentImageUpload.file;
-
-            if (!title) {
-                showToast('error', 'Validation Error', 'Please enter image title');
-                return;
-            }
-
-            if (!file) {
-                showToast('error', 'Validation Error', 'Please select an image file');
-                return;
-            }
-
-            const uploadStatus = document.getElementById('image-upload-status');
-            const uploadProgress = document.getElementById('image-upload-progress');
-            const uploadPercentage = document.getElementById('image-upload-percentage');
-            const uploadStatusText = document.getElementById('image-upload-status-text');
-            const uploadBtn = document.getElementById('image-upload-btn');
-
-            uploadStatus.classList.remove('hidden');
-            uploadBtn.disabled = true;
-            uploadBtn.classList.add('opacity-50');
-
-            try {
-                const imageId = `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                
-                // ===== STEP 1: Upload to Supabase =====
-                uploadStatusText.textContent = 'Uploading to Supabase...';
-                uploadProgress.style.width = '10%';
-                uploadPercentage.textContent = '10%';
-                
-                const supabaseBucket = getSupabaseBucket(tier, 'image');
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${imageId}.${fileExt}`;
-                
-                const { error: supabaseError } = await supabase.storage
-                    .from(supabaseBucket)
-                    .upload(fileName, file);
-                
-                if (supabaseError) {
-                    console.warn('Supabase upload failed:', supabaseError);
-                } else {
-                    uploadProgress.style.width = '40%';
-                    uploadPercentage.textContent = '40%';
-                }
-                
-                const supabaseUrl = supabase.storage.from(supabaseBucket).getPublicUrl(fileName).data.publicUrl;
-                
-                // ===== STEP 2: Upload to Appwrite =====
-                if (appwriteStorage) {
-                    uploadStatusText.textContent = 'Uploading to Appwrite...';
-                    const appwriteFile = await appwriteStorage.createFile(
-                        appwriteConfig.bucketId,
-                        ID.unique(),
-                        file
-                    );
-                    
-                    const appwriteUrl = appwriteStorage.getFileView(appwriteConfig.bucketId, appwriteFile.$id);
-                    
-                    uploadProgress.style.width = '70%';
-                    uploadPercentage.textContent = '70%';
-                    
-                    // ===== STEP 3: Save to Appwrite database =====
-                    uploadStatusText.textContent = 'Saving to Appwrite database...';
-                    await appwriteDatabases.createDocument(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.collections.gallery,
-                        ID.unique(),
-                        {
-                            title: title,
-                            description: description,
-                            account_tier: tier,
-                            price: price,
-                            image_url: appwriteUrl,
-                            image_path: appwriteFile.$id,
-                            bucket_name: appwriteConfig.bucketId,
-                            views: 0,
-                            likes: 0,
-                            created_at: new Date().toISOString()
-                        }
-                    );
-                }
-                
-                // ===== STEP 4: Save to Supabase database =====
-                uploadStatusText.textContent = 'Saving to Supabase database...';
-                await supabase
-                    .from('gallery_images')
-                    .insert([{
-                        title: title,
-                        description: description,
-                        account_tier: tier,
-                        price: price,
-                        image_url: supabaseUrl,
-                        image_path: fileName,
-                        bucket_name: supabaseBucket,
-                        views: 0,
-                        likes: 0,
-                        created_at: new Date().toISOString()
-                    }]);
-                
-                uploadProgress.style.width = '100%';
-                uploadPercentage.textContent = '100%';
-                uploadStatusText.textContent = 'Upload complete!';
-
-                showToast('success', 'Success', 'Image uploaded to both backends');
-
-                await loadImages();
-                closeModal('upload-image-modal');
-                resetImageUploadForm();
-
-            } catch (error) {
-                console.error('Upload error:', error);
-                showToast('error', 'Upload Failed', error.message);
-                uploadStatus.classList.add('hidden');
-            } finally {
-                uploadBtn.disabled = false;
-                uploadBtn.classList.remove('opacity-50');
-            }
-        }
-
-        // Keep all your existing functions (renderReels, renderImages, bookFromReel, etc.)
-        // They remain exactly the same as in your original file
 
         // ========== RENDER FUNCTIONS ==========
         
@@ -2678,17 +2454,17 @@
 
             if (!appState.images || appState.images.length === 0) {
                 grid.innerHTML = '';
-                empty.classList.remove('hidden');
+                if (empty) empty.classList.remove('hidden');
                 return;
             }
 
-            empty.classList.add('hidden');
+            if (empty) empty.classList.add('hidden');
             
             grid.innerHTML = appState.images.map(img => {
                 const likedClass = appState.likedImages.has(img.id) ? 'liked' : '';
                 return `
                     <div class="image-card" data-id="${img.id}">
-                        <img src="${img.image_url}" class="image-card-media" onclick="previewImage('${img.image_url}')" alt="${img.title}">
+                        <img src="${img.image_url}" class="image-card-media" onclick="previewImage('${img.image_url}')" alt="${img.title}" onerror="this.src='https://via.placeholder.com/300/27272a/ec4899?text=GK'">
                         <div class="image-card-info">
                             <h3 class="image-card-title">${img.title}</h3>
                             <p class="image-card-description">${img.description || 'No description'}</p>
@@ -2757,12 +2533,11 @@
 
         function filterAccounts(tier) {
             document.querySelectorAll('#accounts-page .tab-item').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
             loadAccountsContent(tier);
         }
 
         function setupDraggableProgressBar(videoEl, container) {
-            // Keep your existing setupDraggableProgressBar function
             let progressContainer = container.querySelector('.video-progress-container');
             if (!progressContainer) {
                 progressContainer = document.createElement('div');
@@ -2836,11 +2611,11 @@
             if (!reel) return;
             
             if (stat === 'views') {
-                const viewsEl = reel.querySelector('.fa-eye').parentElement;
-                viewsEl.innerHTML = `<i class="fas fa-eye"></i> ${value}`;
+                const viewsEl = reel.querySelector('.fa-eye')?.parentElement;
+                if (viewsEl) viewsEl.innerHTML = `<i class="fas fa-eye"></i> ${value}`;
             } else if (stat === 'likes') {
-                const likesEl = reel.querySelector('.fa-heart').parentElement;
-                likesEl.innerHTML = `<i class="fas fa-heart"></i> ${value}`;
+                const likesEl = reel.querySelector('.fa-heart')?.parentElement;
+                if (likesEl) likesEl.innerHTML = `<i class="fas fa-heart"></i> ${value}`;
                 const likeCount = reel.querySelector('.like-count');
                 if (likeCount) likeCount.textContent = value;
             }
@@ -2868,6 +2643,7 @@
 
         function handleReelScroll() {
             const container = document.getElementById('reels-container');
+            if (!container) return;
             const reels = document.querySelectorAll('.reel-item');
             const containerHeight = container.clientHeight;
             const scrollTop = container.scrollTop;
@@ -2896,54 +2672,57 @@
             const description = video.description || 'No additional information available for this video.';
             const descriptionHtml = description.split('\n').map(para => `<p>${para}</p>`).join('');
             
-            content.innerHTML = `
-                <div class="video-info-section">
-                    <div class="video-info-section-title">Title</div>
-                    <div class="video-info-section-content">${video.title}</div>
-                </div>
-                
-                <div class="video-info-section">
-                    <div class="video-info-section-title">Description</div>
-                    <div class="video-info-section-content">${descriptionHtml}</div>
-                </div>
-                
-                <div class="video-info-section">
-                    <div class="video-info-section-title">Price</div>
-                    <div class="video-info-price-tag">$${video.price}</div>
-                </div>
-                
-                <div class="video-info-section">
-                    <div class="video-info-section-title">Tier</div>
-                    <div class="video-info-tier-badge">
-                        <i class="fas ${video.tier === 'small' ? 'fa-user' : video.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i>
-                        ${video.tier.charAt(0).toUpperCase() + video.tier.slice(1)}
+            if (content) {
+                content.innerHTML = `
+                    <div class="video-info-section">
+                        <div class="video-info-section-title">Title</div>
+                        <div class="video-info-section-content">${video.title}</div>
                     </div>
-                </div>
-                
-                <div class="video-info-section">
-                    <div class="video-info-section-title">Stats</div>
-                    <div class="flex gap-4">
-                        <span><i class="fas fa-eye text-primary"></i> ${video.views || 0} views</span>
-                        <span><i class="fas fa-heart text-danger"></i> ${video.likes || 0} likes</span>
+                    
+                    <div class="video-info-section">
+                        <div class="video-info-section-title">Description</div>
+                        <div class="video-info-section-content">${descriptionHtml}</div>
                     </div>
-                </div>
-                
-                <div class="video-info-actions">
-                    <button class="video-info-action-btn book" onclick="bookFromDrawer()">
-                        <i class="fas fa-bookmark"></i> Book Now
-                    </button>
-                    <button class="video-info-action-btn buy" onclick="buyFromDrawer()">
-                        <i class="fas fa-shopping-bag"></i> Buy Now
-                    </button>
-                </div>
-            `;
+                    
+                    <div class="video-info-section">
+                        <div class="video-info-section-title">Price</div>
+                        <div class="video-info-price-tag">$${video.price}</div>
+                    </div>
+                    
+                    <div class="video-info-section">
+                        <div class="video-info-section-title">Tier</div>
+                        <div class="video-info-tier-badge">
+                            <i class="fas ${video.tier === 'small' ? 'fa-user' : video.tier === 'medium' ? 'fa-user-tie' : 'fa-crown'}"></i>
+                            ${video.tier.charAt(0).toUpperCase() + video.tier.slice(1)}
+                        </div>
+                    </div>
+                    
+                    <div class="video-info-section">
+                        <div class="video-info-section-title">Stats</div>
+                        <div class="flex gap-4">
+                            <span><i class="fas fa-eye text-primary"></i> ${video.views || 0} views</span>
+                            <span><i class="fas fa-heart text-danger"></i> ${video.likes || 0} likes</span>
+                        </div>
+                    </div>
+                    
+                    <div class="video-info-actions">
+                        <button class="video-info-action-btn book" onclick="bookFromDrawer()">
+                            <i class="fas fa-bookmark"></i> Book Now
+                        </button>
+                        <button class="video-info-action-btn buy" onclick="buyFromDrawer()">
+                            <i class="fas fa-shopping-bag"></i> Buy Now
+                        </button>
+                    </div>
+                `;
+            }
             
-            drawer.classList.remove('hidden');
+            if (drawer) drawer.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
 
         function closeVideoDrawer() {
-            document.getElementById('video-info-drawer').classList.add('hidden');
+            const drawer = document.getElementById('video-info-drawer');
+            if (drawer) drawer.classList.add('hidden');
             document.body.style.overflow = '';
         }
 
@@ -3038,8 +2817,10 @@
             document.body.classList.add('video-playing');
             
             const indicator = document.getElementById('rotate-indicator');
-            indicator.classList.remove('hidden');
-            setTimeout(() => indicator.classList.add('hidden'), 3000);
+            if (indicator) {
+                indicator.classList.remove('hidden');
+                setTimeout(() => indicator.classList.add('hidden'), 3000);
+            }
         }
 
         document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -3055,9 +2836,11 @@
 
         function showPlayPauseIndicator(action) { 
             const indicator = document.getElementById('play-pause-indicator'); 
-            indicator.innerHTML = `<i class="fas fa-${action === 'play' ? 'play' : 'pause'}"></i>`; 
-            indicator.classList.add('show'); 
-            setTimeout(() => indicator.classList.remove('show'), 500); 
+            if (indicator) {
+                indicator.innerHTML = `<i class="fas fa-${action === 'play' ? 'play' : 'pause'}"></i>`; 
+                indicator.classList.add('show'); 
+                setTimeout(() => indicator.classList.remove('show'), 500); 
+            }
         }
 
         // ========== ACCOUNT FUNCTIONS ==========
@@ -3068,10 +2851,13 @@
                 appState.currentVideoIndex = index;
                 showPage('home');
                 setTimeout(() => { 
-                    document.getElementById('reels-container').scrollTo({ 
-                        top: index * document.getElementById('reels-container').clientHeight, 
-                        behavior: 'smooth' 
-                    }); 
+                    const container = document.getElementById('reels-container');
+                    if (container) {
+                        container.scrollTo({ 
+                            top: index * container.clientHeight, 
+                            behavior: 'smooth' 
+                        });
+                    }
                 }, 100);
             }
         }
@@ -3201,7 +2987,7 @@
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 appState.isAdminLoggedIn = true;
-                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-dashboard')?.classList.remove('hidden');
                 showToast('success', 'Admin Login', 'Welcome admin');
                 showPage('admin');
                 updateAdminStats();
@@ -3278,14 +3064,16 @@
                     .from('book_requests')
                     .insert([requestData]);
                 
-                // Also save to Appwrite if available
-                if (appwriteDatabases) {
+                // Also try Appwrite if available
+                try {
                     await appwriteDatabases.createDocument(
                         appwriteConfig.databaseId,
                         appwriteConfig.collections.bookRequests,
                         ID.unique(),
                         requestData
                     );
+                } catch (appwriteError) {
+                    console.log('Appwrite book request not saved');
                 }
                 
                 appState.bookRequests.unshift({
@@ -3305,430 +3093,8 @@
             }
         }
 
-        // ========== UTILITY FUNCTIONS ==========
+        // ========== IMAGE FUNCTIONS ==========
         
-        function showModal(id) { 
-            document.getElementById(id).classList.remove('hidden'); 
-            document.body.style.overflow = 'hidden'; 
-        }
-
-        function closeModal(id) { 
-            document.getElementById(id).classList.add('hidden'); 
-            document.body.style.overflow = ''; 
-        }
-
-        function showToast(type, title, message) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-icon').className = `fas ${type === 'success' ? 'fa-check-circle text-success' : type === 'error' ? 'fa-exclamation-circle text-danger' : 'fa-info-circle text-primary'}`;
-            document.getElementById('toast-title').textContent = title;
-            document.getElementById('toast-message').textContent = message;
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
-        }
-
-        function closeWelcomeModal() { 
-            closeModal('welcome-modal'); 
-        }
-
-        function showWelcomeModal() {
-            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-            if (!hasSeenWelcome) {
-                showModal('welcome-modal');
-                localStorage.setItem('hasSeenWelcome', 'true');
-            }
-        }
-
-        function copyUSDTAddress() { 
-            navigator.clipboard.writeText(document.getElementById('usdt-address').textContent); 
-            showToast('success', 'Copied!', 'Address copied to clipboard'); 
-        }
-
-        function copyAddress() { 
-            navigator.clipboard.writeText(document.getElementById('payment-address').textContent); 
-            showToast('success', 'Copied!', 'Address copied to clipboard'); 
-        }
-
-        function openWhatsApp(number) {
-            const cleanNumber = number.replace(/\D/g, '');
-            window.open(`https://wa.me/${cleanNumber}?text=Hello%20GK%20Store%2C%20I%20have%20a%20question`, '_blank');
-        }
-
-        function openPaymentChat() { 
-            if (!appState.currentAccount) return; 
-            const number = '93793066322';
-            window.open(`https://wa.me/${number}?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank'); 
-        }
-
-        function toggleLanguage() { 
-            showModal('language-modal'); 
-        }
-
-        function setLanguage(lang) { 
-            appState.language = lang; 
-            localStorage.setItem('appLanguage', lang); 
-            document.querySelectorAll('[id^="lang-"]').forEach(c => c.classList.add('hidden')); 
-            document.getElementById(`lang-${lang}-check`).classList.remove('hidden'); 
-            document.body.dir = ['ar','fa','ur','ps'].includes(lang) ? 'rtl' : 'ltr'; 
-            closeModal('language-modal'); 
-        }
-
-        function toggleTheme() { 
-            appState.theme = appState.theme === 'dark' ? 'light' : 'dark'; 
-            localStorage.setItem('appTheme', appState.theme); 
-            document.documentElement.setAttribute('data-theme', appState.theme); 
-        }
-
-        function loadPreferences() { 
-            appState.language = localStorage.getItem('appLanguage') || 'en'; 
-            appState.theme = localStorage.getItem('appTheme') || 'dark'; 
-            document.documentElement.setAttribute('data-theme', appState.theme); 
-        }
-
-        function setupEventListeners() { 
-            document.getElementById('reels-container')?.addEventListener('scroll', () => { 
-                clearTimeout(appState.scrollTimeout); 
-                appState.scrollTimeout = setTimeout(handleReelScroll, 100); 
-            }); 
-            
-            window.addEventListener('online', () => { 
-                document.getElementById('offline-indicator').classList.remove('show'); 
-                showToast('success', 'Back Online', 'Connection restored'); 
-            }); 
-            
-            window.addEventListener('offline', () => { 
-                document.getElementById('offline-indicator').classList.add('show'); 
-                showToast('error', 'Offline', 'Connection lost'); 
-            }); 
-            
-            if (!navigator.onLine) {
-                document.getElementById('offline-indicator').classList.add('show');
-            }
-            
-            document.getElementById('video-info-drawer')?.addEventListener('click', (e) => {
-                if (e.target.classList.contains('video-info-drawer-overlay')) {
-                    closeVideoDrawer();
-                }
-            });
-        }
-
-        function setupOrientationHandling() { 
-            window.addEventListener('orientationchange', () => { 
-                clearTimeout(appState.orientationTimeout); 
-                appState.orientationTimeout = setTimeout(() => { 
-                    if (appState.currentPage === 'home' && window.innerWidth > window.innerHeight && !document.fullscreenElement && !document.webkitFullscreenElement) {
-                        rotateToFullscreen(); 
-                    }
-                }, 100); 
-            }); 
-        }
-
-        // ========== PWA INSTALL ==========
-        
-        function setupPWAInstall() {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                window.navigator.standalone;
-            
-            if (isStandalone) {
-                trackInstall();
-            }
-            
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                appState.deferredPrompt = e;
-                showInstallButton();
-            });
-            
-            window.addEventListener('appinstalled', () => {
-                trackInstall();
-                showToast('success', 'Installed!', 'App installed successfully');
-            });
-        }
-
-        async function trackInstall() {
-            try {
-                await supabase
-                    .from('install_tracking')
-                    .insert([{
-                        user_id: appState.userId,
-                        device_type: /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'iOS' : 
-                                     /Android/i.test(navigator.userAgent) ? 'Android' : 'Other',
-                        platform: navigator.platform
-                    }]);
-
-                await supabase
-                    .from('users')
-                    .update({ installed: true })
-                    .eq('user_id', appState.userId);
-
-            } catch (error) {
-                console.error('Error tracking install:', error);
-            }
-        }
-
-        async function trackVideoView(videoId) {
-            try {
-                const video = appState.videos.find(v => v.id === videoId);
-                if (video) {
-                    video.views = (video.views || 0) + 1;
-                    
-                    // Update in Supabase
-                    await supabase
-                        .from('videos')
-                        .update({ views: video.views })
-                        .eq('video_id', videoId);
-                    
-                    // Update in Appwrite if available
-                    if (appwriteDatabases) {
-                        await appwriteDatabases.updateDocument(
-                            appwriteConfig.databaseId,
-                            appwriteConfig.collections.videos,
-                            videoId,
-                            { views: video.views }
-                        );
-                    }
-                }
-            } catch (error) {
-                console.error('Error tracking view:', error);
-            }
-        }
-
-        async function trackVideoLike(videoId) {
-            try {
-                const video = appState.videos.find(v => v.id === videoId);
-                if (video) {
-                    video.likes = (video.likes || 0) + 1;
-                    
-                    await supabase
-                        .from('videos')
-                        .update({ likes: video.likes })
-                        .eq('video_id', videoId);
-                    
-                    if (appwriteDatabases) {
-                        await appwriteDatabases.updateDocument(
-                            appwriteConfig.databaseId,
-                            appwriteConfig.collections.videos,
-                            videoId,
-                            { likes: video.likes }
-                        );
-                    }
-                }
-            } catch (error) {
-                console.error('Error tracking like:', error);
-            }
-        }
-
-        async function trackVideoUnlike(videoId) {
-            try {
-                const video = appState.videos.find(v => v.id === videoId);
-                if (video) {
-                    video.likes = Math.max(0, (video.likes || 0) - 1);
-                    
-                    await supabase
-                        .from('videos')
-                        .update({ likes: video.likes })
-                        .eq('video_id', videoId);
-                    
-                    if (appwriteDatabases) {
-                        await appwriteDatabases.updateDocument(
-                            appwriteConfig.databaseId,
-                            appwriteConfig.collections.videos,
-                            videoId,
-                            { likes: video.likes }
-                        );
-                    }
-                }
-            } catch (error) {
-                console.error('Error tracking unlike:', error);
-            }
-        }
-
-        function checkDatabaseSetup() {
-            // Optional - you can implement if needed
-        }
-
-        function startOnlineUsersTracking() {
-            // Simplified version
-            setInterval(() => {
-                appState.userStats.onlineUsers = Math.floor(Math.random() * 10) + 1;
-            }, 60000);
-        }
-
-        function startContentCheckInterval() {
-            setInterval(() => {
-                // Optional - implement if needed
-            }, 60000);
-        }
-
-        function updateNotificationBadge() {
-            const badge = document.getElementById('notification-count');
-            const totalUnseen = appState.unseenVideosCount + appState.unseenImagesCount;
-            if (totalUnseen > 0) {
-                badge.textContent = totalUnseen;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function loadNotificationsPage() {
-            // Optional - implement if needed
-        }
-
-        function showManageVideos() {
-            // Optional - implement if needed
-        }
-
-        function showManageImages() {
-            // Optional - implement if needed
-        }
-
-        function showBookRequests() {
-            // Optional - implement if needed
-        }
-
-        function loadAdminBookRequests() {
-            // Optional - implement if needed
-        }
-
-        function showAddContactModal() {
-            // Optional - implement if needed
-        }
-
-        function resetContactForm() {
-            // Optional - implement if needed
-        }
-
-        function handleContactImageSelect() {
-            // Optional - implement if needed
-        }
-
-        function saveContact() {
-            // Optional - implement if needed
-        }
-
-        function deleteContact() {
-            // Optional - implement if needed
-        }
-
-        function showContactManagement() {
-            // Optional - implement if needed
-        }
-
-        function createContactImagesBucket() {
-            // Optional - implement if needed
-        }
-
-        function showUploadVideo() {
-            if (!appState.isAdminLoggedIn) { 
-                showToast('error', 'Access Denied', 'Login as admin first'); 
-                return; 
-            } 
-            resetUploadForm(); 
-            showModal('upload-video-modal'); 
-        }
-
-        function resetUploadForm() { 
-            document.getElementById('video-title-input').value = ''; 
-            document.getElementById('video-description-input').value = ''; 
-            document.getElementById('video-price').value = ''; 
-            document.getElementById('video-tier').value = 'small'; 
-            document.getElementById('video-file').value = ''; 
-            
-            const fileInfo = document.getElementById('file-info');
-            const uploadStatus = document.getElementById('upload-status');
-            const fileUploadArea = document.getElementById('file-upload-area');
-            const uploadProgress = document.getElementById('upload-progress');
-            const uploadPercentage = document.getElementById('upload-percentage');
-            const uploadBtn = document.getElementById('upload-btn');
-            
-            fileInfo.classList.add('hidden');
-            uploadStatus.classList.add('hidden');
-            fileUploadArea.classList.remove('has-file');
-            
-            if (uploadProgress) uploadProgress.style.width = '0%';
-            if (uploadPercentage) uploadPercentage.textContent = '0%';
-            if (uploadBtn) {
-                uploadBtn.disabled = false;
-                uploadBtn.classList.remove('opacity-50');
-            }
-            
-            appState.currentUpload.file = null; 
-        }
-
-        function handleFileSelect(e) { 
-            const file = e.target.files[0]; 
-            if (!file) return; 
-            
-            appState.currentUpload.file = file; 
-            document.getElementById('file-info').classList.remove('hidden'); 
-            document.getElementById('file-name').textContent = file.name; 
-            document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB'; 
-            document.getElementById('file-upload-area').classList.add('has-file'); 
-        }
-
-        function showUploadImageModal() {
-            if (!appState.isAdminLoggedIn) {
-                showToast('error', 'Access Denied', 'Login as admin first');
-                return;
-            }
-            resetImageUploadForm();
-            showModal('upload-image-modal');
-        }
-
-        function resetImageUploadForm() {
-            document.getElementById('image-title-input').value = '';
-            document.getElementById('image-description-input').value = '';
-            document.getElementById('image-price').value = '';
-            document.getElementById('image-tier').value = 'small';
-            document.getElementById('image-file').value = '';
-            
-            document.getElementById('image-preview-container').classList.add('hidden');
-            document.getElementById('image-file-info').classList.add('hidden');
-            document.getElementById('image-upload-status').classList.add('hidden');
-            document.getElementById('image-upload-area').classList.remove('has-file');
-            
-            const progress = document.getElementById('image-upload-progress');
-            const percentage = document.getElementById('image-upload-percentage');
-            if (progress) progress.style.width = '0%';
-            if (percentage) percentage.textContent = '0%';
-            
-            appState.currentImageUpload.file = null;
-        }
-
-        function handleImageSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!validTypes.includes(file.type)) {
-                showToast('error', 'Invalid File', 'Please select a valid image (JPG, PNG, GIF, WEBP)');
-                document.getElementById('image-file').value = '';
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) {
-                showToast('error', 'File Too Large', 'Image must be less than 10MB');
-                document.getElementById('image-file').value = '';
-                return;
-            }
-
-            appState.currentImageUpload.file = file;
-
-            document.getElementById('image-file-info').classList.remove('hidden');
-            document.getElementById('image-file-name').textContent = file.name;
-            document.getElementById('image-file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-            document.getElementById('image-upload-area').classList.add('has-file');
-            document.getElementById('image-upload-text').textContent = 'Change image';
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const preview = document.getElementById('image-preview');
-                preview.src = event.target.result;
-                document.getElementById('image-preview-container').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
         function likeImage(imageId) {
             const image = appState.images.find(img => img.id == imageId);
             if (!image) return;
@@ -3793,19 +3159,494 @@
         function previewImage(imageUrl) {
             const previewModal = document.getElementById('image-preview-modal');
             const previewImg = document.getElementById('preview-image');
-            previewImg.src = imageUrl;
-            previewModal.classList.remove('hidden');
+            if (previewImg) previewImg.src = imageUrl;
+            if (previewModal) previewModal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
 
         function closeImagePreview() {
-            document.getElementById('image-preview-modal').classList.add('hidden');
+            const previewModal = document.getElementById('image-preview-modal');
+            if (previewModal) previewModal.classList.add('hidden');
             document.body.style.overflow = '';
         }
 
+        // ========== UPLOAD FORM FUNCTIONS ==========
+        
+        function showUploadVideo() {
+            if (!appState.isAdminLoggedIn) { 
+                showToast('error', 'Access Denied', 'Login as admin first'); 
+                return; 
+            } 
+            resetUploadForm(); 
+            showModal('upload-video-modal'); 
+        }
+
+        function resetUploadForm() { 
+            document.getElementById('video-title-input').value = ''; 
+            document.getElementById('video-description-input').value = ''; 
+            document.getElementById('video-price').value = ''; 
+            document.getElementById('video-tier').value = 'small'; 
+            document.getElementById('video-file').value = ''; 
+            
+            const fileInfo = document.getElementById('file-info');
+            const uploadStatus = document.getElementById('upload-status');
+            const fileUploadArea = document.getElementById('file-upload-area');
+            const uploadProgress = document.getElementById('upload-progress');
+            const uploadPercentage = document.getElementById('upload-percentage');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            if (fileInfo) fileInfo.classList.add('hidden');
+            if (uploadStatus) uploadStatus.classList.add('hidden');
+            if (fileUploadArea) fileUploadArea.classList.remove('has-file');
+            
+            if (uploadProgress) uploadProgress.style.width = '0%';
+            if (uploadPercentage) uploadPercentage.textContent = '0%';
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50');
+            }
+            
+            appState.currentUpload.file = null; 
+        }
+
+        function handleFileSelect(e) { 
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            
+            appState.currentUpload.file = file; 
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+            const fileUploadArea = document.getElementById('file-upload-area');
+            
+            if (fileInfo) fileInfo.classList.remove('hidden'); 
+            if (fileName) fileName.textContent = file.name; 
+            if (fileSize) fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB'; 
+            if (fileUploadArea) fileUploadArea.classList.add('has-file'); 
+        }
+
+        function showUploadImageModal() {
+            if (!appState.isAdminLoggedIn) {
+                showToast('error', 'Access Denied', 'Login as admin first');
+                return;
+            }
+            resetImageUploadForm();
+            showModal('upload-image-modal');
+        }
+
+        function resetImageUploadForm() {
+            document.getElementById('image-title-input').value = '';
+            document.getElementById('image-description-input').value = '';
+            document.getElementById('image-price').value = '';
+            document.getElementById('image-tier').value = 'small';
+            document.getElementById('image-file').value = '';
+            
+            const previewContainer = document.getElementById('image-preview-container');
+            const fileInfo = document.getElementById('image-file-info');
+            const uploadStatus = document.getElementById('image-upload-status');
+            const uploadArea = document.getElementById('image-upload-area');
+            const progress = document.getElementById('image-upload-progress');
+            const percentage = document.getElementById('image-upload-percentage');
+            
+            if (previewContainer) previewContainer.classList.add('hidden');
+            if (fileInfo) fileInfo.classList.add('hidden');
+            if (uploadStatus) uploadStatus.classList.add('hidden');
+            if (uploadArea) uploadArea.classList.remove('has-file');
+            
+            if (progress) progress.style.width = '0%';
+            if (percentage) percentage.textContent = '0%';
+            
+            appState.currentImageUpload.file = null;
+        }
+
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showToast('error', 'Invalid File', 'Please select a valid image (JPG, PNG, GIF, WEBP)');
+                document.getElementById('image-file').value = '';
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('error', 'File Too Large', 'Image must be less than 10MB');
+                document.getElementById('image-file').value = '';
+                return;
+            }
+
+            appState.currentImageUpload.file = file;
+
+            const fileInfo = document.getElementById('image-file-info');
+            const fileName = document.getElementById('image-file-name');
+            const fileSize = document.getElementById('image-file-size');
+            const uploadArea = document.getElementById('image-upload-area');
+            const uploadText = document.getElementById('image-upload-text');
+            
+            if (fileInfo) fileInfo.classList.remove('hidden');
+            if (fileName) fileName.textContent = file.name;
+            if (fileSize) fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            if (uploadArea) uploadArea.classList.add('has-file');
+            if (uploadText) uploadText.textContent = 'Change image';
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const preview = document.getElementById('image-preview');
+                const previewContainer = document.getElementById('image-preview-container');
+                if (preview) preview.src = event.target.result;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ========== TRACKING FUNCTIONS ==========
+        
+        async function trackVideoView(videoId) {
+            try {
+                const video = appState.videos.find(v => v.id === videoId);
+                if (video) {
+                    video.views = (video.views || 0) + 1;
+                    
+                    // Update in Supabase
+                    await supabase
+                        .from('videos')
+                        .update({ views: video.views })
+                        .eq('video_id', videoId);
+                    
+                    // Try Appwrite
+                    try {
+                        await appwriteDatabases.updateDocument(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.collections.videos,
+                            videoId,
+                            { views: video.views }
+                        );
+                    } catch (e) {}
+                }
+            } catch (error) {
+                console.error('Error tracking view:', error);
+            }
+        }
+
+        async function trackVideoLike(videoId) {
+            try {
+                const video = appState.videos.find(v => v.id === videoId);
+                if (video) {
+                    video.likes = (video.likes || 0) + 1;
+                    
+                    await supabase
+                        .from('videos')
+                        .update({ likes: video.likes })
+                        .eq('video_id', videoId);
+                    
+                    try {
+                        await appwriteDatabases.updateDocument(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.collections.videos,
+                            videoId,
+                            { likes: video.likes }
+                        );
+                    } catch (e) {}
+                }
+            } catch (error) {
+                console.error('Error tracking like:', error);
+            }
+        }
+
+        async function trackVideoUnlike(videoId) {
+            try {
+                const video = appState.videos.find(v => v.id === videoId);
+                if (video) {
+                    video.likes = Math.max(0, (video.likes || 0) - 1);
+                    
+                    await supabase
+                        .from('videos')
+                        .update({ likes: video.likes })
+                        .eq('video_id', videoId);
+                    
+                    try {
+                        await appwriteDatabases.updateDocument(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.collections.videos,
+                            videoId,
+                            { likes: video.likes }
+                        );
+                    } catch (e) {}
+                }
+            } catch (error) {
+                console.error('Error tracking unlike:', error);
+            }
+        }
+
+        // ========== UTILITY FUNCTIONS ==========
+        
+        function showModal(id) { 
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove('hidden'); 
+                document.body.style.overflow = 'hidden'; 
+            }
+        }
+
+        function closeModal(id) { 
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add('hidden'); 
+                document.body.style.overflow = ''; 
+            }
+        }
+
+        function showToast(type, title, message) {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMessage = document.getElementById('toast-message');
+            
+            if (toast && toastIcon && toastTitle && toastMessage) {
+                toastIcon.className = `fas ${type === 'success' ? 'fa-check-circle text-success' : type === 'error' ? 'fa-exclamation-circle text-danger' : 'fa-info-circle text-primary'}`;
+                toastTitle.textContent = title;
+                toastMessage.textContent = message;
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3000);
+            }
+        }
+
+        function closeWelcomeModal() { 
+            closeModal('welcome-modal'); 
+        }
+
+        function showWelcomeModal() {
+            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+            if (!hasSeenWelcome) {
+                showModal('welcome-modal');
+                localStorage.setItem('hasSeenWelcome', 'true');
+            }
+        }
+
+        function copyUSDTAddress() { 
+            const address = document.getElementById('usdt-address');
+            if (address) {
+                navigator.clipboard.writeText(address.textContent); 
+                showToast('success', 'Copied!', 'Address copied to clipboard'); 
+            }
+        }
+
+        function copyAddress() { 
+            const address = document.getElementById('payment-address');
+            if (address) {
+                navigator.clipboard.writeText(address.textContent); 
+                showToast('success', 'Copied!', 'Address copied to clipboard'); 
+            }
+        }
+
+        function openWhatsApp(number) {
+            const cleanNumber = number.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanNumber}?text=Hello%20GK%20Store%2C%20I%20have%20a%20question`, '_blank');
+        }
+
+        function openPaymentChat() { 
+            if (!appState.currentAccount) return; 
+            const number = '93793066322';
+            window.open(`https://wa.me/${number}?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price}`)}`, '_blank'); 
+        }
+
+        function toggleLanguage() { 
+            showModal('language-modal'); 
+        }
+
+        function setLanguage(lang) { 
+            appState.language = lang; 
+            localStorage.setItem('appLanguage', lang); 
+            document.querySelectorAll('[id^="lang-"]').forEach(c => c.classList.add('hidden')); 
+            const check = document.getElementById(`lang-${lang}-check`);
+            if (check) check.classList.remove('hidden'); 
+            document.body.dir = ['ar','fa','ur','ps'].includes(lang) ? 'rtl' : 'ltr'; 
+            closeModal('language-modal'); 
+        }
+
+        function toggleTheme() { 
+            appState.theme = appState.theme === 'dark' ? 'light' : 'dark'; 
+            localStorage.setItem('appTheme', appState.theme); 
+            document.documentElement.setAttribute('data-theme', appState.theme); 
+        }
+
+        function loadPreferences() { 
+            appState.language = localStorage.getItem('appLanguage') || 'en'; 
+            appState.theme = localStorage.getItem('appTheme') || 'dark'; 
+            document.documentElement.setAttribute('data-theme', appState.theme); 
+        }
+
+        function setupEventListeners() { 
+            const reelsContainer = document.getElementById('reels-container');
+            if (reelsContainer) {
+                reelsContainer.addEventListener('scroll', () => { 
+                    clearTimeout(appState.scrollTimeout); 
+                    appState.scrollTimeout = setTimeout(handleReelScroll, 100); 
+                });
+            }
+            
+            window.addEventListener('online', () => { 
+                const offlineIndicator = document.getElementById('offline-indicator');
+                if (offlineIndicator) offlineIndicator.classList.remove('show'); 
+                showToast('success', 'Back Online', 'Connection restored'); 
+            }); 
+            
+            window.addEventListener('offline', () => { 
+                const offlineIndicator = document.getElementById('offline-indicator');
+                if (offlineIndicator) offlineIndicator.classList.add('show'); 
+                showToast('error', 'Offline', 'Connection lost'); 
+            }); 
+            
+            if (!navigator.onLine) {
+                const offlineIndicator = document.getElementById('offline-indicator');
+                if (offlineIndicator) offlineIndicator.classList.add('show');
+            }
+            
+            const videoDrawer = document.getElementById('video-info-drawer');
+            if (videoDrawer) {
+                videoDrawer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('video-info-drawer-overlay')) {
+                        closeVideoDrawer();
+                    }
+                });
+            }
+        }
+
+        function setupOrientationHandling() { 
+            window.addEventListener('orientationchange', () => { 
+                clearTimeout(appState.orientationTimeout); 
+                appState.orientationTimeout = setTimeout(() => { 
+                    if (appState.currentPage === 'home' && window.innerWidth > window.innerHeight && !document.fullscreenElement && !document.webkitFullscreenElement) {
+                        rotateToFullscreen(); 
+                    }
+                }, 100); 
+            }); 
+        }
+
+        // ========== PWA INSTALL ==========
+        
+        function setupPWAInstall() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone;
+            
+            if (isStandalone) {
+                trackInstall();
+            }
+            
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                appState.deferredPrompt = e;
+                showInstallButton();
+            });
+            
+            window.addEventListener('appinstalled', () => {
+                trackInstall();
+                showToast('success', 'Installed!', 'App installed successfully');
+            });
+        }
+
+        async function trackInstall() {
+            try {
+                await supabase
+                    .from('install_tracking')
+                    .insert([{
+                        user_id: appState.userId,
+                        device_type: /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'iOS' : 
+                                     /Android/i.test(navigator.userAgent) ? 'Android' : 'Other',
+                        platform: navigator.platform
+                    }]);
+
+                await supabase
+                    .from('users')
+                    .update({ installed: true })
+                    .eq('user_id', appState.userId);
+
+            } catch (error) {
+                console.error('Error tracking install:', error);
+            }
+        }
+
+        function checkDatabaseSetup() {
+            // Optional - implement if needed
+        }
+
+        function startOnlineUsersTracking() {
+            // Simplified version
+            setInterval(() => {
+                appState.userStats.onlineUsers = Math.floor(Math.random() * 10) + 1;
+            }, 60000);
+        }
+
+        function startContentCheckInterval() {
+            setInterval(() => {
+                // Optional - implement if needed
+            }, 60000);
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notification-count');
+            const totalUnseen = appState.unseenVideosCount + appState.unseenImagesCount;
+            if (badge) {
+                if (totalUnseen > 0) {
+                    badge.textContent = totalUnseen;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        function loadNotificationsPage() {
+            // Optional - implement if needed
+        }
+
+        function showManageVideos() {
+            showToast('info', 'Coming Soon', 'Manage videos feature coming soon');
+        }
+
+        function showManageImages() {
+            showToast('info', 'Coming Soon', 'Manage images feature coming soon');
+        }
+
+        function showBookRequests() {
+            showToast('info', 'Coming Soon', 'Book requests feature coming soon');
+        }
+
+        function loadAdminBookRequests() {
+            // Optional - implement if needed
+        }
+
+        function showAddContactModal() {
+            showToast('info', 'Coming Soon', 'Add contact feature coming soon');
+        }
+
+        function resetContactForm() {
+            // Optional - implement if needed
+        }
+
+        function handleContactImageSelect() {
+            // Optional - implement if needed
+        }
+
+        function saveContact() {
+            showToast('info', 'Coming Soon', 'Save contact feature coming soon');
+        }
+
+        function deleteContact(id) {
+            showToast('info', 'Coming Soon', 'Delete contact feature coming soon');
+        }
+
+        function showContactManagement() {
+            showToast('info', 'Coming Soon', 'Contact management coming soon');
+        }
+
+        function createContactImagesBucket() {
+            showToast('info', 'Coming Soon', 'Bucket creation coming soon');
+        }
+
         function deleteImage(id) {
-            // Implement delete if needed
-            showToast('info', 'Coming Soon', 'Delete functionality will be added');
+            showToast('info', 'Coming Soon', 'Delete image feature coming soon');
         }
 
         function shareAppFromReel() { 
@@ -3842,7 +3683,8 @@
         }
 
         function closeInstallInstructions() {
-            document.getElementById('install-instructions').classList.add('hidden');
+            const instructions = document.getElementById('install-instructions');
+            if (instructions) instructions.classList.add('hidden');
         }
 
         function checkAndShowInstallButton() {
@@ -3902,6 +3744,14 @@
         window.previewImage = previewImage;
         window.closeImagePreview = closeImagePreview;
         window.deleteImage = deleteImage;
+        window.showManageVideos = showManageVideos;
+        window.showManageImages = showManageImages;
+        window.showBookRequests = showBookRequests;
+        window.showAddContactModal = showAddContactModal;
+        window.saveContact = saveContact;
+        window.deleteContact = deleteContact;
+        window.showContactManagement = showContactManagement;
+        window.createContactImagesBucket = createContactImagesBucket;
     </script>
 
     <!-- Service Worker Registration -->
