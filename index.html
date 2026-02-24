@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts</title>
+    <title>GK Store · PUBG accounts with image upload</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -357,7 +357,40 @@
 
         /* admin panel */
         .hidden { display: none !important; }
-        .input { width:100%; padding:0.8rem; background:var(--surface-light); border:1px solid var(--border); border-radius:12px; color:white; margin-bottom:0.8rem; }
+        .input { 
+            width:100%; 
+            padding:0.8rem; 
+            background:var(--surface-light); 
+            border:1px solid var(--border); 
+            border-radius:12px; 
+            color:white; 
+            margin-bottom:0.8rem; 
+        }
+        
+        /* Image upload preview */
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            border-radius: 12px;
+            border: 2px dashed var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: var(--surface-lighter);
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .image-preview i {
+            font-size: 3rem;
+            color: var(--text-secondary);
+        }
 
         /* modals */
         .modal-overlay {
@@ -365,8 +398,10 @@
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
         }
         .modal {
-            background:var(--surface); border-radius:2rem; max-width:450px; width:100%; border:1px solid var(--border);
+            background:var(--surface); border-radius:2rem; max-width:500px; width:100%; border:1px solid var(--border);
             animation: fadeIn 0.2s;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-header { padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
         .modal-header h3 { font-size:1.3rem; }
@@ -379,6 +414,19 @@
         }
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
+        
+        /* Tier badges */
+        .tier-badge {
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .tier-badge.small { background: var(--gradient-small); color: white; }
+        .tier-badge.medium { background: var(--gradient-medium); color: white; }
+        .tier-badge.big { background: var(--gradient-big); color: white; }
     </style>
 </head>
 <body>
@@ -443,30 +491,108 @@
             </div>
         </div>
 
-        <!-- ADMIN SCREEN -->
+        <!-- ADMIN SCREEN with Image Upload for All Tiers -->
         <div id="admin-screen" class="screen">
             <h2>Admin Panel</h2>
-            <div style="max-width:400px;">
-                <div class="account-card" style="padding:1.5rem;">
+            <div style="max-width:500px; margin:0 auto;">
+                <!-- Login Section -->
+                <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
+                    <h3>Admin Login</h3>
                     <input type="email" id="admin-email" class="input" placeholder="admin@gkstore.com" value="admin@gkstore.com">
                     <input type="password" id="admin-password" class="input" placeholder="password" value="admin123">
                     <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">Login</button>
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
+                
+                <!-- Admin Dashboard (visible after login) -->
                 <div id="admin-dashboard" class="hidden">
+                    <!-- Stats -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin:1rem 0;">
-                        <div class="account-card" style="padding:1rem; text-align:center;"><span id="admin-account-count">0</span> accounts</div>
-                        <div class="account-card" style="padding:1rem; text-align:center;"><span id="admin-bookings-count">0</span> bookings</div>
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <span id="admin-account-count">0</span> accounts
+                        </div>
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <span id="admin-bookings-count">0</span> bookings
+                        </div>
                     </div>
-                    <button class="action-btn buy" style="width:100%;" onclick="addNewAccountPrompt()">➕ Add account</button>
-                    <button class="action-btn" style="width:100%; margin-top:0.5rem;" onclick="logout()">Logout</button>
+                    
+                    <!-- Add Account Button -->
+                    <button class="action-btn buy" style="width:100%; margin-bottom:1rem;" onclick="showAddAccountModal()">
+                        <i class="fa fa-plus"></i> Add New Account (with Image)
+                    </button>
+                    
+                    <!-- Account List (for editing/deleting) -->
+                    <h3 style="margin:1.5rem 0 1rem;">Manage Accounts</h3>
+                    <div id="admin-accounts-list" class="accounts-grid" style="grid-template-columns:1fr;"></div>
+                    
+                    <button class="action-btn" style="width:100%; margin-top:1rem;" onclick="logout()">
+                        <i class="fa fa-sign-out"></i> Logout
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODALS (Book, Buy, Info, Contact) -->
-    <!-- Book modal -->
+    <!-- ADD ACCOUNT MODAL (with image upload for all tiers) -->
+    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-plus-circle"></i> Add New PUBG Account</h3>
+                <button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-account-form" onsubmit="return false;">
+                    <!-- Tier Selection -->
+                    <label class="input-label">Account Tier *</label>
+                    <select id="account-tier" class="input" required>
+                        <option value="">-- Select Tier --</option>
+                        <option value="small">Small PUBG ($10-$500 / 1000-32000 AFN)</option>
+                        <option value="medium">Medium PUBG ($500-$1000 / 32000-64000 AFN)</option>
+                        <option value="big">Big PUBG ($1000-$100000 / 64000-6400000 AFN)</option>
+                    </select>
+                    
+                    <!-- Title -->
+                    <label class="input-label">Account Title *</label>
+                    <input type="text" id="account-title" class="input" placeholder="e.g., PUBG Pro Level 500" required>
+                    
+                    <!-- Description -->
+                    <label class="input-label">Description</label>
+                    <textarea id="account-description" class="input" rows="2" placeholder="Brief description of the account"></textarea>
+                    
+                    <!-- Prices -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div>
+                            <label class="input-label">Price (USD) *</label>
+                            <input type="number" id="account-price-usd" class="input" step="0.01" placeholder="199.99" required>
+                        </div>
+                        <div>
+                            <label class="input-label">Price (AFN) *</label>
+                            <input type="number" id="account-price-afn" class="input" placeholder="12800" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload Section -->
+                    <label class="input-label">Account Image *</label>
+                    <div class="image-preview" id="image-preview">
+                        <i class="fa fa-cloud-upload-alt"></i>
+                    </div>
+                    
+                    <!-- Option 1: URL input -->
+                    <input type="url" id="account-image-url" class="input" placeholder="Or enter image URL (optional)" onchange="previewImageFromUrl()">
+                    
+                    <!-- Option 2: File upload (base64) -->
+                    <input type="file" id="account-image-file" class="input" accept="image/*" onchange="previewImageFromFile()">
+                    <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:-0.5rem;">Upload image or provide URL</p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('add-account-modal')">Cancel</button>
+                <button class="btn-primary" onclick="saveNewAccount()">Save Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS (Book, Buy, Info) -->
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -483,7 +609,6 @@
         </div>
     </div>
 
-    <!-- Buy modal (USDT) -->
     <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -504,7 +629,6 @@
         </div>
     </div>
 
-    <!-- Info modal -->
     <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -517,7 +641,6 @@
         </div>
     </div>
 
-    <!-- Language modal -->
     <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -541,6 +664,7 @@
                 currentFilter: 'all',
                 isAdminLoggedIn: false,
                 currentAccount: null,
+                currentImageData: null, // for new account image
                 ads: [
                     { url: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
                     { url: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
@@ -548,27 +672,28 @@
                 ]
             };
 
-            // demo accounts with tier, usd/afn ranges as required
-            const demoAccounts = [
-                { id:'a1', title:'Pro Level 500', desc:'20+ rare skins, conqueror', tier:'small', price_usd:199.99, price_afn:12800, img:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400' },
-                { id:'a2', title:'Competitive', desc:'Max weapons, premium crates', tier:'small', price_usd:399.99, price_afn:25600, img:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400' },
-                { id:'a3', title:'Ultimate Collector', desc:'All skins S1~current', tier:'medium', price_usd:799.99, price_afn:51200, img:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400' },
-                { id:'a4', title:'Tournament Winner', desc:'Championship skins', tier:'medium', price_usd:999.99, price_afn:64000, img:'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400' },
-                { id:'a5', title:'Legendary Limited', desc:'All collab skins', tier:'big', price_usd:4999.99, price_afn:320000, img:'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400' },
-                { id:'a6', title:'Big Conqueror', desc:'10k points, all rewards', tier:'big', price_usd:9999.99, price_afn:640000, img:'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&w=400' }
-            ];
-
-            // load from localStorage or use demo
+            // Load from localStorage or use demo accounts
             if (localStorage.getItem('gk_accounts')) {
                 appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             } else {
-                appState.accounts = demoAccounts.map(a => ({ ...a, sold: false }));
+                // Demo accounts with images for all tiers
+                appState.accounts = [
+                    { id:'a1', title:'Pro Level 500', desc:'20+ rare skins, conqueror rank', tier:'small', price_usd:199.99, price_afn:12800, img:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', sold:false },
+                    { id:'a2', title:'Competitive', desc:'Max weapons, premium crates', tier:'small', price_usd:399.99, price_afn:25600, img:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', sold:false },
+                    { id:'a3', title:'Ultimate Collector', desc:'All skins from Season 1', tier:'medium', price_usd:799.99, price_afn:51200, img:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', sold:false },
+                    { id:'a4', title:'Tournament Winner', desc:'Championship skins, rare tags', tier:'medium', price_usd:999.99, price_afn:64000, img:'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', sold:false },
+                    { id:'a5', title:'Legendary Limited', desc:'All collaboration skins', tier:'big', price_usd:4999.99, price_afn:320000, img:'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', sold:false },
+                    { id:'a6', title:'Big Conqueror', desc:'10k points, all rewards', tier:'big', price_usd:9999.99, price_afn:640000, img:'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&w=400', sold:false }
+                ];
             }
+            
             if (localStorage.getItem('gk_bookings')) {
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            } else {
+                appState.bookRequests = [];
             }
 
-            // render main slider
+            // Render main slider
             function renderAdsSlider() {
                 const container = document.getElementById('ads-slider');
                 if (!container) return;
@@ -600,7 +725,7 @@
                 if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
             };
 
-            // render account cards
+            // Render account cards
             function renderAccounts() {
                 const grid = document.getElementById('accounts-grid');
                 if (!grid) return;
@@ -609,33 +734,59 @@
                     filtered = filtered.filter(a => a.tier === appState.currentFilter);
                 }
                 if (filtered.length === 0) {
-                    grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts</div>';
+                    grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
                     return;
                 }
                 grid.innerHTML = filtered.map(acc => {
+                    const tierColor = acc.tier === 'small' ? '#10b981' : acc.tier === 'medium' ? '#f59e0b' : '#ef4444';
                     return `
                         <div class="account-card" data-id="${acc.id}">
-                            <img src="${acc.img}" class="card-image" alt="account">
+                            <img src="${acc.img}" class="card-image" alt="account" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">
                             <div class="card-content">
-                                <div class="card-title">${acc.title}</div>
-                                <div class="card-desc">${acc.desc}</div>
+                                <div class="card-title">
+                                    ${acc.title}
+                                    <span class="tier-badge ${acc.tier}">${acc.tier}</span>
+                                </div>
+                                <div class="card-desc">${acc.desc || 'Premium PUBG account'}</div>
                                 <div class="price-row">
-                                    <span class="usd-price">$${acc.price_usd}</span>
-                                    <span class="afn-price">${acc.price_afn} AFN</span>
+                                    <span class="usd-price">$${acc.price_usd.toFixed(2)}</span>
+                                    <span class="afn-price">${acc.price_afn.toLocaleString()} AFN</span>
                                 </div>
                                 <div class="action-buttons">
                                     <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> Book</button>
                                     <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> Buy</button>
                                     <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> Info</button>
                                 </div>
-                                ${appState.isAdminLoggedIn ? `<button class="action-btn" style="margin-top:0.5rem; background:#ef4444;" onclick="deleteAccount('${acc.id}')">Delete</button>` : ''}
                             </div>
                         </div>
                     `;
                 }).join('');
             }
 
-            // filter
+            // Render admin account list (with delete buttons)
+            function renderAdminAccounts() {
+                const list = document.getElementById('admin-accounts-list');
+                if (!list) return;
+                if (appState.accounts.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet. Add one above.</p>';
+                    return;
+                }
+                list.innerHTML = appState.accounts.map(acc => `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem;">
+                        <img src="${acc.img}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=100'">
+                        <div style="flex:1;">
+                            <strong>${acc.title}</strong> 
+                            <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
+                            <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Filter accounts
             window.filterAccounts = function(tier) {
                 appState.currentFilter = tier;
                 document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
@@ -643,26 +794,139 @@
                 renderAccounts();
             };
 
-            // screen switch
+            // Screen switch
             window.switchScreen = function(screen) {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(screen + '-screen').classList.add('active');
                 if (screen === 'accounts') renderAccounts();
                 if (screen === 'admin' && appState.isAdminLoggedIn) {
                     document.getElementById('admin-dashboard').classList.remove('hidden');
+                    document.getElementById('admin-login-section').classList.add('hidden');
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    renderAdminAccounts();
                 }
             };
 
-            // ---------- BOOK, BUY, INFO FUNCTIONS (fully working) ----------
+            // ---------- IMAGE PREVIEW FUNCTIONS ----------
+            window.previewImageFromUrl = function() {
+                const url = document.getElementById('account-image-url').value;
+                const preview = document.getElementById('image-preview');
+                if (url) {
+                    preview.innerHTML = `<img src="${url}" alt="preview">`;
+                    appState.currentImageData = url;
+                } else {
+                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    appState.currentImageData = null;
+                }
+            };
+
+            window.previewImageFromFile = function() {
+                const fileInput = document.getElementById('account-image-file');
+                const preview = document.getElementById('image-preview');
+                if (fileInput.files && fileInput.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                        appState.currentImageData = e.target.result; // base64 image
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                }
+            };
+
+            // Show add account modal
+            window.showAddAccountModal = function() {
+                // Reset form
+                document.getElementById('account-tier').value = '';
+                document.getElementById('account-title').value = '';
+                document.getElementById('account-description').value = '';
+                document.getElementById('account-price-usd').value = '';
+                document.getElementById('account-price-afn').value = '';
+                document.getElementById('account-image-url').value = '';
+                document.getElementById('account-image-file').value = '';
+                document.getElementById('image-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentImageData = null;
+                
+                openModal('add-account-modal');
+            };
+
+            // Save new account (with image)
+            window.saveNewAccount = function() {
+                const tier = document.getElementById('account-tier').value;
+                const title = document.getElementById('account-title').value.trim();
+                const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+                const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+                const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+                
+                // Get image (either from URL, file upload, or use default)
+                let imageUrl = appState.currentImageData;
+                if (!imageUrl) {
+                    // Try URL field
+                    const urlField = document.getElementById('account-image-url').value;
+                    if (urlField) imageUrl = urlField;
+                }
+                
+                // Validate
+                if (!tier || !title || !priceUsd || !priceAfn) {
+                    alert('Please fill all required fields (tier, title, prices)');
+                    return;
+                }
+                
+                // Default image if none provided
+                if (!imageUrl) {
+                    const defaultImages = {
+                        small: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        medium: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400',
+                        big: 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&w=400'
+                    };
+                    imageUrl = defaultImages[tier] || defaultImages.small;
+                }
+                
+                const newAccount = {
+                    id: 'a' + Date.now(),
+                    title: title,
+                    desc: desc,
+                    tier: tier,
+                    price_usd: priceUsd,
+                    price_afn: priceAfn,
+                    img: imageUrl,
+                    sold: false
+                };
+                
+                appState.accounts.push(newAccount);
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                
+                // Update UI
+                renderAccounts();
+                if (appState.isAdminLoggedIn) {
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    renderAdminAccounts();
+                }
+                
+                closeModal('add-account-modal');
+                alert('Account added successfully!');
+            };
+
+            // Delete account
+            window.deleteAccount = function(id) {
+                if (!appState.isAdminLoggedIn) return;
+                if (confirm('Delete this account permanently?')) {
+                    appState.accounts = appState.accounts.filter(a => a.id !== id);
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                    renderAccounts();
+                    renderAdminAccounts();
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                }
+            };
+
+            // ---------- BOOK, BUY, INFO FUNCTIONS ----------
             window.bookAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
                 appState.currentAccount = acc;
                 const modalBody = document.getElementById('book-modal-body');
                 modalBody.innerHTML = `
-                    <p><strong>${acc.title}</strong></p>
+                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
                     <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
                     <input type="text" id="book-name" class="input" placeholder="Your name">
                     <input type="tel" id="book-phone" class="input" placeholder="WhatsApp number">
@@ -673,7 +937,7 @@
             window.submitBook = function() {
                 const name = document.getElementById('book-name')?.value;
                 const phone = document.getElementById('book-phone')?.value;
-                if (!name || !phone) { alert('Fill both fields'); return; }
+                if (!name || !phone) { alert('Please fill both fields'); return; }
                 const req = {
                     id: Date.now(),
                     account_id: appState.currentAccount.id,
@@ -684,7 +948,7 @@
                 };
                 appState.bookRequests.push(req);
                 localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-                alert('Booking submitted! We will contact you.');
+                alert('✅ Booking submitted! We will contact you on WhatsApp.');
                 closeModal('book-modal');
             };
 
@@ -698,7 +962,7 @@
                     <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
                     <button class="btn" onclick="copyUsdt()">Copy address</button>
                     <hr style="border-color:var(--border); margin:1rem 0;">
-                    <p>After payment click below to confirm on WhatsApp</p>
+                    <p>After payment click below to confirm</p>
                 `;
                 openModal('buy-modal');
             };
@@ -714,86 +978,65 @@
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
                 document.getElementById('info-modal-body').innerHTML = `
-                    <p><strong>${acc.title}</strong></p>
-                    <p>${acc.desc}</p>
+                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                    <p>${acc.desc || 'Premium PUBG account'}</p>
                     <p>Tier: ${acc.tier}</p>
-                    <p>USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                    <p>Includes email & password, full access.</p>
+                    <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
+                    <p>✅ Includes email & password, full access. Secure delivery.</p>
                 `;
                 openModal('info-modal');
             };
 
-            // contact / copy
-            window.copyUsdt = function() {
-                navigator.clipboard.writeText('TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY');
-                alert('USDT address copied');
-            };
-
-            // admin functions
+            // Admin functions
             window.adminLogin = function() {
                 const email = document.getElementById('admin-email').value;
                 const pass = document.getElementById('admin-password').value;
                 if (email === 'admin@gkstore.com' && pass === 'admin123') {
                     appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-login-section').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-error').innerText = '';
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    renderAdminAccounts();
                 } else {
-                    document.getElementById('admin-error').innerText = 'Invalid credentials';
+                    document.getElementById('admin-error').innerText = 'Invalid credentials (use admin@gkstore.com / admin123)';
                 }
-            };
-
-            window.addNewAccountPrompt = function() {
-                if (!appState.isAdminLoggedIn) return alert('Login first');
-                const title = prompt('Title');
-                if (!title) return;
-                const tier = prompt('tier (small/medium/big)');
-                if (!tier) return;
-                const usd = parseFloat(prompt('USD price')) || 0;
-                const afn = parseInt(prompt('AFN price')) || 0;
-                const img = prompt('Image URL') || 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
-                const newAcc = {
-                    id: 'a' + Date.now(),
-                    title, desc: 'New premium account', tier,
-                    price_usd: usd, price_afn: afn, img,
-                    sold: false
-                };
-                appState.accounts.push(newAcc);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                renderAccounts();
-            };
-
-            window.deleteAccount = function(id) {
-                if (!appState.isAdminLoggedIn) return;
-                appState.accounts = appState.accounts.filter(a => a.id !== id);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                renderAccounts();
             };
 
             window.logout = function() {
                 appState.isAdminLoggedIn = false;
+                document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 switchScreen('main');
             };
 
-            // modal controls
+            // Utility functions
+            window.copyUsdt = function() {
+                navigator.clipboard.writeText('TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY');
+                alert('USDT address copied to clipboard');
+            };
+
             window.openModal = function(id) {
                 document.getElementById(id).classList.remove('hidden');
             };
+            
             window.closeModal = function(id) {
                 document.getElementById(id).classList.add('hidden');
             };
+            
             window.openLanguageModal = function() {
                 openModal('language-modal');
             };
+            
             window.setLanguage = function(lang) {
                 alert('Language set to ' + lang);
                 closeModal('language-modal');
             };
 
-            // initial render
+            // Initialize
             renderAdsSlider();
+            renderAccounts();
         })();
     </script>
 </body>
