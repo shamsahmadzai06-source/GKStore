@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with video/image</title>
+    <title>GK Store · PUBG accounts with advanced admin</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- intl-tel-input for country codes (lightweight) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <style>
         * {
             margin: 0;
@@ -159,7 +161,7 @@
             transform: scale(0.97);
         }
 
-        /* swipe image/video ads slider */
+        /* swipe ads slider (manageable via admin) */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -415,7 +417,7 @@
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
         }
         .modal {
-            background:var(--surface); border-radius:2rem; max-width:500px; width:100%; border:1px solid var(--border);
+            background:var(--surface); border-radius:2rem; max-width:600px; width:100%; border:1px solid var(--border);
             animation: fadeIn 0.2s;
             max-height: 90vh;
             overflow-y: auto;
@@ -443,6 +445,20 @@
             align-items: center;
             gap: 5px;
         }
+
+        /* intl-tel-input customization */
+        .iti {
+            width: 100%;
+            margin-bottom: 0.8rem;
+        }
+        .iti__selected-flag {
+            background: var(--surface-lighter) !important;
+            border-radius: 12px 0 0 12px;
+        }
+        .iti__country-list {
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -469,7 +485,7 @@
                     <i class="fa fa-gamepad"></i> Click to see PUBG account
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
-                <p style="color:var(--text-secondary); text-align:center;">— swipe ads (image/video) —</p>
+                <p style="color:var(--text-secondary); text-align:center;">— swipe ads (manageable) —</p>
             </div>
         </div>
 
@@ -485,7 +501,7 @@
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
-        <!-- CONTACT SCREEN with working WhatsApp buttons -->
+        <!-- CONTACT SCREEN with country code WhatsApp buttons -->
         <div id="contact-screen" class="screen">
             <h2>Contact & Support</h2>
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
@@ -494,7 +510,7 @@
         <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
             <h2>Admin Panel</h2>
-            <div style="max-width:500px; margin:0 auto;">
+            <div style="max-width:600px; margin:0 auto;">
                 <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
                     <h3>Admin Login</h3>
@@ -527,13 +543,16 @@
                         </div>
                     </div>
                     
-                    <!-- Management Buttons (each opens a modal) -->
+                    <!-- Management Buttons -->
                     <div style="display:flex; flex-direction:column; gap:0.8rem;">
                         <button class="action-btn buy" onclick="showManageAccountsModal()">
                             <i class="fa fa-gamepad"></i> Manage Accounts
                         </button>
                         <button class="action-btn buy" onclick="showManageContactsModal()">
                             <i class="fab fa-whatsapp"></i> Manage Contacts
+                        </button>
+                        <button class="action-btn buy" onclick="showManageAdsModal()">
+                            <i class="fa fa-image"></i> Manage Swipe Ads
                         </button>
                         <button class="action-btn" onclick="logout()">
                             <i class="fa fa-sign-out"></i> Logout
@@ -544,7 +563,7 @@
         </div>
     </div>
 
-    <!-- MANAGE ACCOUNTS MODAL (with video/image upload) -->
+    <!-- MANAGE ACCOUNTS MODAL -->
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -570,7 +589,7 @@
                         <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
                     </div>
                     
-                    <!-- Media upload (image or video) -->
+                    <!-- Media upload -->
                     <label class="input-label">Account Media (Image or Video) *</label>
                     <div class="media-preview" id="media-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
@@ -578,19 +597,18 @@
                     
                     <input type="url" id="account-media-url" class="input" placeholder="Or enter image/video URL" onchange="previewMediaFromUrl()">
                     <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
-                    <p style="color:var(--text-secondary); font-size:0.8rem;">Upload image/video or provide URL</p>
                     
                     <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAccount()">Save Account</button>
                 </form>
                 
-                <!-- List of existing accounts with delete buttons -->
+                <!-- Existing accounts list -->
                 <h4 style="margin:2rem 0 1rem;">📋 Existing Accounts</h4>
                 <div id="admin-accounts-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
 
-    <!-- MANAGE CONTACTS MODAL -->
+    <!-- MANAGE CONTACTS MODAL (with country code) -->
     <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -602,14 +620,48 @@
                 <h4 style="margin-bottom:1rem;">➕ Add New Contact</h4>
                 <form id="add-contact-form" onsubmit="return false;">
                     <input type="text" id="contact-name" class="input" placeholder="Contact Name (e.g., Support 1)" required>
-                    <input type="text" id="contact-phone" class="input" placeholder="WhatsApp number (e.g., 93793066322)" required>
+                    
+                    <!-- Phone with country code -->
+                    <label class="input-label">WhatsApp Number with Country Code</label>
+                    <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322" value="93793066322">
+                    
                     <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
+                    
                     <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()">Save Contact</button>
                 </form>
                 
-                <!-- List of existing contacts with delete buttons -->
+                <!-- Existing contacts list -->
                 <h4 style="margin:2rem 0 1rem;">📋 Existing Contacts</h4>
                 <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANAGE ADS MODAL -->
+    <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-image"></i> Manage Swipe Ads</h3>
+                <button class="modal-close" onclick="closeModal('manage-ads-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Add new ad -->
+                <h4 style="margin-bottom:1rem;">➕ Add New Ad (Image/Video)</h4>
+                <form id="add-ad-form" onsubmit="return false;">
+                    <select id="ad-type" class="input">
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                    </select>
+                    
+                    <input type="url" id="ad-url" class="input" placeholder="Media URL" required>
+                    <input type="text" id="ad-caption" class="input" placeholder="Caption (optional)">
+                    
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()">Add Ad</button>
+                </form>
+                
+                <!-- Existing ads list -->
+                <h4 style="margin:2rem 0 1rem;">📋 Current Ads</h4>
+                <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
@@ -667,6 +719,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         (function() {
             // ---------- APP STATE ----------
@@ -676,16 +729,16 @@
                     { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
                     { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
                 ],
-                bookRequests: [],
-                currentFilter: 'all',
-                isAdminLoggedIn: false,
-                currentAccount: null,
-                currentMediaData: null,
                 ads: [
                     { type: 'image', url: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
                     { type: 'image', url: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
                     { type: 'image', url: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
                 ],
+                bookRequests: [],
+                currentFilter: 'all',
+                isAdminLoggedIn: false,
+                currentAccount: null,
+                currentMediaData: null,
                 onlineUsers: 0
             };
 
@@ -693,7 +746,6 @@
             if (localStorage.getItem('gk_accounts')) {
                 appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             } else {
-                // Demo accounts with mixed media
                 appState.accounts = [
                     { id:'a1', title:'Pro Level 500', desc:'20+ rare skins', tier:'small', price_usd:199.99, price_afn:12800, media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
                     { id:'a2', title:'Competitive', desc:'Max weapons', tier:'small', price_usd:399.99, price_afn:25600, media:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
@@ -707,28 +759,36 @@
                 appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
             }
             
+            if (localStorage.getItem('gk_ads')) {
+                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+            }
+            
             if (localStorage.getItem('gk_bookings')) {
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
             }
 
-            // Online users simulation (increments randomly)
+            // Online users simulation
             function updateOnlineUsers() {
-                appState.onlineUsers = Math.floor(Math.random() * 15) + 5; // 5-20 users
+                appState.onlineUsers = Math.floor(Math.random() * 15) + 5;
                 document.getElementById('online-count').innerText = appState.onlineUsers;
             }
             setInterval(updateOnlineUsers, 10000);
             updateOnlineUsers();
 
-            // Render main slider
+            // Render main slider (ads)
             function renderAdsSlider() {
                 const container = document.getElementById('ads-slider');
                 if (!container) return;
+                if (appState.ads.length === 0) {
+                    container.innerHTML = '<div class="swipe-ads" style="padding:2rem; text-align:center;">No ads</div>';
+                    return;
+                }
                 let slides = '';
                 appState.ads.forEach((ad, idx) => {
                     if (ad.type === 'video') {
-                        slides += `<div class="slide"><video src="${ad.url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption}</div></div>`;
+                        slides += `<div class="slide"><video src="${ad.url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
                     } else {
-                        slides += `<div class="slide"><img src="${ad.url}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+                        slides += `<div class="slide"><img src="${ad.url}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
                     }
                 });
                 let dots = '';
@@ -755,7 +815,7 @@
                 if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
             };
 
-            // Render contacts (working WhatsApp buttons)
+            // Render contacts (with clickable WhatsApp)
             function renderContacts() {
                 const container = document.getElementById('contacts-container');
                 if (!container) return;
@@ -816,7 +876,7 @@
                 }).join('');
             }
 
-            // Render admin accounts list (inside modal)
+            // Render admin accounts list
             function renderAdminAccounts() {
                 const list = document.getElementById('admin-accounts-list');
                 if (!list) return;
@@ -861,6 +921,33 @@
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.desc || ''}</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Render admin ads list
+            function renderAdminAds() {
+                const list = document.getElementById('admin-ads-list');
+                if (!list) return;
+                if (appState.ads.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
+                    return;
+                }
+                list.innerHTML = appState.ads.map((ad, index) => `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
+                            ${ad.type === 'video' 
+                                ? `<video src="${ad.url}" style="width:100%; height:100%; object-fit:cover;"></video>`
+                                : `<img src="${ad.url}" style="width:100%; height:100%; object-fit:cover;">`
+                            }
+                        </div>
+                        <div style="flex:1;">
+                            <strong>${ad.caption || 'No caption'}</strong>
+                            <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>
@@ -939,6 +1026,11 @@
                 document.getElementById('manage-contacts-modal').classList.remove('hidden');
             };
 
+            window.showManageAdsModal = function() {
+                renderAdminAds();
+                document.getElementById('manage-ads-modal').classList.remove('hidden');
+            };
+
             // Save new account
             window.saveNewAccount = function() {
                 const tier = document.getElementById('account-tier').value;
@@ -1003,7 +1095,7 @@
             // Save new contact
             window.saveNewContact = function() {
                 const name = document.getElementById('contact-name').value.trim();
-                const phone = document.getElementById('contact-phone').value.trim();
+                let phone = document.getElementById('contact-phone').value.trim();
                 const desc = document.getElementById('contact-desc').value.trim();
                 
                 if (!name || !phone) {
@@ -1011,10 +1103,13 @@
                     return;
                 }
                 
+                // Remove any non-digit characters
+                phone = phone.replace(/\D/g, '');
+                
                 const newContact = {
                     id: 'c' + Date.now(),
                     name: name,
-                    phone: phone.replace(/\D/g, ''),
+                    phone: phone,
                     desc: desc
                 };
                 
@@ -1037,6 +1132,45 @@
                     localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
                     renderContacts();
                     renderAdminContacts();
+                }
+            };
+
+            // Save new ad
+            window.saveNewAd = function() {
+                const type = document.getElementById('ad-type').value;
+                const url = document.getElementById('ad-url').value.trim();
+                const caption = document.getElementById('ad-caption').value.trim();
+                
+                if (!url) {
+                    alert('Please enter media URL');
+                    return;
+                }
+                
+                const newAd = {
+                    type: type,
+                    url: url,
+                    caption: caption
+                };
+                
+                appState.ads.push(newAd);
+                localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+                
+                document.getElementById('ad-type').value = 'image';
+                document.getElementById('ad-url').value = '';
+                document.getElementById('ad-caption').value = '';
+                
+                renderAdsSlider();
+                renderAdminAds();
+                alert('Ad added successfully!');
+            };
+
+            // Delete ad
+            window.deleteAd = function(index) {
+                if (confirm('Delete this ad?')) {
+                    appState.ads.splice(index, 1);
+                    localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+                    renderAdsSlider();
+                    renderAdminAds();
                 }
             };
 
