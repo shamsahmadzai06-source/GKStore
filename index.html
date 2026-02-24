@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with advanced admin</title>
+    <title>GK Store · PUBG accounts with country code WhatsApp</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- intl-tel-input for country codes (lightweight) -->
+    <!-- intl-tel-input for beautiful country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <style>
         * {
@@ -161,7 +161,7 @@
             transform: scale(0.97);
         }
 
-        /* swipe ads slider (manageable via admin) */
+        /* swipe ads slider */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -501,7 +501,7 @@
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
-        <!-- CONTACT SCREEN with country code WhatsApp buttons -->
+        <!-- CONTACT SCREEN with country code WhatsApp buttons (FIXED) -->
         <div id="contact-screen" class="screen">
             <h2>Contact & Support</h2>
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
@@ -520,7 +520,7 @@
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
                 
-                <!-- Admin Dashboard -->
+                <!-- Admin Dashboard (separate buttons) -->
                 <div id="admin-dashboard" class="hidden">
                     <!-- Online Users Counter -->
                     <div class="account-card" style="padding:1rem; margin-bottom:1rem; display:flex; align-items:center; gap:1rem;">
@@ -543,10 +543,13 @@
                         </div>
                     </div>
                     
-                    <!-- Management Buttons -->
+                    <!-- Management Buttons - SEPARATE as requested -->
                     <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                        <button class="action-btn buy" onclick="showAddAccountModal()">
+                            <i class="fa fa-plus-circle"></i> Add New Account
+                        </button>
                         <button class="action-btn buy" onclick="showManageAccountsModal()">
-                            <i class="fa fa-gamepad"></i> Manage Accounts
+                            <i class="fa fa-edit"></i> Manage Accounts (Delete)
                         </button>
                         <button class="action-btn buy" onclick="showManageContactsModal()">
                             <i class="fab fa-whatsapp"></i> Manage Contacts
@@ -563,16 +566,14 @@
         </div>
     </div>
 
-    <!-- MANAGE ACCOUNTS MODAL -->
-    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
+    <!-- ADD ACCOUNT MODAL (separate) -->
+    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-gamepad"></i> Manage Accounts</h3>
-                <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
+                <h3><i class="fa fa-plus-circle"></i> Add New Account</h3>
+                <button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Add new account form -->
-                <h4 style="margin-bottom:1rem;">➕ Add New Account</h4>
                 <form id="add-account-form" onsubmit="return false;">
                     <select id="account-tier" class="input" required>
                         <option value="">-- Select Tier --</option>
@@ -600,10 +601,20 @@
                     
                     <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAccount()">Save Account</button>
                 </form>
-                
-                <!-- Existing accounts list -->
-                <h4 style="margin:2rem 0 1rem;">📋 Existing Accounts</h4>
-                <div id="admin-accounts-list" style="max-height:300px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANAGE ACCOUNTS MODAL (delete only) -->
+    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-edit"></i> Manage Accounts</h3>
+                <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 style="margin-bottom:1rem;">📋 Existing Accounts (click delete to remove)</h4>
+                <div id="admin-accounts-list" style="max-height:400px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
@@ -616,14 +627,14 @@
                 <button class="modal-close" onclick="closeModal('manage-contacts-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Add new contact form -->
+                <!-- Add new contact form with country code picker -->
                 <h4 style="margin-bottom:1rem;">➕ Add New Contact</h4>
                 <form id="add-contact-form" onsubmit="return false;">
                     <input type="text" id="contact-name" class="input" placeholder="Contact Name (e.g., Support 1)" required>
                     
-                    <!-- Phone with country code -->
+                    <!-- Phone with country code picker -->
                     <label class="input-label">WhatsApp Number with Country Code</label>
-                    <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322" value="93793066322">
+                    <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322">
                     
                     <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
                     
@@ -739,7 +750,8 @@
                 isAdminLoggedIn: false,
                 currentAccount: null,
                 currentMediaData: null,
-                onlineUsers: 0
+                onlineUsers: 0,
+                phoneInput: null
             };
 
             // Load from localStorage
@@ -765,6 +777,18 @@
             
             if (localStorage.getItem('gk_bookings')) {
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            }
+
+            // Initialize intl-tel-input on the contact phone field when modal opens
+            function initPhoneInput() {
+                const input = document.querySelector('#contact-phone');
+                if (input && !appState.phoneInput) {
+                    appState.phoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js'
+                    });
+                }
             }
 
             // Online users simulation
@@ -815,7 +839,7 @@
                 if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
             };
 
-            // Render contacts (with clickable WhatsApp)
+            // Render contacts (FIXED WhatsApp buttons)
             function renderContacts() {
                 const container = document.getElementById('contacts-container');
                 if (!container) return;
@@ -823,16 +847,20 @@
                     container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
                     return;
                 }
-                container.innerHTML = appState.contacts.map(contact => `
-                    <div class="account-card" style="padding:1.5rem;">
-                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                        <p>${contact.desc || 'WhatsApp support'}</p>
-                        <p style="margin:0.5rem 0;"><strong>+${contact.phone}</strong></p>
-                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${contact.phone}', '_blank')">
-                            <i class="fab fa-whatsapp"></i> Chat Now
-                        </button>
-                    </div>
-                `).join('');
+                container.innerHTML = appState.contacts.map(contact => {
+                    // Ensure phone number has no + and is digits only for WhatsApp URL
+                    const cleanPhone = contact.phone.replace(/\D/g, '');
+                    return `
+                        <div class="account-card" style="padding:1.5rem;">
+                            <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                            <p>${contact.desc || 'WhatsApp support'}</p>
+                            <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
+                            <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                                <i class="fab fa-whatsapp"></i> Chat Now
+                            </button>
+                        </div>
+                    `;
+                }).join('');
             }
 
             // Render account cards
@@ -876,7 +904,7 @@
                 }).join('');
             }
 
-            // Render admin accounts list
+            // Render admin accounts list (for manage modal)
             function renderAdminAccounts() {
                 const list = document.getElementById('admin-accounts-list');
                 if (!list) return;
@@ -896,7 +924,7 @@
                             <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i>
+                            <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
                 `).join('');
@@ -921,7 +949,7 @@
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.desc || ''}</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
-                            <i class="fa fa-trash"></i>
+                            <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
                 `).join('');
@@ -948,7 +976,7 @@
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
-                            <i class="fa fa-trash"></i>
+                            <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
                 `).join('');
@@ -1015,20 +1043,35 @@
                 }
             };
 
-            // Show manage modals
+            // Show modals
+            window.showAddAccountModal = function() {
+                // Reset form
+                document.getElementById('account-tier').value = '';
+                document.getElementById('account-title').value = '';
+                document.getElementById('account-description').value = '';
+                document.getElementById('account-price-usd').value = '';
+                document.getElementById('account-price-afn').value = '';
+                document.getElementById('account-media-url').value = '';
+                document.getElementById('account-media-file').value = '';
+                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentMediaData = null;
+                openModal('add-account-modal');
+            };
+
             window.showManageAccountsModal = function() {
                 renderAdminAccounts();
-                document.getElementById('manage-accounts-modal').classList.remove('hidden');
+                openModal('manage-accounts-modal');
             };
 
             window.showManageContactsModal = function() {
                 renderAdminContacts();
-                document.getElementById('manage-contacts-modal').classList.remove('hidden');
+                initPhoneInput(); // Initialize country code picker
+                openModal('manage-contacts-modal');
             };
 
             window.showManageAdsModal = function() {
                 renderAdminAds();
-                document.getElementById('manage-ads-modal').classList.remove('hidden');
+                openModal('manage-ads-modal');
             };
 
             // Save new account
@@ -1064,20 +1107,11 @@
                 appState.accounts.push(newAccount);
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 
-                // Reset form
-                document.getElementById('account-tier').value = '';
-                document.getElementById('account-title').value = '';
-                document.getElementById('account-description').value = '';
-                document.getElementById('account-price-usd').value = '';
-                document.getElementById('account-price-afn').value = '';
-                document.getElementById('account-media-url').value = '';
-                document.getElementById('account-media-file').value = '';
-                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                appState.currentMediaData = null;
-                
+                closeModal('add-account-modal');
                 renderAccounts();
-                renderAdminAccounts();
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                if (appState.isAdminLoggedIn) {
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                }
                 alert('Account added successfully!');
             };
 
@@ -1092,24 +1126,41 @@
                 }
             };
 
-            // Save new contact
+            // Save new contact (with country code)
             window.saveNewContact = function() {
                 const name = document.getElementById('contact-name').value.trim();
-                let phone = document.getElementById('contact-phone').value.trim();
                 const desc = document.getElementById('contact-desc').value.trim();
                 
-                if (!name || !phone) {
-                    alert('Please enter name and phone number');
+                if (!name) {
+                    alert('Please enter contact name');
                     return;
                 }
                 
-                // Remove any non-digit characters
-                phone = phone.replace(/\D/g, '');
+                // Get full number from intl-tel-input
+                let fullNumber = '';
+                if (appState.phoneInput) {
+                    const number = appState.phoneInput.getNumber();
+                    if (number) {
+                        // Remove any + and spaces
+                        fullNumber = number.replace(/\D/g, '');
+                    } else {
+                        alert('Please enter a valid phone number');
+                        return;
+                    }
+                } else {
+                    // Fallback
+                    const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
+                    if (!phone) {
+                        alert('Please enter phone number');
+                        return;
+                    }
+                    fullNumber = phone;
+                }
                 
                 const newContact = {
                     id: 'c' + Date.now(),
                     name: name,
-                    phone: phone,
+                    phone: fullNumber,
                     desc: desc
                 };
                 
