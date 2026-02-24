@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with image upload</title>
+    <title>GK Store · PUBG accounts with video/image</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -159,7 +159,7 @@
             transform: scale(0.97);
         }
 
-        /* swipe image ads slider */
+        /* swipe image/video ads slider */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -194,9 +194,10 @@
             scroll-snap-align: start;
             position: relative;
             aspect-ratio: 16 / 9;
+            background: #000;
         }
 
-        .slide img {
+        .slide img, .slide video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -289,7 +290,7 @@
             overflow: hidden;
         }
 
-        .card-image {
+        .card-media {
             width: 100%;
             aspect-ratio: 16/9;
             object-fit: cover;
@@ -304,6 +305,10 @@
             font-size: 1.2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .card-desc {
@@ -367,10 +372,10 @@
             margin-bottom:0.8rem; 
         }
         
-        /* Image upload preview */
-        .image-preview {
+        /* Media preview */
+        .media-preview {
             width: 100%;
-            height: 150px;
+            min-height: 150px;
             border-radius: 12px;
             border: 2px dashed var(--primary);
             margin-bottom: 1rem;
@@ -381,16 +386,28 @@
             background: var(--surface-lighter);
         }
         
-        .image-preview img {
+        .media-preview img, .media-preview video {
             max-width: 100%;
-            max-height: 100%;
+            max-height: 200px;
             object-fit: contain;
         }
         
-        .image-preview i {
+        .media-preview i {
             font-size: 3rem;
             color: var(--text-secondary);
         }
+
+        /* Tier badges */
+        .tier-badge {
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .tier-badge.small { background: var(--gradient-small); color: white; }
+        .tier-badge.medium { background: var(--gradient-medium); color: white; }
+        .tier-badge.big { background: var(--gradient-big); color: white; }
 
         /* modals */
         .modal-overlay {
@@ -415,18 +432,17 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
         
-        /* Tier badges */
-        .tier-badge {
-            display: inline-block;
-            padding: 0.2rem 1rem;
+        /* online users indicator */
+        .online-badge {
+            background: #10b981;
+            color: white;
+            padding: 0.2rem 0.8rem;
             border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
-        .tier-badge.small { background: var(--gradient-small); color: white; }
-        .tier-badge.medium { background: var(--gradient-medium); color: white; }
-        .tier-badge.big { background: var(--gradient-big); color: white; }
     </style>
 </head>
 <body>
@@ -444,7 +460,7 @@
     </div>
 
     <div class="container">
-        <!-- MAIN SCREEN (big button + swipe ads) -->
+        <!-- MAIN SCREEN -->
         <div id="main-screen" class="screen active">
             <div class="main-layout">
                 <h1 class="big-title">PUBG Marketplace</h1>
@@ -453,11 +469,11 @@
                     <i class="fa fa-gamepad"></i> Click to see PUBG account
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
-                <p style="color:var(--text-secondary); text-align:center;">— swipe ads —</p>
+                <p style="color:var(--text-secondary); text-align:center;">— swipe ads (image/video) —</p>
             </div>
         </div>
 
-        <!-- ACCOUNT BROWSER SCREEN (with tier cards) -->
+        <!-- ACCOUNT BROWSER SCREEN -->
         <div id="accounts-screen" class="screen">
             <h2 style="font-size:2rem; margin-bottom:0.2rem;">PUBG Accounts</h2>
             <div class="tier-header" id="tier-tabs">
@@ -469,29 +485,13 @@
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
-        <!-- CONTACT SCREEN (with clickable contact buttons) -->
+        <!-- CONTACT SCREEN with working WhatsApp buttons -->
         <div id="contact-screen" class="screen">
             <h2>Contact & Support</h2>
-            <div class="accounts-grid" style="grid-template-columns:1fr;">
-                <div class="account-card" style="padding:1.5rem;">
-                    <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp 1</h3>
-                    <p>+93 793066322 (24/7)</p>
-                    <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/93793066322', '_blank')">Chat Now</button>
-                </div>
-                <div class="account-card" style="padding:1.5rem;">
-                    <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp 2</h3>
-                    <p>+93 749949041 (Technical)</p>
-                    <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/93749949041', '_blank')">Chat Now</button>
-                </div>
-                <div class="account-card" style="padding:1.5rem;">
-                    <h3><i class="fa fa-wallet"></i> USDT (TRC20)</h3>
-                    <code style="word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                    <button class="action-btn" style="margin-top:1rem;" onclick="copyUsdt()">Copy Address</button>
-                </div>
-            </div>
+            <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
-        <!-- ADMIN SCREEN with Image Upload for All Tiers -->
+        <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
             <h2>Admin Panel</h2>
             <div style="max-width:500px; margin:0 auto;">
@@ -504,8 +504,19 @@
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
                 
-                <!-- Admin Dashboard (visible after login) -->
+                <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
+                    <!-- Online Users Counter -->
+                    <div class="account-card" style="padding:1rem; margin-bottom:1rem; display:flex; align-items:center; gap:1rem;">
+                        <div style="background:#10b981; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:1.2rem; font-weight:700;" id="online-count">0</div>
+                            <div style="color:var(--text-secondary);">users online now</div>
+                        </div>
+                    </div>
+                    
                     <!-- Stats -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin:1rem 0;">
                         <div class="account-card" style="padding:1rem; text-align:center;">
@@ -516,95 +527,104 @@
                         </div>
                     </div>
                     
-                    <!-- Add Account Button -->
-                    <button class="action-btn buy" style="width:100%; margin-bottom:1rem;" onclick="showAddAccountModal()">
-                        <i class="fa fa-plus"></i> Add New Account (with Image)
-                    </button>
-                    
-                    <!-- Account List (for editing/deleting) -->
-                    <h3 style="margin:1.5rem 0 1rem;">Manage Accounts</h3>
-                    <div id="admin-accounts-list" class="accounts-grid" style="grid-template-columns:1fr;"></div>
-                    
-                    <button class="action-btn" style="width:100%; margin-top:1rem;" onclick="logout()">
-                        <i class="fa fa-sign-out"></i> Logout
-                    </button>
+                    <!-- Management Buttons (each opens a modal) -->
+                    <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                        <button class="action-btn buy" onclick="showManageAccountsModal()">
+                            <i class="fa fa-gamepad"></i> Manage Accounts
+                        </button>
+                        <button class="action-btn buy" onclick="showManageContactsModal()">
+                            <i class="fab fa-whatsapp"></i> Manage Contacts
+                        </button>
+                        <button class="action-btn" onclick="logout()">
+                            <i class="fa fa-sign-out"></i> Logout
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ADD ACCOUNT MODAL (with image upload for all tiers) -->
-    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
+    <!-- MANAGE ACCOUNTS MODAL (with video/image upload) -->
+    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-plus-circle"></i> Add New PUBG Account</h3>
-                <button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button>
+                <h3><i class="fa fa-gamepad"></i> Manage Accounts</h3>
+                <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Add new account form -->
+                <h4 style="margin-bottom:1rem;">➕ Add New Account</h4>
                 <form id="add-account-form" onsubmit="return false;">
-                    <!-- Tier Selection -->
-                    <label class="input-label">Account Tier *</label>
                     <select id="account-tier" class="input" required>
                         <option value="">-- Select Tier --</option>
-                        <option value="small">Small PUBG ($10-$500 / 1000-32000 AFN)</option>
-                        <option value="medium">Medium PUBG ($500-$1000 / 32000-64000 AFN)</option>
-                        <option value="big">Big PUBG ($1000-$100000 / 64000-6400000 AFN)</option>
+                        <option value="small">Small PUBG ($10-$500)</option>
+                        <option value="medium">Medium PUBG ($500-$1000)</option>
+                        <option value="big">Big PUBG ($1000-$100000)</option>
                     </select>
                     
-                    <!-- Title -->
-                    <label class="input-label">Account Title *</label>
-                    <input type="text" id="account-title" class="input" placeholder="e.g., PUBG Pro Level 500" required>
+                    <input type="text" id="account-title" class="input" placeholder="Account Title" required>
+                    <textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea>
                     
-                    <!-- Description -->
-                    <label class="input-label">Description</label>
-                    <textarea id="account-description" class="input" rows="2" placeholder="Brief description of the account"></textarea>
-                    
-                    <!-- Prices -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                        <div>
-                            <label class="input-label">Price (USD) *</label>
-                            <input type="number" id="account-price-usd" class="input" step="0.01" placeholder="199.99" required>
-                        </div>
-                        <div>
-                            <label class="input-label">Price (AFN) *</label>
-                            <input type="number" id="account-price-afn" class="input" placeholder="12800" required>
-                        </div>
+                        <input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price" required>
+                        <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
                     </div>
                     
-                    <!-- Image Upload Section -->
-                    <label class="input-label">Account Image *</label>
-                    <div class="image-preview" id="image-preview">
+                    <!-- Media upload (image or video) -->
+                    <label class="input-label">Account Media (Image or Video) *</label>
+                    <div class="media-preview" id="media-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     
-                    <!-- Option 1: URL input -->
-                    <input type="url" id="account-image-url" class="input" placeholder="Or enter image URL (optional)" onchange="previewImageFromUrl()">
+                    <input type="url" id="account-media-url" class="input" placeholder="Or enter image/video URL" onchange="previewMediaFromUrl()">
+                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
+                    <p style="color:var(--text-secondary); font-size:0.8rem;">Upload image/video or provide URL</p>
                     
-                    <!-- Option 2: File upload (base64) -->
-                    <input type="file" id="account-image-file" class="input" accept="image/*" onchange="previewImageFromFile()">
-                    <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:-0.5rem;">Upload image or provide URL</p>
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAccount()">Save Account</button>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('add-account-modal')">Cancel</button>
-                <button class="btn-primary" onclick="saveNewAccount()">Save Account</button>
+                
+                <!-- List of existing accounts with delete buttons -->
+                <h4 style="margin:2rem 0 1rem;">📋 Existing Accounts</h4>
+                <div id="admin-accounts-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
 
-    <!-- MODALS (Book, Buy, Info) -->
+    <!-- MANAGE CONTACTS MODAL -->
+    <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fab fa-whatsapp"></i> Manage Contacts</h3>
+                <button class="modal-close" onclick="closeModal('manage-contacts-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Add new contact form -->
+                <h4 style="margin-bottom:1rem;">➕ Add New Contact</h4>
+                <form id="add-contact-form" onsubmit="return false;">
+                    <input type="text" id="contact-name" class="input" placeholder="Contact Name (e.g., Support 1)" required>
+                    <input type="text" id="contact-phone" class="input" placeholder="WhatsApp number (e.g., 93793066322)" required>
+                    <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()">Save Contact</button>
+                </form>
+                
+                <!-- List of existing contacts with delete buttons -->
+                <h4 style="margin:2rem 0 1rem;">📋 Existing Contacts</h4>
+                <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTHER MODALS (Book, Buy, Info) -->
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <h3>📘 Book account</h3>
                 <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
             </div>
-            <div class="modal-body" id="book-modal-body">
-                <p>Loading...</p>
-            </div>
+            <div class="modal-body" id="book-modal-body"></div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('book-modal')">Cancel</button>
-                <button class="btn-primary" id="book-submit" onclick="submitBook()">Confirm booking</button>
+                <button class="btn-primary" onclick="submitBook()">Confirm booking</button>
             </div>
         </div>
     </div>
@@ -615,16 +635,10 @@
                 <h3>💳 Buy with USDT</h3>
                 <button class="modal-close" onclick="closeModal('buy-modal')">&times;</button>
             </div>
-            <div class="modal-body" id="buy-modal-body">
-                <p>Send exact USDT (TRC20) to:</p>
-                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                <button class="btn" onclick="copyUsdt()">Copy address</button>
-                <hr style="border-color:var(--border); margin:1rem 0;">
-                <p>After payment click below to confirm on WhatsApp</p>
-            </div>
+            <div class="modal-body" id="buy-modal-body"></div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('buy-modal')">Cancel</button>
-                <button class="whatsapp-btn" id="buy-whatsapp" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button>
+                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button>
             </div>
         </div>
     </div>
@@ -635,9 +649,7 @@
                 <h3>ℹ️ Account details</h3>
                 <button class="modal-close" onclick="closeModal('info-modal')">&times;</button>
             </div>
-            <div class="modal-body" id="info-modal-body">
-                Detailed information will appear here.
-            </div>
+            <div class="modal-body" id="info-modal-body"></div>
         </div>
     </div>
 
@@ -660,38 +672,52 @@
             // ---------- APP STATE ----------
             const appState = {
                 accounts: [],
+                contacts: [
+                    { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
+                    { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
+                ],
                 bookRequests: [],
                 currentFilter: 'all',
                 isAdminLoggedIn: false,
                 currentAccount: null,
-                currentImageData: null, // for new account image
+                currentMediaData: null,
                 ads: [
-                    { url: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
-                    { url: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
-                    { url: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
-                ]
+                    { type: 'image', url: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
+                    { type: 'image', url: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
+                    { type: 'image', url: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
+                ],
+                onlineUsers: 0
             };
 
-            // Load from localStorage or use demo accounts
+            // Load from localStorage
             if (localStorage.getItem('gk_accounts')) {
                 appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             } else {
-                // Demo accounts with images for all tiers
+                // Demo accounts with mixed media
                 appState.accounts = [
-                    { id:'a1', title:'Pro Level 500', desc:'20+ rare skins, conqueror rank', tier:'small', price_usd:199.99, price_afn:12800, img:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', sold:false },
-                    { id:'a2', title:'Competitive', desc:'Max weapons, premium crates', tier:'small', price_usd:399.99, price_afn:25600, img:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', sold:false },
-                    { id:'a3', title:'Ultimate Collector', desc:'All skins from Season 1', tier:'medium', price_usd:799.99, price_afn:51200, img:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', sold:false },
-                    { id:'a4', title:'Tournament Winner', desc:'Championship skins, rare tags', tier:'medium', price_usd:999.99, price_afn:64000, img:'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', sold:false },
-                    { id:'a5', title:'Legendary Limited', desc:'All collaboration skins', tier:'big', price_usd:4999.99, price_afn:320000, img:'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', sold:false },
-                    { id:'a6', title:'Big Conqueror', desc:'10k points, all rewards', tier:'big', price_usd:9999.99, price_afn:640000, img:'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&w=400', sold:false }
+                    { id:'a1', title:'Pro Level 500', desc:'20+ rare skins', tier:'small', price_usd:199.99, price_afn:12800, media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
+                    { id:'a2', title:'Competitive', desc:'Max weapons', tier:'small', price_usd:399.99, price_afn:25600, media:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
+                    { id:'a3', title:'Ultimate Collector', desc:'All skins', tier:'medium', price_usd:799.99, price_afn:51200, media:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
+                    { id:'a4', title:'Tournament Winner', desc:'Championship skins', tier:'medium', price_usd:999.99, price_afn:64000, media:'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
+                    { id:'a5', title:'Legendary Limited', desc:'All collab skins', tier:'big', price_usd:4999.99, price_afn:320000, media:'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', mediaType:'image', sold:false }
                 ];
+            }
+            
+            if (localStorage.getItem('gk_contacts')) {
+                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
             }
             
             if (localStorage.getItem('gk_bookings')) {
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            } else {
-                appState.bookRequests = [];
             }
+
+            // Online users simulation (increments randomly)
+            function updateOnlineUsers() {
+                appState.onlineUsers = Math.floor(Math.random() * 15) + 5; // 5-20 users
+                document.getElementById('online-count').innerText = appState.onlineUsers;
+            }
+            setInterval(updateOnlineUsers, 10000);
+            updateOnlineUsers();
 
             // Render main slider
             function renderAdsSlider() {
@@ -699,7 +725,11 @@
                 if (!container) return;
                 let slides = '';
                 appState.ads.forEach((ad, idx) => {
-                    slides += `<div class="slide"><img src="${ad.url}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+                    if (ad.type === 'video') {
+                        slides += `<div class="slide"><video src="${ad.url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption}</div></div>`;
+                    } else {
+                        slides += `<div class="slide"><img src="${ad.url}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+                    }
                 });
                 let dots = '';
                 appState.ads.forEach((_, idx) => {
@@ -725,6 +755,26 @@
                 if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
             };
 
+            // Render contacts (working WhatsApp buttons)
+            function renderContacts() {
+                const container = document.getElementById('contacts-container');
+                if (!container) return;
+                if (appState.contacts.length === 0) {
+                    container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
+                    return;
+                }
+                container.innerHTML = appState.contacts.map(contact => `
+                    <div class="account-card" style="padding:1.5rem;">
+                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                        <p>${contact.desc || 'WhatsApp support'}</p>
+                        <p style="margin:0.5rem 0;"><strong>+${contact.phone}</strong></p>
+                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${contact.phone}', '_blank')">
+                            <i class="fab fa-whatsapp"></i> Chat Now
+                        </button>
+                    </div>
+                `).join('');
+            }
+
             // Render account cards
             function renderAccounts() {
                 const grid = document.getElementById('accounts-grid');
@@ -738,10 +788,13 @@
                     return;
                 }
                 grid.innerHTML = filtered.map(acc => {
-                    const tierColor = acc.tier === 'small' ? '#10b981' : acc.tier === 'medium' ? '#f59e0b' : '#ef4444';
+                    const mediaTag = acc.mediaType === 'video' 
+                        ? `<video src="${acc.media}" class="card-media" autoplay muted loop playsinline></video>`
+                        : `<img src="${acc.media}" class="card-media" alt="account" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">`;
+                    
                     return `
                         <div class="account-card" data-id="${acc.id}">
-                            <img src="${acc.img}" class="card-image" alt="account" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">
+                            ${mediaTag}
                             <div class="card-content">
                                 <div class="card-title">
                                     ${acc.title}
@@ -763,23 +816,51 @@
                 }).join('');
             }
 
-            // Render admin account list (with delete buttons)
+            // Render admin accounts list (inside modal)
             function renderAdminAccounts() {
                 const list = document.getElementById('admin-accounts-list');
                 if (!list) return;
                 if (appState.accounts.length === 0) {
-                    list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet. Add one above.</p>';
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
                     return;
                 }
                 list.innerHTML = appState.accounts.map(acc => `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem;">
-                        <img src="${acc.img}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=100'">
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        ${acc.mediaType === 'video' 
+                            ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;"></video>`
+                            : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`
+                        }
                         <div style="flex:1;">
                             <strong>${acc.title}</strong> 
                             <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
                             <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Render admin contacts list
+            function renderAdminContacts() {
+                const list = document.getElementById('admin-contacts-list');
+                if (!list) return;
+                if (appState.contacts.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
+                    return;
+                }
+                list.innerHTML = appState.contacts.map(contact => `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <strong>${contact.name}</strong>
+                            <div style="font-size:0.8rem;">+${contact.phone}</div>
+                            <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.desc || ''}</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>
@@ -799,58 +880,66 @@
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(screen + '-screen').classList.add('active');
                 if (screen === 'accounts') renderAccounts();
+                if (screen === 'contact') renderContacts();
                 if (screen === 'admin' && appState.isAdminLoggedIn) {
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-login-section').classList.add('hidden');
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderAdminAccounts();
                 }
             };
 
-            // ---------- IMAGE PREVIEW FUNCTIONS ----------
-            window.previewImageFromUrl = function() {
-                const url = document.getElementById('account-image-url').value;
-                const preview = document.getElementById('image-preview');
+            // Media preview functions
+            window.previewMediaFromUrl = function() {
+                const url = document.getElementById('account-media-url').value;
+                const preview = document.getElementById('media-preview');
                 if (url) {
-                    preview.innerHTML = `<img src="${url}" alt="preview">`;
-                    appState.currentImageData = url;
+                    const isVideo = url.match(/\.(mp4|webm|ogg)/i);
+                    if (isVideo) {
+                        preview.innerHTML = `<video src="${url}" controls style="max-height:200px;"></video>`;
+                        appState.currentMediaData = { type: 'video', url: url };
+                    } else {
+                        preview.innerHTML = `<img src="${url}" alt="preview">`;
+                        appState.currentMediaData = { type: 'image', url: url };
+                    }
                 } else {
                     preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    appState.currentImageData = null;
+                    appState.currentMediaData = null;
                 }
             };
 
-            window.previewImageFromFile = function() {
-                const fileInput = document.getElementById('account-image-file');
-                const preview = document.getElementById('image-preview');
+            window.previewMediaFromFile = function() {
+                const fileInput = document.getElementById('account-media-file');
+                const preview = document.getElementById('media-preview');
                 if (fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        appState.currentImageData = e.target.result; // base64 image
+                        const isVideo = file.type.startsWith('video/');
+                        if (isVideo) {
+                            preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                            appState.currentMediaData = { type: 'video', url: e.target.result };
+                        } else {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                            appState.currentMediaData = { type: 'image', url: e.target.result };
+                        }
                     };
-                    reader.readAsDataURL(fileInput.files[0]);
+                    reader.readAsDataURL(file);
                 }
             };
 
-            // Show add account modal
-            window.showAddAccountModal = function() {
-                // Reset form
-                document.getElementById('account-tier').value = '';
-                document.getElementById('account-title').value = '';
-                document.getElementById('account-description').value = '';
-                document.getElementById('account-price-usd').value = '';
-                document.getElementById('account-price-afn').value = '';
-                document.getElementById('account-image-url').value = '';
-                document.getElementById('account-image-file').value = '';
-                document.getElementById('image-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                appState.currentImageData = null;
-                
-                openModal('add-account-modal');
+            // Show manage modals
+            window.showManageAccountsModal = function() {
+                renderAdminAccounts();
+                document.getElementById('manage-accounts-modal').classList.remove('hidden');
             };
 
-            // Save new account (with image)
+            window.showManageContactsModal = function() {
+                renderAdminContacts();
+                document.getElementById('manage-contacts-modal').classList.remove('hidden');
+            };
+
+            // Save new account
             window.saveNewAccount = function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
@@ -858,28 +947,14 @@
                 const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
                 const priceAfn = parseInt(document.getElementById('account-price-afn').value);
                 
-                // Get image (either from URL, file upload, or use default)
-                let imageUrl = appState.currentImageData;
-                if (!imageUrl) {
-                    // Try URL field
-                    const urlField = document.getElementById('account-image-url').value;
-                    if (urlField) imageUrl = urlField;
-                }
-                
-                // Validate
                 if (!tier || !title || !priceUsd || !priceAfn) {
-                    alert('Please fill all required fields (tier, title, prices)');
+                    alert('Please fill all required fields');
                     return;
                 }
                 
-                // Default image if none provided
-                if (!imageUrl) {
-                    const defaultImages = {
-                        small: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
-                        medium: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400',
-                        big: 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&w=400'
-                    };
-                    imageUrl = defaultImages[tier] || defaultImages.small;
+                if (!appState.currentMediaData) {
+                    alert('Please upload an image or video');
+                    return;
                 }
                 
                 const newAccount = {
@@ -889,27 +964,33 @@
                     tier: tier,
                     price_usd: priceUsd,
                     price_afn: priceAfn,
-                    img: imageUrl,
+                    media: appState.currentMediaData.url,
+                    mediaType: appState.currentMediaData.type,
                     sold: false
                 };
                 
                 appState.accounts.push(newAccount);
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 
-                // Update UI
-                renderAccounts();
-                if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    renderAdminAccounts();
-                }
+                // Reset form
+                document.getElementById('account-tier').value = '';
+                document.getElementById('account-title').value = '';
+                document.getElementById('account-description').value = '';
+                document.getElementById('account-price-usd').value = '';
+                document.getElementById('account-price-afn').value = '';
+                document.getElementById('account-media-url').value = '';
+                document.getElementById('account-media-file').value = '';
+                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentMediaData = null;
                 
-                closeModal('add-account-modal');
+                renderAccounts();
+                renderAdminAccounts();
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 alert('Account added successfully!');
             };
 
             // Delete account
             window.deleteAccount = function(id) {
-                if (!appState.isAdminLoggedIn) return;
                 if (confirm('Delete this account permanently?')) {
                     appState.accounts = appState.accounts.filter(a => a.id !== id);
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
@@ -919,13 +1000,52 @@
                 }
             };
 
-            // ---------- BOOK, BUY, INFO FUNCTIONS ----------
+            // Save new contact
+            window.saveNewContact = function() {
+                const name = document.getElementById('contact-name').value.trim();
+                const phone = document.getElementById('contact-phone').value.trim();
+                const desc = document.getElementById('contact-desc').value.trim();
+                
+                if (!name || !phone) {
+                    alert('Please enter name and phone number');
+                    return;
+                }
+                
+                const newContact = {
+                    id: 'c' + Date.now(),
+                    name: name,
+                    phone: phone.replace(/\D/g, ''),
+                    desc: desc
+                };
+                
+                appState.contacts.push(newContact);
+                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+                
+                document.getElementById('contact-name').value = '';
+                document.getElementById('contact-phone').value = '';
+                document.getElementById('contact-desc').value = '';
+                
+                renderContacts();
+                renderAdminContacts();
+                alert('Contact added successfully!');
+            };
+
+            // Delete contact
+            window.deleteContact = function(id) {
+                if (confirm('Delete this contact?')) {
+                    appState.contacts = appState.contacts.filter(c => c.id !== id);
+                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+                    renderContacts();
+                    renderAdminContacts();
+                }
+            };
+
+            // Book, Buy, Info functions
             window.bookAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
                 appState.currentAccount = acc;
-                const modalBody = document.getElementById('book-modal-body');
-                modalBody.innerHTML = `
+                document.getElementById('book-modal-body').innerHTML = `
                     <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
                     <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
                     <input type="text" id="book-name" class="input" placeholder="Your name">
@@ -948,7 +1068,7 @@
                 };
                 appState.bookRequests.push(req);
                 localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-                alert('✅ Booking submitted! We will contact you on WhatsApp.');
+                alert('✅ Booking submitted! We will contact you.');
                 closeModal('book-modal');
             };
 
@@ -961,8 +1081,6 @@
                     <p>Send exact USDT (TRC20) to:</p>
                     <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
                     <button class="btn" onclick="copyUsdt()">Copy address</button>
-                    <hr style="border-color:var(--border); margin:1rem 0;">
-                    <p>After payment click below to confirm</p>
                 `;
                 openModal('buy-modal');
             };
@@ -982,12 +1100,12 @@
                     <p>${acc.desc || 'Premium PUBG account'}</p>
                     <p>Tier: ${acc.tier}</p>
                     <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                    <p>✅ Includes email & password, full access. Secure delivery.</p>
+                    <p>✅ Includes email & password, full access.</p>
                 `;
                 openModal('info-modal');
             };
 
-            // Admin functions
+            // Admin login
             window.adminLogin = function() {
                 const email = document.getElementById('admin-email').value;
                 const pass = document.getElementById('admin-password').value;
@@ -998,9 +1116,8 @@
                     document.getElementById('admin-error').innerText = '';
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderAdminAccounts();
                 } else {
-                    document.getElementById('admin-error').innerText = 'Invalid credentials (use admin@gkstore.com / admin123)';
+                    document.getElementById('admin-error').innerText = 'Invalid credentials';
                 }
             };
 
@@ -1011,10 +1128,10 @@
                 switchScreen('main');
             };
 
-            // Utility functions
+            // Utility
             window.copyUsdt = function() {
                 navigator.clipboard.writeText('TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY');
-                alert('USDT address copied to clipboard');
+                alert('USDT address copied');
             };
 
             window.openModal = function(id) {
@@ -1036,6 +1153,7 @@
 
             // Initialize
             renderAdsSlider();
+            renderContacts();
             renderAccounts();
         })();
     </script>
