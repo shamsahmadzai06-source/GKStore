@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with fixed country code & translation</title>
+    <title>GK Store · PUBG accounts with editable USDT address</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
@@ -643,6 +643,17 @@
                         <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
                     </div>
                     
+                    <!-- USDT Address Display and Edit Button -->
+                    <div class="account-card" style="padding:1rem; margin:1rem 0;">
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <h3 style="margin-bottom:0;">💳 USDT Address (TRC20)</h3>
+                            <button class="action-btn" style="padding:0.3rem 1rem;" onclick="showEditUsdtModal()">
+                                <i class="fa fa-edit"></i> <span data-i18n="edit">Edit</span>
+                            </button>
+                        </div>
+                        <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; margin:0.8rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                    </div>
+                    
                     <!-- Management Buttons -->
                     <div style="display:flex; flex-direction:column; gap:0.8rem;">
                         <button class="action-btn buy" onclick="showAddAccountModal()">
@@ -662,6 +673,25 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT USDT ADDRESS MODAL (NEW) -->
+    <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-edit"></i> <span data-i18n="editUsdtTitle">Edit USDT Address</span></h3>
+                <button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label class="input-label" data-i18n="newUsdtAddress">New USDT Address (TRC20)</label>
+                <input type="text" id="new-usdt-address" class="input" placeholder="Enter new USDT address" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY">
+                <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:-0.5rem;" data-i18n="usdtWarning">Make sure it's a valid TRC20 address</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('edit-usdt-modal')"><span data-i18n="cancel">Cancel</span></button>
+                <button class="btn-primary" onclick="saveUsdtAddress()"><span data-i18n="save">Save</span></button>
             </div>
         </div>
     </div>
@@ -866,7 +896,8 @@
                 phoneInput: null,
                 bookPhoneInput: null,
                 currentLanguage: 'en',
-                autoSlideInterval: null
+                autoSlideInterval: null,
+                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY' // Default USDT address
             };
 
             // Load from localStorage
@@ -892,6 +923,11 @@
             
             if (localStorage.getItem('gk_bookings')) {
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            }
+            
+            // Load USDT address from localStorage
+            if (localStorage.getItem('gk_usdt_address')) {
+                appState.usdtAddress = localStorage.getItem('gk_usdt_address');
             }
 
             // Load unique visitors from localStorage
@@ -967,7 +1003,12 @@
                     chatNow: 'Chat Now',
                     delete: 'Delete',
                     cancelRequest: 'Cancel',
-                    contactViaWA: 'Contact'
+                    contactViaWA: 'Contact',
+                    edit: 'Edit',
+                    editUsdtTitle: 'Edit USDT Address',
+                    newUsdtAddress: 'New USDT Address (TRC20)',
+                    usdtWarning: 'Make sure it\'s a valid TRC20 address',
+                    save: 'Save'
                 },
                 ps: {
                     brand: 'جی کے سټور',
@@ -1029,7 +1070,12 @@
                     chatNow: 'اوس خبرې وکړئ',
                     delete: 'ړنګول',
                     cancelRequest: 'لغوه کول',
-                    contactViaWA: 'اړیکه'
+                    contactViaWA: 'اړیکه',
+                    edit: 'سمول',
+                    editUsdtTitle: 'د USDT پته سمول',
+                    newUsdtAddress: 'نوې USDT پته (TRC20)',
+                    usdtWarning: 'ډاډ ترلاسه کړئ چې دا سمه TRC20 پته ده',
+                    save: 'خوندي کول'
                 },
                 fa: {
                     brand: 'جی کی استور',
@@ -1091,7 +1137,12 @@
                     chatNow: 'گفتگو',
                     delete: 'حذف',
                     cancelRequest: 'لغو',
-                    contactViaWA: 'تماس'
+                    contactViaWA: 'تماس',
+                    edit: 'ویرایش',
+                    editUsdtTitle: 'ویرایش آدرس USDT',
+                    newUsdtAddress: 'آدرس جدید USDT (TRC20)',
+                    usdtWarning: 'مطمئن شوید آدرس TRC20 معتبر است',
+                    save: 'ذخیره'
                 }
             };
 
@@ -1106,12 +1157,6 @@
                     }
                 });
 
-                // Also update buttons that might not have data-i18n
-                document.querySelectorAll('.action-btn .btn-text').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if (t[key]) el.textContent = t[key];
-                });
-
                 document.documentElement.lang = lang;
                 document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
                 
@@ -1122,6 +1167,9 @@
                 renderAccounts();
                 renderContacts();
                 if (appState.isAdminLoggedIn) renderBookRequests();
+                
+                // Update USDT address display
+                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
             // Get visitor IP and track unique visitors
@@ -1458,6 +1506,7 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                     renderBookRequests();
                 }
             };
@@ -1535,6 +1584,27 @@
                 appState.currentAdData = null;
                 renderAdminAds();
                 openModal('manage-ads-modal');
+            };
+
+            // Show edit USDT modal
+            window.showEditUsdtModal = function() {
+                document.getElementById('new-usdt-address').value = appState.usdtAddress;
+                openModal('edit-usdt-modal');
+            };
+
+            // Save new USDT address
+            window.saveUsdtAddress = function() {
+                const newAddress = document.getElementById('new-usdt-address').value.trim();
+                if (!newAddress) {
+                    alert('Please enter a USDT address');
+                    return;
+                }
+                
+                appState.usdtAddress = newAddress;
+                localStorage.setItem('gk_usdt_address', newAddress);
+                document.getElementById('current-usdt-address').innerText = newAddress;
+                closeModal('edit-usdt-modal');
+                alert('USDT address updated successfully!');
             };
 
             // Save new account
@@ -1778,7 +1848,7 @@
                 document.getElementById('buy-modal-body').innerHTML = `
                     <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
                     <p>Send exact USDT (TRC20) to:</p>
-                    <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                    <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
                     <button class="btn" onclick="copyUsdt()">Copy address</button>
                 `;
                 openModal('buy-modal');
@@ -1816,6 +1886,7 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                     renderBookRequests();
                 } else {
                     document.getElementById('admin-error').innerText = 'Invalid credentials';
@@ -1831,7 +1902,7 @@
 
             // Utility
             window.copyUsdt = function() {
-                navigator.clipboard.writeText('TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY');
+                navigator.clipboard.writeText(appState.usdtAddress);
                 alert('USDT address copied');
             };
 
