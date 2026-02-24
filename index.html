@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with country code WhatsApp</title>
+    <title>GK Store · PUBG accounts with auto slider & translation</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- intl-tel-input for beautiful country code picker -->
+    <!-- intl-tel-input for country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <style>
         * {
@@ -40,6 +40,12 @@
             line-height: 1.5;
             min-height: 100vh;
             padding-bottom: 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* RTL support */
+        body[dir="rtl"] {
+            font-family: 'Segoe UI', 'Tahoma', 'Vazirmatn', sans-serif;
         }
 
         /* top navigation */
@@ -91,6 +97,12 @@
             align-items: center;
             gap: 6px;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--gradient-primary);
+            border-color: transparent;
         }
 
         /* main container */
@@ -161,7 +173,7 @@
             transform: scale(0.97);
         }
 
-        /* swipe ads slider */
+        /* swipe ads slider - automatic */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -179,7 +191,7 @@
 
         .slider-track {
             display: flex;
-            overflow-x: auto;
+            overflow-x: hidden;
             scroll-snap-type: x mandatory;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
@@ -461,17 +473,17 @@
         }
     </style>
 </head>
-<body>
+<body dir="ltr">
     <!-- top nav -->
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
-            <span>GK Store</span>
+            <span class="brand-text">GK Store</span>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span>Lang</span></button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span>Admin</span></button>
+            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text">Lang</span></button>
+            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text">Contact</span></button>
+            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text">Admin</span></button>
         </div>
     </div>
 
@@ -479,44 +491,44 @@
         <!-- MAIN SCREEN -->
         <div id="main-screen" class="screen active">
             <div class="main-layout">
-                <h1 class="big-title">PUBG Marketplace</h1>
-                <div class="sub-head">Secure · Instant delivery</div>
+                <h1 class="big-title main-title">PUBG Marketplace</h1>
+                <div class="sub-head main-subtitle">Secure · Instant delivery</div>
                 <button class="cta-button" onclick="switchScreen('accounts')">
-                    <i class="fa fa-gamepad"></i> Click to see PUBG account
+                    <i class="fa fa-gamepad"></i> <span class="cta-text">Click to see PUBG account</span>
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
-                <p style="color:var(--text-secondary); text-align:center;">— swipe ads (manageable) —</p>
+                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;">— swipe ads (auto change) —</p>
             </div>
         </div>
 
         <!-- ACCOUNT BROWSER SCREEN -->
         <div id="accounts-screen" class="screen">
-            <h2 style="font-size:2rem; margin-bottom:0.2rem;">PUBG Accounts</h2>
+            <h2 class="accounts-title" style="font-size:2rem; margin-bottom:0.2rem;">PUBG Accounts</h2>
             <div class="tier-header" id="tier-tabs">
-                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')">All</button>
-                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')">Small PUBG</button>
-                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')">Medium PUBG</button>
-                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')">Big PUBG</button>
+                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')"><span class="all-text">All</span></button>
+                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')"><span class="small-text">Small PUBG</span></button>
+                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')"><span class="medium-text">Medium PUBG</span></button>
+                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')"><span class="big-text">Big PUBG</span></button>
             </div>
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
-        <!-- CONTACT SCREEN with country code WhatsApp buttons (FIXED) -->
+        <!-- CONTACT SCREEN with working WhatsApp numbers (FIXED) -->
         <div id="contact-screen" class="screen">
-            <h2>Contact & Support</h2>
+            <h2 class="contact-title">Contact & Support</h2>
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
         <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
-            <h2>Admin Panel</h2>
+            <h2 class="admin-title">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
                 <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
-                    <h3>Admin Login</h3>
+                    <h3 class="login-title">Admin Login</h3>
                     <input type="email" id="admin-email" class="input" placeholder="admin@gkstore.com" value="admin@gkstore.com">
                     <input type="password" id="admin-password" class="input" placeholder="password" value="admin123">
-                    <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">Login</button>
+                    <button class="action-btn buy" style="width:100%;" onclick="adminLogin()"><span class="login-btn">Login</span></button>
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
                 
@@ -529,36 +541,36 @@
                         </div>
                         <div>
                             <div style="font-size:1.2rem; font-weight:700;" id="online-count">0</div>
-                            <div style="color:var(--text-secondary);">users online now</div>
+                            <div style="color:var(--text-secondary);" class="online-text">users online now</div>
                         </div>
                     </div>
                     
                     <!-- Stats -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin:1rem 0;">
                         <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="admin-account-count">0</span> accounts
+                            <span id="admin-account-count">0</span> <span class="accounts-stat">accounts</span>
                         </div>
                         <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="admin-bookings-count">0</span> bookings
+                            <span id="admin-bookings-count">0</span> <span class="bookings-stat">bookings</span>
                         </div>
                     </div>
                     
-                    <!-- Management Buttons - SEPARATE as requested -->
+                    <!-- Management Buttons - SEPARATE -->
                     <div style="display:flex; flex-direction:column; gap:0.8rem;">
                         <button class="action-btn buy" onclick="showAddAccountModal()">
-                            <i class="fa fa-plus-circle"></i> Add New Account
+                            <i class="fa fa-plus-circle"></i> <span class="add-account-btn">Add New Account</span>
                         </button>
                         <button class="action-btn buy" onclick="showManageAccountsModal()">
-                            <i class="fa fa-edit"></i> Manage Accounts (Delete)
+                            <i class="fa fa-edit"></i> <span class="manage-accounts-btn">Manage Accounts (Delete)</span>
                         </button>
                         <button class="action-btn buy" onclick="showManageContactsModal()">
-                            <i class="fab fa-whatsapp"></i> Manage Contacts
+                            <i class="fab fa-whatsapp"></i> <span class="manage-contacts-btn">Manage Contacts</span>
                         </button>
                         <button class="action-btn buy" onclick="showManageAdsModal()">
-                            <i class="fa fa-image"></i> Manage Swipe Ads
+                            <i class="fa fa-image"></i> <span class="manage-ads-btn">Manage Swipe Ads</span>
                         </button>
                         <button class="action-btn" onclick="logout()">
-                            <i class="fa fa-sign-out"></i> Logout
+                            <i class="fa fa-sign-out"></i> <span class="logout-btn">Logout</span>
                         </button>
                     </div>
                 </div>
@@ -570,16 +582,16 @@
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-plus-circle"></i> Add New Account</h3>
+                <h3><i class="fa fa-plus-circle"></i> <span class="add-modal-title">Add New Account</span></h3>
                 <button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="add-account-form" onsubmit="return false;">
                     <select id="account-tier" class="input" required>
-                        <option value="">-- Select Tier --</option>
-                        <option value="small">Small PUBG ($10-$500)</option>
-                        <option value="medium">Medium PUBG ($500-$1000)</option>
-                        <option value="big">Big PUBG ($1000-$100000)</option>
+                        <option value=""><span class="select-tier">-- Select Tier --</span></option>
+                        <option value="small"><span class="small-tier">Small PUBG ($10-$500)</span></option>
+                        <option value="medium"><span class="medium-tier">Medium PUBG ($500-$1000)</span></option>
+                        <option value="big"><span class="big-tier">Big PUBG ($1000-$100000)</span></option>
                     </select>
                     
                     <input type="text" id="account-title" class="input" placeholder="Account Title" required>
@@ -590,16 +602,15 @@
                         <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
                     </div>
                     
-                    <!-- Media upload -->
-                    <label class="input-label">Account Media (Image or Video) *</label>
+                    <!-- Media upload - with file picker only (no URL) -->
+                    <label class="input-label"><span class="media-label">Account Media (Image or Video) *</span></label>
                     <div class="media-preview" id="media-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     
-                    <input type="url" id="account-media-url" class="input" placeholder="Or enter image/video URL" onchange="previewMediaFromUrl()">
-                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
+                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()" required>
                     
-                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAccount()">Save Account</button>
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAccount()"><span class="save-account-btn">Save Account</span></button>
                 </form>
             </div>
         </div>
@@ -609,11 +620,11 @@
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> Manage Accounts</h3>
+                <h3><i class="fa fa-edit"></i> <span class="manage-modal-title">Manage Accounts</span></h3>
                 <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 style="margin-bottom:1rem;">📋 Existing Accounts (click delete to remove)</h4>
+                <h4 style="margin-bottom:1rem;"><span class="existing-accounts">📋 Existing Accounts (click delete to remove)</span></h4>
                 <div id="admin-accounts-list" style="max-height:400px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -623,55 +634,61 @@
     <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fab fa-whatsapp"></i> Manage Contacts</h3>
+                <h3><i class="fab fa-whatsapp"></i> <span class="manage-contacts-title">Manage Contacts</span></h3>
                 <button class="modal-close" onclick="closeModal('manage-contacts-modal')">&times;</button>
             </div>
             <div class="modal-body">
                 <!-- Add new contact form with country code picker -->
-                <h4 style="margin-bottom:1rem;">➕ Add New Contact</h4>
+                <h4 style="margin-bottom:1rem;"><span class="add-contact">➕ Add New Contact</span></h4>
                 <form id="add-contact-form" onsubmit="return false;">
                     <input type="text" id="contact-name" class="input" placeholder="Contact Name (e.g., Support 1)" required>
                     
                     <!-- Phone with country code picker -->
-                    <label class="input-label">WhatsApp Number with Country Code</label>
+                    <label class="input-label"><span class="whatsapp-number-label">WhatsApp Number with Country Code</span></label>
                     <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322">
                     
                     <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
                     
-                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()">Save Contact</button>
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()"><span class="save-contact-btn">Save Contact</span></button>
                 </form>
                 
                 <!-- Existing contacts list -->
-                <h4 style="margin:2rem 0 1rem;">📋 Existing Contacts</h4>
+                <h4 style="margin:2rem 0 1rem;"><span class="existing-contacts">📋 Existing Contacts</span></h4>
                 <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
 
-    <!-- MANAGE ADS MODAL -->
+    <!-- MANAGE ADS MODAL - with file upload only -->
     <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-image"></i> Manage Swipe Ads</h3>
+                <h3><i class="fa fa-image"></i> <span class="manage-ads-title">Manage Swipe Ads</span></h3>
                 <button class="modal-close" onclick="closeModal('manage-ads-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Add new ad -->
-                <h4 style="margin-bottom:1rem;">➕ Add New Ad (Image/Video)</h4>
+                <!-- Add new ad with file upload -->
+                <h4 style="margin-bottom:1rem;"><span class="add-ad">➕ Add New Ad (Image/Video)</span></h4>
                 <form id="add-ad-form" onsubmit="return false;">
                     <select id="ad-type" class="input">
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
+                        <option value="image"><span class="image-option">Image</span></option>
+                        <option value="video"><span class="video-option">Video</span></option>
                     </select>
                     
-                    <input type="url" id="ad-url" class="input" placeholder="Media URL" required>
+                    <!-- File upload instead of URL -->
+                    <label class="input-label"><span class="ad-media-label">Ad Media *</span></label>
+                    <div class="media-preview" id="ad-preview">
+                        <i class="fa fa-cloud-upload-alt"></i>
+                    </div>
+                    <input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()" required>
+                    
                     <input type="text" id="ad-caption" class="input" placeholder="Caption (optional)">
                     
-                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()">Add Ad</button>
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()"><span class="add-ad-btn">Add Ad</span></button>
                 </form>
                 
                 <!-- Existing ads list -->
-                <h4 style="margin:2rem 0 1rem;">📋 Current Ads</h4>
+                <h4 style="margin:2rem 0 1rem;"><span class="current-ads">📋 Current Ads</span></h4>
                 <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -681,13 +698,13 @@
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>📘 Book account</h3>
+                <h3>📘 <span class="book-title">Book account</span></h3>
                 <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
             </div>
             <div class="modal-body" id="book-modal-body"></div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('book-modal')">Cancel</button>
-                <button class="btn-primary" onclick="submitBook()">Confirm booking</button>
+                <button class="btn" onclick="closeModal('book-modal')"><span class="cancel-btn">Cancel</span></button>
+                <button class="btn-primary" onclick="submitBook()"><span class="confirm-btn">Confirm booking</span></button>
             </div>
         </div>
     </div>
@@ -695,13 +712,13 @@
     <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>💳 Buy with USDT</h3>
+                <h3>💳 <span class="buy-title">Buy with USDT</span></h3>
                 <button class="modal-close" onclick="closeModal('buy-modal')">&times;</button>
             </div>
             <div class="modal-body" id="buy-modal-body"></div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('buy-modal')">Cancel</button>
-                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button>
+                <button class="btn" onclick="closeModal('buy-modal')"><span class="cancel-btn">Cancel</span></button>
+                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()"><span class="confirm-wa-btn">Confirm via WhatsApp</span></button>
             </div>
         </div>
     </div>
@@ -709,17 +726,18 @@
     <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>ℹ️ Account details</h3>
+                <h3>ℹ️ <span class="info-title">Account details</span></h3>
                 <button class="modal-close" onclick="closeModal('info-modal')">&times;</button>
             </div>
             <div class="modal-body" id="info-modal-body"></div>
         </div>
     </div>
 
+    <!-- LANGUAGE MODAL with translation -->
     <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>Select language</h3>
+                <h3><span class="select-lang">Select language</span></h3>
                 <button class="modal-close" onclick="closeModal('language-modal')">&times;</button>
             </div>
             <div class="modal-body">
@@ -741,17 +759,20 @@
                     { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
                 ],
                 ads: [
-                    { type: 'image', url: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
-                    { type: 'image', url: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
-                    { type: 'image', url: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
+                    { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
+                    { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
+                    { type: 'image', data: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
                 ],
                 bookRequests: [],
                 currentFilter: 'all',
                 isAdminLoggedIn: false,
                 currentAccount: null,
                 currentMediaData: null,
+                currentAdData: null,
                 onlineUsers: 0,
-                phoneInput: null
+                phoneInput: null,
+                currentLanguage: 'en',
+                autoSlideInterval: null
             };
 
             // Load from localStorage
@@ -779,6 +800,189 @@
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
             }
 
+            // Translation dictionary
+            const translations = {
+                en: {
+                    brand: 'GK Store',
+                    lang: 'Lang',
+                    contact: 'Contact',
+                    admin: 'Admin',
+                    mainTitle: 'PUBG Marketplace',
+                    mainSubtitle: 'Secure · Instant delivery',
+                    cta: 'Click to see PUBG account',
+                    all: 'All',
+                    small: 'Small PUBG',
+                    medium: 'Medium PUBG',
+                    big: 'Big PUBG',
+                    accountsTitle: 'PUBG Accounts',
+                    contactTitle: 'Contact & Support',
+                    adminTitle: 'Admin Panel',
+                    loginTitle: 'Admin Login',
+                    loginBtn: 'Login',
+                    onlineText: 'users online now',
+                    accountsStat: 'accounts',
+                    bookingsStat: 'bookings',
+                    addAccountBtn: 'Add New Account',
+                    manageAccountsBtn: 'Manage Accounts (Delete)',
+                    manageContactsBtn: 'Manage Contacts',
+                    manageAdsBtn: 'Manage Swipe Ads',
+                    logoutBtn: 'Logout',
+                    addModalTitle: 'Add New Account',
+                    selectTier: '-- Select Tier --',
+                    smallTier: 'Small PUBG ($10-$500)',
+                    mediumTier: 'Medium PUBG ($500-$1000)',
+                    bigTier: 'Big PUBG ($1000-$100000)',
+                    mediaLabel: 'Account Media (Image or Video) *',
+                    saveAccountBtn: 'Save Account',
+                    manageModalTitle: 'Manage Accounts',
+                    existingAccounts: '📋 Existing Accounts (click delete to remove)',
+                    manageContactsTitle: 'Manage Contacts',
+                    addContact: '➕ Add New Contact',
+                    whatsappNumberLabel: 'WhatsApp Number with Country Code',
+                    saveContactBtn: 'Save Contact',
+                    existingContacts: '📋 Existing Contacts',
+                    manageAdsTitle: 'Manage Swipe Ads',
+                    addAd: '➕ Add New Ad (Image/Video)',
+                    imageOption: 'Image',
+                    videoOption: 'Video',
+                    adMediaLabel: 'Ad Media *',
+                    addAdBtn: 'Add Ad',
+                    currentAds: '📋 Current Ads',
+                    bookTitle: 'Book account',
+                    cancel: 'Cancel',
+                    confirm: 'Confirm booking',
+                    buyTitle: 'Buy with USDT',
+                    confirmWA: 'Confirm via WhatsApp',
+                    infoTitle: 'Account details',
+                    selectLang: 'Select language'
+                },
+                ps: {
+                    brand: 'جی کے سټور',
+                    lang: 'ژبه',
+                    contact: 'اړیکه',
+                    admin: 'مدیر',
+                    mainTitle: 'PUBG بازار',
+                    mainSubtitle: 'خوندي · سمدستي تحویل',
+                    cta: 'د PUBG حساب لیدو لپاره کلیک وکړئ',
+                    all: 'ټول',
+                    small: 'کوچنی PUBG',
+                    medium: 'منځنی PUBG',
+                    big: 'لوی PUBG',
+                    accountsTitle: 'PUBG حسابونه',
+                    contactTitle: 'اړیکه او مرسته',
+                    adminTitle: 'مدیر پینل',
+                    loginTitle: 'مدیر ننوتل',
+                    loginBtn: 'ننوتل',
+                    onlineText: 'کارونکي آنلاین دي',
+                    accountsStat: 'حسابونه',
+                    bookingsStat: 'بکنګونه',
+                    addAccountBtn: 'نوی حساب اضافه کړئ',
+                    manageAccountsBtn: 'حسابونه اداره کړئ (ړنګول)',
+                    manageContactsBtn: 'اړیکې اداره کړئ',
+                    manageAdsBtn: 'اعلانونه اداره کړئ',
+                    logoutBtn: 'وتل',
+                    addModalTitle: 'نوی حساب اضافه کړئ',
+                    selectTier: '-- کچه غوره کړئ --',
+                    smallTier: 'کوچنی PUBG ($10-$500)',
+                    mediumTier: 'منځنی PUBG ($500-$1000)',
+                    bigTier: 'لوی PUBG ($1000-$100000)',
+                    mediaLabel: 'د حساب میډیا (انځور یا ویډیو) *',
+                    saveAccountBtn: 'حفظ حساب',
+                    manageModalTitle: 'حسابونه اداره کړئ',
+                    existingAccounts: '📋 موجود حسابونه (ړنګولو لپاره کلیک وکړئ)',
+                    manageContactsTitle: 'اړیکې اداره کړئ',
+                    addContact: '➕ نوې اړیکه اضافه کړئ',
+                    whatsappNumberLabel: 'د واټساپ شمیره د هیواد کوډ سره',
+                    saveContactBtn: 'اړیکه خوندي کړئ',
+                    existingContacts: '📋 موجوده اړیکې',
+                    manageAdsTitle: 'اعلانونه اداره کړئ',
+                    addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)',
+                    imageOption: 'انځور',
+                    videoOption: 'ویډیو',
+                    adMediaLabel: 'د اعلان میډیا *',
+                    addAdBtn: 'اعلان اضافه کړئ',
+                    currentAds: '📋 اوسني اعلانونه',
+                    bookTitle: 'حساب بک کړئ',
+                    cancel: 'لغوه',
+                    confirm: 'بک تایید کړئ',
+                    buyTitle: 'د USDT سره واخلئ',
+                    confirmWA: 'د واټساپ له لارې تایید کړئ',
+                    infoTitle: 'د حساب تفصیل',
+                    selectLang: 'ژبه غوره کړئ'
+                },
+                fa: {
+                    brand: 'جی کی استور',
+                    lang: 'زبان',
+                    contact: 'تماس',
+                    admin: 'مدیر',
+                    mainTitle: 'بازار PUBG',
+                    mainSubtitle: 'امن · تحویل فوری',
+                    cta: 'برای دیدن حساب PUBG کلیک کنید',
+                    all: 'همه',
+                    small: 'کوچک PUBG',
+                    medium: 'متوسط PUBG',
+                    big: 'بزرگ PUBG',
+                    accountsTitle: 'حساب‌های PUBG',
+                    contactTitle: 'تماس و پشتیبانی',
+                    adminTitle: 'پنل مدیریت',
+                    loginTitle: 'ورود مدیر',
+                    loginBtn: 'ورود',
+                    onlineText: 'کاربران آنلاین',
+                    accountsStat: 'حساب‌ها',
+                    bookingsStat: 'رزروها',
+                    addAccountBtn: 'افزودن حساب جدید',
+                    manageAccountsBtn: 'مدیریت حساب‌ها (حذف)',
+                    manageContactsBtn: 'مدیریت مخاطبین',
+                    manageAdsBtn: 'مدیریت تبلیغات',
+                    logoutBtn: 'خروج',
+                    addModalTitle: 'افزودن حساب جدید',
+                    selectTier: '-- سطح را انتخاب کنید --',
+                    smallTier: 'کوچک PUBG ($10-$500)',
+                    mediumTier: 'متوسط PUBG ($500-$1000)',
+                    bigTier: 'بزرگ PUBG ($1000-$100000)',
+                    mediaLabel: 'رسانه حساب (تصویر یا ویدیو) *',
+                    saveAccountBtn: 'ذخیره حساب',
+                    manageModalTitle: 'مدیریت حساب‌ها',
+                    existingAccounts: '📋 حساب‌های موجود (برای حذف کلیک کنید)',
+                    manageContactsTitle: 'مدیریت مخاطبین',
+                    addContact: '➕ افزودن مخاطب جدید',
+                    whatsappNumberLabel: 'شماره واتساپ با کد کشور',
+                    saveContactBtn: 'ذخیره مخاطب',
+                    existingContacts: '📋 مخاطبین موجود',
+                    manageAdsTitle: 'مدیریت تبلیغات',
+                    addAd: '➕ تبلیغ جدید (تصویر/ویدیو)',
+                    imageOption: 'تصویر',
+                    videoOption: 'ویدیو',
+                    adMediaLabel: 'رسانه تبلیغ *',
+                    addAdBtn: 'افزودن تبلیغ',
+                    currentAds: '📋 تبلیغات فعلی',
+                    bookTitle: 'رزرو حساب',
+                    cancel: 'انصراف',
+                    confirm: 'تایید رزرو',
+                    buyTitle: 'خرید با USDT',
+                    confirmWA: 'تایید از طریق واتساپ',
+                    infoTitle: 'جزئیات حساب',
+                    selectLang: 'انتخاب زبان'
+                }
+            };
+
+            // Apply translation
+            function applyTranslation(lang) {
+                const t = translations[lang] || translations.en;
+                
+                document.querySelectorAll('[class*="-text"], [class*="title"], [class*="btn"], .brand-text, .lang-text, .contact-text, .admin-text, .main-title, .main-subtitle, .cta-text, .all-text, .small-text, .medium-text, .big-text, .accounts-title, .contact-title, .admin-title, .login-title, .login-btn, .online-text, .accounts-stat, .bookings-stat, .add-account-btn, .manage-accounts-btn, .manage-contacts-btn, .manage-ads-btn, .logout-btn, .add-modal-title, .select-tier, .small-tier, .medium-tier, .big-tier, .media-label, .save-account-btn, .manage-modal-title, .existing-accounts, .manage-contacts-title, .add-contact, .whatsapp-number-label, .save-contact-btn, .existing-contacts, .manage-ads-title, .add-ad, .image-option, .video-option, .ad-media-label, .add-ad-btn, .current-ads, .book-title, .cancel-btn, .confirm-btn, .buy-title, .confirm-wa-btn, .info-title, .select-lang, .slider-hint').forEach(el => {
+                    const key = el.classList[0]?.replace('-', '') || '';
+                    if (t[key]) el.textContent = t[key];
+                });
+
+                // Update HTML lang and direction
+                document.documentElement.lang = lang;
+                document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
+                
+                appState.currentLanguage = lang;
+                localStorage.setItem('gk_language', lang);
+            }
+
             // Initialize intl-tel-input on the contact phone field when modal opens
             function initPhoneInput() {
                 const input = document.querySelector('#contact-phone');
@@ -799,6 +1003,31 @@
             setInterval(updateOnlineUsers, 10000);
             updateOnlineUsers();
 
+            // Auto slide function
+            function startAutoSlide() {
+                if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+                
+                appState.autoSlideInterval = setInterval(() => {
+                    const track = document.getElementById('slider-track');
+                    if (!track || appState.ads.length === 0) return;
+                    
+                    const slideWidth = track.clientWidth;
+                    const currentScroll = track.scrollLeft;
+                    const currentIndex = Math.round(currentScroll / slideWidth);
+                    const nextIndex = (currentIndex + 1) % appState.ads.length;
+                    
+                    track.scrollTo({
+                        left: nextIndex * slideWidth,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Update dots
+                    document.querySelectorAll('.dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === nextIndex);
+                    });
+                }, 4000);
+            }
+
             // Render main slider (ads)
             function renderAdsSlider() {
                 const container = document.getElementById('ads-slider');
@@ -810,9 +1039,9 @@
                 let slides = '';
                 appState.ads.forEach((ad, idx) => {
                     if (ad.type === 'video') {
-                        slides += `<div class="slide"><video src="${ad.url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                        slides += `<div class="slide"><video src="${ad.data}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
                     } else {
-                        slides += `<div class="slide"><img src="${ad.url}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                        slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
                     }
                 });
                 let dots = '';
@@ -832,14 +1061,19 @@
                         document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
                     });
                 }
+                startAutoSlide();
             }
 
             window.jumpToSlide = function(idx) {
                 const track = document.getElementById('slider-track');
-                if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                if (track) {
+                    track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                    // Reset auto slide timer
+                    startAutoSlide();
+                }
             };
 
-            // Render contacts (FIXED WhatsApp buttons)
+            // Render contacts (FIXED WhatsApp numbers - support 2 now works)
             function renderContacts() {
                 const container = document.getElementById('contacts-container');
                 if (!container) return;
@@ -849,7 +1083,17 @@
                 }
                 container.innerHTML = appState.contacts.map(contact => {
                     // Ensure phone number has no + and is digits only for WhatsApp URL
-                    const cleanPhone = contact.phone.replace(/\D/g, '');
+                    // Remove any non-digit characters, and ensure it starts with country code
+                    let cleanPhone = contact.phone.replace(/\D/g, '');
+                    // If it starts with 0, remove the 0 (common mistake)
+                    if (cleanPhone.startsWith('0')) {
+                        cleanPhone = cleanPhone.substring(1);
+                    }
+                    // Ensure it has country code (default Afghanistan 93 if missing)
+                    if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
+                        cleanPhone = '93' + cleanPhone;
+                    }
+                    
                     return `
                         <div class="account-card" style="padding:1.5rem;">
                             <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
@@ -967,8 +1211,8 @@
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                         <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
                             ${ad.type === 'video' 
-                                ? `<video src="${ad.url}" style="width:100%; height:100%; object-fit:cover;"></video>`
-                                : `<img src="${ad.url}" style="width:100%; height:100%; object-fit:cover;">`
+                                ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;"></video>`
+                                : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
                             }
                         </div>
                         <div style="flex:1;">
@@ -1005,24 +1249,6 @@
             };
 
             // Media preview functions
-            window.previewMediaFromUrl = function() {
-                const url = document.getElementById('account-media-url').value;
-                const preview = document.getElementById('media-preview');
-                if (url) {
-                    const isVideo = url.match(/\.(mp4|webm|ogg)/i);
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${url}" controls style="max-height:200px;"></video>`;
-                        appState.currentMediaData = { type: 'video', url: url };
-                    } else {
-                        preview.innerHTML = `<img src="${url}" alt="preview">`;
-                        appState.currentMediaData = { type: 'image', url: url };
-                    }
-                } else {
-                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    appState.currentMediaData = null;
-                }
-            };
-
             window.previewMediaFromFile = function() {
                 const fileInput = document.getElementById('account-media-file');
                 const preview = document.getElementById('media-preview');
@@ -1033,10 +1259,31 @@
                         const isVideo = file.type.startsWith('video/');
                         if (isVideo) {
                             preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
-                            appState.currentMediaData = { type: 'video', url: e.target.result };
+                            appState.currentMediaData = { type: 'video', data: e.target.result };
                         } else {
                             preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                            appState.currentMediaData = { type: 'image', url: e.target.result };
+                            appState.currentMediaData = { type: 'image', data: e.target.result };
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            // Ad media preview
+            window.previewAdMedia = function() {
+                const fileInput = document.getElementById('ad-media-file');
+                const preview = document.getElementById('ad-preview');
+                if (fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const isVideo = file.type.startsWith('video/');
+                        if (isVideo) {
+                            preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                            appState.currentAdData = { type: 'video', data: e.target.result };
+                        } else {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                            appState.currentAdData = { type: 'image', data: e.target.result };
                         }
                     };
                     reader.readAsDataURL(file);
@@ -1051,7 +1298,6 @@
                 document.getElementById('account-description').value = '';
                 document.getElementById('account-price-usd').value = '';
                 document.getElementById('account-price-afn').value = '';
-                document.getElementById('account-media-url').value = '';
                 document.getElementById('account-media-file').value = '';
                 document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                 appState.currentMediaData = null;
@@ -1070,6 +1316,12 @@
             };
 
             window.showManageAdsModal = function() {
+                // Reset ad form
+                document.getElementById('ad-type').value = 'image';
+                document.getElementById('ad-media-file').value = '';
+                document.getElementById('ad-caption').value = '';
+                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentAdData = null;
                 renderAdminAds();
                 openModal('manage-ads-modal');
             };
@@ -1099,7 +1351,7 @@
                     tier: tier,
                     price_usd: priceUsd,
                     price_afn: priceAfn,
-                    media: appState.currentMediaData.url,
+                    media: appState.currentMediaData.data,
                     mediaType: appState.currentMediaData.type,
                     sold: false
                 };
@@ -1186,29 +1438,31 @@
                 }
             };
 
-            // Save new ad
+            // Save new ad (from file upload)
             window.saveNewAd = function() {
                 const type = document.getElementById('ad-type').value;
-                const url = document.getElementById('ad-url').value.trim();
                 const caption = document.getElementById('ad-caption').value.trim();
                 
-                if (!url) {
-                    alert('Please enter media URL');
+                if (!appState.currentAdData) {
+                    alert('Please upload an image or video');
                     return;
                 }
                 
                 const newAd = {
                     type: type,
-                    url: url,
+                    data: appState.currentAdData.data,
                     caption: caption
                 };
                 
                 appState.ads.push(newAd);
                 localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
                 
+                // Reset form
                 document.getElementById('ad-type').value = 'image';
-                document.getElementById('ad-url').value = '';
+                document.getElementById('ad-media-file').value = '';
                 document.getElementById('ad-caption').value = '';
+                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentAdData = null;
                 
                 renderAdsSlider();
                 renderAdminAds();
@@ -1332,11 +1586,13 @@
             };
             
             window.setLanguage = function(lang) {
-                alert('Language set to ' + lang);
+                applyTranslation(lang);
                 closeModal('language-modal');
             };
 
             // Initialize
+            const savedLang = localStorage.getItem('gk_language') || 'en';
+            applyTranslation(savedLang);
             renderAdsSlider();
             renderContacts();
             renderAccounts();
