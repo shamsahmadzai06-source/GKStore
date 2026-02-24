@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with fixed country code</title>
+    <title>GK Store · PUBG accounts with fixed country code & translation</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
@@ -383,6 +383,7 @@
             gap: 4px;
             cursor: pointer;
             color: var(--text);
+            transition: 0.2s;
         }
 
         .action-btn.buy {
@@ -478,26 +479,31 @@
             gap: 5px;
         }
 
-        /* intl-tel-input customization - FIXED to stay visible */
+        /* intl-tel-input customization - COMPLETELY FIXED */
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
             position: relative;
-            z-index: 10;
+            z-index: 2001;
         }
         .iti__selected-flag {
             background: var(--surface-lighter) !important;
             border-radius: 12px 0 0 12px;
-            z-index: 15;
+            z-index: 2002;
         }
         .iti__country-list {
             background: var(--surface);
             border: 1px solid var(--border);
             max-width: 300px;
-            z-index: 9999 !important;
-            position: fixed !important; /* Prevents disappearance */
+            z-index: 99999 !important;
+            position: fixed !important;
             max-height: 300px;
             overflow-y: auto;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px;
         }
         
         /* visitor stats */
@@ -525,6 +531,27 @@
             font-weight: 600;
             display: inline-block;
             width: 80px;
+        }
+        .request-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .request-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 2rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-wa {
+            background: #25D366;
+            color: white;
+        }
+        .btn-cancel {
+            background: #ef4444;
+            color: white;
         }
     </style>
 </head>
@@ -610,9 +637,9 @@
                         </div>
                     </div>
                     
-                    <!-- Book Requests List - FIXED: shows who booked what -->
+                    <!-- Book Requests List - with WhatsApp button and Cancel -->
                     <div class="account-card" style="padding:1rem; margin:1rem 0;">
-                        <h3 style="margin-bottom:1rem;">📋 Book Requests</h3>
+                        <h3 style="margin-bottom:1rem;" data-i18n="bookRequestsTitle">📋 Book Requests</h3>
                         <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
                     </div>
                     
@@ -878,7 +905,7 @@
                 }
             }
 
-            // Translation dictionary (kept same as before)
+            // COMPLETE Translation dictionary with all button texts
             const translations = {
                 en: {
                     brand: 'GK Store',
@@ -901,6 +928,7 @@
                     uniqueVisitors: 'unique visitors (last 24h)',
                     accountsStat: 'accounts',
                     bookingsStat: 'book requests',
+                    bookRequestsTitle: '📋 Book Requests',
                     addAccountBtn: 'Add New Account',
                     manageAccountsBtn: 'Manage Accounts (Delete)',
                     manageContactsBtn: 'Manage Contacts',
@@ -935,9 +963,13 @@
                     infoTitle: 'Account details',
                     selectLang: 'Select language',
                     yourName: 'Your name',
-                    whatsappNumber: 'WhatsApp number'
+                    whatsappNumber: 'WhatsApp number',
+                    chatNow: 'Chat Now',
+                    delete: 'Delete',
+                    cancelRequest: 'Cancel',
+                    contactViaWA: 'Contact'
                 },
-                ps: { /* same as before - keeping short for brevity */ 
+                ps: {
                     brand: 'جی کے سټور',
                     lang: 'ژبه',
                     contact: 'اړیکه',
@@ -958,6 +990,7 @@
                     uniqueVisitors: 'کارونکي (وروستۍ ۲۴ ساعته)',
                     accountsStat: 'حسابونه',
                     bookingsStat: 'بکنګونه',
+                    bookRequestsTitle: '📋 د بکنګ غوښتنې',
                     addAccountBtn: 'نوی حساب اضافه کړئ',
                     manageAccountsBtn: 'حسابونه اداره کړئ (ړنګول)',
                     manageContactsBtn: 'اړیکې اداره کړئ',
@@ -992,9 +1025,13 @@
                     infoTitle: 'د حساب تفصیل',
                     selectLang: 'ژبه غوره کړئ',
                     yourName: 'ستاسو نوم',
-                    whatsappNumber: 'د واټساپ شمیره'
+                    whatsappNumber: 'د واټساپ شمیره',
+                    chatNow: 'اوس خبرې وکړئ',
+                    delete: 'ړنګول',
+                    cancelRequest: 'لغوه کول',
+                    contactViaWA: 'اړیکه'
                 },
-                fa: { /* same as before */
+                fa: {
                     brand: 'جی کی استور',
                     lang: 'زبان',
                     contact: 'تماس',
@@ -1015,6 +1052,7 @@
                     uniqueVisitors: 'بازدیدکنندگان (۲۴ ساعت)',
                     accountsStat: 'حساب‌ها',
                     bookingsStat: 'رزروها',
+                    bookRequestsTitle: '📋 درخواست‌های رزرو',
                     addAccountBtn: 'افزودن حساب جدید',
                     manageAccountsBtn: 'مدیریت حساب‌ها (حذف)',
                     manageContactsBtn: 'مدیریت مخاطبین',
@@ -1049,7 +1087,11 @@
                     infoTitle: 'جزئیات حساب',
                     selectLang: 'انتخاب زبان',
                     yourName: 'نام شما',
-                    whatsappNumber: 'شماره واتساپ'
+                    whatsappNumber: 'شماره واتساپ',
+                    chatNow: 'گفتگو',
+                    delete: 'حذف',
+                    cancelRequest: 'لغو',
+                    contactViaWA: 'تماس'
                 }
             };
 
@@ -1064,11 +1106,22 @@
                     }
                 });
 
+                // Also update buttons that might not have data-i18n
+                document.querySelectorAll('.action-btn .btn-text').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) el.textContent = t[key];
+                });
+
                 document.documentElement.lang = lang;
                 document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
                 
                 appState.currentLanguage = lang;
                 localStorage.setItem('gk_language', lang);
+                
+                // Re-render to update button texts
+                renderAccounts();
+                renderContacts();
+                if (appState.isAdminLoggedIn) renderBookRequests();
             }
 
             // Get visitor IP and track unique visitors
@@ -1104,7 +1157,8 @@
                     appState.phoneInput = intlTelInput(input, {
                         initialCountry: 'af',
                         separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js'
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
                     });
                 }
             }
@@ -1185,6 +1239,8 @@
                     container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
                     return;
                 }
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 container.innerHTML = appState.contacts.map(contact => {
                     let cleanPhone = contact.phone.replace(/\D/g, '');
                     if (cleanPhone.startsWith('0')) {
@@ -1200,14 +1256,14 @@
                             <p>${contact.desc || 'WhatsApp support'}</p>
                             <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
                             <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> Chat Now
+                                <i class="fab fa-whatsapp"></i> ${t.chatNow}
                             </button>
                         </div>
                     `;
                 }).join('');
             }
 
-            // Render account cards
+            // Render account cards with translated buttons
             function renderAccounts() {
                 const grid = document.getElementById('accounts-grid');
                 if (!grid) return;
@@ -1219,6 +1275,9 @@
                     grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
                     return;
                 }
+                
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 grid.innerHTML = filtered.map(acc => {
                     const mediaTag = acc.mediaType === 'video' 
                         ? `<video src="${acc.media}" class="card-media" autoplay muted loop playsinline></video>`
@@ -1238,9 +1297,9 @@
                                     <span class="afn-price">${acc.price_afn.toLocaleString()} AFN</span>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> Book</button>
-                                    <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> Buy</button>
-                                    <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> Info</button>
+                                    <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
+                                    <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
+                                    <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
                                 </div>
                             </div>
                         </div>
@@ -1256,6 +1315,8 @@
                     list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
                     return;
                 }
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 list.innerHTML = appState.accounts.map(acc => `
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                         ${acc.mediaType === 'video' 
@@ -1268,7 +1329,7 @@
                             <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i> Delete
+                            <i class="fa fa-trash"></i> ${t.delete}
                         </button>
                     </div>
                 `).join('');
@@ -1282,6 +1343,8 @@
                     list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
                     return;
                 }
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 list.innerHTML = appState.contacts.map(contact => `
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                         <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
@@ -1293,7 +1356,7 @@
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.desc || ''}</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
-                            <i class="fa fa-trash"></i> Delete
+                            <i class="fa fa-trash"></i> ${t.delete}
                         </button>
                     </div>
                 `).join('');
@@ -1307,6 +1370,8 @@
                     list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
                     return;
                 }
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 list.innerHTML = appState.ads.map((ad, index) => `
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                         <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
@@ -1320,13 +1385,13 @@
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
                         </div>
                         <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
-                            <i class="fa fa-trash"></i> Delete
+                            <i class="fa fa-trash"></i> ${t.delete}
                         </button>
                     </div>
                 `).join('');
             }
 
-            // Render book requests list (FIXED - shows who booked what)
+            // Render book requests list with WhatsApp button and Cancel
             function renderBookRequests() {
                 const list = document.getElementById('admin-book-requests-list');
                 if (!list) return;
@@ -1335,21 +1400,43 @@
                     return;
                 }
                 
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 // Sort by date (newest first)
                 const sorted = [...appState.bookRequests].sort((a, b) => new Date(b.date) - new Date(a.date));
                 
                 list.innerHTML = sorted.map(req => {
                     const date = new Date(req.date).toLocaleString();
+                    const cleanPhone = req.whatsapp.replace(/\D/g, '');
+                    
                     return `
-                        <div class="book-request-item">
-                            <p><span class="label">Account:</span> ${req.account_title}</p>
-                            <p><span class="label">Name:</span> ${req.user_name}</p>
-                            <p><span class="label">WhatsApp:</span> +${req.whatsapp}</p>
+                        <div class="book-request-item" data-id="${req.id}">
+                            <p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p>
+                            <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
+                            <p><span class="label">${t.whatsappNumber}:</span> +${cleanPhone}</p>
                             <p><span class="label">Date:</span> ${date}</p>
+                            <div class="request-actions">
+                                <button class="btn-wa" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                                    <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
+                                </button>
+                                <button class="btn-cancel" onclick="cancelBookRequest('${req.id}')">
+                                    <i class="fa fa-times"></i> ${t.cancelRequest}
+                                </button>
+                            </div>
                         </div>
                     `;
                 }).join('');
             }
+
+            // Cancel book request
+            window.cancelBookRequest = function(id) {
+                if (confirm('Cancel this book request?')) {
+                    appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
+                    localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
+                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    renderBookRequests();
+                }
+            };
 
             // Filter accounts
             window.filterAccounts = function(tier) {
@@ -1371,7 +1458,7 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                    renderBookRequests(); // Show the book requests list
+                    renderBookRequests();
                 }
             };
 
@@ -1601,12 +1688,14 @@
                 if (!acc) return;
                 appState.currentAccount = acc;
                 
+                const t = translations[appState.currentLanguage] || translations.en;
+                
                 const modalBody = document.getElementById('book-modal-body');
                 modalBody.innerHTML = `
                     <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
                     <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                    <input type="text" id="book-name" class="input" placeholder="Your name">
-                    <label class="input-label">WhatsApp number with country code</label>
+                    <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
+                    <label class="input-label">${t.whatsappNumber} with country code</label>
                     <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
                 `;
                 
@@ -1626,7 +1715,7 @@
                             initialCountry: 'af',
                             separateDialCode: true,
                             utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                            dropdownContainer: document.body // Ensure dropdown attaches to body
+                            dropdownContainer: document.body
                         });
                         
                         // Force the dropdown to be visible when clicked
