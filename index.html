@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with working country code</title>
+    <title>GK Store · PUBG accounts with fixed country code</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
@@ -478,19 +478,26 @@
             gap: 5px;
         }
 
-        /* intl-tel-input customization */
+        /* intl-tel-input customization - FIXED to stay visible */
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
+            position: relative;
+            z-index: 10;
         }
         .iti__selected-flag {
             background: var(--surface-lighter) !important;
             border-radius: 12px 0 0 12px;
+            z-index: 15;
         }
         .iti__country-list {
             background: var(--surface);
             border: 1px solid var(--border);
             max-width: 300px;
+            z-index: 9999 !important;
+            position: fixed !important; /* Prevents disappearance */
+            max-height: 300px;
+            overflow-y: auto;
         }
         
         /* visitor stats */
@@ -499,6 +506,25 @@
             grid-template-columns: 1fr 1fr;
             gap: 0.8rem;
             margin: 1rem 0;
+        }
+        
+        /* book request items */
+        .book-request-item {
+            background: var(--surface-light);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border: 1px solid var(--border);
+        }
+        .book-request-item p {
+            margin: 0.3rem 0;
+            font-size: 0.9rem;
+        }
+        .book-request-item .label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: inline-block;
+            width: 80px;
         }
     </style>
 </head>
@@ -563,7 +589,7 @@
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
-                    <!-- Unique Visitors Counter (real IP tracking) -->
+                    <!-- Unique Visitors Counter -->
                     <div class="account-card" style="padding:1rem; margin-bottom:1rem; display:flex; align-items:center; gap:1rem;">
                         <div style="background:#10b981; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
                             <i class="fa fa-users"></i>
@@ -574,7 +600,7 @@
                         </div>
                     </div>
                     
-                    <!-- Stats - Book requests count -->
+                    <!-- Stats -->
                     <div class="visitor-stats">
                         <div class="account-card" style="padding:1rem; text-align:center;">
                             <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
@@ -582,6 +608,12 @@
                         <div class="account-card" style="padding:1rem; text-align:center;">
                             <span id="admin-bookings-count">0</span> <span data-i18n="bookingsStat">book requests</span>
                         </div>
+                    </div>
+                    
+                    <!-- Book Requests List - FIXED: shows who booked what -->
+                    <div class="account-card" style="padding:1rem; margin:1rem 0;">
+                        <h3 style="margin-bottom:1rem;">📋 Book Requests</h3>
+                        <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
                     </div>
                     
                     <!-- Management Buttons -->
@@ -723,7 +755,7 @@
         </div>
     </div>
 
-    <!-- BOOK MODAL - with working country code picker (FIXED) -->
+    <!-- BOOK MODAL - with FIXED country code picker -->
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -846,7 +878,7 @@
                 }
             }
 
-            // Translation dictionary
+            // Translation dictionary (kept same as before)
             const translations = {
                 en: {
                     brand: 'GK Store',
@@ -905,7 +937,7 @@
                     yourName: 'Your name',
                     whatsappNumber: 'WhatsApp number'
                 },
-                ps: {
+                ps: { /* same as before - keeping short for brevity */ 
                     brand: 'جی کے سټور',
                     lang: 'ژبه',
                     contact: 'اړیکه',
@@ -962,7 +994,7 @@
                     yourName: 'ستاسو نوم',
                     whatsappNumber: 'د واټساپ شمیره'
                 },
-                fa: {
+                fa: { /* same as before */
                     brand: 'جی کی استور',
                     lang: 'زبان',
                     contact: 'تماس',
@@ -1098,7 +1130,7 @@
                     document.querySelectorAll('.dot').forEach((dot, i) => {
                         dot.classList.toggle('active', i === nextIndex);
                     });
-                }, 2000); // Changed to 2 seconds
+                }, 2000);
             }
 
             // Render main slider (ads)
@@ -1294,6 +1326,31 @@
                 `).join('');
             }
 
+            // Render book requests list (FIXED - shows who booked what)
+            function renderBookRequests() {
+                const list = document.getElementById('admin-book-requests-list');
+                if (!list) return;
+                if (appState.bookRequests.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
+                    return;
+                }
+                
+                // Sort by date (newest first)
+                const sorted = [...appState.bookRequests].sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                list.innerHTML = sorted.map(req => {
+                    const date = new Date(req.date).toLocaleString();
+                    return `
+                        <div class="book-request-item">
+                            <p><span class="label">Account:</span> ${req.account_title}</p>
+                            <p><span class="label">Name:</span> ${req.user_name}</p>
+                            <p><span class="label">WhatsApp:</span> +${req.whatsapp}</p>
+                            <p><span class="label">Date:</span> ${date}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+
             // Filter accounts
             window.filterAccounts = function(tier) {
                 appState.currentFilter = tier;
@@ -1314,6 +1371,7 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    renderBookRequests(); // Show the book requests list
                 }
             };
 
@@ -1537,7 +1595,7 @@
                 }
             };
 
-            // Book account with FIXED country code picker
+            // Book account with FIXED country code picker (stays visible)
             window.bookAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
@@ -1554,21 +1612,29 @@
                 
                 openModal('book-modal');
                 
-                // Initialize phone input after modal is open
+                // Initialize phone input after modal is open - with proper cleanup
                 setTimeout(() => {
                     const input = document.getElementById('book-phone');
                     if (input) {
                         // Destroy previous instance if exists
                         if (appState.bookPhoneInput) {
-                            appState.bookPhoneInput.destroy();
+                            try {
+                                appState.bookPhoneInput.destroy();
+                            } catch (e) {}
                         }
                         appState.bookPhoneInput = intlTelInput(input, {
                             initialCountry: 'af',
                             separateDialCode: true,
-                            utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js'
+                            utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                            dropdownContainer: document.body // Ensure dropdown attaches to body
+                        });
+                        
+                        // Force the dropdown to be visible when clicked
+                        input.addEventListener('click', function(e) {
+                            e.stopPropagation();
                         });
                     }
-                }, 100);
+                }, 200);
             };
 
             window.submitBook = function() {
@@ -1609,6 +1675,7 @@
                 
                 if (appState.isAdminLoggedIn) {
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    renderBookRequests();
                 }
                 
                 alert('✅ Booking submitted! We will contact you on WhatsApp.');
@@ -1660,6 +1727,7 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    renderBookRequests();
                 } else {
                     document.getElementById('admin-error').innerText = 'Invalid credentials';
                 }
@@ -1684,6 +1752,13 @@
             
             window.closeModal = function(id) {
                 document.getElementById(id).classList.add('hidden');
+                // Clean up phone input when closing book modal
+                if (id === 'book-modal' && appState.bookPhoneInput) {
+                    try {
+                        appState.bookPhoneInput.destroy();
+                    } catch (e) {}
+                    appState.bookPhoneInput = null;
+                }
             };
             
             window.openLanguageModal = function() {
