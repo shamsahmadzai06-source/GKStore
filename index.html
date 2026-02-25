@@ -635,7 +635,7 @@
         </div>
     </div>
 
-    <!-- MODALS (KEPT EXACTLY AS YOUR ORIGINAL) -->
+    <!-- MODALS -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -867,7 +867,8 @@
                 autoSlideInterval: null,
                 usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
                 sessionId: localStorage.getItem('gk_session_id') || 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                adminToken: null
+                adminToken: null,
+                functionUrl: `https://upload-to-storj.${NHOST_SUBDOMAIN}.functions.${NHOST_REGION}.nhost.run`
             };
 
             localStorage.setItem('gk_session_id', appState.sessionId);
@@ -1405,7 +1406,7 @@
                 alert('USDT address updated!');
             };
 
-            // UPDATED: Upload to Storj via Nhost Function
+            // UPLOAD TO STORJ VIA NHOST FUNCTION
             window.uploadNewAccount = async function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
@@ -1435,7 +1436,7 @@
                 progressText.innerHTML = 'Preparing upload...';
 
                 try {
-                    // Prepare file data for Nhost function
+                    // Prepare file data
                     const fileData = {
                         file: appState.currentMediaData.data,
                         fileName: appState.currentMediaData.name,
@@ -1447,7 +1448,11 @@
                     progressText.innerHTML = 'Uploading to Storj via Nhost...';
 
                     // Call Nhost function
-                    const response = await fetch(`${NHOST_FUNCTIONS_URL}/upload-to-storj`, {
+                    const functionUrl = `https://upload-to-storj.${NHOST_SUBDOMAIN}.functions.${NHOST_REGION}.nhost.run`;
+                    
+                    console.log('Uploading to:', functionUrl);
+                    
+                    const response = await fetch(functionUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1455,6 +1460,11 @@
                         },
                         body: JSON.stringify(fileData)
                     });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+                    }
 
                     const result = await response.json();
 
@@ -1473,10 +1483,10 @@
                         tier: tier,
                         price_usd: priceUsd,
                         price_afn: priceAfn,
-                        media: result.url, // Storj URL from function
+                        media: result.url,
                         mediaType: appState.currentMediaData.type.startsWith('video/') ? 'video' : 'image',
                         sold: false,
-                        storjPath: result.path // Save path for future reference
+                        storjPath: result.path
                     };
                     
                     appState.accounts.push(newAccount);
@@ -1675,7 +1685,6 @@
                 openModal('info-modal');
             };
 
-            // Updated adminLogin to store token
             window.adminLogin = async function() {
                 const email = document.getElementById('admin-email').value;
                 const pass = document.getElementById('admin-password').value;
