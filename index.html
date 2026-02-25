@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with IP user count & upload progress</title>
+    <title>GK Store · PUBG accounts with online users & IP tracking</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
@@ -566,7 +566,7 @@
         /* visitor stats */
         .visitor-stats {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 0.8rem;
             margin: 1rem 0;
         }
@@ -616,6 +616,23 @@
             font-size: 2rem;
             font-weight: 700;
             color: var(--primary);
+        }
+        
+        /* Online users styling */
+        .online-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
         
         /* Upload button styling */
@@ -700,23 +717,39 @@
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
-                    <!-- APP TOTAL USER COUNT by IP (REAL) - REPLACED accounts count -->
-                    <div class="account-card" style="padding:1.5rem; margin-bottom:1rem; text-align:center;">
-                        <div style="background:#10b981; width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
-                            <i class="fa fa-users fa-2x"></i>
+                    <!-- APP TOTAL USERS + ONLINE USERS -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
+                        <!-- APP TOTAL USERS by IP -->
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <div style="background:#10b981; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 0.5rem;">
+                                <i class="fa fa-users"></i>
+                            </div>
+                            <div class="visitor-count" id="unique-visitor-count" style="font-size:1.8rem;">0</div>
+                            <div style="color:var(--text-secondary); font-weight:600;" data-i18n="appTotalUsers">TOTAL USERS</div>
+                            <p style="font-size:0.7rem; color:var(--text-secondary);" data-i18n="visitorInfo">Unique IPs</p>
                         </div>
-                        <div class="visitor-count" id="unique-visitor-count">0</div>
-                        <div style="color:var(--text-secondary); font-size:1.2rem; font-weight:600;" data-i18n="appTotalUsers">APP TOTAL USERS</div>
-                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.5rem;" data-i18n="visitorInfo">Unique IP addresses counted once</p>
+                        
+                        <!-- ONLINE USERS (last 5 minutes) -->
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <div style="background:#ec4899; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 0.5rem;">
+                                <i class="fa fa-circle" style="color:#10b981; animation:pulse 2s infinite;"></i>
+                            </div>
+                            <div class="visitor-count" id="online-user-count" style="font-size:1.8rem; color:#ec4899;">0</div>
+                            <div style="color:var(--text-secondary); font-weight:600;" data-i18n="onlineUsers">ONLINE NOW</div>
+                            <p style="font-size:0.7rem; color:var(--text-secondary);" data-i18n="onlineInfo">Last 5 minutes</p>
+                        </div>
                     </div>
                     
-                    <!-- Stats - Only bookings count remains -->
+                    <!-- Stats - Accounts and Book Requests -->
                     <div class="visitor-stats">
                         <div class="account-card" style="padding:1rem; text-align:center;">
                             <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
                         </div>
                         <div class="account-card" style="padding:1rem; text-align:center;">
                             <span id="admin-bookings-count">0</span> <span data-i18n="bookingsStat">book requests</span>
+                        </div>
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <span id="active-sessions-count">0</span> <span data-i18n="activeSessions">active sessions</span>
                         </div>
                     </div>
                     
@@ -979,7 +1012,9 @@
                 ],
                 bookRequests: [],
                 uniqueVisitors: new Set(),
+                activeSessions: new Map(), // IP -> timestamp
                 visitorCount: 0,
+                onlineCount: 0,
                 currentFilter: 'all',
                 isAdminLoggedIn: false,
                 currentAccount: null,
@@ -1032,6 +1067,24 @@
                     appState.uniqueVisitors = new Set();
                 }
             }
+            
+            // Load active sessions from localStorage
+            if (localStorage.getItem('gk_sessions')) {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('gk_sessions'));
+                    appState.activeSessions = new Map(saved);
+                    // Clean old sessions (> 5 minutes)
+                    const now = Date.now();
+                    for (let [ip, time] of appState.activeSessions.entries()) {
+                        if (now - time > 300000) { // 5 minutes
+                            appState.activeSessions.delete(ip);
+                        }
+                    }
+                    appState.onlineCount = appState.activeSessions.size;
+                } catch (e) {
+                    appState.activeSessions = new Map();
+                }
+            }
 
             // COMPLETE Translation dictionary
             const translations = {
@@ -1053,10 +1106,13 @@
                     adminTitle: 'Admin Panel',
                     loginTitle: 'Admin Login',
                     loginBtn: 'Login',
-                    appTotalUsers: 'APP TOTAL USERS',
-                    visitorInfo: 'Unique IP addresses counted once',
+                    appTotalUsers: 'TOTAL USERS',
+                    onlineUsers: 'ONLINE NOW',
+                    onlineInfo: 'Last 5 minutes',
+                    visitorInfo: 'Unique IPs',
                     accountsStat: 'accounts',
                     bookingsStat: 'book requests',
+                    activeSessions: 'active sessions',
                     bookRequestsTitle: '📋 Book Requests',
                     addAccountBtn: 'Add New Account',
                     manageAccountsBtn: 'Manage Accounts (Delete)',
@@ -1123,9 +1179,12 @@
                     loginTitle: 'مدیر ننوتل',
                     loginBtn: 'ننوتل',
                     appTotalUsers: 'ټول کارونکي',
-                    visitorInfo: 'هر IP پته یو ځل شمیرل کیږي',
+                    onlineUsers: 'آنلاین اوس',
+                    onlineInfo: 'وروستۍ ۵ دقیقې',
+                    visitorInfo: 'بی‌نظیره IP پتې',
                     accountsStat: 'حسابونه',
                     bookingsStat: 'بکنګونه',
+                    activeSessions: 'فعال غونډې',
                     bookRequestsTitle: '📋 د بکنګ غوښتنې',
                     addAccountBtn: 'نوی حساب اضافه کړئ',
                     manageAccountsBtn: 'حسابونه اداره کړئ (ړنګول)',
@@ -1192,9 +1251,12 @@
                     loginTitle: 'ورود مدیر',
                     loginBtn: 'ورود',
                     appTotalUsers: 'کل کاربران',
-                    visitorInfo: 'هر IP آدرس یک بار شمارش می‌شود',
+                    onlineUsers: 'آنلاین اکنون',
+                    onlineInfo: '۵ دقیقه آخر',
+                    visitorInfo: 'IPهای یکتا',
                     accountsStat: 'حساب‌ها',
                     bookingsStat: 'رزروها',
+                    activeSessions: 'نشست‌های فعال',
                     bookRequestsTitle: '📋 درخواست‌های رزرو',
                     addAccountBtn: 'افزودن حساب جدید',
                     manageAccountsBtn: 'مدیریت حساب‌ها (حذف)',
@@ -1270,18 +1332,36 @@
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
-            // Get visitor IP and track unique visitors (APP TOTAL USER COUNT)
+            // Get visitor IP and track unique visitors & online users
             function trackVisitor() {
                 fetch('https://api.ipify.org?format=json')
                     .then(response => response.json())
                     .then(data => {
                         const ip = data.ip;
+                        const now = Date.now();
+                        
+                        // Track unique visitors (total users)
                         appState.uniqueVisitors.add(ip);
                         appState.visitorCount = appState.uniqueVisitors.size;
-                        
                         localStorage.setItem('gk_visitors', JSON.stringify([...appState.uniqueVisitors]));
                         
+                        // Track online users (active in last 5 minutes)
+                        appState.activeSessions.set(ip, now);
+                        // Clean old sessions
+                        for (let [sessionIp, time] of appState.activeSessions.entries()) {
+                            if (now - time > 300000) { // 5 minutes
+                                appState.activeSessions.delete(sessionIp);
+                            }
+                        }
+                        appState.onlineCount = appState.activeSessions.size;
+                        
+                        // Save sessions to localStorage
+                        localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
+                        
+                        // Update UI
                         document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                        document.getElementById('online-user-count').innerText = appState.onlineCount;
+                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                     })
                     .catch(() => {
                         // Fallback to session ID if IP fetch fails
@@ -1290,10 +1370,25 @@
                             sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                             localStorage.setItem('gk_session_id', sessionId);
                         }
+                        
+                        const now = Date.now();
+                        
                         appState.uniqueVisitors.add(sessionId);
                         appState.visitorCount = appState.uniqueVisitors.size;
                         localStorage.setItem('gk_visitors', JSON.stringify([...appState.uniqueVisitors]));
+                        
+                        appState.activeSessions.set(sessionId, now);
+                        for (let [sessionIp, time] of appState.activeSessions.entries()) {
+                            if (now - time > 300000) {
+                                appState.activeSessions.delete(sessionIp);
+                            }
+                        }
+                        appState.onlineCount = appState.activeSessions.size;
+                        localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
+                        
                         document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                        document.getElementById('online-user-count').innerText = appState.onlineCount;
+                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                     });
             }
 
@@ -1607,6 +1702,8 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    document.getElementById('online-user-count').innerText = appState.onlineCount;
+                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                     document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                     renderBookRequests();
                 }
@@ -2037,6 +2134,8 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    document.getElementById('online-user-count').innerText = appState.onlineCount;
+                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                     document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                     renderBookRequests();
                 } else {
@@ -2091,8 +2190,15 @@
             // Track unique visitor immediately
             trackVisitor();
             
-            // Re-track every 5 minutes to keep count updated (but not add duplicates)
-            setInterval(trackVisitor, 300000);
+            // Update online users every 30 seconds
+            setInterval(trackVisitor, 30000);
+            
+            // Also track when user switches screens
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    trackVisitor();
+                }
+            }, 60000);
         })();
     </script>
 </body>
