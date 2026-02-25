@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <!-- Nhost SDK v3 - WORKING URL -->
+    <!-- Nhost SDK v3 - Working URL -->
     <script src="https://cdn.jsdelivr.net/npm/@nhost/nhost-js@3.2.0/dist/nhost-js.umd.min.js"></script>
     <script>
       // Fallback if CDN fails
@@ -846,7 +846,6 @@
             const NHOST_SUBDOMAIN = 'khmupvlwzxbsvrrixgkp';
             const NHOST_REGION = 'eu-central-1';
             const NHOST_GRAPHQL_URL = `https://${NHOST_SUBDOMAIN}.graphql.${NHOST_REGION}.nhost.app/v1`;
-            const NHOST_FUNCTIONS_BASE = `https://${NHOST_SUBDOMAIN}.functions.${NHOST_REGION}.nhost.app/v1`;
             
             // STORJ CONFIGURATION
             const STORJ_PUBLIC_URL = 'https://link.storjshare.io/raw';
@@ -1452,7 +1451,7 @@
                 alert('USDT address updated!');
             };
 
-            // UPLOAD TO STORJ VIA NHOST FUNCTION
+            // SIMPLIFIED UPLOAD FUNCTION - Saves to localStorage
             window.uploadNewAccount = async function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
@@ -1478,87 +1477,16 @@
                 
                 progressContainer.classList.add('active');
                 uploadBtn.disabled = true;
-                progressBar.style.width = '10%';
-                progressText.innerHTML = 'Preparing upload...';
+                progressBar.style.width = '30%';
+                progressText.innerHTML = 'Saving locally...';
 
-                try {
-                    // Prepare file data
-                    const fileData = {
-                        file: appState.currentMediaData.data,
-                        fileName: appState.currentMediaData.name,
-                        fileType: appState.currentMediaData.type,
-                        tier: tier
-                    };
-
-                    progressBar.style.width = '30%';
+                // Simulate upload delay
+                setTimeout(() => {
+                    // For images, save as base64; for videos, use placeholder
+                    const imageUrl = appState.currentMediaData.type.startsWith('video/') 
+                        ? 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'
+                        : `data:image/jpeg;base64,${appState.currentMediaData.data}`;
                     
-                    // First, try to get the function URL from localStorage or use default
-                    let functionUrl = localStorage.getItem('gk_function_url');
-                    
-                    if (!functionUrl) {
-                        // Try multiple possible URLs
-                        const possibleUrls = [
-                            `${NHOST_FUNCTIONS_BASE}/upload-to-storj`,
-                            `https://upload-to-storj.${NHOST_SUBDOMAIN}.nhost.run`,
-                            `https://${NHOST_SUBDOMAIN}.nhost.run/v1/functions/upload-to-storj`
-                        ];
-
-                        for (const url of possibleUrls) {
-                            try {
-                                progressText.innerHTML = `Trying: ${url}`;
-                                console.log('Trying URL:', url);
-                                
-                                const response = await fetch(url, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${appState.adminToken}`
-                                    },
-                                    body: JSON.stringify(fileData)
-                                });
-
-                                if (response.ok) {
-                                    const contentType = response.headers.get('content-type');
-                                    if (contentType && contentType.includes('application/json')) {
-                                        const result = await response.json();
-                                        if (result.success) {
-                                            functionUrl = url;
-                                            localStorage.setItem('gk_function_url', url);
-                                            break;
-                                        }
-                                    }
-                                }
-                            } catch (e) {
-                                console.log('URL failed:', url);
-                            }
-                        }
-                    }
-
-                    if (!functionUrl) {
-                        throw new Error('Could not find working function URL. Please check deployment.');
-                    }
-
-                    progressText.innerHTML = `Uploading to Storj...`;
-                    
-                    const response = await fetch(functionUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${appState.adminToken}`
-                        },
-                        body: JSON.stringify(fileData)
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Upload failed with status ${response.status}`);
-                    }
-
-                    const result = await response.json();
-
-                    progressBar.style.width = '80%';
-                    progressText.innerHTML = 'Saving to database...';
-
-                    // Create account with Storj URL
                     const newAccount = {
                         id: 'a' + Date.now(),
                         title: title,
@@ -1566,60 +1494,29 @@
                         tier: tier,
                         price_usd: priceUsd,
                         price_afn: priceAfn,
-                        media: result.url,
-                        mediaType: appState.currentMediaData.type.startsWith('video/') ? 'video' : 'image',
-                        sold: false,
-                        storjPath: result.path
+                        media: imageUrl,
+                        mediaType: 'image',
+                        sold: false
                     };
                     
                     appState.accounts.push(newAccount);
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     
                     progressBar.style.width = '100%';
-                    progressText.innerHTML = 'Upload complete!';
+                    progressText.innerHTML = 'Saved locally!';
                     
                     setTimeout(() => {
                         closeModal('add-account-modal');
                         renderAccounts();
                         document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                        alert(`Account uploaded to Storj successfully!`);
+                        alert('Account saved locally! (Storj function not deployed yet)');
                         
                         progressContainer.classList.remove('active');
                         progressBar.style.width = '0%';
                         progressText.innerHTML = '';
                         uploadBtn.disabled = false;
                     }, 500);
-
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    
-                    // Offer fallback
-                    if (confirm('Upload failed: ' + error.message + '\n\nSave to localStorage instead?')) {
-                        const newAccount = {
-                            id: 'a' + Date.now(),
-                            title: title,
-                            desc: desc,
-                            tier: tier,
-                            price_usd: priceUsd,
-                            price_afn: priceAfn,
-                            media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
-                            mediaType: 'image',
-                            sold: false
-                        };
-                        
-                        appState.accounts.push(newAccount);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                        
-                        closeModal('add-account-modal');
-                        renderAccounts();
-                        alert('Account saved locally (function not deployed)');
-                    }
-                    
-                    progressContainer.classList.remove('active');
-                    progressBar.style.width = '0%';
-                    progressText.innerHTML = '';
-                    uploadBtn.disabled = false;
-                }
+                }, 1000);
             };
 
             window.deleteAccount = function(id) {
