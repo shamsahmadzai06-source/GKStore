@@ -1,0 +1,59 @@
+const express = require('express');
+const app = express();
+app.use(express.json({ limit: '50mb' }));
+
+app.post('/', async (req, res) => {
+  try {
+    const { file, fileName, fileType, tier } = req.body;
+    
+    if (!file || !fileName || !tier) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const STORJ_ACCESS_KEY = process.env.STORJ_ACCESS_KEY;
+    const STORJ_BUCKET = process.env.STORJ_BUCKET || 'videos';
+
+    if (!STORJ_ACCESS_KEY) {
+      return res.status(500).json({ error: 'Storj access key not configured' });
+    }
+
+    const timestamp = Date.now();
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9.]/g, '_');
+    const uniqueFileName = `${timestamp}-${safeFileName}`;
+    const key = `${tier}/${uniqueFileName}`;
+
+    const fileBuffer = Buffer.from(file, 'base64');
+
+    const uploadUrl = `https://gateway.storjshare.io/${STORJ_BUCKET}/${key}`;
+    
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${STORJ_ACCESS_KEY}`,
+        'Content-Type': fileType || 'application/octet-stream',
+        'x-amz-acl': 'public-read'
+      },
+      body: fileBuffer
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
+    }
+
+    const publicUrl = `https://link.storjshare.io/raw/${STORJ_ACCESS_KEY}/${STORJ_BUCKET}/${key}`;
+
+    res.json({
+      success: true,
+      path: key,
+      url: publicUrl
+    });
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Upload function listening on port ${port}`));
