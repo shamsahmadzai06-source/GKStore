@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <!-- Nhost SDK - For Auth & Database ONLY -->
+    <!-- Nhost SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@nhost/nhost-js@2.2.0/dist/nhost-js.umd.min.js"></script>
     <style>
         /* YOUR ORIGINAL CSS - KEPT EXACTLY AS IS */
@@ -817,17 +817,16 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         (function() {
-            // ---------- NHOST CONFIGURATION (ONLY FOR AUTH & DATABASE) ----------
+            // ---------- NHOST CONFIGURATION ----------
             const NHOST_SUBDOMAIN = 'khmuplvwzxbsvrrixgkp';
             const NHOST_REGION = 'eu-central-1';
             const NHOST_GRAPHQL_URL = `https://${NHOST_SUBDOMAIN}.graphql.eu-central-1.nhost.run/v1`;
+            const NHOST_FUNCTIONS_URL = `https://${NHOST_SUBDOMAIN}.functions.eu-central-1.nhost.run/v1`;
             
-            // STORJ CONFIGURATION (FOR FILE STORAGE ONLY)
+            // STORJ CONFIGURATION
             const STORJ_PUBLIC_URL = 'https://link.storjshare.io/raw';
-            const STORJ_BUCKET = 'videos';
-            // NOTE: Access key is stored in Nhost environment variables, NOT in frontend!
             
-            // Initialize Nhost client (only for auth, NOT for storage)
+            // Initialize Nhost client
             let nhost;
             try {
                 if (typeof Nhost !== 'undefined' && Nhost.NhostClient) {
@@ -835,19 +834,19 @@
                         subdomain: NHOST_SUBDOMAIN,
                         region: NHOST_REGION
                     });
-                    console.log('Nhost initialized for auth/db only');
+                    console.log('Nhost initialized');
                 } else {
-                    console.warn('Nhost SDK not loaded, using localStorage mode');
+                    console.warn('Nhost SDK not loaded');
                     nhost = { auth: { signIn: async () => ({ session: null }), getSession: () => null } };
                 }
             } catch (error) {
-                console.error('Nhost init failed, using localStorage');
+                console.error('Nhost init failed');
                 nhost = { auth: { signIn: async () => ({ session: null }), getSession: () => null } };
             }
             
             window.nhost = nhost;
 
-            // APP STATE - using localStorage as primary, Nhost as secondary
+            // APP STATE
             const appState = {
                 accounts: [],
                 contacts: [],
@@ -867,12 +866,13 @@
                 currentLanguage: 'en',
                 autoSlideInterval: null,
                 usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-                sessionId: localStorage.getItem('gk_session_id') || 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+                sessionId: localStorage.getItem('gk_session_id') || 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                adminToken: null
             };
 
             localStorage.setItem('gk_session_id', appState.sessionId);
 
-            // Load data from localStorage (faster, no egress cost)
+            // Load data from localStorage
             if (localStorage.getItem('gk_accounts')) {
                 appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             } else {
@@ -912,7 +912,6 @@
                 appState.usdtAddress = localStorage.getItem('gk_usdt_address');
             }
 
-            // Load visitors
             if (localStorage.getItem('gk_visitors')) {
                 try {
                     const saved = JSON.parse(localStorage.getItem('gk_visitors'));
@@ -1045,7 +1044,7 @@
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
-            // Visitor tracking (local only - no egress cost)
+            // Visitor tracking
             function trackVisitor() {
                 fetch('https://api.ipify.org?format=json')
                     .then(response => response.json())
@@ -1326,8 +1325,18 @@
                     uploadBtn.disabled = false;
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        appState.currentMediaData = { data: e.target.result };
+                        const file = fileInput.files[0];
+                        const isVideo = file.type.startsWith('video/');
+                        if (isVideo) {
+                            preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                        } else {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                        }
+                        appState.currentMediaData = {
+                            data: e.target.result.split(',')[1],
+                            type: file.type,
+                            name: file.name
+                        };
                     };
                     reader.readAsDataURL(fileInput.files[0]);
                 } else {
@@ -1342,7 +1351,11 @@
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        appState.currentAdData = { data: e.target.result };
+                        appState.currentAdData = {
+                            data: e.target.result.split(',')[1],
+                            type: fileInput.files[0].type,
+                            name: fileInput.files[0].name
+                        };
                     };
                     reader.readAsDataURL(fileInput.files[0]);
                 }
@@ -1392,7 +1405,8 @@
                 alert('USDT address updated!');
             };
 
-            window.uploadNewAccount = function() {
+            // UPDATED: Upload to Storj via Nhost Function
+            window.uploadNewAccount = async function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
                 const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
@@ -1400,30 +1414,98 @@
                 const priceAfn = parseInt(document.getElementById('account-price-afn').value);
                 
                 if (!tier || !title || !priceUsd || !priceAfn || !appState.currentMediaData) {
-                    alert('Please fill all fields and select media');
+                    alert('Please fill all required fields and select media');
                     return;
                 }
                 
-                // Save to localStorage (no egress cost)
-                const newAccount = {
-                    id: 'a' + Date.now(),
-                    title: title,
-                    desc: desc,
-                    tier: tier,
-                    price_usd: priceUsd,
-                    price_afn: priceAfn,
-                    media: appState.currentMediaData.data,
-                    mediaType: 'image',
-                    sold: false
-                };
+                if (!appState.isAdminLoggedIn) {
+                    alert('Please login first');
+                    return;
+                }
+
+                // Show progress
+                const progressContainer = document.getElementById('upload-progress');
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                const uploadBtn = document.getElementById('upload-btn');
                 
-                appState.accounts.push(newAccount);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                
-                closeModal('add-account-modal');
-                renderAccounts();
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                alert('Account saved locally!');
+                progressContainer.classList.add('active');
+                uploadBtn.disabled = true;
+                progressBar.style.width = '10%';
+                progressText.innerHTML = 'Preparing upload...';
+
+                try {
+                    // Prepare file data for Nhost function
+                    const fileData = {
+                        file: appState.currentMediaData.data,
+                        fileName: appState.currentMediaData.name,
+                        fileType: appState.currentMediaData.type,
+                        tier: tier
+                    };
+
+                    progressBar.style.width = '30%';
+                    progressText.innerHTML = 'Uploading to Storj via Nhost...';
+
+                    // Call Nhost function
+                    const response = await fetch(`${NHOST_FUNCTIONS_URL}/upload-to-storj`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${appState.adminToken}`
+                        },
+                        body: JSON.stringify(fileData)
+                    });
+
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+
+                    progressBar.style.width = '80%';
+                    progressText.innerHTML = 'Saving to database...';
+
+                    // Create account with Storj URL
+                    const newAccount = {
+                        id: 'a' + Date.now(),
+                        title: title,
+                        desc: desc,
+                        tier: tier,
+                        price_usd: priceUsd,
+                        price_afn: priceAfn,
+                        media: result.url, // Storj URL from function
+                        mediaType: appState.currentMediaData.type.startsWith('video/') ? 'video' : 'image',
+                        sold: false,
+                        storjPath: result.path // Save path for future reference
+                    };
+                    
+                    appState.accounts.push(newAccount);
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                    
+                    progressBar.style.width = '100%';
+                    progressText.innerHTML = 'Upload complete!';
+                    
+                    setTimeout(() => {
+                        closeModal('add-account-modal');
+                        renderAccounts();
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                        alert('Account uploaded to Storj successfully!');
+                        
+                        // Reset
+                        progressContainer.classList.remove('active');
+                        progressBar.style.width = '0%';
+                        progressText.innerHTML = '';
+                        uploadBtn.disabled = false;
+                    }, 500);
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Upload failed: ' + error.message);
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
+                }
             };
 
             window.deleteAccount = function(id) {
@@ -1490,7 +1572,7 @@
                 
                 const newAd = {
                     type: 'image',
-                    data: appState.currentAdData.data,
+                    data: `data:image/jpeg;base64,${appState.currentAdData.data}`,
                     caption: caption
                 };
                 
@@ -1593,29 +1675,62 @@
                 openModal('info-modal');
             };
 
-            window.adminLogin = function() {
+            // Updated adminLogin to store token
+            window.adminLogin = async function() {
                 const email = document.getElementById('admin-email').value;
                 const pass = document.getElementById('admin-password').value;
                 
-                if (email === 'shamsahmadzai06@gmil.com' && pass === 'Shams12357@') {
-                    appState.isAdminLoggedIn = true;
-                    document.getElementById('admin-login-section').classList.add('hidden');
-                    document.getElementById('admin-dashboard').classList.remove('hidden');
-                    document.getElementById('admin-error').innerText = '';
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                    document.getElementById('online-user-count').innerText = appState.onlineCount;
-                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                    document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                    renderBookRequests();
-                } else {
-                    document.getElementById('admin-error').innerText = 'Invalid credentials';
+                try {
+                    // Try Nhost login
+                    if (nhost && nhost.auth) {
+                        const { session, error } = await nhost.auth.signIn({
+                            email: email,
+                            password: pass
+                        });
+
+                        if (!error && session) {
+                            appState.isAdminLoggedIn = true;
+                            appState.adminToken = session.accessToken;
+                            
+                            document.getElementById('admin-login-section').classList.add('hidden');
+                            document.getElementById('admin-dashboard').classList.remove('hidden');
+                            document.getElementById('admin-error').innerText = '';
+                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                            document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                            document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                            document.getElementById('online-user-count').innerText = appState.onlineCount;
+                            document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                            document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                            renderBookRequests();
+                            return;
+                        }
+                    }
+
+                    // Fallback
+                    if (email === 'shamsahmadzai06@gmil.com' && pass === 'Shams12357@') {
+                        appState.isAdminLoggedIn = true;
+                        appState.adminToken = 'fallback-token';
+                        document.getElementById('admin-login-section').classList.add('hidden');
+                        document.getElementById('admin-dashboard').classList.remove('hidden');
+                        document.getElementById('admin-error').innerText = '';
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                        document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                        document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                        document.getElementById('online-user-count').innerText = appState.onlineCount;
+                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                        document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                        renderBookRequests();
+                    } else {
+                        document.getElementById('admin-error').innerText = 'Invalid credentials';
+                    }
+                } catch (error) {
+                    document.getElementById('admin-error').innerText = 'Login failed';
                 }
             };
 
             window.logout = function() {
                 appState.isAdminLoggedIn = false;
+                appState.adminToken = null;
                 document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 switchScreen('main');
