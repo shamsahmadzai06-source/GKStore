@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with unique visitor IP count & video upload</title>
+    <title>GK Store · PUBG accounts with IP user count & upload progress</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
@@ -459,6 +459,36 @@
             color: var(--text-secondary);
         }
 
+        /* Progress bar for upload */
+        .upload-progress {
+            width: 100%;
+            height: 8px;
+            background: var(--surface-lighter);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .upload-progress.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+
         /* Tier badges */
         .tier-badge {
             display: inline-block;
@@ -587,6 +617,26 @@
             font-weight: 700;
             color: var(--primary);
         }
+        
+        /* Upload button styling */
+        .upload-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(236,72,153,0.4);
+        }
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -650,17 +700,17 @@
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
-                    <!-- Unique Visitors Counter by IP (REAL) -->
+                    <!-- APP TOTAL USER COUNT by IP (REAL) - REPLACED accounts count -->
                     <div class="account-card" style="padding:1.5rem; margin-bottom:1rem; text-align:center;">
-                        <div style="background:#10b981; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                        <div style="background:#10b981; width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
                             <i class="fa fa-users fa-2x"></i>
                         </div>
                         <div class="visitor-count" id="unique-visitor-count">0</div>
-                        <div style="color:var(--text-secondary); font-size:1.1rem;" data-i18n="uniqueVisitors">unique visitors (by IP)</div>
-                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.5rem;" data-i18n="visitorInfo">Each IP address counted once</p>
+                        <div style="color:var(--text-secondary); font-size:1.2rem; font-weight:600;" data-i18n="appTotalUsers">APP TOTAL USERS</div>
+                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.5rem;" data-i18n="visitorInfo">Unique IP addresses counted once</p>
                     </div>
                     
-                    <!-- Stats -->
+                    <!-- Stats - Only bookings count remains -->
                     <div class="visitor-stats">
                         <div class="account-card" style="padding:1rem; text-align:center;">
                             <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
@@ -729,7 +779,7 @@
         </div>
     </div>
 
-    <!-- ADD ACCOUNT MODAL - FIXED VIDEO UPLOAD -->
+    <!-- ADD ACCOUNT MODAL - WITH UPLOAD BUTTON AND PROGRESS TRACKING -->
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -753,16 +803,24 @@
                         <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
                     </div>
                     
-                    <!-- Media upload - FIXED for video (no download button) -->
+                    <!-- Media upload - with progress tracking -->
                     <label class="input-label"><span data-i18n="mediaLabel">Account Media (Image or Video) *</span></label>
                     <div class="media-preview" id="media-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     
-                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()" required>
-                    <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:-0.5rem;" data-i18n="mediaHint">Supports images and videos (videos play without download button)</p>
+                    <!-- Progress bar -->
+                    <div class="upload-progress" id="upload-progress">
+                        <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text"></div>
                     
-                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAccount()"><span data-i18n="saveAccountBtn">Save Account</span></button>
+                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
+                    
+                    <!-- UPLOAD BUTTON instead of Save Account -->
+                    <button type="button" class="upload-btn" id="upload-btn" style="width:100%; padding:1rem;" onclick="uploadNewAccount()" disabled>
+                        <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
+                    </button>
                 </form>
             </div>
         </div>
@@ -995,8 +1053,8 @@
                     adminTitle: 'Admin Panel',
                     loginTitle: 'Admin Login',
                     loginBtn: 'Login',
-                    uniqueVisitors: 'unique visitors (by IP)',
-                    visitorInfo: 'Each IP address counted once',
+                    appTotalUsers: 'APP TOTAL USERS',
+                    visitorInfo: 'Unique IP addresses counted once',
                     accountsStat: 'accounts',
                     bookingsStat: 'book requests',
                     bookRequestsTitle: '📋 Book Requests',
@@ -1012,7 +1070,7 @@
                     bigTier: 'Big PUBG ($1000-$100000)',
                     mediaLabel: 'Account Media (Image or Video) *',
                     mediaHint: 'Supports images and videos (videos play without download button)',
-                    saveAccountBtn: 'Save Account',
+                    uploadBtn: 'UPLOAD',
                     manageModalTitle: 'Manage Accounts',
                     existingAccounts: '📋 Existing Accounts (click delete to remove)',
                     manageContactsTitle: 'Manage Contacts',
@@ -1064,7 +1122,7 @@
                     adminTitle: 'مدیر پینل',
                     loginTitle: 'مدیر ننوتل',
                     loginBtn: 'ننوتل',
-                    uniqueVisitors: 'کارونکي (د IP پتې سره)',
+                    appTotalUsers: 'ټول کارونکي',
                     visitorInfo: 'هر IP پته یو ځل شمیرل کیږي',
                     accountsStat: 'حسابونه',
                     bookingsStat: 'بکنګونه',
@@ -1081,7 +1139,7 @@
                     bigTier: 'لوی PUBG ($1000-$100000)',
                     mediaLabel: 'د حساب میډیا (انځور یا ویډیو) *',
                     mediaHint: 'انځور او ویډیو ملاتړ کیږي (ویډیو د ډاونلوډ تڼۍ پرته)',
-                    saveAccountBtn: 'حفظ حساب',
+                    uploadBtn: 'اپلوډ',
                     manageModalTitle: 'حسابونه اداره کړئ',
                     existingAccounts: '📋 موجود حسابونه (ړنګولو لپاره کلیک وکړئ)',
                     manageContactsTitle: 'اړیکې اداره کړئ',
@@ -1133,7 +1191,7 @@
                     adminTitle: 'پنل مدیریت',
                     loginTitle: 'ورود مدیر',
                     loginBtn: 'ورود',
-                    uniqueVisitors: 'بازدیدکنندگان (با IP)',
+                    appTotalUsers: 'کل کاربران',
                     visitorInfo: 'هر IP آدرس یک بار شمارش می‌شود',
                     accountsStat: 'حساب‌ها',
                     bookingsStat: 'رزروها',
@@ -1150,7 +1208,7 @@
                     bigTier: 'بزرگ PUBG ($1000-$100000)',
                     mediaLabel: 'رسانه حساب (تصویر یا ویدیو) *',
                     mediaHint: 'پشتیبانی از تصاویر و ویدیوها (بدون دکمه دانلود)',
-                    saveAccountBtn: 'ذخیره حساب',
+                    uploadBtn: 'آپلود',
                     manageModalTitle: 'مدیریت حساب‌ها',
                     existingAccounts: '📋 حساب‌های موجود (برای حذف کلیک کنید)',
                     manageContactsTitle: 'مدیریت مخاطبین',
@@ -1212,7 +1270,7 @@
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
-            // Get visitor IP and track unique visitors (REAL IP COUNT)
+            // Get visitor IP and track unique visitors (APP TOTAL USER COUNT)
             function trackVisitor() {
                 fetch('https://api.ipify.org?format=json')
                     .then(response => response.json())
@@ -1554,12 +1612,18 @@
                 }
             };
 
-            // Media preview functions - FIXED for video (no download)
+            // Media preview functions with progress simulation
             window.previewMediaFromFile = function() {
                 const fileInput = document.getElementById('account-media-file');
                 const preview = document.getElementById('media-preview');
+                const uploadBtn = document.getElementById('upload-btn');
+                
                 if (fileInput.files && fileInput.files[0]) {
                     const file = fileInput.files[0];
+                    
+                    // Enable upload button
+                    uploadBtn.disabled = false;
+                    
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const isVideo = file.type.startsWith('video/');
@@ -1572,6 +1636,8 @@
                         }
                     };
                     reader.readAsDataURL(file);
+                } else {
+                    uploadBtn.disabled = true;
                 }
             };
 
@@ -1604,6 +1670,10 @@
                 document.getElementById('account-price-afn').value = '';
                 document.getElementById('account-media-file').value = '';
                 document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                document.getElementById('upload-progress').classList.remove('active');
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('progress-text').innerHTML = '';
+                document.getElementById('upload-btn').disabled = true;
                 appState.currentMediaData = null;
                 openModal('add-account-modal');
             };
@@ -1650,8 +1720,8 @@
                 alert('USDT address updated successfully!');
             };
 
-            // Save new account
-            window.saveNewAccount = function() {
+            // Upload new account with progress tracking
+            window.uploadNewAccount = function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
                 const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
@@ -1664,31 +1734,69 @@
                 }
                 
                 if (!appState.currentMediaData) {
-                    alert('Please upload an image or video');
+                    alert('Please select an image or video');
                     return;
                 }
                 
-                const newAccount = {
-                    id: 'a' + Date.now(),
-                    title: title,
-                    desc: desc,
-                    tier: tier,
-                    price_usd: priceUsd,
-                    price_afn: priceAfn,
-                    media: appState.currentMediaData.data,
-                    mediaType: appState.currentMediaData.type,
-                    sold: false
-                };
+                // Show progress bar
+                const progressContainer = document.getElementById('upload-progress');
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                const uploadBtn = document.getElementById('upload-btn');
                 
-                appState.accounts.push(newAccount);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                progressContainer.classList.add('active');
+                uploadBtn.disabled = true;
                 
-                closeModal('add-account-modal');
-                renderAccounts();
-                if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                }
-                alert('Account added successfully!');
+                // Simulate upload progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        
+                        // Complete upload
+                        setTimeout(() => {
+                            progressBar.style.width = '100%';
+                            progressText.innerHTML = 'Upload complete!';
+                            
+                            // Create and save account
+                            const newAccount = {
+                                id: 'a' + Date.now(),
+                                title: title,
+                                desc: desc,
+                                tier: tier,
+                                price_usd: priceUsd,
+                                price_afn: priceAfn,
+                                media: appState.currentMediaData.data,
+                                mediaType: appState.currentMediaData.type,
+                                sold: false
+                            };
+                            
+                            appState.accounts.push(newAccount);
+                            localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                            
+                            // Reset and close
+                            setTimeout(() => {
+                                closeModal('add-account-modal');
+                                renderAccounts();
+                                if (appState.isAdminLoggedIn) {
+                                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                                }
+                                alert('Account uploaded successfully!');
+                                
+                                // Reset
+                                progressContainer.classList.remove('active');
+                                progressBar.style.width = '0%';
+                                progressText.innerHTML = '';
+                                uploadBtn.disabled = false;
+                            }, 500);
+                        }, 300);
+                    }
+                    
+                    progressBar.style.width = progress + '%';
+                    progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
+                }, 200);
             };
 
             window.deleteAccount = function(id) {
