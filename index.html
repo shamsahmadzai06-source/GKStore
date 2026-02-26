@@ -3,40 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GK Store · PUBG accounts with total & online users</title>
-    <!-- Font Awesome 6 -->
+    <title>GK Store · PUBG Accounts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- intl-tel-input -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <!-- Nhost SDK v3 -->
-    <script src="https://cdn.jsdelivr.net/npm/@nhost/nhost-js@3.2.0/dist/nhost-js.umd.min.js"></script>
-    <script>
-      // Fallback if CDN fails
-      window.addEventListener('load', function() {
-        if (typeof Nhost === 'undefined') {
-          console.warn('Nhost SDK failed to load, creating fallback');
-          window.Nhost = {
-            NhostClient: function() {
-              return {
-                auth: {
-                  signIn: async ({ email, password }) => {
-                    if (email === 'shamsahmadzai06@gmil.com' && password === 'Shams12357@') {
-                      return { session: { accessToken: 'fallback-token' }, error: null };
-                    }
-                    return { session: null, error: new Error('Invalid credentials') };
-                  },
-                  getSession: () => ({ accessToken: 'fallback-token' }),
-                  signOut: async () => {}
-                }
-              };
-            }
-          };
-          console.log('Fallback Nhost client created');
-        }
-      });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* YOUR ORIGINAL CSS - KEPT EXACTLY AS IS */
         * {
             margin: 0;
             padding: 0;
@@ -61,21 +32,9 @@
             --gradient-big: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
-        html {
-            font-size: 14px;
-        }
-        
-        @media (min-width: 400px) {
-            html {
-                font-size: 15px;
-            }
-        }
-        
-        @media (min-width: 600px) {
-            html {
-                font-size: 16px;
-            }
-        }
+        html { font-size: 14px; }
+        @media (min-width: 400px) { html { font-size: 15px; } }
+        @media (min-width: 600px) { html { font-size: 16px; } }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -86,9 +45,7 @@
             padding-bottom: 20px;
         }
 
-        body[dir="rtl"] {
-            font-family: 'Segoe UI', 'Tahoma', 'Vazirmatn', sans-serif;
-        }
+        body[dir="rtl"] { font-family: 'Segoe UI', 'Tahoma', 'Vazirmatn', sans-serif; }
 
         .top-nav {
             background: rgba(22, 22, 31, 0.98);
@@ -138,6 +95,12 @@
             align-items: center;
             gap: 6px;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--gradient-primary);
+            border-color: transparent;
         }
 
         .container {
@@ -146,13 +109,8 @@
             padding: 16px;
         }
 
-        .screen {
-            display: none;
-        }
-
-        .screen.active {
-            display: block;
-        }
+        .screen { display: none; }
+        .screen.active { display: block; }
 
         #main-screen .main-layout {
             display: flex;
@@ -192,7 +150,12 @@
             gap: 12px;
             box-shadow: 0 10px 30px rgba(236,72,153,0.4);
             cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
         }
+
+        .cta-button i { font-size: 1.8rem; }
+        .cta-button:active { transform: scale(0.97); }
 
         .swipe-ads {
             width: 100%;
@@ -206,20 +169,20 @@
         .slider-container {
             position: relative;
             width: 100%;
+            user-select: none;
         }
 
         .slider-track {
             display: flex;
             overflow-x: hidden;
             scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             background: #111;
         }
 
-        .slider-track::-webkit-scrollbar {
-            display: none;
-        }
+        .slider-track::-webkit-scrollbar { display: none; }
 
         .slide {
             flex: 0 0 100%;
@@ -236,9 +199,9 @@
             display: block;
         }
 
-        .slide video::-internal-media-controls-download-button {
-            display: none;
-        }
+        .slide video::-internal-media-controls-download-button { display: none; }
+        .slide video::-webkit-media-controls-enclosure { overflow: hidden; }
+        .slide video::-webkit-media-controls-panel { width: calc(100% + 30px); }
 
         .slide-caption {
             position: absolute;
@@ -249,6 +212,7 @@
             color: white;
             padding: 2rem 1rem 1rem;
             font-weight: 600;
+            font-size: 1rem;
         }
 
         .slider-dots {
@@ -264,6 +228,7 @@
             height: 8px;
             border-radius: 10px;
             background: var(--text-secondary);
+            transition: 0.2s;
             cursor: pointer;
         }
 
@@ -298,6 +263,10 @@
             border-color: transparent;
         }
 
+        .tier-tab[data-tier="small"].active { background: var(--gradient-small); }
+        .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
+        .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
+
         .accounts-grid {
             display: grid;
             gap: 1.5rem;
@@ -305,12 +274,8 @@
             margin-top: 1rem;
         }
 
-        @media (min-width: 640px) {
-            .accounts-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (min-width: 1024px) {
-            .accounts-grid { grid-template-columns: repeat(3, 1fr); }
-        }
+        @media (min-width: 640px) { .accounts-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .accounts-grid { grid-template-columns: repeat(3, 1fr); } }
 
         .account-card {
             background: var(--surface);
@@ -325,6 +290,9 @@
             object-fit: cover;
             background: #1a1a24;
         }
+
+        .card-media::-internal-media-controls-download-button { display: none; }
+        .card-media::-webkit-media-controls-enclosure { overflow: hidden; }
 
         .card-content {
             padding: 1.2rem;
@@ -354,6 +322,7 @@
             border-radius: 2rem;
             margin: 0.8rem 0;
             font-weight: 600;
+            font-size: 0.95rem;
         }
 
         .usd-price { color: var(--primary); }
@@ -379,6 +348,7 @@
             gap: 4px;
             cursor: pointer;
             color: var(--text);
+            transition: 0.2s;
         }
 
         .action-btn.buy {
@@ -387,8 +357,9 @@
             color: white;
         }
 
+        .action-btn i { font-size: 0.9rem; }
+
         .hidden { display: none !important; }
-        
         .input { 
             width:100%; 
             padding:0.8rem; 
@@ -397,6 +368,7 @@
             border-radius:12px; 
             color:white; 
             margin-bottom:0.8rem; 
+            font-size:0.95rem;
         }
         
         .media-preview {
@@ -418,6 +390,14 @@
             object-fit: contain;
         }
         
+        .media-preview video::-internal-media-controls-download-button { display: none; }
+        .media-preview video::-webkit-media-controls-enclosure { overflow: hidden; }
+        
+        .media-preview i {
+            font-size: 3rem;
+            color: var(--text-secondary);
+        }
+
         .upload-progress {
             width: 100%;
             height: 8px;
@@ -428,15 +408,21 @@
             display: none;
         }
         
-        .upload-progress.active {
-            display: block;
-        }
+        .upload-progress.active { display: block; }
         
         .progress-bar {
             height: 100%;
             background: var(--gradient-primary);
             width: 0%;
+            transition: width 0.3s;
             border-radius: 4px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
         }
 
         .tier-badge {
@@ -454,32 +440,59 @@
             position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
         }
-        
         .modal {
             background:var(--surface); border-radius:2rem; max-width:600px; width:100%; border:1px solid var(--border);
+            animation: fadeIn 0.2s;
             max-height: 90vh;
             overflow-y: auto;
         }
-        
         .modal-header { padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
         .modal-header h3 { font-size:1.3rem; }
         .modal-close { background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; }
         .modal-body { padding:1.5rem; }
         .modal-footer { padding:1rem 1.5rem 1.5rem; display:flex; gap:0.8rem; }
-        
         .btn {
-            padding:0.8rem 1.5rem; border-radius:3rem; font-weight:600; border:none; cursor:pointer; flex:1;
+            padding:0.8rem 1.5rem; border-radius:3rem; font-weight:600; font-size:0.95rem; border:none; cursor:pointer; flex:1;
             background: var(--surface-light); color:white; border:1px solid var(--border);
         }
-        
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
+        
+        .online-badge {
+            background: #10b981;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
 
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
             position: relative;
             z-index: 2001;
+        }
+        .iti__selected-flag {
+            background: var(--surface-lighter) !important;
+            border-radius: 12px 0 0 12px;
+            z-index: 2002;
+        }
+        .iti__country-list {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            max-width: 300px;
+            z-index: 99999 !important;
+            position: fixed !important;
+            max-height: 300px;
+            overflow-y: auto;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px;
         }
         
         .visitor-stats {
@@ -496,6 +509,31 @@
             margin-bottom: 0.8rem;
             border: 1px solid var(--border);
         }
+        .book-request-item p {
+            margin: 0.3rem 0;
+            font-size: 0.9rem;
+        }
+        .book-request-item .label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: inline-block;
+            width: 80px;
+        }
+        .request-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .request-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 2rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-wa { background: #25D366; color: white; }
+        .btn-cancel { background: #ef4444; color: white; }
         
         .user-card {
             background: var(--surface);
@@ -504,10 +542,27 @@
             text-align: center;
             border: 1px solid var(--border);
         }
-        
+        .user-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+        }
         .user-card .count {
             font-size: 1.8rem;
             font-weight: 700;
+        }
+        .user-card .label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .user-card .info {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
         }
         
         .online-indicator {
@@ -534,97 +589,107 @@
             border-radius: 3rem;
             font-weight: 600;
             cursor: pointer;
+            transition: 0.2s;
+        }
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(236,72,153,0.4);
+        }
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body dir="ltr">
-    <!-- top nav -->
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
-            <span class="brand-text" data-i18n="brand">GK Store</span>
+            <span class="brand-text">GK Store</span>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
+            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span>Lang</span></button>
+            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
+            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span>Admin</span></button>
         </div>
     </div>
 
     <div class="container">
-        <!-- MAIN SCREEN -->
         <div id="main-screen" class="screen active">
             <div class="main-layout">
-                <h1 class="big-title main-title" data-i18n="mainTitle">PUBG Marketplace</h1>
-                <div class="sub-head main-subtitle" data-i18n="mainSubtitle">Secure · Instant delivery</div>
+                <h1 class="big-title">PUBG Marketplace</h1>
+                <div class="sub-head">Secure · Instant delivery</div>
                 <button class="cta-button" onclick="switchScreen('accounts')">
-                    <i class="fa fa-gamepad"></i> <span class="cta-text" data-i18n="cta">Click to see PUBG account</span>
+                    <i class="fa fa-gamepad"></i> <span>Click to see PUBG account</span>
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
-                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;" data-i18n="sliderHint">— swipe ads (auto change 2s) —</p>
+                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;">— swipe ads (auto change 2s) —</p>
             </div>
         </div>
 
-        <!-- ACCOUNT BROWSER SCREEN -->
         <div id="accounts-screen" class="screen">
-            <h2 class="accounts-title" style="font-size:2rem; margin-bottom:0.2rem;" data-i18n="accountsTitle">PUBG Accounts</h2>
+            <h2 class="accounts-title" style="font-size:2rem; margin-bottom:0.2rem;">PUBG Accounts</h2>
             <div class="tier-header" id="tier-tabs">
-                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')"><span data-i18n="all">All</span></button>
-                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')"><span data-i18n="small">Small PUBG</span></button>
-                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')"><span data-i18n="medium">Medium PUBG</span></button>
-                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')"><span data-i18n="big">Big PUBG</span></button>
+                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')">All</button>
+                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')">Small PUBG</button>
+                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')">Medium PUBG</button>
+                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')">Big PUBG</button>
             </div>
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
-        <!-- CONTACT SCREEN -->
         <div id="contact-screen" class="screen">
-            <h2 class="contact-title" data-i18n="contactTitle">Contact & Support</h2>
+            <h2 class="contact-title">Contact & Support</h2>
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
-        <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
-            <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
+            <h2 class="admin-title">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
-                <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
-                    <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
-                    <input type="email" id="admin-email" class="input" placeholder="admin@gkstore.com" value="shamsahmadzai06@gmil.com">
-                    <input type="password" id="admin-password" class="input" placeholder="password" value="Shams12357@">
-                    <button class="action-btn buy" style="width:100%;" onclick="adminLogin()"><span data-i18n="loginBtn">Login</span></button>
+                    <h3 class="login-title">Admin Login</h3>
+                    <input type="email" id="admin-email" class="input" placeholder="Email" value="shamsahmadzai06@gmail.com">
+                    <input type="password" id="admin-password" class="input" placeholder="Password">
+                    <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">Login</button>
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
                 
-                <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
                         <div class="user-card">
-                            <div class="icon" style="background:#10b981;"><i class="fa fa-users"></i></div>
+                            <div class="icon" style="background:#10b981;">
+                                <i class="fa fa-users"></i>
+                            </div>
                             <div class="count" id="unique-visitor-count">0</div>
-                            <div class="label" data-i18n="totalUsers">TOTAL USERS</div>
+                            <div class="label">TOTAL USERS</div>
+                            <div class="info">Unique IPs</div>
                         </div>
+                        
                         <div class="user-card">
-                            <div class="icon" style="background:#ec4899;"><span class="online-indicator"></span></div>
+                            <div class="icon" style="background:#ec4899;">
+                                <span class="online-indicator"></span>
+                                <i class="fa fa-circle" style="color:#10b981;"></i>
+                            </div>
                             <div class="count" id="online-user-count">0</div>
-                            <div class="label" data-i18n="onlineUsers">ONLINE NOW</div>
+                            <div class="label">ONLINE NOW</div>
+                            <div class="info">Last 5 minutes</div>
                         </div>
                     </div>
                     
                     <div class="visitor-stats">
                         <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
+                            <span id="admin-account-count">0</span> <span>accounts</span>
                         </div>
                         <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="admin-bookings-count">0</span> <span data-i18n="bookingsStat">book requests</span>
+                            <span id="admin-bookings-count">0</span> <span>book requests</span>
                         </div>
                         <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="active-sessions-count">0</span> <span data-i18n="activeSessions">active sessions</span>
+                            <span id="active-sessions-count">0</span> <span>active sessions</span>
                         </div>
                     </div>
                     
                     <div class="account-card" style="padding:1rem; margin:1rem 0;">
-                        <h3 style="margin-bottom:1rem;" data-i18n="bookRequestsTitle">📋 Book Requests</h3>
+                        <h3 style="margin-bottom:1rem;">📋 Book Requests</h3>
                         <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
                     </div>
                     
@@ -632,7 +697,7 @@
                         <div style="display:flex; align-items:center; justify-content:space-between;">
                             <h3 style="margin-bottom:0;">💳 USDT Address (TRC20)</h3>
                             <button class="action-btn" style="padding:0.3rem 1rem;" onclick="showEditUsdtModal()">
-                                <i class="fa fa-edit"></i> <span data-i18n="edit">Edit</span>
+                                <i class="fa fa-edit"></i> Edit
                             </button>
                         </div>
                         <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; margin:0.8rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
@@ -640,19 +705,19 @@
                     
                     <div style="display:flex; flex-direction:column; gap:0.8rem;">
                         <button class="action-btn buy" onclick="showAddAccountModal()">
-                            <i class="fa fa-plus-circle"></i> <span data-i18n="addAccountBtn">Add New Account</span>
+                            <i class="fa fa-plus-circle"></i> Add New Account
                         </button>
                         <button class="action-btn buy" onclick="showManageAccountsModal()">
-                            <i class="fa fa-edit"></i> <span data-i18n="manageAccountsBtn">Manage Accounts (Delete)</span>
+                            <i class="fa fa-edit"></i> Manage Accounts (Delete)
                         </button>
                         <button class="action-btn buy" onclick="showManageContactsModal()">
-                            <i class="fab fa-whatsapp"></i> <span data-i18n="manageContactsBtn">Manage Contacts</span>
+                            <i class="fab fa-whatsapp"></i> Manage Contacts
                         </button>
                         <button class="action-btn buy" onclick="showManageAdsModal()">
-                            <i class="fa fa-image"></i> <span data-i18n="manageAdsBtn">Manage Swipe Ads</span>
+                            <i class="fa fa-image"></i> Manage Swipe Ads
                         </button>
                         <button class="action-btn" onclick="logout()">
-                            <i class="fa fa-sign-out"></i> <span data-i18n="logoutBtn">Logout</span>
+                            <i class="fa fa-sign-out"></i> Logout
                         </button>
                     </div>
                 </div>
@@ -660,20 +725,20 @@
         </div>
     </div>
 
-    <!-- MODALS -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> <span data-i18n="editUsdtTitle">Edit USDT Address</span></h3>
+                <h3><i class="fa fa-edit"></i> Edit USDT Address</h3>
                 <button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <label class="input-label" data-i18n="newUsdtAddress">New USDT Address (TRC20)</label>
-                <input type="text" id="new-usdt-address" class="input" placeholder="Enter new USDT address" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY">
+                <label class="input-label">New USDT Address (TRC20)</label>
+                <input type="text" id="new-usdt-address" class="input" placeholder="Enter new USDT address">
+                <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:-0.5rem;">Make sure it's a valid TRC20 address</p>
             </div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('edit-usdt-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="btn-primary" onclick="saveUsdtAddress()"><span data-i18n="save">Save</span></button>
+                <button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button>
+                <button class="btn-primary" onclick="saveUsdtAddress()">Save</button>
             </div>
         </div>
     </div>
@@ -681,16 +746,16 @@
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-plus-circle"></i> <span data-i18n="addModalTitle">Add New Account</span></h3>
+                <h3><i class="fa fa-plus-circle"></i> Add New Account</h3>
                 <button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="add-account-form" onsubmit="return false;">
                     <select id="account-tier" class="input" required>
-                        <option value=""><span data-i18n="selectTier">-- Select Tier --</span></option>
-                        <option value="small"><span data-i18n="smallTier">Small PUBG ($10-$500)</span></option>
-                        <option value="medium"><span data-i18n="mediumTier">Medium PUBG ($500-$1000)</span></option>
-                        <option value="big"><span data-i18n="bigTier">Big PUBG ($1000-$100000)</span></option>
+                        <option value="">-- Select Tier --</option>
+                        <option value="small">Small PUBG ($10-$500)</option>
+                        <option value="medium">Medium PUBG ($500-$1000)</option>
+                        <option value="big">Big PUBG ($1000-$100000)</option>
                     </select>
                     
                     <input type="text" id="account-title" class="input" placeholder="Account Title" required>
@@ -701,7 +766,7 @@
                         <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
                     </div>
                     
-                    <label class="input-label"><span data-i18n="mediaLabel">Account Media (Image or Video) *</span></label>
+                    <label class="input-label">Account Media (Image or Video) *</label>
                     <div class="media-preview" id="media-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
@@ -714,7 +779,7 @@
                     <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
                     
                     <button type="button" class="upload-btn" id="upload-btn" style="width:100%; padding:1rem;" onclick="uploadNewAccount()" disabled>
-                        <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
+                        <i class="fa fa-cloud-upload-alt"></i> UPLOAD
                     </button>
                 </form>
             </div>
@@ -724,11 +789,11 @@
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> <span data-i18n="manageModalTitle">Manage Accounts</span></h3>
+                <h3><i class="fa fa-edit"></i> Manage Accounts</h3>
                 <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="existingAccounts">📋 Existing Accounts</span></h4>
+                <h4 style="margin-bottom:1rem;">📋 Existing Accounts (click delete to remove)</h4>
                 <div id="admin-accounts-list" style="max-height:400px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -737,20 +802,23 @@
     <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fab fa-whatsapp"></i> <span data-i18n="manageContactsTitle">Manage Contacts</span></h3>
+                <h3><i class="fab fa-whatsapp"></i> Manage Contacts</h3>
                 <button class="modal-close" onclick="closeModal('manage-contacts-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="addContact">➕ Add New Contact</span></h4>
+                <h4 style="margin-bottom:1rem;">➕ Add New Contact</h4>
                 <form id="add-contact-form" onsubmit="return false;">
-                    <input type="text" id="contact-name" class="input" placeholder="Contact Name" required>
-                    <label class="input-label"><span data-i18n="whatsappNumberLabel">WhatsApp Number</span></label>
+                    <input type="text" id="contact-name" class="input" placeholder="Contact Name (e.g., Support 1)" required>
+                    
+                    <label class="input-label">WhatsApp Number with Country Code</label>
                     <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322">
-                    <textarea id="contact-desc" class="input" rows="2" placeholder="Description"></textarea>
-                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()"><span data-i18n="saveContactBtn">Save Contact</span></button>
+                    
+                    <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
+                    
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()">Save Contact</button>
                 </form>
                 
-                <h4 style="margin:2rem 0 1rem;"><span data-i18n="existingContacts">📋 Existing Contacts</span></h4>
+                <h4 style="margin:2rem 0 1rem;">📋 Existing Contacts</h4>
                 <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -759,29 +827,29 @@
     <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><i class="fa fa-image"></i> <span data-i18n="manageAdsTitle">Manage Swipe Ads</span></h3>
+                <h3><i class="fa fa-image"></i> Manage Swipe Ads</h3>
                 <button class="modal-close" onclick="closeModal('manage-ads-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="addAd">➕ Add New Ad</span></h4>
+                <h4 style="margin-bottom:1rem;">➕ Add New Ad (Image/Video)</h4>
                 <form id="add-ad-form" onsubmit="return false;">
                     <select id="ad-type" class="input">
-                        <option value="image"><span data-i18n="imageOption">Image</span></option>
-                        <option value="video"><span data-i18n="videoOption">Video</span></option>
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
                     </select>
                     
-                    <label class="input-label"><span data-i18n="adMediaLabel">Ad Media *</span></label>
+                    <label class="input-label">Ad Media *</label>
                     <div class="media-preview" id="ad-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     <input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()" required>
                     
-                    <input type="text" id="ad-caption" class="input" placeholder="Caption">
+                    <input type="text" id="ad-caption" class="input" placeholder="Caption (optional)">
                     
-                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()"><span data-i18n="addAdBtn">Add Ad</span></button>
+                    <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()">Add Ad</button>
                 </form>
                 
-                <h4 style="margin:2rem 0 1rem;"><span data-i18n="currentAds">📋 Current Ads</span></h4>
+                <h4 style="margin:2rem 0 1rem;">📋 Current Ads</h4>
                 <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -790,13 +858,13 @@
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>📘 <span data-i18n="bookTitle">Book account</span></h3>
+                <h3>📘 Book account</h3>
                 <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
             </div>
             <div class="modal-body" id="book-modal-body"></div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('book-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="btn-primary" onclick="submitBook()"><span data-i18n="confirm">Confirm booking</span></button>
+                <button class="btn" onclick="closeModal('book-modal')">Cancel</button>
+                <button class="btn-primary" onclick="submitBook()">Confirm booking</button>
             </div>
         </div>
     </div>
@@ -804,13 +872,13 @@
     <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>💳 <span data-i18n="buyTitle">Buy with USDT</span></h3>
+                <h3>💳 Buy with USDT</h3>
                 <button class="modal-close" onclick="closeModal('buy-modal')">&times;</button>
             </div>
             <div class="modal-body" id="buy-modal-body"></div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('buy-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()"><span data-i18n="confirmWA">Confirm via WhatsApp</span></button>
+                <button class="btn" onclick="closeModal('buy-modal')">Cancel</button>
+                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button>
             </div>
         </div>
     </div>
@@ -818,7 +886,7 @@
     <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>ℹ️ <span data-i18n="infoTitle">Account details</span></h3>
+                <h3>ℹ️ Account details</h3>
                 <button class="modal-close" onclick="closeModal('info-modal')">&times;</button>
             </div>
             <div class="modal-body" id="info-modal-body"></div>
@@ -828,7 +896,7 @@
     <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3><span data-i18n="selectLang">Select language</span></h3>
+                <h3>Select language</h3>
                 <button class="modal-close" onclick="closeModal('language-modal')">&times;</button>
             </div>
             <div class="modal-body">
@@ -842,59 +910,16 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         (function() {
-            // ---------- NHOST CONFIGURATION (UPDATED WITH CORRECT SUBDOMAIN) ----------
-            const NHOST_SUBDOMAIN = 'khmupvlwzxbvsrvrixkgp'; // Updated from your screenshot
-            const NHOST_REGION = 'eu-central-1';
-            
-            // CORRECT FUNCTION URL FROM YOUR NHOST PROJECT
-            const FUNCTION_URL = `https://${NHOST_SUBDOMAIN}.functions.${NHOST_REGION}.nhost.app/v1/upload-to-storj`;
-            
-            // STORJ CONFIGURATION
-            const STORJ_PUBLIC_URL = 'https://link.storjshare.io/raw';
-            
-            // Initialize Nhost client
-            let nhost;
-            try {
-                if (typeof Nhost !== 'undefined' && Nhost.NhostClient) {
-                    nhost = new Nhost.NhostClient({
-                        subdomain: NHOST_SUBDOMAIN,
-                        region: NHOST_REGION
-                    });
-                    console.log('Nhost initialized successfully');
-                } else {
-                    console.warn('Nhost SDK not available, using fallback');
-                    nhost = {
-                        auth: {
-                            signIn: async ({ email, password }) => {
-                                if (email === 'shamsahmadzai06@gmil.com' && password === 'Shams12357@') {
-                                    return { session: { accessToken: 'fallback-token' }, error: null };
-                                }
-                                return { session: null, error: new Error('Invalid credentials') };
-                            },
-                            getSession: () => ({ accessToken: 'fallback-token' }),
-                            signOut: async () => {}
-                        }
-                    };
-                }
-            } catch (error) {
-                console.error('Nhost init failed:', error);
-                nhost = {
-                    auth: {
-                        signIn: async ({ email, password }) => {
-                            if (email === 'shamsahmadzai06@gmil.com' && password === 'Shams12357@') {
-                                return { session: { accessToken: 'fallback-token' }, error: null };
-                            }
-                            return { session: null, error: new Error('Invalid credentials') };
-                        },
-                        getSession: () => ({ accessToken: 'fallback-token' }),
-                        signOut: async () => {}
-                    }
-                };
-            }
-            
-            window.nhost = nhost;
+            // ============================================
+            // SUPABASE CONFIGURATION - YOUR SELF-HOSTED SERVER
+            // ============================================
+            const SUPABASE_URL = 'http://216.126.225.4:8000';
+            const SUPABASE_ANON_KEY = 'OU/0CJnKGP1WM8/Qldu2qAfK80Q+M/YWZ2+gBt7dZWw=';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+            // ============================================
             // APP STATE
+            // ============================================
             const appState = {
                 accounts: [],
                 contacts: [],
@@ -913,226 +938,146 @@
                 bookPhoneInput: null,
                 currentLanguage: 'en',
                 autoSlideInterval: null,
-                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-                sessionId: localStorage.getItem('gk_session_id') || 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                adminToken: null
+                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
             };
 
-            localStorage.setItem('gk_session_id', appState.sessionId);
-
-            // Load data from localStorage
-            if (localStorage.getItem('gk_accounts')) {
-                appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
-            } else {
-                appState.accounts = [
-                    { id:'a1', title:'Pro Level 500', desc:'20+ rare skins', tier:'small', price_usd:199.99, price_afn:12800, media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                    { id:'a2', title:'Competitive', desc:'Max weapons', tier:'small', price_usd:399.99, price_afn:25600, media:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                    { id:'a3', title:'Ultimate Collector', desc:'All skins', tier:'medium', price_usd:799.99, price_afn:51200, media:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                    { id:'a4', title:'Tournament Winner', desc:'Championship skins', tier:'medium', price_usd:999.99, price_afn:64000, media:'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                    { id:'a5', title:'Legendary Limited', desc:'All collab skins', tier:'big', price_usd:4999.99, price_afn:320000, media:'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', mediaType:'image', sold:false }
-                ];
-            }
-            
-            if (localStorage.getItem('gk_contacts')) {
-                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-            } else {
-                appState.contacts = [
-                    { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
-                    { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
-                ];
-            }
-            
-            if (localStorage.getItem('gk_ads')) {
-                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-            } else {
-                appState.ads = [
-                    { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
-                    { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
-                    { type: 'image', data: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
-                ];
-            }
-            
-            if (localStorage.getItem('gk_bookings')) {
-                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            }
-            
-            if (localStorage.getItem('gk_usdt_address')) {
-                appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-            }
-
-            if (localStorage.getItem('gk_visitors')) {
+            // ============================================
+            // INITIAL DATA LOAD
+            // ============================================
+            async function loadInitialData() {
                 try {
-                    const saved = JSON.parse(localStorage.getItem('gk_visitors'));
-                    appState.uniqueVisitors = new Set(saved);
-                    appState.visitorCount = appState.uniqueVisitors.size;
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_sessions')) {
-                try {
-                    const saved = JSON.parse(localStorage.getItem('gk_sessions'));
-                    appState.activeSessions = new Map(saved);
-                    const now = Date.now();
-                    for (let [ip, time] of appState.activeSessions.entries()) {
-                        if (now - time > 300000) appState.activeSessions.delete(ip);
+                    const { data: accounts } = await supabase.from('accounts').select('*');
+                    if (accounts) appState.accounts = accounts;
+
+                    const { data: contacts } = await supabase.from('contacts').select('*');
+                    if (contacts) appState.contacts = contacts;
+
+                    const { data: ads } = await supabase.from('ads').select('*').order('id');
+                    if (ads) appState.ads = ads;
+
+                    const { data: bookings } = await supabase.from('book_requests').select('*').order('date', { ascending: false });
+                    if (bookings) appState.bookRequests = bookings;
+
+                    const { data: settings } = await supabase.from('settings').select('*').eq('key', 'usdt_address').single();
+                    if (settings) appState.usdtAddress = settings.value;
+
+                    const { count: visCount } = await supabase.from('unique_visitors').select('*', { count: 'exact', head: true });
+                    appState.visitorCount = visCount || 0;
+
+                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+                    const { count: onlineCount } = await supabase.from('active_sessions').select('*', { count: 'exact', head: true }).gte('last_seen', fiveMinAgo);
+                    appState.onlineCount = onlineCount || 0;
+
+                    renderAccounts();
+                    renderContacts();
+                    renderAdsSlider();
+                    if (appState.isAdminLoggedIn) {
+                        updateAdminStats();
+                        renderBookRequests();
                     }
-                    appState.onlineCount = appState.activeSessions.size;
-                } catch (e) {}
-            }
-
-            window.appState = appState;
-
-            // TRANSLATIONS
-            const translations = {
-                en: {
-                    brand: 'GK Store', lang: 'Lang', contact: 'Contact', admin: 'Admin',
-                    mainTitle: 'PUBG Marketplace', mainSubtitle: 'Secure · Instant delivery',
-                    cta: 'Click to see PUBG account', sliderHint: '— swipe ads (auto change 2s) —',
-                    all: 'All', small: 'Small PUBG', medium: 'Medium PUBG', big: 'Big PUBG',
-                    accountsTitle: 'PUBG Accounts', contactTitle: 'Contact & Support', adminTitle: 'Admin Panel',
-                    loginTitle: 'Admin Login', loginBtn: 'Login',
-                    totalUsers: 'TOTAL USERS', onlineUsers: 'ONLINE NOW', onlineInfo: 'Last 5 minutes',
-                    visitorInfo: 'Unique IPs', accountsStat: 'accounts', bookingsStat: 'book requests',
-                    activeSessions: 'active sessions', bookRequestsTitle: '📋 Book Requests',
-                    addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
-                    manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads',
-                    logoutBtn: 'Logout', addModalTitle: 'Add New Account',
-                    selectTier: '-- Select Tier --', smallTier: 'Small PUBG ($10-$500)',
-                    mediumTier: 'Medium PUBG ($500-$1000)', bigTier: 'Big PUBG ($1000-$100000)',
-                    mediaLabel: 'Account Media (Image or Video) *', uploadBtn: 'UPLOAD',
-                    manageModalTitle: 'Manage Accounts', existingAccounts: '📋 Existing Accounts',
-                    manageContactsTitle: 'Manage Contacts', addContact: '➕ Add New Contact',
-                    whatsappNumberLabel: 'WhatsApp Number with Country Code', saveContactBtn: 'Save Contact',
-                    existingContacts: '📋 Existing Contacts', manageAdsTitle: 'Manage Swipe Ads',
-                    addAd: '➕ Add New Ad (Image/Video)', imageOption: 'Image', videoOption: 'Video',
-                    adMediaLabel: 'Ad Media *', addAdBtn: 'Add Ad', currentAds: '📋 Current Ads',
-                    bookTitle: 'Book account', cancel: 'Cancel', confirm: 'Confirm booking',
-                    buyTitle: 'Buy with USDT', confirmWA: 'Confirm via WhatsApp', infoTitle: 'Account details',
-                    selectLang: 'Select language', yourName: 'Your name', whatsappNumber: 'WhatsApp number',
-                    chatNow: 'Chat Now', delete: 'Delete', cancelRequest: 'Cancel', contactViaWA: 'Contact',
-                    edit: 'Edit', editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address (TRC20)',
-                    usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
-                },
-                ps: {
-                    brand: 'جی کے سټور', lang: 'ژبه', contact: 'اړیکه', admin: 'مدیر',
-                    mainTitle: 'PUBG بازار', mainSubtitle: 'خوندي · سمدستي تحویل',
-                    cta: 'د PUBG اکونټونو لیدو لپاره کلیک وکړی',
-                    sliderHint: '— اعلانونه (اتومات بدلون ۲ ثانیې) —',
-                    all: 'ټول', small: 'کوچنی PUBG', medium: 'منځنی PUBG', big: 'لوی PUBG',
-                    accountsTitle: 'PUBGاکونټونه', contactTitle: 'اړیکه او مرسته', adminTitle: 'مدیر پینل',
-                    loginTitle: 'مدیر ننوتل', loginBtn: 'ننوتل',
-                    totalUsers: 'ټول کارونکي', onlineUsers: 'آنلاین اوس', onlineInfo: 'وروستۍ ۵ دقیقې',
-                    visitorInfo: 'بی‌نظیره IP پتې', accountsStat: 'اکونټونه', bookingsStat: 'بوکنګونه',
-                    activeSessions: 'فعال غونډې', bookRequestsTitle: '📋 د بوکنګ غوښتنې',
-                    addAccountBtn: 'نوی اکونټ اضافه کړئ', manageAccountsBtn: 'اونټونه اداره کړئ (ړنګول)',
-                    manageContactsBtn: 'اړیکې اداره کړئ', manageAdsBtn: 'اعلانونه اداره کړئ',
-                    logoutBtn: 'وتل', addModalTitle: 'نوی اکونټ اضافه کړئ',
-                    selectTier: '-- کچه غوره کړئ --', smallTier: 'کوچنی PUBG ($10-$500)',
-                    mediumTier: 'منځنی PUBG ($500-$1000)', bigTier: 'لوی PUBG ($1000-$100000)',
-                    mediaLabel: 'د اکونټ میډیا (انځور یا ویډیو) *', uploadBtn: 'اپلوډ',
-                    manageModalTitle: 'اکونټونه اداره کړئ', existingAccounts: '📋 موجود اکونټونه',
-                    manageContactsTitle: 'اړیکې اداره کړئ', addContact: '➕ نوې اړیکه اضافه کړئ',
-                    whatsappNumberLabel: 'د واټساپ شمیره د هیواد کوډ سره', saveContactBtn: 'اړیکه خوندي کړئ',
-                    existingContacts: '📋 موجوده اړیکې', manageAdsTitle: 'اعلانونه اداره کړئ',
-                    addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)', imageOption: 'انځور', videoOption: 'ویډیو',
-                    adMediaLabel: 'د اعلان میډیا *', addAdBtn: 'اعلان اضافه کړئ', currentAds: '📋 اوسني اعلانونه',
-                    bookTitle: 'اکونټ بوک کړئ', cancel: 'لغوه', confirm: 'بوک تایید کړئ',
-                    buyTitle: 'د USDT سره واخلئ', confirmWA: 'د واټساپ له لارې تایید کړئ',
-                    infoTitle: 'د اکونت معلومات', selectLang: 'ژبه غوره کړئ',
-                    yourName: 'ستاسو نوم', whatsappNumber: 'د واټساپ شمیره', chatNow: 'اوس خبرې وکړئ',
-                    delete: 'ړنګول', cancelRequest: 'لغوه کول', contactViaWA: 'اړیکه', edit: 'سمول',
-                    editUsdtTitle: 'د USDT پته سمول', newUsdtAddress: 'نوې USDT پته (TRC20)',
-                    usdtWarning: 'ډاډ ترلاسه کړئ چې دا سمه TRC20 پته ده', save: 'خوندي کول'
-                },
-                fa: {
-                    brand: 'جی کی استور', lang: 'زبان', contact: 'تماس', admin: 'مدیر',
-                    mainTitle: 'بازار PUBG', mainSubtitle: 'امن · تحویل فوری',
-                    cta: 'برای دیدن اکونټ های PUBG کلیک کنید',
-                    sliderHint: '— تبلیغات (تغییر خودکار ۲ ثانیه) —',
-                    all: 'همه', small: 'کوچک PUBG', medium: 'متوسط PUBG', big: 'بزرگ PUBG',
-                    accountsTitle: 'اکونټ هاPUBG', contactTitle: 'تماس و پشتیبانی', adminTitle: 'پنل مدیریت',
-                    loginTitle: 'ورود مدیر', loginBtn: 'ورود',
-                    totalUsers: 'کل کاربران', onlineUsers: 'آنلاین اکنون', onlineInfo: '۵ دقیقه آخر',
-                    visitorInfo: 'IPهای یکتا', accountsStat: 'اکونټ ها', bookingsStat: 'رزروها',
-                    activeSessions: 'نشست‌های فعال', bookRequestsTitle: '📋 درخواست‌های رزرو',
-                    addAccountBtn: 'افزودن اکونټ جدید', manageAccountsBtn: 'مدیریت اکونټ ها (حذف)',
-                    manageContactsBtn: 'مدیریت مخاطبین', manageAdsBtn: 'مدیریت تبلیغات',
-                    logoutBtn: 'خروج', addModalTitle: 'افزودن اکونټ جدید',
-                    selectTier: '-- سطح را انتخاب کنید --', smallTier: 'کوچک PUBG ($10-$500)',
-                    mediumTier: 'متوسط PUBG ($500-$1000)', bigTier: 'بزرگ PUBG ($1000-$100000)',
-                    mediaLabel: 'رسانه اکونټ (تصویر یا ویدیو) *', uploadBtn: 'آپلود',
-                    manageModalTitle: 'مدیریت اکونټ ها', existingAccounts: '📋 اکونټ های موجود',
-                    manageContactsTitle: 'مدیریت مخاطبین', addContact: '➕ افزودن مخاطب جدید',
-                    whatsappNumberLabel: 'شماره واتساپ با کد کشور', saveContactBtn: 'ذخیره مخاطب',
-                    existingContacts: '📋 مخاطبین موجود', manageAdsTitle: 'مدیریت تبلیغات',
-                    addAd: '➕ تبلیغ جدید (تصویر/ویدیو)', imageOption: 'تصویر', videoOption: 'ویدیو',
-                    adMediaLabel: 'رسانه تبلیغ *', addAdBtn: 'افزودن تبلیغ', currentAds: '📋 تبلیغات فعلی',
-                    bookTitle: 'رزرو حساب', cancel: 'انصراف', confirm: 'تایید رزرو',
-                    buyTitle: 'خرید با USDT', confirmWA: 'تایید از طریق واتساپ', infoTitle: 'جزئیات حساب',
-                    selectLang: 'انتخاب زبان', yourName: 'نام شما', whatsappNumber: 'شماره واتساپ',
-                    chatNow: 'گفتگو', delete: 'حذف', cancelRequest: 'لغو', contactViaWA: 'تماس',
-                    edit: 'ویرایش', editUsdtTitle: 'ویرایش آدرس USDT', newUsdtAddress: 'آدرس جدید USDT (TRC20)',
-                    usdtWarning: 'مطمئن شوید آدرس TRC20 معتبر است', save: 'ذخیره'
+                } catch (e) {
+                    console.error('Error loading data:', e);
                 }
-            };
-
-            function applyTranslation(lang) {
-                const t = translations[lang] || translations.en;
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if (t[key]) el.textContent = t[key];
-                });
-                document.documentElement.lang = lang;
-                document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
-                appState.currentLanguage = lang;
-                localStorage.setItem('gk_language', lang);
-                renderAccounts();
-                renderContacts();
-                if (appState.isAdminLoggedIn) renderBookRequests();
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
-            // Visitor tracking
-            function trackVisitor() {
-                fetch('https://api.ipify.org?format=json')
-                    .then(response => response.json())
-                    .then(data => {
-                        const ip = data.ip;
-                        const now = Date.now();
-                        
-                        appState.uniqueVisitors.add(ip);
-                        appState.visitorCount = appState.uniqueVisitors.size;
-                        localStorage.setItem('gk_visitors', JSON.stringify([...appState.uniqueVisitors]));
-                        
-                        appState.activeSessions.set(ip, now);
-                        for (let [sessionIp, time] of appState.activeSessions.entries()) {
-                            if (now - time > 300000) appState.activeSessions.delete(sessionIp);
-                        }
-                        appState.onlineCount = appState.activeSessions.size;
-                        localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
-                        
-                        document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                        document.getElementById('online-user-count').innerText = appState.onlineCount;
-                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                    })
-                    .catch(() => {
-                        const sessionId = appState.sessionId;
-                        const now = Date.now();
-                        appState.uniqueVisitors.add(sessionId);
-                        appState.visitorCount = appState.uniqueVisitors.size;
-                        appState.activeSessions.set(sessionId, now);
-                        appState.onlineCount = appState.activeSessions.size;
-                        updateUI();
-                    });
+            // ============================================
+            // TRACK VISITOR
+            // ============================================
+            async function trackVisitor() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    const ip = data.ip;
+                    const now = new Date().toISOString();
+
+                    await supabase.from('unique_visitors').upsert({ ip, first_seen: now }, { onConflict: 'ip', ignoreDuplicates: true });
+                    await supabase.from('active_sessions').upsert({ ip, last_seen: now }, { onConflict: 'ip' });
+
+                    const { count: visCount } = await supabase.from('unique_visitors').select('*', { count: 'exact', head: true });
+                    appState.visitorCount = visCount || 0;
+
+                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+                    const { count: onlineCount } = await supabase.from('active_sessions').select('*', { count: 'exact', head: true }).gte('last_seen', fiveMinAgo);
+                    appState.onlineCount = onlineCount || 0;
+
+                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    document.getElementById('online-user-count').innerText = appState.onlineCount;
+                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                } catch (e) {
+                    console.error('Error tracking visitor:', e);
+                }
             }
 
-            function updateUI() {
-                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+            // ============================================
+            // RENDER FUNCTIONS
+            // ============================================
+            function renderAccounts() {
+                const grid = document.getElementById('accounts-grid');
+                if (!grid) return;
+                let filtered = appState.accounts.filter(a => !a.sold);
+                if (appState.currentFilter !== 'all') {
+                    filtered = filtered.filter(a => a.tier === appState.currentFilter);
+                }
+                if (filtered.length === 0) {
+                    grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
+                    return;
+                }
+
+                grid.innerHTML = filtered.map(acc => {
+                    const mediaTag = acc.media_type === 'video' 
+                        ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
+                        : `<img src="${acc.media}" class="card-media" alt="account">`;
+
+                    return `
+                        <div class="account-card" data-id="${acc.id}">
+                            ${mediaTag}
+                            <div class="card-content">
+                                <div class="card-title">
+                                    ${acc.title}
+                                    <span class="tier-badge ${acc.tier}">${acc.tier}</span>
+                                </div>
+                                <div class="card-desc">${acc.description || 'Premium PUBG account'}</div>
+                                <div class="price-row">
+                                    <span class="usd-price">$${acc.price_usd?.toFixed(2)}</span>
+                                    <span class="afn-price">${acc.price_afn?.toLocaleString()} AFN</span>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> Book</button>
+                                    <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> Buy</button>
+                                    <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> Info</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
 
-            // Render functions
+            function renderContacts() {
+                const container = document.getElementById('contacts-container');
+                if (!container) return;
+                if (appState.contacts.length === 0) {
+                    container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
+                    return;
+                }
+
+                container.innerHTML = appState.contacts.map(contact => {
+                    let cleanPhone = contact.phone.replace(/\D/g, '');
+                    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+                    if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) cleanPhone = '93' + cleanPhone;
+
+                    return `
+                        <div class="account-card" style="padding:1.5rem;">
+                            <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                            <p>${contact.description || 'WhatsApp support'}</p>
+                            <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
+                            <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                                <i class="fab fa-whatsapp"></i> Chat Now
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
             function renderAdsSlider() {
                 const container = document.getElementById('ads-slider');
                 if (!container) return;
@@ -1158,149 +1103,14 @@
                         <div class="slider-dots">${dots}</div>
                     </div>
                 `;
-                startAutoSlide();
-            }
-
-            window.jumpToSlide = function(idx) {
                 const track = document.getElementById('slider-track');
-                if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-            };
-
-            function startAutoSlide() {
-                if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
-                appState.autoSlideInterval = setInterval(() => {
-                    const track = document.getElementById('slider-track');
-                    if (!track || appState.ads.length === 0) return;
-                    const slideWidth = track.clientWidth;
-                    const currentIndex = Math.round(track.scrollLeft / slideWidth);
-                    const nextIndex = (currentIndex + 1) % appState.ads.length;
-                    track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                }, 2000);
-            }
-
-            function renderContacts() {
-                const container = document.getElementById('contacts-container');
-                if (!container) return;
-                if (appState.contacts.length === 0) {
-                    container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
-                    return;
+                if (track) {
+                    track.addEventListener('scroll', function() {
+                        const idx = Math.round(track.scrollLeft / track.clientWidth);
+                        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+                    });
                 }
-                const t = translations[appState.currentLanguage] || translations.en;
-                
-                container.innerHTML = appState.contacts.map(contact => {
-                    let cleanPhone = contact.phone.replace(/\D/g, '');
-                    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
-                    if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) cleanPhone = '93' + cleanPhone;
-                    
-                    return `
-                        <div class="account-card" style="padding:1.5rem;">
-                            <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                            <p>${contact.desc || 'WhatsApp support'}</p>
-                            <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
-                            <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> ${t.chatNow}
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            function renderAccounts() {
-                const grid = document.getElementById('accounts-grid');
-                if (!grid) return;
-                let filtered = appState.accounts.filter(a => !a.sold);
-                if (appState.currentFilter !== 'all') {
-                    filtered = filtered.filter(a => a.tier === appState.currentFilter);
-                }
-                if (filtered.length === 0) {
-                    grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
-                    return;
-                }
-                
-                const t = translations[appState.currentLanguage] || translations.en;
-                
-                grid.innerHTML = filtered.map(acc => {
-                    const mediaTag = acc.mediaType === 'video' 
-                        ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
-                        : `<img src="${acc.media}" class="card-media" alt="account">`;
-                    
-                    return `
-                        <div class="account-card" data-id="${acc.id}">
-                            ${mediaTag}
-                            <div class="card-content">
-                                <div class="card-title">
-                                    ${acc.title}
-                                    <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                                </div>
-                                <div class="card-desc">${acc.desc || 'Premium PUBG account'}</div>
-                                <div class="price-row">
-                                    <span class="usd-price">$${acc.price_usd.toFixed(2)}</span>
-                                    <span class="afn-price">${acc.price_afn.toLocaleString()} AFN</span>
-                                </div>
-                                <div class="action-buttons">
-                                    <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
-                                    <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
-                                    <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            function renderAdminAccounts() {
-                const list = document.getElementById('admin-accounts-list');
-                if (!list) return;
-                const t = translations[appState.currentLanguage] || translations.en;
-                list.innerHTML = appState.accounts.map(acc => `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        <img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">
-                        <div style="flex:1;">
-                            <strong>${acc.title}</strong> 
-                            <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i> ${t.delete}
-                        </button>
-                    </div>
-                `).join('');
-            }
-
-            function renderAdminContacts() {
-                const list = document.getElementById('admin-contacts-list');
-                if (!list) return;
-                const t = translations[appState.currentLanguage] || translations.en;
-                list.innerHTML = appState.contacts.map(contact => `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                            <i class="fab fa-whatsapp"></i>
-                        </div>
-                        <div style="flex:1;">
-                            <strong>${contact.name}</strong>
-                            <div style="font-size:0.8rem;">+${contact.phone}</div>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
-                            <i class="fa fa-trash"></i> ${t.delete}
-                        </button>
-                    </div>
-                `).join('');
-            }
-
-            function renderAdminAds() {
-                const list = document.getElementById('admin-ads-list');
-                if (!list) return;
-                const t = translations[appState.currentLanguage] || translations.en;
-                list.innerHTML = appState.ads.map((ad, index) => `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        <img src="${ad.data}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">
-                        <div style="flex:1;">
-                            <strong>${ad.caption || 'No caption'}</strong>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
-                            <i class="fa fa-trash"></i> ${t.delete}
-                        </button>
-                    </div>
-                `).join('');
+                startAutoSlide();
             }
 
             function renderBookRequests() {
@@ -1310,35 +1120,632 @@
                     list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
                     return;
                 }
-                const t = translations[appState.currentLanguage] || translations.en;
+
                 const sorted = [...appState.bookRequests].sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                list.innerHTML = sorted.map(req => `
-                    <div class="book-request-item" data-id="${req.id}">
-                        <p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p>
-                        <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
-                        <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
-                        <div class="request-actions">
-                            <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
-                            </button>
-                            <button class="btn-cancel" onclick="cancelBookRequest('${req.id}')">
-                                <i class="fa fa-times"></i> ${t.cancelRequest}
-                            </button>
+
+                list.innerHTML = sorted.map(req => {
+                    const date = new Date(req.date).toLocaleString();
+                    const cleanPhone = req.whatsapp.replace(/\D/g, '');
+
+                    return `
+                        <div class="book-request-item" data-id="${req.id}">
+                            <p><span class="label">Account:</span> ${req.account_title}</p>
+                            <p><span class="label">Name:</span> ${req.user_name}</p>
+                            <p><span class="label">WhatsApp:</span> +${cleanPhone}</p>
+                            <p><span class="label">Date:</span> ${date}</p>
+                            <div class="request-actions">
+                                <button class="btn-wa" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                                    <i class="fab fa-whatsapp"></i> Contact
+                                </button>
+                                <button class="btn-cancel" onclick="cancelBookRequest('${req.id}')">
+                                    <i class="fa fa-times"></i> Cancel
+                                </button>
+                            </div>
                         </div>
+                    `;
+                }).join('');
+            }
+
+            function renderAdminAccounts() {
+                const list = document.getElementById('admin-accounts-list');
+                if (!list) return;
+                if (appState.accounts.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = appState.accounts.map(acc => {
+                    const mediaTag = acc.media_type === 'video' 
+                        ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls controlsList="nodownload"></video>`
+                        : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
+
+                    return `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        ${mediaTag}
+                        <div style="flex:1;">
+                            <strong>${acc.title}</strong> 
+                            <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
+                            <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
+                            <i class="fa fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `}).join('');
+            }
+
+            function renderAdminContacts() {
+                const list = document.getElementById('admin-contacts-list');
+                if (!list) return;
+                if (appState.contacts.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = appState.contacts.map(contact => `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <strong>${contact.name}</strong>
+                            <div style="font-size:0.8rem;">+${contact.phone}</div>
+                            <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.description || ''}</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
+                            <i class="fa fa-trash"></i> Delete
+                        </button>
                     </div>
                 `).join('');
             }
 
-            window.cancelBookRequest = function(id) {
-                if (confirm('Cancel this book request?')) {
-                    appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
-                    localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderBookRequests();
+            function renderAdminAds() {
+                const list = document.getElementById('admin-ads-list');
+                if (!list) return;
+                if (appState.ads.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = appState.ads.map((ad, index) => `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
+                            ${ad.type === 'video' 
+                                ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" controls controlsList="nodownload"></video>`
+                                : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
+                            }
+                        </div>
+                        <div style="flex:1;">
+                            <strong>${ad.caption || 'No caption'}</strong>
+                            <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${ad.id})">
+                            <i class="fa fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            function updateAdminStats() {
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+            }
+
+            // ============================================
+            // UPLOAD FUNCTIONS
+            // ============================================
+            window.previewMediaFromFile = function() {
+                const fileInput = document.getElementById('account-media-file');
+                const preview = document.getElementById('media-preview');
+                const uploadBtn = document.getElementById('upload-btn');
+                
+                if (fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    uploadBtn.disabled = false;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const isVideo = file.type.startsWith('video/');
+                        if (isVideo) {
+                            preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
+                            appState.currentMediaData = { type: 'video', data: e.target.result, file };
+                        } else {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                            appState.currentMediaData = { type: 'image', data: e.target.result, file };
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    uploadBtn.disabled = true;
                 }
             };
 
+            window.previewAdMedia = function() {
+                const fileInput = document.getElementById('ad-media-file');
+                const preview = document.getElementById('ad-preview');
+                if (fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const isVideo = file.type.startsWith('video/');
+                        if (isVideo) {
+                            preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
+                            appState.currentAdData = { type: 'video', data: e.target.result, file };
+                        } else {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                            appState.currentAdData = { type: 'image', data: e.target.result, file };
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            window.uploadNewAccount = async function() {
+                const tier = document.getElementById('account-tier').value;
+                const title = document.getElementById('account-title').value.trim();
+                const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+                const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+                const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+                
+                if (!tier || !title || !priceUsd || !priceAfn) {
+                    alert('Please fill all required fields');
+                    return;
+                }
+                
+                if (!appState.currentMediaData) {
+                    alert('Please select an image or video');
+                    return;
+                }
+                
+                const progressContainer = document.getElementById('upload-progress');
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                const uploadBtn = document.getElementById('upload-btn');
+                
+                progressContainer.classList.add('active');
+                uploadBtn.disabled = true;
+                
+                try {
+                    const file = appState.currentMediaData.file;
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${tier}/${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                        .from('accounts')
+                        .upload(fileName, file);
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: urlData } = supabase.storage
+                        .from('accounts')
+                        .getPublicUrl(fileName);
+                    
+                    const newAccount = {
+                        id: 'a' + Date.now(),
+                        title,
+                        description: desc,
+                        tier,
+                        price_usd: priceUsd,
+                        price_afn: priceAfn,
+                        media: urlData.publicUrl,
+                        media_type: appState.currentMediaData.type,
+                        sold: false
+                    };
+                    
+                    const { error: dbError } = await supabase
+                        .from('accounts')
+                        .insert([newAccount]);
+                    
+                    if (dbError) throw dbError;
+                    
+                    appState.accounts.push(newAccount);
+                    
+                    progressBar.style.width = '100%';
+                    progressText.innerHTML = 'Upload complete!';
+                    
+                    setTimeout(() => {
+                        closeModal('add-account-modal');
+                        renderAccounts();
+                        if (appState.isAdminLoggedIn) {
+                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                        }
+                        alert('Account uploaded successfully!');
+                        
+                        progressContainer.classList.remove('active');
+                        progressBar.style.width = '0%';
+                        progressText.innerHTML = '';
+                        uploadBtn.disabled = false;
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Upload failed: ' + error.message);
+                    progressContainer.classList.remove('active');
+                    uploadBtn.disabled = false;
+                }
+            };
+
+            window.saveNewAd = async function() {
+                const type = document.getElementById('ad-type').value;
+                const caption = document.getElementById('ad-caption').value.trim();
+                
+                if (!appState.currentAdData) {
+                    alert('Please upload an image or video');
+                    return;
+                }
+                
+                try {
+                    const file = appState.currentAdData.file;
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `ads/${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                        .from('accounts')
+                        .upload(fileName, file);
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: urlData } = supabase.storage
+                        .from('accounts')
+                        .getPublicUrl(fileName);
+                    
+                    const newAd = {
+                        type,
+                        data: urlData.publicUrl,
+                        caption
+                    };
+                    
+                    const { data: dbData, error: dbError } = await supabase
+                        .from('ads')
+                        .insert([newAd])
+                        .select();
+                    
+                    if (dbError) throw dbError;
+                    
+                    appState.ads.push(dbData[0]);
+                    
+                    document.getElementById('ad-type').value = 'image';
+                    document.getElementById('ad-media-file').value = '';
+                    document.getElementById('ad-caption').value = '';
+                    document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    appState.currentAdData = null;
+                    
+                    renderAdsSlider();
+                    renderAdminAds();
+                    alert('Ad added successfully!');
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Upload failed: ' + error.message);
+                }
+            };
+
+            window.saveNewContact = async function() {
+                const name = document.getElementById('contact-name').value.trim();
+                const desc = document.getElementById('contact-desc').value.trim();
+                
+                if (!name) {
+                    alert('Please enter contact name');
+                    return;
+                }
+                
+                let fullNumber = '';
+                if (appState.phoneInput) {
+                    const number = appState.phoneInput.getNumber();
+                    if (number) {
+                        fullNumber = number.replace(/\D/g, '');
+                    } else {
+                        alert('Please enter a valid phone number');
+                        return;
+                    }
+                } else {
+                    const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
+                    if (!phone) {
+                        alert('Please enter phone number');
+                        return;
+                    }
+                    fullNumber = phone;
+                }
+                
+                const newContact = {
+                    id: 'c' + Date.now(),
+                    name,
+                    phone: fullNumber,
+                    description: desc
+                };
+                
+                const { error } = await supabase
+                    .from('contacts')
+                    .insert([newContact]);
+                
+                if (error) {
+                    alert('Error saving contact: ' + error.message);
+                    return;
+                }
+                
+                appState.contacts.push(newContact);
+                
+                document.getElementById('contact-name').value = '';
+                document.getElementById('contact-phone').value = '';
+                document.getElementById('contact-desc').value = '';
+                
+                renderContacts();
+                renderAdminContacts();
+                alert('Contact added successfully!');
+            };
+
+            window.saveUsdtAddress = async function() {
+                const newAddress = document.getElementById('new-usdt-address').value.trim();
+                if (!newAddress) {
+                    alert('Please enter a USDT address');
+                    return;
+                }
+                
+                const { error } = await supabase
+                    .from('settings')
+                    .upsert({ key: 'usdt_address', value: newAddress }, { onConflict: 'key' });
+                
+                if (error) {
+                    alert('Error saving USDT address: ' + error.message);
+                    return;
+                }
+                
+                appState.usdtAddress = newAddress;
+                document.getElementById('current-usdt-address').innerText = newAddress;
+                closeModal('edit-usdt-modal');
+                alert('USDT address updated successfully!');
+            };
+
+            // ============================================
+            // DELETE FUNCTIONS
+            // ============================================
+            window.deleteAccount = async function(id) {
+                if (!confirm('Delete this account permanently?')) return;
+                
+                const { error } = await supabase
+                    .from('accounts')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    alert('Error deleting account: ' + error.message);
+                    return;
+                }
+                
+                appState.accounts = appState.accounts.filter(a => a.id !== id);
+                renderAccounts();
+                renderAdminAccounts();
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            };
+
+            window.deleteContact = async function(id) {
+                if (!confirm('Delete this contact?')) return;
+                
+                const { error } = await supabase
+                    .from('contacts')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    alert('Error deleting contact: ' + error.message);
+                    return;
+                }
+                
+                appState.contacts = appState.contacts.filter(c => c.id !== id);
+                renderContacts();
+                renderAdminContacts();
+            };
+
+            window.deleteAd = async function(id) {
+                if (!confirm('Delete this ad?')) return;
+                
+                const { error } = await supabase
+                    .from('ads')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    alert('Error deleting ad: ' + error.message);
+                    return;
+                }
+                
+                appState.ads = appState.ads.filter(a => a.id !== id);
+                renderAdsSlider();
+                renderAdminAds();
+            };
+
+            window.cancelBookRequest = async function(id) {
+                if (!confirm('Cancel this book request?')) return;
+                
+                const { error } = await supabase
+                    .from('book_requests')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    alert('Error canceling request: ' + error.message);
+                    return;
+                }
+                
+                appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                renderBookRequests();
+            };
+
+            // ============================================
+            // BOOK / BUY / INFO
+            // ============================================
+            window.bookAccount = function(id) {
+                const acc = appState.accounts.find(a => a.id === id);
+                if (!acc) return;
+                appState.currentAccount = acc;
+                
+                const modalBody = document.getElementById('book-modal-body');
+                modalBody.innerHTML = `
+                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                    <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
+                    <input type="text" id="book-name" class="input" placeholder="Your name">
+                    <label class="input-label">WhatsApp number with country code</label>
+                    <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
+                `;
+                
+                openModal('book-modal');
+                
+                setTimeout(() => {
+                    const input = document.getElementById('book-phone');
+                    if (input) {
+                        if (appState.bookPhoneInput) {
+                            try { appState.bookPhoneInput.destroy(); } catch (e) {}
+                        }
+                        appState.bookPhoneInput = intlTelInput(input, {
+                            initialCountry: 'af',
+                            separateDialCode: true,
+                            utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                            dropdownContainer: document.body
+                        });
+                        
+                        input.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                        });
+                    }
+                }, 200);
+            };
+
+            window.submitBook = async function() {
+                const name = document.getElementById('book-name')?.value;
+                
+                if (!name) {
+                    alert('Please enter your name');
+                    return;
+                }
+                
+                let phone = '';
+                if (appState.bookPhoneInput) {
+                    const number = appState.bookPhoneInput.getNumber();
+                    if (number) {
+                        phone = number.replace(/\D/g, '');
+                    } else {
+                        alert('Please enter a valid WhatsApp number');
+                        return;
+                    }
+                } else {
+                    phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+                    if (!phone) {
+                        alert('Please enter a valid WhatsApp number');
+                        return;
+                    }
+                }
+                
+                const req = {
+                    id: Date.now(),
+                    account_id: appState.currentAccount.id,
+                    account_title: appState.currentAccount.title,
+                    user_name: name,
+                    whatsapp: phone,
+                    date: new Date().toISOString()
+                };
+                
+                const { error } = await supabase
+                    .from('book_requests')
+                    .insert([req]);
+                
+                if (error) {
+                    alert('Error submitting booking: ' + error.message);
+                    return;
+                }
+                
+                appState.bookRequests.push(req);
+                
+                if (appState.isAdminLoggedIn) {
+                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    renderBookRequests();
+                }
+                
+                alert('✅ Booking submitted! We will contact you on WhatsApp.');
+                closeModal('book-modal');
+            };
+
+            window.buyAccount = function(id) {
+                const acc = appState.accounts.find(a => a.id === id);
+                if (!acc) return;
+                appState.currentAccount = acc;
+                document.getElementById('buy-modal-body').innerHTML = `
+                    <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
+                    <p>Send exact USDT (TRC20) to:</p>
+                    <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
+                    <button class="btn" onclick="copyUsdt()">Copy address</button>
+                `;
+                openModal('buy-modal');
+            };
+
+            window.confirmBuyWhatsApp = function() {
+                if (!appState.currentAccount) return;
+                const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
+                window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
+                closeModal('buy-modal');
+            };
+
+            window.infoAccount = function(id) {
+                const acc = appState.accounts.find(a => a.id === id);
+                if (!acc) return;
+                document.getElementById('info-modal-body').innerHTML = `
+                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                    <p>${acc.description || 'Premium PUBG account'}</p>
+                    <p>Tier: ${acc.tier}</p>
+                    <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
+                    <p>✅ Includes email & password, full access.</p>
+                `;
+                openModal('info-modal');
+            };
+
+            window.copyUsdt = function() {
+                navigator.clipboard.writeText(appState.usdtAddress);
+                alert('USDT address copied');
+            };
+
+            // ============================================
+            // ADMIN AUTH
+            // ============================================
+            window.adminLogin = async function() {
+                const email = document.getElementById('admin-email').value;
+                const pass = document.getElementById('admin-password').value;
+                
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: pass
+                });
+                
+                if (error) {
+                    document.getElementById('admin-error').innerText = 'Invalid credentials';
+                } else {
+                    appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-login-section').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    document.getElementById('admin-error').innerText = '';
+                    
+                    updateAdminStats();
+                    renderBookRequests();
+                    renderAdminAccounts();
+                    renderAdminContacts();
+                    renderAdminAds();
+                }
+            };
+
+            window.logout = function() {
+                supabase.auth.signOut();
+                appState.isAdminLoggedIn = false;
+                document.getElementById('admin-login-section').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                switchScreen('main');
+            };
+
+            // ============================================
+            // UI HELPERS
+            // ============================================
             window.filterAccounts = function(tier) {
                 appState.currentFilter = tier;
                 document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
@@ -1354,59 +1761,42 @@
                 if (screen === 'admin' && appState.isAdminLoggedIn) {
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-login-section').classList.add('hidden');
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                    document.getElementById('online-user-count').innerText = appState.onlineCount;
-                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                    document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                    renderBookRequests();
                 }
             };
 
-            window.previewMediaFromFile = function() {
-                const fileInput = document.getElementById('account-media-file');
-                const preview = document.getElementById('media-preview');
-                const uploadBtn = document.getElementById('upload-btn');
-                
-                if (fileInput.files && fileInput.files[0]) {
-                    uploadBtn.disabled = false;
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const file = fileInput.files[0];
-                        const isVideo = file.type.startsWith('video/');
-                        if (isVideo) {
-                            preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
-                        } else {
-                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        }
-                        appState.currentMediaData = {
-                            data: e.target.result.split(',')[1],
-                            type: file.type,
-                            name: file.name
-                        };
-                    };
-                    reader.readAsDataURL(fileInput.files[0]);
-                } else {
-                    uploadBtn.disabled = true;
+            window.jumpToSlide = function(idx) {
+                const track = document.getElementById('slider-track');
+                if (track) {
+                    track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                    startAutoSlide();
                 }
             };
 
-            window.previewAdMedia = function() {
-                const fileInput = document.getElementById('ad-media-file');
-                const preview = document.getElementById('ad-preview');
-                if (fileInput.files && fileInput.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        appState.currentAdData = {
-                            data: e.target.result.split(',')[1],
-                            type: fileInput.files[0].type,
-                            name: fileInput.files[0].name
-                        };
-                    };
-                    reader.readAsDataURL(fileInput.files[0]);
+            window.openModal = function(id) {
+                document.getElementById(id).classList.remove('hidden');
+            };
+            
+            window.closeModal = function(id) {
+                document.getElementById(id).classList.add('hidden');
+                if (id === 'book-modal' && appState.bookPhoneInput) {
+                    try { appState.bookPhoneInput.destroy(); } catch (e) {}
+                    appState.bookPhoneInput = null;
                 }
+            };
+            
+            window.openLanguageModal = function() {
+                openModal('language-modal');
+            };
+            
+            window.setLanguage = function(lang) {
+                document.documentElement.lang = lang;
+                document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
+                appState.currentLanguage = lang;
+                localStorage.setItem('gk_language', lang);
+                renderAccounts();
+                renderContacts();
+                if (appState.isAdminLoggedIn) renderBookRequests();
+                closeModal('language-modal');
             };
 
             window.showAddAccountModal = function() {
@@ -1417,6 +1807,9 @@
                 document.getElementById('account-price-afn').value = '';
                 document.getElementById('account-media-file').value = '';
                 document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                document.getElementById('upload-progress').classList.remove('active');
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('progress-text').innerHTML = '';
                 document.getElementById('upload-btn').disabled = true;
                 appState.currentMediaData = null;
                 openModal('add-account-modal');
@@ -1429,11 +1822,24 @@
 
             window.showManageContactsModal = function() {
                 renderAdminContacts();
-                initPhoneInput();
+                const input = document.getElementById('contact-phone');
+                if (input && !appState.phoneInput) {
+                    appState.phoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
+                    });
+                }
                 openModal('manage-contacts-modal');
             };
 
             window.showManageAdsModal = function() {
+                document.getElementById('ad-type').value = 'image';
+                document.getElementById('ad-media-file').value = '';
+                document.getElementById('ad-caption').value = '';
+                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentAdData = null;
                 renderAdminAds();
                 openModal('manage-ads-modal');
             };
@@ -1443,402 +1849,55 @@
                 openModal('edit-usdt-modal');
             };
 
-            window.saveUsdtAddress = function() {
-                const newAddress = document.getElementById('new-usdt-address').value.trim();
-                if (!newAddress) return alert('Please enter a USDT address');
-                appState.usdtAddress = newAddress;
-                localStorage.setItem('gk_usdt_address', newAddress);
-                document.getElementById('current-usdt-address').innerText = newAddress;
-                closeModal('edit-usdt-modal');
-                alert('USDT address updated!');
-            };
-
-            // UPLOAD TO STORJ VIA NHOST FUNCTION - WITH CORRECT URL
-            window.uploadNewAccount = async function() {
-                const tier = document.getElementById('account-tier').value;
-                const title = document.getElementById('account-title').value.trim();
-                const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-                const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-                const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            function startAutoSlide() {
+                if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
                 
-                if (!tier || !title || !priceUsd || !priceAfn || !appState.currentMediaData) {
-                    alert('Please fill all required fields and select media');
-                    return;
-                }
-                
-                if (!appState.isAdminLoggedIn) {
-                    alert('Please login first');
-                    return;
-                }
-
-                // Show progress
-                const progressContainer = document.getElementById('upload-progress');
-                const progressBar = document.getElementById('progress-bar');
-                const progressText = document.getElementById('progress-text');
-                const uploadBtn = document.getElementById('upload-btn');
-                
-                progressContainer.classList.add('active');
-                uploadBtn.disabled = true;
-                progressBar.style.width = '10%';
-                progressText.innerHTML = 'Preparing upload...';
-
-                try {
-                    // Prepare file data
-                    const fileData = {
-                        file: appState.currentMediaData.data,
-                        fileName: appState.currentMediaData.name,
-                        fileType: appState.currentMediaData.type,
-                        tier: tier
-                    };
-
-                    progressBar.style.width = '30%';
-                    progressText.innerHTML = `Uploading to Storj...`;
+                appState.autoSlideInterval = setInterval(() => {
+                    const track = document.getElementById('slider-track');
+                    if (!track || appState.ads.length === 0) return;
                     
-                    console.log('Uploading to:', FUNCTION_URL);
+                    const slideWidth = track.clientWidth;
+                    const currentScroll = track.scrollLeft;
+                    const currentIndex = Math.round(currentScroll / slideWidth);
+                    const nextIndex = (currentIndex + 1) % appState.ads.length;
                     
-                    const response = await fetch(FUNCTION_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${appState.adminToken}`
-                        },
-                        body: JSON.stringify(fileData)
+                    track.scrollTo({
+                        left: nextIndex * slideWidth,
+                        behavior: 'smooth'
                     });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
-                    }
-
-                    const result = await response.json();
-
-                    if (!result.success) {
-                        throw new Error(result.error || 'Upload failed');
-                    }
-
-                    progressBar.style.width = '80%';
-                    progressText.innerHTML = 'Saving to database...';
-
-                    // Create account with Storj URL
-                    const newAccount = {
-                        id: 'a' + Date.now(),
-                        title: title,
-                        desc: desc,
-                        tier: tier,
-                        price_usd: priceUsd,
-                        price_afn: priceAfn,
-                        media: result.url,
-                        mediaType: appState.currentMediaData.type.startsWith('video/') ? 'video' : 'image',
-                        sold: false,
-                        storjPath: result.path
-                    };
                     
-                    appState.accounts.push(newAccount);
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    
-                    progressBar.style.width = '100%';
-                    progressText.innerHTML = 'Upload complete!';
-                    
-                    setTimeout(() => {
-                        closeModal('add-account-modal');
-                        renderAccounts();
-                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                        alert(`Account uploaded to Storj successfully!`);
-                        
-                        progressContainer.classList.remove('active');
-                        progressBar.style.width = '0%';
-                        progressText.innerHTML = '';
-                        uploadBtn.disabled = false;
-                    }, 500);
-
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    
-                    // Fallback to local save if function fails
-                    if (confirm('Upload to Storj failed: ' + error.message + '\n\nSave locally instead?')) {
-                        const imageUrl = appState.currentMediaData.type.startsWith('video/') 
-                            ? 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'
-                            : `data:image/jpeg;base64,${appState.currentMediaData.data}`;
-                        
-                        const newAccount = {
-                            id: 'a' + Date.now(),
-                            title: title,
-                            desc: desc,
-                            tier: tier,
-                            price_usd: priceUsd,
-                            price_afn: priceAfn,
-                            media: imageUrl,
-                            mediaType: 'image',
-                            sold: false
-                        };
-                        
-                        appState.accounts.push(newAccount);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                        
-                        closeModal('add-account-modal');
-                        renderAccounts();
-                        alert('Account saved locally (Storj upload failed)');
-                    }
-                    
-                    progressContainer.classList.remove('active');
-                    progressBar.style.width = '0%';
-                    progressText.innerHTML = '';
-                    uploadBtn.disabled = false;
-                }
-            };
-
-            window.deleteAccount = function(id) {
-                if (confirm('Delete this account?')) {
-                    appState.accounts = appState.accounts.filter(a => a.id !== id);
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    renderAccounts();
-                    renderAdminAccounts();
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                }
-            };
-
-            function initPhoneInput() {
-                const input = document.querySelector('#contact-phone');
-                if (input && !appState.phoneInput && typeof intlTelInput !== 'undefined') {
-                    appState.phoneInput = intlTelInput(input, {
-                        initialCountry: 'af',
-                        separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js'
+                    document.querySelectorAll('.dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === nextIndex);
                     });
-                }
+                }, 2000);
             }
 
-            window.saveNewContact = function() {
-                const name = document.getElementById('contact-name').value.trim();
-                if (!name) return alert('Enter name');
+            // ============================================
+            // INIT
+            // ============================================
+            async function init() {
+                const savedLang = localStorage.getItem('gk_language') || 'en';
+                setLanguage(savedLang);
                 
-                let phone = document.getElementById('contact-phone').value.replace(/\D/g, '');
-                if (!phone) return alert('Enter phone');
+                await loadInitialData();
                 
-                const desc = document.getElementById('contact-desc').value.trim();
-                
-                const newContact = {
-                    id: 'c' + Date.now(),
-                    name: name,
-                    phone: phone,
-                    desc: desc
-                };
-                
-                appState.contacts.push(newContact);
-                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                
-                document.getElementById('contact-name').value = '';
-                document.getElementById('contact-phone').value = '';
-                document.getElementById('contact-desc').value = '';
-                
-                renderContacts();
-                renderAdminContacts();
-                alert('Contact added!');
-            };
-
-            window.deleteContact = function(id) {
-                if (confirm('Delete this contact?')) {
-                    appState.contacts = appState.contacts.filter(c => c.id !== id);
-                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                    renderContacts();
-                    renderAdminContacts();
-                }
-            };
-
-            window.saveNewAd = function() {
-                const caption = document.getElementById('ad-caption').value.trim();
-                if (!appState.currentAdData) return alert('Select an image');
-                
-                const newAd = {
-                    type: 'image',
-                    data: `data:image/jpeg;base64,${appState.currentAdData.data}`,
-                    caption: caption
-                };
-                
-                appState.ads.push(newAd);
-                localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-                
-                document.getElementById('ad-media-file').value = '';
-                document.getElementById('ad-caption').value = '';
-                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                appState.currentAdData = null;
-                
-                renderAdsSlider();
-                renderAdminAds();
-                alert('Ad added!');
-            };
-
-            window.deleteAd = function(index) {
-                if (confirm('Delete this ad?')) {
-                    appState.ads.splice(index, 1);
-                    localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-                    renderAdsSlider();
-                    renderAdminAds();
-                }
-            };
-
-            window.bookAccount = function(id) {
-                const acc = appState.accounts.find(a => a.id === id);
-                if (!acc) return;
-                appState.currentAccount = acc;
-                
-                const t = translations[appState.currentLanguage] || translations.en;
-                
-                document.getElementById('book-modal-body').innerHTML = `
-                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                    <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                    <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
-                    <input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber}">
-                `;
-                
-                openModal('book-modal');
-            };
-
-            window.submitBook = function() {
-                const name = document.getElementById('book-name')?.value;
-                const phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
-                
-                if (!name || !phone) {
-                    alert('Please enter name and phone');
-                    return;
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-login-section').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
                 }
                 
-                const req = {
-                    id: Date.now(),
-                    account_id: appState.currentAccount.id,
-                    account_title: appState.currentAccount.title,
-                    user_name: name,
-                    whatsapp: phone,
-                    date: new Date().toISOString()
-                };
-                
-                appState.bookRequests.push(req);
-                localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-                
-                if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderBookRequests();
-                }
-                
-                alert('✅ Booking submitted!');
-                closeModal('book-modal');
-            };
-
-            window.buyAccount = function(id) {
-                const acc = appState.accounts.find(a => a.id === id);
-                if (!acc) return;
-                appState.currentAccount = acc;
-                document.getElementById('buy-modal-body').innerHTML = `
-                    <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
-                    <p>Send exact USDT (TRC20) to:</p>
-                    <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0;">${appState.usdtAddress}</code>
-                `;
-                openModal('buy-modal');
-            };
-
-            window.confirmBuyWhatsApp = function() {
-                if (!appState.currentAccount) return;
-                const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}`;
-                window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
-                closeModal('buy-modal');
-            };
-
-            window.infoAccount = function(id) {
-                const acc = appState.accounts.find(a => a.id === id);
-                if (!acc) return;
-                document.getElementById('info-modal-body').innerHTML = `
-                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                    <p>${acc.desc || 'Premium PUBG account'}</p>
-                    <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                `;
-                openModal('info-modal');
-            };
-
-            window.adminLogin = async function() {
-                const email = document.getElementById('admin-email').value;
-                const pass = document.getElementById('admin-password').value;
-                
-                try {
-                    // Try Nhost login
-                    if (nhost && nhost.auth) {
-                        const { session, error } = await nhost.auth.signIn({
-                            email: email,
-                            password: pass
-                        });
-
-                        if (!error && session) {
-                            appState.isAdminLoggedIn = true;
-                            appState.adminToken = session.accessToken;
-                            
-                            document.getElementById('admin-login-section').classList.add('hidden');
-                            document.getElementById('admin-dashboard').classList.remove('hidden');
-                            document.getElementById('admin-error').innerText = '';
-                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                            document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                            document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                            document.getElementById('online-user-count').innerText = appState.onlineCount;
-                            document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                            document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                            renderBookRequests();
-                            return;
-                        }
+                trackVisitor();
+                setInterval(trackVisitor, 30000);
+                setInterval(() => {
+                    if (document.visibilityState === 'visible') {
+                        trackVisitor();
                     }
+                }, 60000);
+            }
 
-                    // Fallback
-                    if (email === 'shamsahmadzai06@gmil.com' && pass === 'Shams12357@') {
-                        appState.isAdminLoggedIn = true;
-                        appState.adminToken = 'fallback-token';
-                        document.getElementById('admin-login-section').classList.add('hidden');
-                        document.getElementById('admin-dashboard').classList.remove('hidden');
-                        document.getElementById('admin-error').innerText = '';
-                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                        document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                        document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                        document.getElementById('online-user-count').innerText = appState.onlineCount;
-                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                        document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                        renderBookRequests();
-                    } else {
-                        document.getElementById('admin-error').innerText = 'Invalid credentials';
-                    }
-                } catch (error) {
-                    document.getElementById('admin-error').innerText = 'Login failed';
-                }
-            };
-
-            window.logout = function() {
-                appState.isAdminLoggedIn = false;
-                appState.adminToken = null;
-                document.getElementById('admin-login-section').classList.remove('hidden');
-                document.getElementById('admin-dashboard').classList.add('hidden');
-                switchScreen('main');
-            };
-
-            window.openModal = function(id) {
-                document.getElementById(id).classList.remove('hidden');
-            };
-            
-            window.closeModal = function(id) {
-                document.getElementById(id).classList.add('hidden');
-            };
-            
-            window.openLanguageModal = function() {
-                openModal('language-modal');
-            };
-            
-            window.setLanguage = function(lang) {
-                applyTranslation(lang);
-                closeModal('language-modal');
-            };
-
-            // Initialize
-            const savedLang = localStorage.getItem('gk_language') || 'en';
-            applyTranslation(savedLang);
-            renderAdsSlider();
-            renderContacts();
-            renderAccounts();
-            trackVisitor();
-            setInterval(trackVisitor, 30000);
+            init();
         })();
     </script>
 </body>
