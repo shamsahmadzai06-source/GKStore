@@ -646,19 +646,21 @@
     </style>
 </head>
 <body>
+    <!-- Navigation -->
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
             <span class="brand-text">GK Store</span>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span>Lang</span></button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span>Admin</span></button>
+            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i> Lang</button>
+            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i> Contact</button>
+            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i> Admin</button>
         </div>
     </div>
 
     <div class="container">
+        <!-- Main Screen -->
         <div id="main-screen" class="screen active">
             <div class="main-layout">
                 <h1 class="big-title">PUBG Marketplace</h1>
@@ -667,7 +669,6 @@
                     <i class="fa fa-gamepad"></i> <span>Click to see PUBG account</span>
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
-                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;">— swipe ads —</p>
                 <div class="online-badge">
                     <span class="online-indicator"></span>
                     <span id="online-count">0</span> users online
@@ -675,6 +676,7 @@
             </div>
         </div>
 
+        <!-- Accounts Screen -->
         <div id="accounts-screen" class="screen">
             <h2>PUBG Accounts</h2>
             <div class="tier-header">
@@ -686,11 +688,13 @@
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
+        <!-- Contact Screen -->
         <div id="contact-screen" class="screen">
             <h2>Contact & Support</h2>
             <div id="contacts-container"></div>
         </div>
 
+        <!-- Admin Screen -->
         <div id="admin-screen" class="screen">
             <h2>Admin Panel</h2>
             <div id="admin-login-section">
@@ -715,7 +719,7 @@
         </div>
     </div>
 
-    <!-- LANGUAGE MODAL -->
+    <!-- Language Modal -->
     <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
         <div class="modal">
             <div class="modal-header">
@@ -730,15 +734,14 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // SUPABASE CONFIGURATION - SINGLE DECLARATION
+        // SUPABASE CONFIGURATION - SINGLE INSTANCE
         // ============================================
         const SUPABASE_URL = 'http://216.126.225.4:8000';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
         
-        // Initialize Supabase
+        // Initialize Supabase (ONCE)
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Table names
@@ -749,28 +752,23 @@
             book_requests: 'book_requests',
             settings: 'settings',
             visitors: 'visitors',
-            sessions: 'sessions',
             online_users: 'online_users'
         };
 
-        // ============================================
-        // APP STATE
-        // ============================================
+        // App state
         const appState = {
             accounts: [],
             contacts: [],
             ads: [],
             bookRequests: [],
-            visitorCount: 0,
             onlineCount: 0,
             currentFilter: 'all',
             isAdminLoggedIn: false,
-            currentLanguage: 'en',
             sessionId: 'session_' + Math.random().toString(36).substring(2, 15)
         };
 
         // ============================================
-        // GLOBAL FUNCTIONS (attached to window)
+        // GLOBAL FUNCTIONS (available to HTML)
         // ============================================
         window.switchScreen = function(screen) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -790,7 +788,6 @@
         window.setLanguage = function(lang) {
             document.documentElement.lang = lang;
             document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
-            appState.currentLanguage = lang;
             localStorage.setItem('gk_language', lang);
             closeModal('language-modal');
         };
@@ -802,9 +799,6 @@
             displayAccounts();
         };
 
-        // ============================================
-        // ADMIN LOGIN
-        // ============================================
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -823,7 +817,6 @@
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 errorDiv.innerHTML = '';
                 
-                // Load admin data
                 loadAdminData();
                 
             } catch (error) {
@@ -849,10 +842,9 @@
                     .select('*')
                     .eq('sold', false);
                 
-                if (!error) {
-                    appState.accounts = data || [];
-                    displayAccounts();
-                }
+                if (error) throw error;
+                appState.accounts = data || [];
+                displayAccounts();
             } catch (e) {
                 console.error('Error loading accounts:', e);
             }
@@ -868,18 +860,21 @@
             }
             
             if (filtered.length === 0) {
-                grid.innerHTML = '<p>No accounts found</p>';
+                grid.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No accounts found</p>';
                 return;
             }
 
             grid.innerHTML = filtered.map(acc => `
                 <div class="account-card">
                     <div class="card-content">
-                        <h3>${acc.title || 'Account'}</h3>
-                        <p>${acc.description || ''}</p>
+                        <div class="card-title">
+                            ${acc.title || 'Account'}
+                            ${acc.tier ? `<span class="tier-badge ${acc.tier}">${acc.tier}</span>` : ''}
+                        </div>
+                        <div class="card-desc">${acc.description || 'Premium PUBG account'}</div>
                         <div class="price-row">
-                            <span>$${acc.price_usd || 0}</span>
-                            <span>${acc.price_afn || 0} AFN</span>
+                            <span class="usd-price">$${acc.price_usd || 0}</span>
+                            <span class="afn-price">${acc.price_afn || 0} AFN</span>
                         </div>
                     </div>
                 </div>
@@ -892,10 +887,9 @@
                     .from(TABLES.contacts)
                     .select('*');
                 
-                if (!error) {
-                    appState.contacts = data || [];
-                    displayContacts();
-                }
+                if (error) throw error;
+                appState.contacts = data || [];
+                displayContacts();
             } catch (e) {
                 console.error('Error loading contacts:', e);
             }
@@ -906,14 +900,15 @@
             if (!container) return;
             
             if (appState.contacts.length === 0) {
-                container.innerHTML = '<p>No contacts available</p>';
+                container.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No contacts available</p>';
                 return;
             }
 
             container.innerHTML = appState.contacts.map(contact => `
-                <div class="account-card">
-                    <h3>${contact.name}</h3>
-                    <p>${contact.phone}</p>
+                <div class="account-card" style="padding:1.5rem;">
+                    <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                    <p>${contact.description || 'WhatsApp support'}</p>
+                    <p><strong>+${contact.phone}</strong></p>
                 </div>
             `).join('');
         }
@@ -970,6 +965,49 @@
         }
 
         // ============================================
+        // ADS SLIDER
+        // ============================================
+        async function loadAds() {
+            try {
+                const { data, error } = await supabase
+                    .from(TABLES.ads)
+                    .select('*')
+                    .eq('is_active', true);
+                
+                if (error) throw error;
+                appState.ads = data || [];
+                displayAds();
+            } catch (e) {
+                console.error('Error loading ads:', e);
+            }
+        }
+
+        function displayAds() {
+            const container = document.getElementById('ads-slider');
+            if (!container) return;
+            
+            if (appState.ads.length === 0) {
+                container.innerHTML = '<p>No ads</p>';
+                return;
+            }
+
+            let slides = '';
+            appState.ads.forEach(ad => {
+                if (ad.type === 'video') {
+                    slides += `<div class="slide"><video src="${ad.media_url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                } else {
+                    slides += `<div class="slide"><img src="${ad.media_url}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                }
+            });
+
+            container.innerHTML = `
+                <div class="slider-container">
+                    <div class="slider-track" id="slider-track">${slides}</div>
+                </div>
+            `;
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
         async function init() {
@@ -977,9 +1015,10 @@
             const savedLang = localStorage.getItem('gk_language') || 'en';
             setLanguage(savedLang);
             
-            // Load initial data
+            // Load data
             await loadAccounts();
             await loadContacts();
+            await loadAds();
             
             // Check admin session
             const { data: { session } } = await supabase.auth.getSession();
@@ -995,7 +1034,7 @@
             setInterval(trackOnlineUsers, 30000);
         }
 
-        // Start the app
+        // Start when page loads
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
