@@ -289,6 +289,7 @@
             aspect-ratio: 16/9;
             object-fit: cover;
             background: #1a1a24;
+            cursor: pointer;
         }
 
         .card-media::-internal-media-controls-download-button { display: none; }
@@ -599,6 +600,31 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        
+        .view-counter {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        
+        .video-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--surface-lighter);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .video-progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -624,6 +650,10 @@
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
                 <p class="slider-hint" style="color:var(--text-secondary); text-align:center;">— swipe ads (auto change 2s) —</p>
+                <div class="online-badge" style="display: inline-block; margin: 0 auto;">
+                    <span class="online-indicator"></span>
+                    <span id="online-count">0</span> users online
+                </div>
             </div>
         </div>
 
@@ -684,7 +714,7 @@
                             <span id="admin-bookings-count">0</span> <span>book requests</span>
                         </div>
                         <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="active-sessions-count">0</span> <span>active sessions</span>
+                            <span id="video-views-count">0</span> <span>video views</span>
                         </div>
                     </div>
                     
@@ -708,13 +738,16 @@
                             <i class="fa fa-plus-circle"></i> Add New Account
                         </button>
                         <button class="action-btn buy" onclick="showManageAccountsModal()">
-                            <i class="fa fa-edit"></i> Manage Accounts (Delete)
+                            <i class="fa fa-edit"></i> Manage Accounts
                         </button>
                         <button class="action-btn buy" onclick="showManageContactsModal()">
                             <i class="fab fa-whatsapp"></i> Manage Contacts
                         </button>
                         <button class="action-btn buy" onclick="showManageAdsModal()">
                             <i class="fa fa-image"></i> Manage Swipe Ads
+                        </button>
+                        <button class="action-btn buy" onclick="showVideoStatsModal()">
+                            <i class="fa fa-chart-bar"></i> Video Analytics
                         </button>
                         <button class="action-btn" onclick="logout()">
                             <i class="fa fa-sign-out"></i> Logout
@@ -796,7 +829,7 @@
                 <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 style="margin-bottom:1rem;">📋 Existing Accounts (click delete to remove)</h4>
+                <h4 style="margin-bottom:1rem;">📋 Existing Accounts</h4>
                 <div id="admin-accounts-list" style="max-height:400px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -844,10 +877,24 @@
                     </div>
                     <input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()" required>
                     <input type="text" id="ad-caption" class="input" placeholder="Caption">
+                    <input type="text" id="ad-link" class="input" placeholder="Link (optional)">
                     <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()">Add Ad</button>
                 </form>
                 <h4 style="margin:2rem 0 1rem;">📋 Current Ads</h4>
                 <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO STATS MODAL -->
+    <div id="video-stats-modal" class="modal-overlay hidden" onclick="closeModal('video-stats-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-chart-bar"></i> Video Analytics</h3>
+                <button class="modal-close" onclick="closeModal('video-stats-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="video-stats-content"></div>
             </div>
         </div>
     </div>
@@ -933,7 +980,12 @@
                 book_requests: 'book_requests',
                 settings: 'settings',
                 visitors: 'visitors',
-                sessions: 'sessions'
+                sessions: 'sessions',
+                buckets: 'buckets',
+                video_views: 'video_views',
+                online_users: 'online_users',
+                ad_views: 'ad_views',
+                ad_clicks: 'ad_clicks'
             };
 
             // ============================================
@@ -944,6 +996,8 @@
                 contacts: [],
                 ads: [],
                 bookRequests: [],
+                buckets: [],
+                videoViews: [],
                 visitorCount: 0,
                 onlineCount: 0,
                 currentFilter: 'all',
@@ -955,86 +1009,113 @@
                 bookPhoneInput: null,
                 currentLanguage: 'en',
                 autoSlideInterval: null,
-                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
+                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
+                sessionId: null,
+                videoWatchTimers: {}
             };
+
+            // Generate session ID
+            appState.sessionId = 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
             // ============================================
             // INITIAL DATA LOAD
             // ============================================
             async function loadInitialData() {
                 try {
+                    // Load buckets
+                    const { data: buckets, error: bucketsError } = await supabase
+                        .from(TABLES.buckets)
+                        .select('*')
+                        .eq('is_active', true);
+                    
+                    if (!bucketsError) appState.buckets = buckets || [];
+
                     // Load accounts
                     const { data: accounts, error: accountsError } = await supabase
                         .from(TABLES.accounts)
                         .select('*')
+                        .eq('is_active', true)
                         .order('created_at', { ascending: false });
                     
-                    if (accountsError) throw accountsError;
-                    appState.accounts = accounts || [];
+                    if (!accountsError) appState.accounts = accounts || [];
 
                     // Load contacts
                     const { data: contacts, error: contactsError } = await supabase
                         .from(TABLES.contacts)
-                        .select('*');
+                        .select('*')
+                        .eq('is_active', true)
+                        .order('priority', { ascending: false });
                     
-                    if (contactsError) throw contactsError;
-                    appState.contacts = contacts || [];
+                    if (!contactsError) appState.contacts = contacts || [];
 
                     // Load ads
                     const { data: ads, error: adsError } = await supabase
                         .from(TABLES.ads)
-                        .select('*');
+                        .select('*')
+                        .eq('is_active', true)
+                        .order('priority', { ascending: false });
                     
-                    if (adsError) throw adsError;
-                    appState.ads = ads || [];
+                    if (!adsError) appState.ads = ads || [];
 
-                    // Load book requests (only for admin, will be filtered later)
-                    if (appState.isAdminLoggedIn) {
-                        const { data: bookings, error: bookingsError } = await supabase
-                            .from(TABLES.book_requests)
-                            .select('*')
-                            .order('date', { ascending: false });
-                        
-                        if (bookingsError) throw bookingsError;
-                        appState.bookRequests = bookings || [];
-                    }
-
-                    // Load settings (USDT address)
+                    // Load settings
                     const { data: settings, error: settingsError } = await supabase
                         .from(TABLES.settings)
-                        .select('*')
-                        .eq('key', 'usdt_address')
-                        .maybeSingle();
+                        .select('*');
                     
                     if (!settingsError && settings) {
-                        appState.usdtAddress = settings.value;
+                        const usdtSetting = settings.find(s => s.key === 'usdt_address');
+                        if (usdtSetting) appState.usdtAddress = usdtSetting.value;
                     }
 
-                    // Load visitor stats
-                    const { count: visitorCount, error: visitorError } = await supabase
-                        .from(TABLES.visitors)
-                        .select('*', { count: 'exact', head: true });
-                    
-                    if (!visitorError) appState.visitorCount = visitorCount || 0;
-
-                    // Load online count (last 5 minutes)
-                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
-                    const { count: onlineCount, error: onlineError } = await supabase
-                        .from(TABLES.sessions)
-                        .select('*', { count: 'exact', head: true })
-                        .gt('last_seen', fiveMinAgo);
-                    
-                    if (!onlineError) appState.onlineCount = onlineCount || 0;
+                    // Load stats
+                    await updateStats();
 
                     renderAccounts();
                     renderContacts();
                     renderAdsSlider();
+                    
                     if (appState.isAdminLoggedIn) {
                         updateAdminStats();
                         renderBookRequests();
+                        renderAdminAccounts();
+                        renderAdminContacts();
+                        renderAdminAds();
                     }
                 } catch (e) {
                     console.error('Error loading data:', e);
+                }
+            }
+
+            // ============================================
+            // STATS FUNCTIONS
+            // ============================================
+            async function updateStats() {
+                try {
+                    // Visitor count
+                    const { count: visitorCount } = await supabase
+                        .from(TABLES.visitors)
+                        .select('*', { count: 'exact', head: true });
+                    appState.visitorCount = visitorCount || 0;
+
+                    // Online count
+                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+                    const { count: onlineCount } = await supabase
+                        .from(TABLES.online_users)
+                        .select('*', { count: 'exact', head: true })
+                        .gt('last_activity', fiveMinAgo);
+                    appState.onlineCount = onlineCount || 0;
+
+                    // Video views count
+                    const { count: videoViewsCount } = await supabase
+                        .from(TABLES.video_views)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    document.getElementById('online-count').innerText = appState.onlineCount;
+                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                    document.getElementById('online-user-count').innerText = appState.onlineCount;
+                    document.getElementById('video-views-count').innerText = videoViewsCount || 0;
+                } catch (e) {
+                    console.error('Error updating stats:', e);
                 }
             }
 
@@ -1047,64 +1128,127 @@
                     const data = await response.json();
                     const ip = data.ip;
                     const now = new Date().toISOString();
+                    const userAgent = navigator.userAgent;
 
-                    // Check if visitor exists
+                    // Update online status
+                    await supabase.rpc('update_online_status', {
+                        p_session_id: appState.sessionId,
+                        p_user_ip: ip,
+                        p_user_agent: userAgent,
+                        p_current_page: window.location.hash || 'main',
+                        p_is_admin: appState.isAdminLoggedIn
+                    });
+
+                    // Track visitor
                     const { data: existingVisitor } = await supabase
                         .from(TABLES.visitors)
                         .select('*')
                         .eq('ip', ip)
                         .maybeSingle();
 
-                    if (!existingVisitor) {
-                        // New visitor
+                    if (existingVisitor) {
+                        await supabase
+                            .from(TABLES.visitors)
+                            .update({ 
+                                last_seen: now,
+                                visit_count: existingVisitor.visit_count + 1,
+                                user_agent: userAgent
+                            })
+                            .eq('id', existingVisitor.id);
+                    } else {
                         await supabase
                             .from(TABLES.visitors)
                             .insert({
                                 ip: ip,
-                                first_seen: now
+                                first_seen: now,
+                                last_seen: now,
+                                user_agent: userAgent
                             });
                     }
 
-                    // Update or create session
+                    // Track session
                     const { data: existingSession } = await supabase
                         .from(TABLES.sessions)
                         .select('*')
-                        .eq('ip', ip)
+                        .eq('session_id', appState.sessionId)
                         .maybeSingle();
 
                     if (existingSession) {
                         await supabase
                             .from(TABLES.sessions)
-                            .update({ last_seen: now })
+                            .update({ 
+                                last_seen: now,
+                                page_views: existingSession.page_views + 1,
+                                user_agent: userAgent
+                            })
                             .eq('id', existingSession.id);
                     } else {
                         await supabase
                             .from(TABLES.sessions)
                             .insert({
+                                session_id: appState.sessionId,
                                 ip: ip,
-                                last_seen: now
+                                user_agent: userAgent
                             });
                     }
 
-                    // Update counts
-                    const { count: visitorCount } = await supabase
-                        .from(TABLES.visitors)
-                        .select('*', { count: 'exact', head: true });
-                    appState.visitorCount = visitorCount || 0;
-
-                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
-                    const { count: onlineCount } = await supabase
-                        .from(TABLES.sessions)
-                        .select('*', { count: 'exact', head: true })
-                        .gt('last_seen', fiveMinAgo);
-                    appState.onlineCount = onlineCount || 0;
-
-                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                    document.getElementById('online-user-count').innerText = appState.onlineCount;
-                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                    await updateStats();
                 } catch (e) {
                     console.error('Error tracking visitor:', e);
                 }
+            }
+
+            // ============================================
+            // VIDEO TRACKING
+            // ============================================
+            function trackVideoView(accountId, videoElement) {
+                if (!videoElement) return;
+                
+                const startTime = Date.now();
+                let watchedDuration = 0;
+                let completed = false;
+                
+                const updateInterval = setInterval(() => {
+                    watchedDuration = Math.floor((Date.now() - startTime) / 1000);
+                    
+                    // Update progress bar if exists
+                    const progressBar = document.getElementById(`progress-${accountId}`);
+                    if (progressBar) {
+                        const percentage = Math.min(100, (watchedDuration / 60) * 100); // Assume 60s video
+                        progressBar.style.width = percentage + '%';
+                    }
+                }, 1000);
+                
+                videoElement.addEventListener('ended', () => {
+                    clearInterval(updateInterval);
+                    completed = true;
+                    watchedDuration = Math.floor((Date.now() - startTime) / 1000);
+                    
+                    // Send view data to server
+                    supabase.rpc('track_video_view', {
+                        p_account_id: accountId,
+                        p_viewer_ip: 'web_user',
+                        p_session_id: appState.sessionId,
+                        p_watch_duration: watchedDuration,
+                        p_completed: true
+                    });
+                });
+                
+                videoElement.addEventListener('pause', () => {
+                    clearInterval(updateInterval);
+                    watchedDuration = Math.floor((Date.now() - startTime) / 1000);
+                    
+                    supabase.rpc('track_video_view', {
+                        p_account_id: accountId,
+                        p_viewer_ip: 'web_user',
+                        p_session_id: appState.sessionId,
+                        p_watch_duration: watchedDuration,
+                        p_completed: false
+                    });
+                });
+                
+                // Store timer to clean up
+                appState.videoWatchTimers[accountId] = updateInterval;
             }
 
             // ============================================
@@ -1113,10 +1257,12 @@
             function renderAccounts() {
                 const grid = document.getElementById('accounts-grid');
                 if (!grid) return;
+                
                 let filtered = appState.accounts.filter(a => !a.sold);
                 if (appState.currentFilter !== 'all') {
                     filtered = filtered.filter(a => a.tier === appState.currentFilter);
                 }
+                
                 if (filtered.length === 0) {
                     grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
                     return;
@@ -1124,12 +1270,20 @@
 
                 grid.innerHTML = filtered.map(acc => {
                     const mediaTag = acc.media_type === 'video' 
-                        ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
-                        : `<img src="${acc.media}" class="card-media" alt="account">`;
+                        ? `<video src="${acc.media_url}" class="card-media" id="video-${acc.id}" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
+                        : `<img src="${acc.media_url}" class="card-media" alt="account">`;
+
+                    const viewCount = acc.view_count || 0;
+                    const bookCount = acc.book_count || 0;
 
                     return `
                         <div class="account-card" data-id="${acc.id}">
                             ${mediaTag}
+                            ${acc.media_type === 'video' ? `
+                                <div class="video-progress">
+                                    <div class="video-progress-bar" id="progress-${acc.id}"></div>
+                                </div>
+                            ` : ''}
                             <div class="card-content">
                                 <div class="card-title">
                                     ${acc.title}
@@ -1140,20 +1294,35 @@
                                     <span class="usd-price">$${acc.price_usd?.toFixed(2)}</span>
                                     <span class="afn-price">${acc.price_afn?.toLocaleString()} AFN</span>
                                 </div>
+                                <div class="view-counter">
+                                    <i class="fa fa-eye"></i> ${viewCount} views
+                                    <i class="fa fa-bookmark" style="margin-left:10px;"></i> ${bookCount} bookings
+                                </div>
                                 <div class="action-buttons">
-                                    <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> Book</button>
-                                    <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> Buy</button>
-                                    <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> Info</button>
+                                    <button class="action-btn" onclick="bookAccount(${acc.id})"><i class="fa fa-bookmark"></i> Book</button>
+                                    <button class="action-btn buy" onclick="buyAccount(${acc.id})"><i class="fa fa-bolt"></i> Buy</button>
+                                    <button class="action-btn" onclick="infoAccount(${acc.id})"><i class="fa fa-info"></i> Info</button>
                                 </div>
                             </div>
                         </div>
                     `;
                 }).join('');
+
+                // Setup video tracking
+                filtered.forEach(acc => {
+                    if (acc.media_type === 'video') {
+                        const video = document.getElementById(`video-${acc.id}`);
+                        if (video) {
+                            trackVideoView(acc.id, video);
+                        }
+                    }
+                });
             }
 
             function renderContacts() {
                 const container = document.getElementById('contacts-container');
                 if (!container) return;
+                
                 if (appState.contacts.length === 0) {
                     container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
                     return;
@@ -1180,28 +1349,40 @@
             function renderAdsSlider() {
                 const container = document.getElementById('ads-slider');
                 if (!container) return;
+                
                 if (appState.ads.length === 0) {
                     container.innerHTML = '<div class="swipe-ads" style="padding:2rem; text-align:center;">No ads</div>';
                     return;
                 }
+                
                 let slides = '';
                 appState.ads.forEach((ad, idx) => {
                     if (ad.type === 'video') {
-                        slides += `<div class="slide"><video src="${ad.data}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                        slides += `<div class="slide"><video src="${ad.media_url}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
                     } else {
-                        slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                        slides += `<div class="slide"><img src="${ad.media_url}" alt="ad" onclick="trackAdClick(${ad.id})"><div class="slide-caption">${ad.caption || ''}</div></div>`;
                     }
+                    
+                    // Track ad view
+                    supabase.rpc('track_ad_view', {
+                        p_ad_id: ad.id,
+                        p_viewer_ip: 'web_user',
+                        p_user_agent: navigator.userAgent
+                    });
                 });
+                
                 let dots = '';
                 appState.ads.forEach((_, idx) => {
                     dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
                 });
+                
                 container.innerHTML = `
                     <div class="slider-container">
                         <div class="slider-track" id="slider-track">${slides}</div>
                         <div class="slider-dots">${dots}</div>
                     </div>
                 `;
+                
                 const track = document.getElementById('slider-track');
                 if (track) {
                     track.addEventListener('scroll', function() {
@@ -1209,12 +1390,14 @@
                         document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
                     });
                 }
+                
                 startAutoSlide();
             }
 
             function renderBookRequests() {
                 const list = document.getElementById('admin-book-requests-list');
                 if (!list) return;
+                
                 if (appState.bookRequests.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
                     return;
@@ -1225,16 +1408,21 @@
                 list.innerHTML = sorted.map(req => {
                     const date = new Date(req.date).toLocaleString();
                     const cleanPhone = req.whatsapp.replace(/\D/g, '');
+                    const statusClass = req.status === 'pending' ? 'btn-wa' : 'btn-cancel';
 
                     return `
                         <div class="book-request-item" data-id="${req.id}">
                             <p><span class="label">Account:</span> ${req.account_title}</p>
                             <p><span class="label">Name:</span> ${req.user_name}</p>
                             <p><span class="label">WhatsApp:</span> +${cleanPhone}</p>
+                            <p><span class="label">Status:</span> <span style="color:${req.status === 'pending' ? '#f59e0b' : req.status === 'contacted' ? '#10b981' : '#ef4444'}">${req.status}</span></p>
                             <p><span class="label">Date:</span> ${date}</p>
                             <div class="request-actions">
                                 <button class="btn-wa" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
                                     <i class="fab fa-whatsapp"></i> Contact
+                                </button>
+                                <button class="btn-cancel" onclick="updateBookRequestStatus('${req.id}', 'completed')">
+                                    <i class="fa fa-check"></i> Complete
                                 </button>
                                 <button class="btn-cancel" onclick="cancelBookRequest('${req.id}')">
                                     <i class="fa fa-times"></i> Cancel
@@ -1248,6 +1436,7 @@
             function renderAdminAccounts() {
                 const list = document.getElementById('admin-accounts-list');
                 if (!list) return;
+                
                 if (appState.accounts.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
                     return;
@@ -1255,8 +1444,8 @@
 
                 list.innerHTML = appState.accounts.map(acc => {
                     const mediaTag = acc.media_type === 'video' 
-                        ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls controlsList="nodownload"></video>`
-                        : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
+                        ? `<video src="${acc.media_url}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls controlsList="nodownload"></video>`
+                        : `<img src="${acc.media_url}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
 
                     return `
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
@@ -1265,10 +1454,16 @@
                             <strong>${acc.title}</strong> 
                             <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
                             <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
+                            <div style="font-size:0.7rem;">Views: ${acc.view_count || 0} | Bookings: ${acc.book_count || 0}</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i> Delete
-                        </button>
+                        <div style="display:flex; gap:0.3rem;">
+                            <button class="action-btn" style="background:#10b981; color:white; padding:0.4rem 0.8rem;" onclick="toggleFeatured(${acc.id}, ${acc.is_featured})">
+                                <i class="fa fa-star"></i>
+                            </button>
+                            <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 0.8rem;" onclick="deleteAccount(${acc.id})">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 `}).join('');
             }
@@ -1276,6 +1471,7 @@
             function renderAdminContacts() {
                 const list = document.getElementById('admin-contacts-list');
                 if (!list) return;
+                
                 if (appState.contacts.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
                     return;
@@ -1291,7 +1487,7 @@
                             <div style="font-size:0.8rem;">+${contact.phone}</div>
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.description || ''}</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact(${contact.id})">
                             <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1301,6 +1497,7 @@
             function renderAdminAds() {
                 const list = document.getElementById('admin-ads-list');
                 if (!list) return;
+                
                 if (appState.ads.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
                     return;
@@ -1310,19 +1507,44 @@
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                         <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
                             ${ad.type === 'video' 
-                                ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" controls controlsList="nodownload"></video>`
-                                : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
+                                ? `<video src="${ad.media_url}" style="width:100%; height:100%; object-fit:cover;" controls controlsList="nodownload"></video>`
+                                : `<img src="${ad.media_url}" style="width:100%; height:100%; object-fit:cover;">`
                             }
                         </div>
                         <div style="flex:1;">
                             <strong>${ad.caption || 'No caption'}</strong>
-                            <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
+                            <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type} | Views: ${ad.view_count || 0} | Clicks: ${ad.click_count || 0}</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd('${ad.id}')">
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${ad.id})">
                             <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
                 `).join('');
+            }
+
+            function renderVideoStats() {
+                const content = document.getElementById('video-stats-content');
+                if (!content) return;
+                
+                // Get top viewed videos
+                const topVideos = [...appState.accounts]
+                    .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+                    .slice(0, 10);
+                
+                let html = '<h4>Top 10 Most Viewed Accounts</h4>';
+                html += '<div style="margin-top:1rem;">';
+                
+                topVideos.forEach((video, index) => {
+                    html += `
+                        <div style="display:flex; justify-content:space-between; padding:0.5rem; border-bottom:1px solid var(--border);">
+                            <span>${index+1}. ${video.title} (${video.tier})</span>
+                            <span style="color:var(--primary);">${video.view_count || 0} views</span>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                content.innerHTML = html;
             }
 
             function updateAdminStats() {
@@ -1330,7 +1552,6 @@
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
                 document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
@@ -1344,6 +1565,14 @@
                 
                 if (fileInput.files && fileInput.files[0]) {
                     const file = fileInput.files[0];
+                    
+                    // Check file size (max 100MB)
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert('File too large. Maximum size is 100MB');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
                     uploadBtn.disabled = false;
                     
                     const reader = new FileReader();
@@ -1366,8 +1595,16 @@
             window.previewAdMedia = function() {
                 const fileInput = document.getElementById('ad-media-file');
                 const preview = document.getElementById('ad-preview');
+                
                 if (fileInput.files && fileInput.files[0]) {
                     const file = fileInput.files[0];
+                    
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert('File too large. Maximum size is 100MB');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const isVideo = file.type.startsWith('video/');
@@ -1383,7 +1620,6 @@
                 }
             };
 
-            // Convert file to base64 for storage
             function fileToBase64(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -1422,25 +1658,29 @@
                     progressBar.style.width = '30%';
                     progressText.innerHTML = 'Processing media...';
                     
-                    // Convert file to base64 for storage
                     const base64Data = await fileToBase64(appState.currentMediaData.file);
                     
                     progressBar.style.width = '60%';
                     progressText.innerHTML = 'Saving to database...';
                     
+                    // Get bucket for tier
+                    const bucket = appState.buckets.find(b => b.name === tier);
+                    
                     const newAccount = {
                         title,
                         description: desc,
                         tier,
+                        bucket_id: bucket?.id || null,
+                        media_url: base64Data,
+                        media_type: appState.currentMediaData.type,
                         price_usd: priceUsd,
                         price_afn: priceAfn,
-                        media: base64Data,
-                        media_type: appState.currentMediaData.type,
                         sold: false,
+                        is_active: true,
+                        created_by: (await supabase.auth.getUser()).data.user?.email || 'admin',
                         created_at: new Date().toISOString()
                     };
                     
-                    // Save to database
                     const { data, error } = await supabase
                         .from(TABLES.accounts)
                         .insert([newAccount])
@@ -1478,6 +1718,16 @@
                         document.getElementById('account-media-file').value = '';
                         document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                         appState.currentMediaData = null;
+                        
+                        // Log admin action
+                        await supabase.rpc('log_admin_action', {
+                            p_admin_email: (await supabase.auth.getUser()).data.user?.email,
+                            p_action: 'CREATE',
+                            p_table_name: 'accounts',
+                            p_record_id: data[0].id,
+                            p_details: { title, tier, price_usd },
+                            p_ip_address: 'admin'
+                        });
                     }, 500);
                     
                 } catch (error) {
@@ -1491,6 +1741,7 @@
             window.saveNewAd = async function() {
                 const type = document.getElementById('ad-type').value;
                 const caption = document.getElementById('ad-caption').value.trim();
+                const link = document.getElementById('ad-link').value.trim();
                 
                 if (!appState.currentAdData) {
                     alert('Please upload an image or video');
@@ -1498,17 +1749,21 @@
                 }
                 
                 try {
-                    // Convert file to base64
                     const base64Data = await fileToBase64(appState.currentAdData.file);
+                    
+                    // Get ads bucket
+                    const bucket = appState.buckets.find(b => b.name === 'ads');
                     
                     const newAd = {
                         type,
-                        data: base64Data,
+                        media_url: base64Data,
+                        bucket_id: bucket?.id || null,
                         caption,
+                        link: link || null,
+                        is_active: true,
                         created_at: new Date().toISOString()
                     };
                     
-                    // Save to database
                     const { data, error } = await supabase
                         .from(TABLES.ads)
                         .insert([newAd])
@@ -1524,6 +1779,7 @@
                     document.getElementById('ad-type').value = 'image';
                     document.getElementById('ad-media-file').value = '';
                     document.getElementById('ad-caption').value = '';
+                    document.getElementById('ad-link').value = '';
                     document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                     appState.currentAdData = null;
                     
@@ -1568,10 +1824,10 @@
                     name,
                     phone: fullNumber,
                     description: desc,
+                    is_active: true,
                     created_at: new Date().toISOString()
                 };
                 
-                // Save to database
                 const { data, error } = await supabase
                     .from(TABLES.contacts)
                     .insert([newContact])
@@ -1599,27 +1855,25 @@
                     return;
                 }
                 
-                // Check if settings document exists
-                const { data: existingSettings, error: fetchError } = await supabase
+                const { data: existingSettings } = await supabase
                     .from(TABLES.settings)
                     .select('*')
                     .eq('key', 'usdt_address')
                     .maybeSingle();
                 
                 if (existingSettings) {
-                    // Update existing
                     await supabase
                         .from(TABLES.settings)
                         .update({ value: newAddress, updated_at: new Date().toISOString() })
                         .eq('id', existingSettings.id);
                 } else {
-                    // Create new
                     await supabase
                         .from(TABLES.settings)
                         .insert({
                             key: 'usdt_address',
                             value: newAddress,
-                            updated_at: new Date().toISOString()
+                            type: 'text',
+                            description: 'USDT TRC20 wallet address'
                         });
                 }
                 
@@ -1630,14 +1884,14 @@
             };
 
             // ============================================
-            // DELETE FUNCTIONS
+            // DELETE AND UPDATE FUNCTIONS
             // ============================================
             window.deleteAccount = async function(id) {
                 if (!confirm('Delete this account permanently?')) return;
                 
                 await supabase
                     .from(TABLES.accounts)
-                    .delete()
+                    .update({ is_active: false })
                     .eq('id', id);
                 
                 appState.accounts = appState.accounts.filter(a => a.id !== id);
@@ -1651,7 +1905,7 @@
                 
                 await supabase
                     .from(TABLES.contacts)
-                    .delete()
+                    .update({ is_active: false })
                     .eq('id', id);
                 
                 appState.contacts = appState.contacts.filter(c => c.id !== id);
@@ -1664,7 +1918,7 @@
                 
                 await supabase
                     .from(TABLES.ads)
-                    .delete()
+                    .update({ is_active: false })
                     .eq('id', id);
                 
                 appState.ads = appState.ads.filter(a => a.id !== id);
@@ -1677,12 +1931,50 @@
                 
                 await supabase
                     .from(TABLES.book_requests)
-                    .delete()
+                    .update({ status: 'cancelled' })
                     .eq('id', id);
                 
-                appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
+                const index = appState.bookRequests.findIndex(r => r.id == id);
+                if (index !== -1) appState.bookRequests[index].status = 'cancelled';
+                
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 renderBookRequests();
+            };
+
+            window.updateBookRequestStatus = async function(id, status) {
+                await supabase
+                    .from(TABLES.book_requests)
+                    .update({ 
+                        status: status,
+                        contacted_at: status === 'contacted' ? new Date().toISOString() : null,
+                        completed_at: status === 'completed' ? new Date().toISOString() : null
+                    })
+                    .eq('id', id);
+                
+                const index = appState.bookRequests.findIndex(r => r.id == id);
+                if (index !== -1) appState.bookRequests[index].status = status;
+                
+                renderBookRequests();
+            };
+
+            window.toggleFeatured = async function(id, current) {
+                await supabase
+                    .from(TABLES.accounts)
+                    .update({ is_featured: !current })
+                    .eq('id', id);
+                
+                const account = appState.accounts.find(a => a.id === id);
+                if (account) account.is_featured = !current;
+                
+                renderAdminAccounts();
+            };
+
+            window.trackAdClick = async function(adId) {
+                await supabase.rpc('track_ad_click', {
+                    p_ad_id: adId,
+                    p_clicker_ip: 'web_user',
+                    p_user_agent: navigator.userAgent
+                });
             };
 
             // ============================================
@@ -1697,9 +1989,10 @@
                 modalBody.innerHTML = `
                     <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
                     <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                    <input type="text" id="book-name" class="input" placeholder="Your name">
+                    <input type="text" id="book-name" class="input" placeholder="Your name" required>
+                    <input type="email" id="book-email" class="input" placeholder="Your email (optional)">
                     <label class="input-label">WhatsApp number with country code</label>
-                    <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
+                    <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322" required>
                 `;
                 
                 openModal('book-modal');
@@ -1716,16 +2009,13 @@
                             utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
                             dropdownContainer: document.body
                         });
-                        
-                        input.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                        });
                     }
                 }, 200);
             };
 
             window.submitBook = async function() {
                 const name = document.getElementById('book-name')?.value;
+                const email = document.getElementById('book-email')?.value;
                 
                 if (!name) {
                     alert('Please enter your name');
@@ -1752,8 +2042,11 @@
                 const req = {
                     account_id: appState.currentAccount.id,
                     account_title: appState.currentAccount.title,
+                    account_tier: appState.currentAccount.tier,
                     user_name: name,
+                    user_email: email || null,
                     whatsapp: phone,
+                    status: 'pending',
                     date: new Date().toISOString()
                 };
                 
@@ -1766,6 +2059,14 @@
                 
                 if (data && data[0]) {
                     appState.bookRequests.push(data[0]);
+                    
+                    // Update account book count
+                    await supabase
+                        .from(TABLES.accounts)
+                        .update({ book_count: (appState.currentAccount.book_count || 0) + 1 })
+                        .eq('id', appState.currentAccount.id);
+                    
+                    appState.currentAccount.book_count = (appState.currentAccount.book_count || 0) + 1;
                 }
                 
                 if (appState.isAdminLoggedIn) {
@@ -1805,6 +2106,8 @@
                     <p>${acc.description || 'Premium PUBG account'}</p>
                     <p>Tier: ${acc.tier}</p>
                     <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
+                    <p>👁️ Views: ${acc.view_count || 0}</p>
+                    <p>📋 Bookings: ${acc.book_count || 0}</p>
                     <p>✅ Includes email & password, full access.</p>
                 `;
                 openModal('info-modal');
@@ -1823,7 +2126,6 @@
                 const pass = document.getElementById('admin-password').value;
                 
                 try {
-                    // Sign in with Supabase
                     const { data, error } = await supabase.auth.signInWithPassword({
                         email: email,
                         password: pass
@@ -1836,7 +2138,7 @@
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-error').innerText = '';
                     
-                    // Load book requests now that we're logged in
+                    // Load book requests
                     const { data: bookings, error: bookingsError } = await supabase
                         .from(TABLES.book_requests)
                         .select('*')
@@ -1851,6 +2153,10 @@
                     renderAdminAccounts();
                     renderAdminContacts();
                     renderAdminAds();
+                    
+                    // Update online status to admin
+                    await trackVisitor();
+                    
                 } catch (error) {
                     document.getElementById('admin-error').innerText = 'Invalid credentials';
                 }
@@ -1859,7 +2165,7 @@
             window.logout = function() {
                 supabase.auth.signOut();
                 appState.isAdminLoggedIn = false;
-                appState.bookRequests = []; // Clear book requests on logout
+                appState.bookRequests = [];
                 document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 switchScreen('main');
@@ -1884,6 +2190,7 @@
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-login-section').classList.add('hidden');
                 }
+                trackVisitor();
             };
 
             window.jumpToSlide = function(idx) {
@@ -1963,6 +2270,7 @@
                 document.getElementById('ad-type').value = 'image';
                 document.getElementById('ad-media-file').value = '';
                 document.getElementById('ad-caption').value = '';
+                document.getElementById('ad-link').value = '';
                 document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                 appState.currentAdData = null;
                 renderAdminAds();
@@ -1972,6 +2280,11 @@
             window.showEditUsdtModal = function() {
                 document.getElementById('new-usdt-address').value = appState.usdtAddress;
                 openModal('edit-usdt-modal');
+            };
+
+            window.showVideoStatsModal = function() {
+                renderVideoStats();
+                openModal('video-stats-modal');
             };
 
             function startAutoSlide() {
@@ -1994,7 +2307,7 @@
                     document.querySelectorAll('.dot').forEach((dot, i) => {
                         dot.classList.toggle('active', i === nextIndex);
                     });
-                }, 2000);
+                }, 3000);
             }
 
             // ============================================
@@ -2008,7 +2321,6 @@
                         document.getElementById('admin-login-section').classList.add('hidden');
                         document.getElementById('admin-dashboard').classList.remove('hidden');
                         
-                        // Load book requests
                         const { data: bookings, error: bookingsError } = await supabase
                             .from(TABLES.book_requests)
                             .select('*')
