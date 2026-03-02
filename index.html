@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ========== COMPLETE CSS STYLING ========== */
+        /* Keep all your existing CSS here */
         * {
             margin: 0;
             padding: 0;
@@ -93,11 +93,9 @@
             padding: 20px;
         }
 
-        /* Screens */
         .screen { display: none; }
         .screen.active { display: block; }
 
-        /* Main Screen */
         .big-title {
             font-size: 2.5rem;
             font-weight: 800;
@@ -123,10 +121,8 @@
             justify-content: center;
             gap: 12px;
             cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Accounts Grid */
         .tier-header {
             display: flex;
             gap: 10px;
@@ -201,7 +197,6 @@
         .usd-price { color: var(--primary); }
         .afn-price { color: var(--secondary); }
 
-        /* Contact Cards */
         .contact-card {
             background: var(--surface);
             border-radius: 20px;
@@ -216,7 +211,6 @@
             font-weight: 600;
         }
 
-        /* Admin Panel */
         .input {
             width: 100%;
             max-width: 400px;
@@ -247,16 +241,8 @@
         }
 
         .hidden { display: none !important; }
+        .error-message { color: #ef4444; margin-top: 10px; padding: 10px; background: rgba(239,68,68,0.1); border-radius: 5px; }
 
-        .error-message {
-            color: #ef4444;
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 5px;
-        }
-
-        /* Admin Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -302,7 +288,6 @@
             100% { opacity: 1; }
         }
 
-        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -349,16 +334,6 @@
             cursor: pointer;
             margin: 5px;
         }
-        
-        .test-credentials {
-            margin-top: 20px;
-            padding: 15px;
-            background: var(--surface-light);
-            border-radius: 10px;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
     </style>
 </head>
 <body>
@@ -383,8 +358,6 @@
             <button class="cta-button" onclick="app.showAccounts()">
                 <i class="fa fa-gamepad"></i> View PUBG Accounts
             </button>
-            
-            <!-- Ads Slider -->
             <div id="ads-slider" style="margin: 2rem 0;"></div>
         </div>
 
@@ -412,27 +385,15 @@
         <div id="admin-screen" class="screen">
             <h2 style="margin-bottom: 1rem;">Admin Panel</h2>
             
-            <!-- Login Section -->
             <div id="login-section">
                 <input type="email" id="admin-email" class="input" placeholder="Email" value="shamsahmadzai06@gmail.com">
                 <input type="password" id="admin-password" class="input" placeholder="Password" value="Shams12357@">
                 <button class="action-btn buy" onclick="app.adminLogin()">Login</button>
                 <div id="admin-error" class="error-message"></div>
-                
-                <!-- Test Credentials Info -->
-                <div class="test-credentials">
-                    <strong>Test Credentials:</strong><br>
-                    Email: shamsahmadzai06@gmail.com<br>
-                    Password: Shams12357@<br>
-                    <small style="color: var(--text-secondary);">Make sure this user exists in Supabase Auth</small>
-                </div>
             </div>
             
-            <!-- Admin Dashboard -->
             <div id="admin-dashboard" class="hidden">
                 <h3 style="margin-bottom: 1rem;">Dashboard</h3>
-                
-                <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-number" id="admin-account-count">0</div>
@@ -451,7 +412,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <button class="action-btn" onclick="app.logout()">Logout</button>
             </div>
             <button class="nav-btn" style="margin-top: 2rem;" onclick="app.showMain()">← Back</button>
@@ -475,13 +435,10 @@
 
     <script>
         // ============================================
-        // SINGLE APP OBJECT - FIXED ADMIN LOGIN
+        // APP WITH CORS PROXY FIX
         // ============================================
         const app = {
-            // Supabase
             supabase: null,
-            
-            // State
             accounts: [],
             contacts: [],
             ads: [],
@@ -489,26 +446,38 @@
             isAdmin: false,
             sessionId: 'session_' + Math.random().toString(36).substring(2),
             
-            // Initialize
             init: async function() {
                 try {
-                    console.log('Initializing app...');
+                    console.log('Initializing app with CORS proxy...');
                     
-                    // Initialize Supabase
-                    this.supabase = window.supabase.createClient(
-                        'http://216.126.225.4:8000',
-                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE'
-                    );
+                    // Use a CORS proxy to bypass HTTPS restriction
+                    const SUPABASE_URL = 'http://216.126.225.4:8000';
+                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
                     
-                    console.log('Supabase initialized');
+                    // Use a CORS proxy
+                    const PROXY_URL = 'https://corsproxy.io/?';
                     
-                    // Load data
+                    // Create custom fetch with proxy
+                    const customFetch = (url, options = {}) => {
+                        const proxyUrl = PROXY_URL + encodeURIComponent(url);
+                        options.headers = {
+                            ...options.headers,
+                            'Origin': window.location.origin
+                        };
+                        return fetch(proxyUrl, options);
+                    };
+                    
+                    this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                        global: { fetch: customFetch }
+                    });
+                    
+                    console.log('Supabase initialized with proxy');
+                    
                     await this.loadAccounts();
                     await this.loadContacts();
                     await this.loadAds();
                     
-                    // Check session
-                    const { data: { session }, error } = await this.supabase.auth.getSession();
+                    const { data: { session } } = await this.supabase.auth.getSession();
                     console.log('Session check:', session ? 'Logged in' : 'Not logged in');
                     
                     if (session) {
@@ -522,7 +491,6 @@
                 }
             },
             
-            // ===== SCREEN FUNCTIONS =====
             showMain: function() {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('main-screen').classList.add('active');
@@ -544,7 +512,6 @@
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('admin-screen').classList.add('active');
                 
-                // If already logged in, show dashboard
                 if (this.isAdmin) {
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
@@ -556,7 +523,6 @@
                 }
             },
             
-            // ===== MODAL FUNCTIONS =====
             openLanguageModal: function() {
                 document.getElementById('language-modal').classList.remove('hidden');
             },
@@ -572,7 +538,6 @@
                 this.closeModal();
             },
             
-            // ===== ACCOUNT FUNCTIONS =====
             loadAccounts: async function() {
                 try {
                     const { data, error } = await this.supabase
@@ -616,7 +581,7 @@
                                 ${acc.title || 'PUBG Account'}
                                 ${acc.tier ? `<span class="tier-badge ${acc.tier}">${acc.tier}</span>` : ''}
                             </div>
-                            <p style="color: var(--text-secondary); margin-bottom: 1rem;">${acc.description || 'Premium PUBG account'}</p>
+                            <p style="color: var(--text-secondary);">${acc.description || 'Premium PUBG account'}</p>
                             <div class="price-row">
                                 <span class="usd-price">$${acc.price_usd || 0}</span>
                                 <span class="afn-price">${acc.price_afn || 0} AFN</span>
@@ -626,7 +591,6 @@
                 `).join('');
             },
             
-            // ===== CONTACT FUNCTIONS =====
             loadContacts: async function() {
                 try {
                     const { data, error } = await this.supabase
@@ -653,7 +617,7 @@
                 container.innerHTML = this.contacts.map(contact => `
                     <div class="contact-card">
                         <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> ${contact.name}</h3>
-                        <p style="margin: 10px 0;">${contact.description || 'WhatsApp support'}</p>
+                        <p>${contact.description || 'WhatsApp support'}</p>
                         <a href="https://wa.me/${contact.phone}" target="_blank" class="whatsapp-link">
                             <i class="fab fa-whatsapp"></i> +${contact.phone}
                         </a>
@@ -661,7 +625,6 @@
                 `).join('');
             },
             
-            // ===== ADS FUNCTIONS =====
             loadAds: async function() {
                 try {
                     const { data, error } = await this.supabase
@@ -698,18 +661,12 @@
                 container.innerHTML = slides;
             },
             
-            // ===== ADMIN FUNCTIONS - FIXED =====
             adminLogin: async function() {
                 const email = document.getElementById('admin-email').value;
                 const password = document.getElementById('admin-password').value;
                 const errorDiv = document.getElementById('admin-error');
                 
                 errorDiv.innerHTML = 'Attempting to login...';
-                
-                if (!email || !password) {
-                    errorDiv.innerHTML = 'Please enter email and password';
-                    return;
-                }
                 
                 try {
                     console.log('Attempting login with:', email);
@@ -725,18 +682,16 @@
                         return;
                     }
                     
-                    console.log('Login successful:', data);
+                    console.log('Login successful');
                     
                     this.isAdmin = true;
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     errorDiv.innerHTML = '';
                     
-                    // Load admin data and start online counter
                     await this.loadAdminData();
                     this.updateOnlineCount();
                     
-                    // Start periodic updates
                     if (this.onlineInterval) clearInterval(this.onlineInterval);
                     this.onlineInterval = setInterval(() => this.updateOnlineCount(), 10000);
                     
@@ -752,7 +707,6 @@
                 document.getElementById('login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 
-                // Stop online counter updates
                 if (this.onlineInterval) {
                     clearInterval(this.onlineInterval);
                     this.onlineInterval = null;
@@ -778,7 +732,6 @@
                 }
             },
             
-            // ===== ONLINE COUNTER =====
             updateOnlineCount: async function() {
                 if (!this.isAdmin) return;
                 
@@ -802,10 +755,7 @@
                         .select('*', { count: 'exact', head: true })
                         .gt('last_activity', fiveMinAgo);
                     
-                    const onlineElement = document.getElementById('online-count');
-                    if (onlineElement) {
-                        onlineElement.innerText = count || 0;
-                    }
+                    document.getElementById('online-count').innerText = count || 0;
                     
                 } catch (e) {
                     console.log('Online counter error:', e.message);
@@ -813,7 +763,6 @@
             }
         };
 
-        // ===== START THE APP =====
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
