@@ -6,7 +6,8 @@
     <title>GK Store · PUBG Accounts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <!-- Remove Appwrite, add Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -912,30 +913,20 @@
     <script>
         (function() {
             // ============================================
-            // APPWRITE CONFIGURATION - FINAL VERSION
+            // SUPABASE CONFIGURATION
             // ============================================
-            const APPWRITE_ENDPOINT = 'https://gkstore.mefound.com/v1';
-            const APPWRITE_PROJECT_ID = '69a14bfa002d1f9e63e5';
+            const SUPABASE_URL = 'http://216.126.225.4:8000'; // Your Supabase API URL
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
             
-            // Initialize Appwrite
-            const client = new Appwrite.Client();
-            client
-                .setEndpoint(APPWRITE_ENDPOINT)
-                .setProject(APPWRITE_PROJECT_ID);
+            // Initialize Supabase
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
-            const account = new Appwrite.Account(client);
-            const databases = new Appwrite.Databases(client);
-            const storage = new Appwrite.Storage(client);
-            
-            // Database ID
-            const DATABASE_ID = 'gkstore_db';
-            
-            // Collection IDs
-            const COLLECTIONS = {
+            // Table names
+            const TABLES = {
                 accounts: 'accounts',
                 contacts: 'contacts',
                 ads: 'ads',
-                bookRequests: 'book_requests',
+                book_requests: 'book_requests',
                 settings: 'settings',
                 visitors: 'visitors',
                 sessions: 'sessions'
@@ -969,62 +960,59 @@
             async function loadInitialData() {
                 try {
                     // Load accounts
-                    const accountsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.accounts
-                    );
-                    appState.accounts = accountsResponse.documents;
+                    const { data: accounts, error: accountsError } = await supabase
+                        .from(TABLES.accounts)
+                        .select('*');
+                    
+                    if (!accountsError) appState.accounts = accounts || [];
 
                     // Load contacts
-                    const contactsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.contacts
-                    );
-                    appState.contacts = contactsResponse.documents;
+                    const { data: contacts, error: contactsError } = await supabase
+                        .from(TABLES.contacts)
+                        .select('*');
+                    
+                    if (!contactsError) appState.contacts = contacts || [];
 
                     // Load ads
-                    const adsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.ads
-                    );
-                    appState.ads = adsResponse.documents;
+                    const { data: ads, error: adsError } = await supabase
+                        .from(TABLES.ads)
+                        .select('*');
+                    
+                    if (!adsError) appState.ads = ads || [];
 
                     // Load book requests
-                    const bookingsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.bookRequests
-                    );
-                    appState.bookRequests = bookingsResponse.documents;
+                    const { data: bookings, error: bookingsError } = await supabase
+                        .from(TABLES.book_requests)
+                        .select('*');
+                    
+                    if (!bookingsError) appState.bookRequests = bookings || [];
 
                     // Load settings (USDT address)
-                    try {
-                        const settingsResponse = await databases.listDocuments(
-                            DATABASE_ID,
-                            COLLECTIONS.settings,
-                            [Appwrite.Query.equal('key', 'usdt_address')]
-                        );
-                        if (settingsResponse.documents.length > 0) {
-                            appState.usdtAddress = settingsResponse.documents[0].value;
-                        }
-                    } catch (e) {
-                        console.log('No settings found, using default USDT address');
+                    const { data: settings, error: settingsError } = await supabase
+                        .from(TABLES.settings)
+                        .select('*')
+                        .eq('key', 'usdt_address')
+                        .single();
+                    
+                    if (!settingsError && settings) {
+                        appState.usdtAddress = settings.value;
                     }
 
                     // Load visitor stats
-                    const visitorsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.visitors
-                    );
-                    appState.visitorCount = visitorsResponse.total;
+                    const { count: visitorCount, error: visitorError } = await supabase
+                        .from(TABLES.visitors)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (!visitorError) appState.visitorCount = visitorCount || 0;
 
                     // Load online count (last 5 minutes)
                     const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
-                    const sessionsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.sessions,
-                        [Appwrite.Query.greaterThan('last_seen', fiveMinAgo)]
-                    );
-                    appState.onlineCount = sessionsResponse.total;
+                    const { count: onlineCount, error: onlineError } = await supabase
+                        .from(TABLES.sessions)
+                        .select('*', { count: 'exact', head: true })
+                        .gt('last_seen', fiveMinAgo);
+                    
+                    if (!onlineError) appState.onlineCount = onlineCount || 0;
 
                     renderAccounts();
                     renderContacts();
@@ -1049,65 +1037,55 @@
                     const now = new Date().toISOString();
 
                     // Check if visitor exists
-                    const existingVisitor = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.visitors,
-                        [Appwrite.Query.equal('ip', ip)]
-                    );
+                    const { data: existingVisitor } = await supabase
+                        .from(TABLES.visitors)
+                        .select('*')
+                        .eq('ip', ip)
+                        .maybeSingle();
 
-                    if (existingVisitor.documents.length === 0) {
+                    if (!existingVisitor) {
                         // New visitor
-                        await databases.createDocument(
-                            DATABASE_ID,
-                            COLLECTIONS.visitors,
-                            'unique()',
-                            {
+                        await supabase
+                            .from(TABLES.visitors)
+                            .insert({
                                 ip: ip,
                                 first_seen: now
-                            }
-                        );
+                            });
                     }
 
                     // Update or create session
-                    const existingSession = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.sessions,
-                        [Appwrite.Query.equal('ip', ip)]
-                    );
+                    const { data: existingSession } = await supabase
+                        .from(TABLES.sessions)
+                        .select('*')
+                        .eq('ip', ip)
+                        .maybeSingle();
 
-                    if (existingSession.documents.length > 0) {
-                        await databases.updateDocument(
-                            DATABASE_ID,
-                            COLLECTIONS.sessions,
-                            existingSession.documents[0].$id,
-                            { last_seen: now }
-                        );
+                    if (existingSession) {
+                        await supabase
+                            .from(TABLES.sessions)
+                            .update({ last_seen: now })
+                            .eq('id', existingSession.id);
                     } else {
-                        await databases.createDocument(
-                            DATABASE_ID,
-                            COLLECTIONS.sessions,
-                            'unique()',
-                            {
+                        await supabase
+                            .from(TABLES.sessions)
+                            .insert({
                                 ip: ip,
                                 last_seen: now
-                            }
-                        );
+                            });
                     }
 
                     // Update counts
-                    const visitorsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.visitors
-                    );
-                    appState.visitorCount = visitorsResponse.total;
+                    const { count: visitorCount } = await supabase
+                        .from(TABLES.visitors)
+                        .select('*', { count: 'exact', head: true });
+                    appState.visitorCount = visitorCount || 0;
 
                     const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
-                    const sessionsResponse = await databases.listDocuments(
-                        DATABASE_ID,
-                        COLLECTIONS.sessions,
-                        [Appwrite.Query.greaterThan('last_seen', fiveMinAgo)]
-                    );
-                    appState.onlineCount = sessionsResponse.total;
+                    const { count: onlineCount } = await supabase
+                        .from(TABLES.sessions)
+                        .select('*', { count: 'exact', head: true })
+                        .gt('last_seen', fiveMinAgo);
+                    appState.onlineCount = onlineCount || 0;
 
                     document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
                     document.getElementById('online-user-count').innerText = appState.onlineCount;
@@ -1138,7 +1116,7 @@
                         : `<img src="${acc.media}" class="card-media" alt="account">`;
 
                     return `
-                        <div class="account-card" data-id="${acc.$id}">
+                        <div class="account-card" data-id="${acc.id}">
                             ${mediaTag}
                             <div class="card-content">
                                 <div class="card-title">
@@ -1151,9 +1129,9 @@
                                     <span class="afn-price">${acc.price_afn?.toLocaleString()} AFN</span>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="action-btn" onclick="bookAccount('${acc.$id}')"><i class="fa fa-bookmark"></i> Book</button>
-                                    <button class="action-btn buy" onclick="buyAccount('${acc.$id}')"><i class="fa fa-bolt"></i> Buy</button>
-                                    <button class="action-btn" onclick="infoAccount('${acc.$id}')"><i class="fa fa-info"></i> Info</button>
+                                    <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> Book</button>
+                                    <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> Buy</button>
+                                    <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> Info</button>
                                 </div>
                             </div>
                         </div>
@@ -1237,7 +1215,7 @@
                     const cleanPhone = req.whatsapp.replace(/\D/g, '');
 
                     return `
-                        <div class="book-request-item" data-id="${req.$id}">
+                        <div class="book-request-item" data-id="${req.id}">
                             <p><span class="label">Account:</span> ${req.account_title}</p>
                             <p><span class="label">Name:</span> ${req.user_name}</p>
                             <p><span class="label">WhatsApp:</span> +${cleanPhone}</p>
@@ -1246,7 +1224,7 @@
                                 <button class="btn-wa" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
                                     <i class="fab fa-whatsapp"></i> Contact
                                 </button>
-                                <button class="btn-cancel" onclick="cancelBookRequest('${req.$id}')">
+                                <button class="btn-cancel" onclick="cancelBookRequest('${req.id}')">
                                     <i class="fa fa-times"></i> Cancel
                                 </button>
                             </div>
@@ -1276,7 +1254,7 @@
                             <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
                             <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.$id}')">
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
                             <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1301,7 +1279,7 @@
                             <div style="font-size:0.8rem;">+${contact.phone}</div>
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.description || ''}</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.$id}')">
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
                             <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1328,7 +1306,7 @@
                             <strong>${ad.caption || 'No caption'}</strong>
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd('${ad.$id}')">
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd('${ad.id}')">
                             <i class="fa fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1393,6 +1371,16 @@
                 }
             };
 
+            // Convert file to base64 for storage (simpler than Supabase Storage for now)
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            }
+
             window.uploadNewAccount = async function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
@@ -1419,17 +1407,14 @@
                 uploadBtn.disabled = true;
                 
                 try {
-                    const file = appState.currentMediaData.file;
+                    progressBar.style.width = '30%';
+                    progressText.innerHTML = 'Processing media...';
                     
-                    // Upload file to Appwrite Storage
-                    const uploadResponse = await storage.createFile(
-                        'accounts_bucket',
-                        'unique()',
-                        file
-                    );
+                    // Convert file to base64 for storage
+                    const base64Data = await fileToBase64(appState.currentMediaData.file);
                     
-                    // Get file URL
-                    const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/accounts_bucket/files/${uploadResponse.$id}/view?project=${APPWRITE_PROJECT_ID}`;
+                    progressBar.style.width = '60%';
+                    progressText.innerHTML = 'Saving to database...';
                     
                     const newAccount = {
                         title,
@@ -1437,20 +1422,22 @@
                         tier,
                         price_usd: priceUsd,
                         price_afn: priceAfn,
-                        media: fileUrl,
+                        media: base64Data,
                         media_type: appState.currentMediaData.type,
                         sold: false
                     };
                     
                     // Save to database
-                    const dbResponse = await databases.createDocument(
-                        DATABASE_ID,
-                        COLLECTIONS.accounts,
-                        'unique()',
-                        newAccount
-                    );
+                    const { data, error } = await supabase
+                        .from(TABLES.accounts)
+                        .insert([newAccount])
+                        .select();
                     
-                    appState.accounts.push(dbResponse);
+                    if (error) throw error;
+                    
+                    if (data && data[0]) {
+                        appState.accounts.push(data[0]);
+                    }
                     
                     progressBar.style.width = '100%';
                     progressText.innerHTML = 'Upload complete!';
@@ -1487,33 +1474,26 @@
                 }
                 
                 try {
-                    const file = appState.currentAdData.file;
-                    
-                    // Upload file to Appwrite Storage
-                    const uploadResponse = await storage.createFile(
-                        'ads_bucket',
-                        'unique()',
-                        file
-                    );
-                    
-                    // Get file URL
-                    const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/ads_bucket/files/${uploadResponse.$id}/view?project=${APPWRITE_PROJECT_ID}`;
+                    // Convert file to base64
+                    const base64Data = await fileToBase64(appState.currentAdData.file);
                     
                     const newAd = {
                         type,
-                        data: fileUrl,
+                        data: base64Data,
                         caption
                     };
                     
                     // Save to database
-                    const dbResponse = await databases.createDocument(
-                        DATABASE_ID,
-                        COLLECTIONS.ads,
-                        'unique()',
-                        newAd
-                    );
+                    const { data, error } = await supabase
+                        .from(TABLES.ads)
+                        .insert([newAd])
+                        .select();
                     
-                    appState.ads.push(dbResponse);
+                    if (error) throw error;
+                    
+                    if (data && data[0]) {
+                        appState.ads.push(data[0]);
+                    }
                     
                     document.getElementById('ad-type').value = 'image';
                     document.getElementById('ad-media-file').value = '';
@@ -1565,14 +1545,16 @@
                 };
                 
                 // Save to database
-                const dbResponse = await databases.createDocument(
-                    DATABASE_ID,
-                    COLLECTIONS.contacts,
-                    'unique()',
-                    newContact
-                );
+                const { data, error } = await supabase
+                    .from(TABLES.contacts)
+                    .insert([newContact])
+                    .select();
                 
-                appState.contacts.push(dbResponse);
+                if (error) throw error;
+                
+                if (data && data[0]) {
+                    appState.contacts.push(data[0]);
+                }
                 
                 document.getElementById('contact-name').value = '';
                 document.getElementById('contact-phone').value = '';
@@ -1591,31 +1573,26 @@
                 }
                 
                 // Check if settings document exists
-                const existingSettings = await databases.listDocuments(
-                    DATABASE_ID,
-                    COLLECTIONS.settings,
-                    [Appwrite.Query.equal('key', 'usdt_address')]
-                );
+                const { data: existingSettings, error: fetchError } = await supabase
+                    .from(TABLES.settings)
+                    .select('*')
+                    .eq('key', 'usdt_address')
+                    .maybeSingle();
                 
-                if (existingSettings.documents.length > 0) {
+                if (existingSettings) {
                     // Update existing
-                    await databases.updateDocument(
-                        DATABASE_ID,
-                        COLLECTIONS.settings,
-                        existingSettings.documents[0].$id,
-                        { value: newAddress }
-                    );
+                    await supabase
+                        .from(TABLES.settings)
+                        .update({ value: newAddress })
+                        .eq('id', existingSettings.id);
                 } else {
                     // Create new
-                    await databases.createDocument(
-                        DATABASE_ID,
-                        COLLECTIONS.settings,
-                        'unique()',
-                        {
+                    await supabase
+                        .from(TABLES.settings)
+                        .insert({
                             key: 'usdt_address',
                             value: newAddress
-                        }
-                    );
+                        });
                 }
                 
                 appState.usdtAddress = newAddress;
@@ -1630,13 +1607,12 @@
             window.deleteAccount = async function(id) {
                 if (!confirm('Delete this account permanently?')) return;
                 
-                await databases.deleteDocument(
-                    DATABASE_ID,
-                    COLLECTIONS.accounts,
-                    id
-                );
+                await supabase
+                    .from(TABLES.accounts)
+                    .delete()
+                    .eq('id', id);
                 
-                appState.accounts = appState.accounts.filter(a => a.$id !== id);
+                appState.accounts = appState.accounts.filter(a => a.id !== id);
                 renderAccounts();
                 renderAdminAccounts();
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
@@ -1645,13 +1621,12 @@
             window.deleteContact = async function(id) {
                 if (!confirm('Delete this contact?')) return;
                 
-                await databases.deleteDocument(
-                    DATABASE_ID,
-                    COLLECTIONS.contacts,
-                    id
-                );
+                await supabase
+                    .from(TABLES.contacts)
+                    .delete()
+                    .eq('id', id);
                 
-                appState.contacts = appState.contacts.filter(c => c.$id !== id);
+                appState.contacts = appState.contacts.filter(c => c.id !== id);
                 renderContacts();
                 renderAdminContacts();
             };
@@ -1659,13 +1634,12 @@
             window.deleteAd = async function(id) {
                 if (!confirm('Delete this ad?')) return;
                 
-                await databases.deleteDocument(
-                    DATABASE_ID,
-                    COLLECTIONS.ads,
-                    id
-                );
+                await supabase
+                    .from(TABLES.ads)
+                    .delete()
+                    .eq('id', id);
                 
-                appState.ads = appState.ads.filter(a => a.$id !== id);
+                appState.ads = appState.ads.filter(a => a.id !== id);
                 renderAdsSlider();
                 renderAdminAds();
             };
@@ -1673,13 +1647,12 @@
             window.cancelBookRequest = async function(id) {
                 if (!confirm('Cancel this book request?')) return;
                 
-                await databases.deleteDocument(
-                    DATABASE_ID,
-                    COLLECTIONS.bookRequests,
-                    id
-                );
+                await supabase
+                    .from(TABLES.book_requests)
+                    .delete()
+                    .eq('id', id);
                 
-                appState.bookRequests = appState.bookRequests.filter(r => r.$id != id);
+                appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 renderBookRequests();
             };
@@ -1688,7 +1661,7 @@
             // BOOK / BUY / INFO
             // ============================================
             window.bookAccount = function(id) {
-                const acc = appState.accounts.find(a => a.$id === id);
+                const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
                 appState.currentAccount = acc;
                 
@@ -1749,21 +1722,21 @@
                 }
                 
                 const req = {
-                    account_id: appState.currentAccount.$id,
+                    account_id: appState.currentAccount.id,
                     account_title: appState.currentAccount.title,
                     user_name: name,
                     whatsapp: phone,
                     date: new Date().toISOString()
                 };
                 
-                const dbResponse = await databases.createDocument(
-                    DATABASE_ID,
-                    COLLECTIONS.bookRequests,
-                    'unique()',
-                    req
-                );
+                const { data, error } = await supabase
+                    .from(TABLES.book_requests)
+                    .insert([req])
+                    .select();
                 
-                appState.bookRequests.push(dbResponse);
+                if (data && data[0]) {
+                    appState.bookRequests.push(data[0]);
+                }
                 
                 if (appState.isAdminLoggedIn) {
                     document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
@@ -1775,7 +1748,7 @@
             };
 
             window.buyAccount = function(id) {
-                const acc = appState.accounts.find(a => a.$id === id);
+                const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
                 appState.currentAccount = acc;
                 document.getElementById('buy-modal-body').innerHTML = `
@@ -1795,7 +1768,7 @@
             };
 
             window.infoAccount = function(id) {
-                const acc = appState.accounts.find(a => a.$id === id);
+                const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
                 document.getElementById('info-modal-body').innerHTML = `
                     <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
@@ -1820,8 +1793,13 @@
                 const pass = document.getElementById('admin-password').value;
                 
                 try {
-                    // Create session with Appwrite
-                    const session = await account.createEmailPasswordSession(email, pass);
+                    // Sign in with Supabase
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: pass
+                    });
+                    
+                    if (error) throw error;
                     
                     appState.isAdminLoggedIn = true;
                     document.getElementById('admin-login-section').classList.add('hidden');
@@ -1839,7 +1817,7 @@
             };
 
             window.logout = function() {
-                account.deleteSession('current');
+                supabase.auth.signOut();
                 appState.isAdminLoggedIn = false;
                 document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
@@ -1980,7 +1958,7 @@
             // ============================================
             async function checkAdminSession() {
                 try {
-                    const session = await account.getSession('current');
+                    const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
                         appState.isAdminLoggedIn = true;
                         document.getElementById('admin-login-section').classList.add('hidden');
