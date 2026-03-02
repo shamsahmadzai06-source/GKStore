@@ -6,7 +6,6 @@
     <title>GK Store · PUBG Accounts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <!-- Remove Appwrite, add Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -915,12 +914,17 @@
             // ============================================
             // SUPABASE CONFIGURATION
             // ============================================
-            const SUPABASE_URL = 'http://216.126.225.4:8000'; // Your Supabase API URL
+            const SUPABASE_URL = 'http://216.126.225.4:8000';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
             
             // Initialize Supabase
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true
+                }
+            });
+
             // Table names
             const TABLES = {
                 accounts: 'accounts',
@@ -962,37 +966,45 @@
                     // Load accounts
                     const { data: accounts, error: accountsError } = await supabase
                         .from(TABLES.accounts)
-                        .select('*');
+                        .select('*')
+                        .order('created_at', { ascending: false });
                     
-                    if (!accountsError) appState.accounts = accounts || [];
+                    if (accountsError) throw accountsError;
+                    appState.accounts = accounts || [];
 
                     // Load contacts
                     const { data: contacts, error: contactsError } = await supabase
                         .from(TABLES.contacts)
                         .select('*');
                     
-                    if (!contactsError) appState.contacts = contacts || [];
+                    if (contactsError) throw contactsError;
+                    appState.contacts = contacts || [];
 
                     // Load ads
                     const { data: ads, error: adsError } = await supabase
                         .from(TABLES.ads)
                         .select('*');
                     
-                    if (!adsError) appState.ads = ads || [];
+                    if (adsError) throw adsError;
+                    appState.ads = ads || [];
 
-                    // Load book requests
-                    const { data: bookings, error: bookingsError } = await supabase
-                        .from(TABLES.book_requests)
-                        .select('*');
-                    
-                    if (!bookingsError) appState.bookRequests = bookings || [];
+                    // Load book requests (only for admin, will be filtered later)
+                    if (appState.isAdminLoggedIn) {
+                        const { data: bookings, error: bookingsError } = await supabase
+                            .from(TABLES.book_requests)
+                            .select('*')
+                            .order('date', { ascending: false });
+                        
+                        if (bookingsError) throw bookingsError;
+                        appState.bookRequests = bookings || [];
+                    }
 
                     // Load settings (USDT address)
                     const { data: settings, error: settingsError } = await supabase
                         .from(TABLES.settings)
                         .select('*')
                         .eq('key', 'usdt_address')
-                        .single();
+                        .maybeSingle();
                     
                     if (!settingsError && settings) {
                         appState.usdtAddress = settings.value;
@@ -1294,7 +1306,7 @@
                     return;
                 }
 
-                list.innerHTML = appState.ads.map((ad, index) => `
+                list.innerHTML = appState.ads.map((ad) => `
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                         <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
                             ${ad.type === 'video' 
@@ -1371,7 +1383,7 @@
                 }
             };
 
-            // Convert file to base64 for storage (simpler than Supabase Storage for now)
+            // Convert file to base64 for storage
             function fileToBase64(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -1424,7 +1436,8 @@
                         price_afn: priceAfn,
                         media: base64Data,
                         media_type: appState.currentMediaData.type,
-                        sold: false
+                        sold: false,
+                        created_at: new Date().toISOString()
                     };
                     
                     // Save to database
@@ -1436,7 +1449,7 @@
                     if (error) throw error;
                     
                     if (data && data[0]) {
-                        appState.accounts.push(data[0]);
+                        appState.accounts.unshift(data[0]);
                     }
                     
                     progressBar.style.width = '100%';
@@ -1447,6 +1460,7 @@
                         renderAccounts();
                         if (appState.isAdminLoggedIn) {
                             document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                            renderAdminAccounts();
                         }
                         alert('Account uploaded successfully!');
                         
@@ -1454,6 +1468,16 @@
                         progressBar.style.width = '0%';
                         progressText.innerHTML = '';
                         uploadBtn.disabled = false;
+                        
+                        // Reset form
+                        document.getElementById('account-tier').value = '';
+                        document.getElementById('account-title').value = '';
+                        document.getElementById('account-description').value = '';
+                        document.getElementById('account-price-usd').value = '';
+                        document.getElementById('account-price-afn').value = '';
+                        document.getElementById('account-media-file').value = '';
+                        document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                        appState.currentMediaData = null;
                     }, 500);
                     
                 } catch (error) {
@@ -1480,7 +1504,8 @@
                     const newAd = {
                         type,
                         data: base64Data,
-                        caption
+                        caption,
+                        created_at: new Date().toISOString()
                     };
                     
                     // Save to database
@@ -1495,6 +1520,7 @@
                         appState.ads.push(data[0]);
                     }
                     
+                    // Reset form
                     document.getElementById('ad-type').value = 'image';
                     document.getElementById('ad-media-file').value = '';
                     document.getElementById('ad-caption').value = '';
@@ -1541,7 +1567,8 @@
                 const newContact = {
                     name,
                     phone: fullNumber,
-                    description: desc
+                    description: desc,
+                    created_at: new Date().toISOString()
                 };
                 
                 // Save to database
@@ -1583,7 +1610,7 @@
                     // Update existing
                     await supabase
                         .from(TABLES.settings)
-                        .update({ value: newAddress })
+                        .update({ value: newAddress, updated_at: new Date().toISOString() })
                         .eq('id', existingSettings.id);
                 } else {
                     // Create new
@@ -1591,7 +1618,8 @@
                         .from(TABLES.settings)
                         .insert({
                             key: 'usdt_address',
-                            value: newAddress
+                            value: newAddress,
+                            updated_at: new Date().toISOString()
                         });
                 }
                 
@@ -1734,6 +1762,8 @@
                     .insert([req])
                     .select();
                 
+                if (error) throw error;
+                
                 if (data && data[0]) {
                     appState.bookRequests.push(data[0]);
                 }
@@ -1806,6 +1836,16 @@
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-error').innerText = '';
                     
+                    // Load book requests now that we're logged in
+                    const { data: bookings, error: bookingsError } = await supabase
+                        .from(TABLES.book_requests)
+                        .select('*')
+                        .order('date', { ascending: false });
+                    
+                    if (!bookingsError) {
+                        appState.bookRequests = bookings || [];
+                    }
+                    
                     updateAdminStats();
                     renderBookRequests();
                     renderAdminAccounts();
@@ -1819,6 +1859,7 @@
             window.logout = function() {
                 supabase.auth.signOut();
                 appState.isAdminLoggedIn = false;
+                appState.bookRequests = []; // Clear book requests on logout
                 document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 switchScreen('main');
@@ -1904,7 +1945,10 @@
             window.showManageContactsModal = function() {
                 renderAdminContacts();
                 const input = document.getElementById('contact-phone');
-                if (input && !appState.phoneInput) {
+                if (input) {
+                    if (appState.phoneInput) {
+                        try { appState.phoneInput.destroy(); } catch (e) {}
+                    }
                     appState.phoneInput = intlTelInput(input, {
                         initialCountry: 'af',
                         separateDialCode: true,
@@ -1963,6 +2007,16 @@
                         appState.isAdminLoggedIn = true;
                         document.getElementById('admin-login-section').classList.add('hidden');
                         document.getElementById('admin-dashboard').classList.remove('hidden');
+                        
+                        // Load book requests
+                        const { data: bookings, error: bookingsError } = await supabase
+                            .from(TABLES.book_requests)
+                            .select('*')
+                            .order('date', { ascending: false });
+                        
+                        if (!bookingsError) {
+                            appState.bookRequests = bookings || [];
+                        }
                         
                         updateAdminStats();
                         renderBookRequests();
