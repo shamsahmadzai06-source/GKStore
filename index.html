@@ -649,14 +649,14 @@
 <body>
     <!-- Navigation -->
     <div class="top-nav">
-        <div class="logo" onclick="switchScreen('main')">
+        <div class="logo" onclick="window.switchScreen('main')">
             <div class="logo-icon">GK</div>
             <span class="brand-text">GK Store</span>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i> Lang</button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i> Contact</button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i> Admin</button>
+            <button class="nav-btn" onclick="window.openLanguageModal()"><i class="fa fa-globe"></i> Lang</button>
+            <button class="nav-btn" onclick="window.switchScreen('contact')"><i class="fab fa-whatsapp"></i> Contact</button>
+            <button class="nav-btn" onclick="window.switchScreen('admin')"><i class="fa fa-user-shield"></i> Admin</button>
         </div>
     </div>
 
@@ -666,7 +666,7 @@
             <div class="main-layout">
                 <h1 class="big-title">PUBG Marketplace</h1>
                 <div class="sub-head">Secure · Instant delivery</div>
-                <button class="cta-button" onclick="switchScreen('accounts')">
+                <button class="cta-button" onclick="window.switchScreen('accounts')">
                     <i class="fa fa-gamepad"></i> <span>Click to see PUBG account</span>
                 </button>
                 <div class="swipe-ads" id="ads-slider"></div>
@@ -681,10 +681,10 @@
         <div id="accounts-screen" class="screen">
             <h2>PUBG Accounts</h2>
             <div class="tier-header">
-                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')">All</button>
-                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')">Small</button>
-                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')">Medium</button>
-                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')">Big</button>
+                <button class="tier-tab active" data-tier="all" onclick="window.filterAccounts('all')">All</button>
+                <button class="tier-tab" data-tier="small" onclick="window.filterAccounts('small')">Small</button>
+                <button class="tier-tab" data-tier="medium" onclick="window.filterAccounts('medium')">Medium</button>
+                <button class="tier-tab" data-tier="big" onclick="window.filterAccounts('big')">Big</button>
             </div>
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
@@ -701,7 +701,7 @@
             <div id="admin-login-section">
                 <input type="email" id="admin-email" class="input" placeholder="Email" value="shamsahmadzai06@gmail.com">
                 <input type="password" id="admin-password" class="input" placeholder="Password" value="Shams12357@">
-                <button class="action-btn buy" onclick="adminLogin()">Login</button>
+                <button class="action-btn buy" onclick="window.adminLogin()">Login</button>
                 <div id="admin-error" class="error-message"></div>
             </div>
             
@@ -715,22 +715,22 @@
                         <span id="admin-bookings-count">0</span> bookings
                     </div>
                 </div>
-                <button class="action-btn" onclick="logout()">Logout</button>
+                <button class="action-btn" onclick="window.logout()">Logout</button>
             </div>
         </div>
     </div>
 
     <!-- Language Modal -->
-    <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
+    <div id="language-modal" class="modal-overlay hidden" onclick="window.closeModal('language-modal')">
         <div class="modal">
             <div class="modal-header">
                 <h3>Select Language</h3>
-                <button class="modal-close" onclick="closeModal('language-modal')">&times;</button>
+                <button class="modal-close" onclick="window.closeModal('language-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <button class="btn" onclick="setLanguage('en')">🇺🇸 English</button>
-                <button class="btn" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
-                <button class="btn" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
+                <button class="btn" onclick="window.setLanguage('en')">🇺🇸 English</button>
+                <button class="btn" onclick="window.setLanguage('ps')">🇦🇫 پښتو</button>
+                <button class="btn" onclick="window.setLanguage('fa')">🇮🇷 فارسی</button>
             </div>
         </div>
     </div>
@@ -740,304 +740,307 @@
         // ============================================
         // SUPABASE CONFIGURATION - SINGLE INSTANCE
         // ============================================
-        const SUPABASE_URL = 'http://216.126.225.4:8000';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
-        
-        // Initialize Supabase (ONCE)
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // Table names
-        const TABLES = {
-            accounts: 'accounts',
-            contacts: 'contacts',
-            ads: 'ads',
-            book_requests: 'book_requests',
-            settings: 'settings',
-            visitors: 'visitors',
-            online_users: 'online_users'
-        };
-
-        // App state
-        const appState = {
-            accounts: [],
-            contacts: [],
-            ads: [],
-            bookRequests: [],
-            onlineCount: 0,
-            currentFilter: 'all',
-            isAdminLoggedIn: false,
-            sessionId: 'session_' + Math.random().toString(36).substring(2, 15)
-        };
-
-        // ============================================
-        // GLOBAL FUNCTIONS (attached to window)
-        // ============================================
-        window.switchScreen = function(screen) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screen + '-screen').classList.add('active');
-            if (screen === 'accounts') loadAccounts();
-            if (screen === 'contact') loadContacts();
-        };
-
-        window.openLanguageModal = function() {
-            document.getElementById('language-modal').classList.remove('hidden');
-        };
-
-        window.closeModal = function(id) {
-            document.getElementById(id).classList.add('hidden');
-        };
-
-        window.setLanguage = function(lang) {
-            document.documentElement.lang = lang;
-            document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
-            localStorage.setItem('gk_language', lang);
-            closeModal('language-modal');
-        };
-
-        window.filterAccounts = function(tier) {
-            appState.currentFilter = tier;
-            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
-            displayAccounts();
-        };
-
-        window.adminLogin = async function() {
-            const email = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-password').value;
-            const errorDiv = document.getElementById('admin-error');
+        (function() {
+            // This IIFE ensures no variable leakage
+            const SUPABASE_URL = 'http://216.126.225.4:8000';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
             
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: pass
-                });
-                
-                if (error) throw error;
-                
-                appState.isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                errorDiv.innerHTML = '';
-                
-                loadAdminData();
-                
-            } catch (error) {
-                errorDiv.innerHTML = 'Login failed: ' + error.message;
-            }
-        };
+            // Initialize Supabase (ONCE)
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        window.logout = function() {
-            supabase.auth.signOut();
-            appState.isAdminLoggedIn = false;
-            document.getElementById('admin-login-section').classList.remove('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
-            switchScreen('main');
-        };
+            // Table names
+            const TABLES = {
+                accounts: 'accounts',
+                contacts: 'contacts',
+                ads: 'ads',
+                book_requests: 'book_requests',
+                settings: 'settings',
+                visitors: 'visitors',
+                online_users: 'online_users'
+            };
 
-        // ============================================
-        // DATA LOADING FUNCTIONS
-        // ============================================
-        async function loadAccounts() {
-            try {
-                const { data, error } = await supabase
-                    .from(TABLES.accounts)
-                    .select('*')
-                    .eq('sold', false);
-                
-                if (error) throw error;
-                appState.accounts = data || [];
+            // App state
+            const appState = {
+                accounts: [],
+                contacts: [],
+                ads: [],
+                bookRequests: [],
+                onlineCount: 0,
+                currentFilter: 'all',
+                isAdminLoggedIn: false,
+                sessionId: 'session_' + Math.random().toString(36).substring(2, 15)
+            };
+
+            // ============================================
+            // GLOBAL FUNCTIONS (attached to window)
+            // ============================================
+            window.switchScreen = function(screen) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(screen + '-screen').classList.add('active');
+                if (screen === 'accounts') loadAccounts();
+                if (screen === 'contact') loadContacts();
+            };
+
+            window.openLanguageModal = function() {
+                document.getElementById('language-modal').classList.remove('hidden');
+            };
+
+            window.closeModal = function(id) {
+                document.getElementById(id).classList.add('hidden');
+            };
+
+            window.setLanguage = function(lang) {
+                document.documentElement.lang = lang;
+                document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
+                localStorage.setItem('gk_language', lang);
+                closeModal('language-modal');
+            };
+
+            window.filterAccounts = function(tier) {
+                appState.currentFilter = tier;
+                document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
                 displayAccounts();
-            } catch (e) {
-                console.error('Error loading accounts:', e);
-            }
-        }
+            };
 
-        function displayAccounts() {
-            const grid = document.getElementById('accounts-grid');
-            if (!grid) return;
-            
-            let filtered = appState.accounts;
-            if (appState.currentFilter !== 'all') {
-                filtered = filtered.filter(a => a.tier === appState.currentFilter);
-            }
-            
-            if (filtered.length === 0) {
-                grid.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No accounts found</p>';
-                return;
+            window.adminLogin = async function() {
+                const email = document.getElementById('admin-email').value;
+                const pass = document.getElementById('admin-password').value;
+                const errorDiv = document.getElementById('admin-error');
+                
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: pass
+                    });
+                    
+                    if (error) throw error;
+                    
+                    appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-login-section').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    errorDiv.innerHTML = '';
+                    
+                    loadAdminData();
+                    
+                } catch (error) {
+                    errorDiv.innerHTML = 'Login failed: ' + error.message;
+                }
+            };
+
+            window.logout = function() {
+                supabase.auth.signOut();
+                appState.isAdminLoggedIn = false;
+                document.getElementById('admin-login-section').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                switchScreen('main');
+            };
+
+            // ============================================
+            // DATA LOADING FUNCTIONS
+            // ============================================
+            async function loadAccounts() {
+                try {
+                    const { data, error } = await supabase
+                        .from(TABLES.accounts)
+                        .select('*')
+                        .eq('sold', false);
+                    
+                    if (error) throw error;
+                    appState.accounts = data || [];
+                    displayAccounts();
+                } catch (e) {
+                    console.error('Error loading accounts:', e);
+                }
             }
 
-            grid.innerHTML = filtered.map(acc => `
-                <div class="account-card">
-                    <div class="card-content">
-                        <div class="card-title">
-                            ${acc.title || 'Account'}
-                            ${acc.tier ? `<span class="tier-badge ${acc.tier}">${acc.tier}</span>` : ''}
-                        </div>
-                        <div class="card-desc">${acc.description || 'Premium PUBG account'}</div>
-                        <div class="price-row">
-                            <span class="usd-price">$${acc.price_usd || 0}</span>
-                            <span class="afn-price">${acc.price_afn || 0} AFN</span>
+            function displayAccounts() {
+                const grid = document.getElementById('accounts-grid');
+                if (!grid) return;
+                
+                let filtered = appState.accounts;
+                if (appState.currentFilter !== 'all') {
+                    filtered = filtered.filter(a => a.tier === appState.currentFilter);
+                }
+                
+                if (filtered.length === 0) {
+                    grid.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No accounts found</p>';
+                    return;
+                }
+
+                grid.innerHTML = filtered.map(acc => `
+                    <div class="account-card">
+                        <div class="card-content">
+                            <div class="card-title">
+                                ${acc.title || 'Account'}
+                                ${acc.tier ? `<span class="tier-badge ${acc.tier}">${acc.tier}</span>` : ''}
+                            </div>
+                            <div class="card-desc">${acc.description || 'Premium PUBG account'}</div>
+                            <div class="price-row">
+                                <span class="usd-price">$${acc.price_usd || 0}</span>
+                                <span class="afn-price">${acc.price_afn || 0} AFN</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
-        }
-
-        async function loadContacts() {
-            try {
-                const { data, error } = await supabase
-                    .from(TABLES.contacts)
-                    .select('*');
-                
-                if (error) throw error;
-                appState.contacts = data || [];
-                displayContacts();
-            } catch (e) {
-                console.error('Error loading contacts:', e);
-            }
-        }
-
-        function displayContacts() {
-            const container = document.getElementById('contacts-container');
-            if (!container) return;
-            
-            if (appState.contacts.length === 0) {
-                container.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No contacts available</p>';
-                return;
+                `).join('');
             }
 
-            container.innerHTML = appState.contacts.map(contact => `
-                <div class="account-card" style="padding:1.5rem;">
-                    <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                    <p>${contact.description || 'WhatsApp support'}</p>
-                    <p><strong>+${contact.phone}</strong></p>
-                </div>
-            `).join('');
-        }
-
-        async function loadAdminData() {
-            try {
-                const { count: accountCount } = await supabase
-                    .from(TABLES.accounts)
-                    .select('*', { count: 'exact', head: true });
-                
-                const { count: bookingCount } = await supabase
-                    .from(TABLES.book_requests)
-                    .select('*', { count: 'exact', head: true });
-                
-                document.getElementById('admin-account-count').innerText = accountCount || 0;
-                document.getElementById('admin-bookings-count').innerText = bookingCount || 0;
-            } catch (e) {
-                console.error('Error loading admin data:', e);
-            }
-        }
-
-        // ============================================
-        // ONLINE USERS TRACKING
-        // ============================================
-        async function trackOnlineUsers() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                const ip = data.ip;
-                const now = new Date().toISOString();
-
-                // Update online status
-                await supabase
-                    .from(TABLES.online_users)
-                    .upsert({
-                        session_id: appState.sessionId,
-                        user_ip: ip,
-                        last_activity: now,
-                        is_admin: appState.isAdminLoggedIn
-                    }, { onConflict: 'session_id' });
-
-                // Get online count
-                const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
-                const { count } = await supabase
-                    .from(TABLES.online_users)
-                    .select('*', { count: 'exact', head: true })
-                    .gt('last_activity', fiveMinAgo);
-
-                document.getElementById('online-count').innerText = count || 0;
-                
-            } catch (e) {
-                console.error('Error tracking users:', e);
-            }
-        }
-
-        // ============================================
-        // ADS SLIDER
-        // ============================================
-        async function loadAds() {
-            try {
-                const { data, error } = await supabase
-                    .from(TABLES.ads)
-                    .select('*')
-                    .eq('is_active', true);
-                
-                if (error) throw error;
-                appState.ads = data || [];
-                displayAds();
-            } catch (e) {
-                console.error('Error loading ads:', e);
-            }
-        }
-
-        function displayAds() {
-            const container = document.getElementById('ads-slider');
-            if (!container) return;
-            
-            if (appState.ads.length === 0) {
-                container.innerHTML = '<p>No ads</p>';
-                return;
-            }
-
-            let slides = '';
-            appState.ads.forEach(ad => {
-                if (ad.type === 'video') {
-                    slides += `<div class="slide"><video src="${ad.media_url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
-                } else {
-                    slides += `<div class="slide"><img src="${ad.media_url}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
+            async function loadContacts() {
+                try {
+                    const { data, error } = await supabase
+                        .from(TABLES.contacts)
+                        .select('*');
+                    
+                    if (error) throw error;
+                    appState.contacts = data || [];
+                    displayContacts();
+                } catch (e) {
+                    console.error('Error loading contacts:', e);
                 }
-            });
-
-            container.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-track" id="slider-track">${slides}</div>
-                </div>
-            `;
-        }
-
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        async function init() {
-            // Set language
-            const savedLang = localStorage.getItem('gk_language') || 'en';
-            setLanguage(savedLang);
-            
-            // Load data
-            await loadAccounts();
-            await loadContacts();
-            await loadAds();
-            
-            // Check admin session
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                appState.isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                await loadAdminData();
             }
-            
-            // Start tracking
-            trackOnlineUsers();
-            setInterval(trackOnlineUsers, 30000);
-        }
 
-        // Start when page loads
-        document.addEventListener('DOMContentLoaded', init);
+            function displayContacts() {
+                const container = document.getElementById('contacts-container');
+                if (!container) return;
+                
+                if (appState.contacts.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No contacts available</p>';
+                    return;
+                }
+
+                container.innerHTML = appState.contacts.map(contact => `
+                    <div class="account-card" style="padding:1.5rem;">
+                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                        <p>${contact.description || 'WhatsApp support'}</p>
+                        <p><strong>+${contact.phone}</strong></p>
+                    </div>
+                `).join('');
+            }
+
+            async function loadAdminData() {
+                try {
+                    const { count: accountCount } = await supabase
+                        .from(TABLES.accounts)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    const { count: bookingCount } = await supabase
+                        .from(TABLES.book_requests)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    document.getElementById('admin-account-count').innerText = accountCount || 0;
+                    document.getElementById('admin-bookings-count').innerText = bookingCount || 0;
+                } catch (e) {
+                    console.error('Error loading admin data:', e);
+                }
+            }
+
+            // ============================================
+            // ONLINE USERS TRACKING
+            // ============================================
+            async function trackOnlineUsers() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    const ip = data.ip;
+                    const now = new Date().toISOString();
+
+                    // Update online status
+                    await supabase
+                        .from(TABLES.online_users)
+                        .upsert({
+                            session_id: appState.sessionId,
+                            user_ip: ip,
+                            last_activity: now,
+                            is_admin: appState.isAdminLoggedIn
+                        }, { onConflict: 'session_id' });
+
+                    // Get online count
+                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+                    const { count } = await supabase
+                        .from(TABLES.online_users)
+                        .select('*', { count: 'exact', head: true })
+                        .gt('last_activity', fiveMinAgo);
+
+                    document.getElementById('online-count').innerText = count || 0;
+                    
+                } catch (e) {
+                    console.error('Error tracking users:', e);
+                }
+            }
+
+            // ============================================
+            // ADS SLIDER
+            // ============================================
+            async function loadAds() {
+                try {
+                    const { data, error } = await supabase
+                        .from(TABLES.ads)
+                        .select('*')
+                        .eq('is_active', true);
+                    
+                    if (error) throw error;
+                    appState.ads = data || [];
+                    displayAds();
+                } catch (e) {
+                    console.error('Error loading ads:', e);
+                }
+            }
+
+            function displayAds() {
+                const container = document.getElementById('ads-slider');
+                if (!container) return;
+                
+                if (appState.ads.length === 0) {
+                    container.innerHTML = '<p>No ads</p>';
+                    return;
+                }
+
+                let slides = '';
+                appState.ads.forEach(ad => {
+                    if (ad.type === 'video') {
+                        slides += `<div class="slide"><video src="${ad.media_url}" controls muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                    } else {
+                        slides += `<div class="slide"><img src="${ad.media_url}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                    }
+                });
+
+                container.innerHTML = `
+                    <div class="slider-container">
+                        <div class="slider-track" id="slider-track">${slides}</div>
+                    </div>
+                `;
+            }
+
+            // ============================================
+            // INITIALIZATION
+            // ============================================
+            async function init() {
+                // Set language
+                const savedLang = localStorage.getItem('gk_language') || 'en';
+                window.setLanguage(savedLang);
+                
+                // Load data
+                await loadAccounts();
+                await loadContacts();
+                await loadAds();
+                
+                // Check admin session
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-login-section').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    await loadAdminData();
+                }
+                
+                // Start tracking
+                trackOnlineUsers();
+                setInterval(trackOnlineUsers, 30000);
+            }
+
+            // Start when page loads
+            document.addEventListener('DOMContentLoaded', init);
+        })();
     </script>
 </body>
 </html>
