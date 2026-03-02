@@ -126,30 +126,6 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .online-badge {
-            background: #10b981;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 30px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .online-indicator {
-            width: 10px;
-            height: 10px;
-            background: white;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
         /* Accounts Grid */
         .tier-header {
             display: flex;
@@ -277,6 +253,52 @@
             margin-top: 10px;
         }
 
+        /* Admin Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .online-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #10b981;
+            padding: 5px 15px;
+            border-radius: 30px;
+            margin-top: 10px;
+        }
+
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         /* Modal */
         .modal-overlay {
             position: fixed;
@@ -351,12 +373,6 @@
             
             <!-- Ads Slider -->
             <div id="ads-slider" style="margin: 2rem 0;"></div>
-            
-            <!-- Online Counter -->
-            <div class="online-badge">
-                <span class="online-indicator"></span>
-                <span id="online-count">0</span> users online
-            </div>
         </div>
 
         <!-- Accounts Screen -->
@@ -393,15 +409,28 @@
             
             <!-- Admin Dashboard -->
             <div id="admin-dashboard" class="hidden">
-                <h3 style="margin-bottom: 1rem;">Welcome Admin!</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                    <div class="account-card" style="padding: 1rem; text-align: center;">
-                        <span id="admin-account-count">0</span> accounts
+                <h3 style="margin-bottom: 1rem;">Dashboard</h3>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="admin-account-count">0</div>
+                        <div>Total Accounts</div>
                     </div>
-                    <div class="account-card" style="padding: 1rem; text-align: center;">
-                        <span id="admin-bookings-count">0</span> bookings
+                    <div class="stat-card">
+                        <div class="stat-number" id="admin-bookings-count">0</div>
+                        <div>Total Bookings</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="online-count">0</div>
+                        <div>Users Online</div>
+                        <div class="online-badge">
+                            <span class="online-indicator"></span>
+                            Live
+                        </div>
                     </div>
                 </div>
+                
                 <button class="action-btn" onclick="app.logout()">Logout</button>
             </div>
             <button class="nav-btn" style="margin-top: 2rem;" onclick="app.showMain()">← Back</button>
@@ -425,7 +454,7 @@
 
     <script>
         // ============================================
-        // SINGLE APP OBJECT - NO DUPLICATE DECLARATIONS
+        // SINGLE APP OBJECT - COMPLETE FIX
         // ============================================
         const app = {
             // Supabase
@@ -441,29 +470,29 @@
             
             // Initialize
             init: async function() {
-                // Initialize Supabase
-                this.supabase = window.supabase.createClient(
-                    'http://216.126.225.4:8000',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE'
-                );
-                
-                // Load data
-                await this.loadAccounts();
-                await this.loadContacts();
-                await this.loadAds();
-                
-                // Check session
-                const { data: { session } } = await this.supabase.auth.getSession();
-                if (session) {
-                    this.isAdmin = true;
-                    document.getElementById('login-section').classList.add('hidden');
-                    document.getElementById('admin-dashboard').classList.remove('hidden');
-                    this.loadAdminData();
+                try {
+                    // Initialize Supabase
+                    this.supabase = window.supabase.createClient(
+                        'http://216.126.225.4:8000',
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE'
+                    );
+                    
+                    // Load data
+                    await this.loadAccounts();
+                    await this.loadContacts();
+                    await this.loadAds();
+                    
+                    // Check session
+                    const { data: { session } } = await this.supabase.auth.getSession();
+                    if (session) {
+                        this.isAdmin = true;
+                        document.getElementById('login-section').classList.add('hidden');
+                        document.getElementById('admin-dashboard').classList.remove('hidden');
+                    }
+                    
+                } catch (e) {
+                    console.error('Init error:', e);
                 }
-                
-                // Start online counter
-                this.updateOnlineCount();
-                setInterval(() => this.updateOnlineCount(), 30000);
             },
             
             // ===== SCREEN FUNCTIONS =====
@@ -487,6 +516,17 @@
             showAdmin: function() {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('admin-screen').classList.add('active');
+                
+                // If already logged in, show dashboard
+                if (this.isAdmin) {
+                    document.getElementById('login-section').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    this.loadAdminData();
+                    this.updateOnlineCount(); // Start online counter when admin panel opens
+                } else {
+                    document.getElementById('login-section').classList.remove('hidden');
+                    document.getElementById('admin-dashboard').classList.add('hidden');
+                }
             },
             
             // ===== MODAL FUNCTIONS =====
@@ -653,7 +693,14 @@
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-error').innerText = '';
-                    this.loadAdminData();
+                    
+                    // Load admin data and start online counter
+                    await this.loadAdminData();
+                    this.updateOnlineCount();
+                    
+                    // Start periodic updates
+                    if (this.onlineInterval) clearInterval(this.onlineInterval);
+                    this.onlineInterval = setInterval(() => this.updateOnlineCount(), 10000);
                     
                 } catch (err) {
                     document.getElementById('admin-error').innerText = 'Login failed: ' + err.message;
@@ -665,6 +712,13 @@
                 this.isAdmin = false;
                 document.getElementById('login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
+                
+                // Stop online counter updates
+                if (this.onlineInterval) {
+                    clearInterval(this.onlineInterval);
+                    this.onlineInterval = null;
+                }
+                
                 this.showMain();
             },
             
@@ -685,32 +739,40 @@
                 }
             },
             
-            // ===== ONLINE COUNTER =====
+            // ===== ONLINE COUNTER (NOW ONLY IN ADMIN PANEL) =====
             updateOnlineCount: async function() {
+                if (!this.isAdmin) return; // Only update if admin is logged in
+                
                 try {
                     const response = await fetch('https://api.ipify.org?format=json');
                     const data = await response.json();
                     const ip = data.ip;
                     
+                    // Update this admin's online status
                     await this.supabase
                         .from('online_users')
                         .upsert({
                             session_id: this.sessionId,
                             user_ip: ip,
                             last_activity: new Date().toISOString(),
-                            is_admin: this.isAdmin
+                            is_admin: true
                         }, { onConflict: 'session_id' });
                     
+                    // Get total online users
                     const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
                     const { count } = await this.supabase
                         .from('online_users')
                         .select('*', { count: 'exact', head: true })
                         .gt('last_activity', fiveMinAgo);
                     
-                    document.getElementById('online-count').innerText = count || 0;
+                    // Update only the admin panel counter
+                    const onlineElement = document.getElementById('online-count');
+                    if (onlineElement) {
+                        onlineElement.innerText = count || 0;
+                    }
                     
                 } catch (e) {
-                    console.log('Online counter error:', e);
+                    console.log('Online counter error (expected if table missing):', e.message);
                 }
             }
         };
