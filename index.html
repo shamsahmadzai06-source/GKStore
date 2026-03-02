@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* [Keep all your existing CSS here - it was working fine] */
         * {
             margin: 0;
             padding: 0;
@@ -957,1188 +958,1368 @@
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
-        (function() {
-            // ============================================
-            // SUPABASE CONFIGURATION
-            // ============================================
-            const SUPABASE_URL = 'http://216.126.225.4:8000';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
-            
-            // Initialize Supabase
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true
-                }
-            });
-
-            // Table names
-            const TABLES = {
-                accounts: 'accounts',
-                contacts: 'contacts',
-                ads: 'ads',
-                book_requests: 'book_requests',
-                settings: 'settings',
-                visitors: 'visitors',
-                sessions: 'sessions',
-                buckets: 'buckets',
-                video_views: 'video_views',
-                online_users: 'online_users',
-                ad_views: 'ad_views',
-                ad_clicks: 'ad_clicks'
-            };
-
-            // ============================================
-            // APP STATE
-            // ============================================
-            const appState = {
-                accounts: [],
-                contacts: [],
-                ads: [],
-                bookRequests: [],
-                buckets: [],
-                videoViews: [],
-                visitorCount: 0,
-                onlineCount: 0,
-                currentFilter: 'all',
-                isAdminLoggedIn: false,
-                currentAccount: null,
-                currentMediaData: null,
-                currentAdData: null,
-                phoneInput: null,
-                bookPhoneInput: null,
-                currentLanguage: 'en',
-                autoSlideInterval: null,
-                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-                sessionId: null,
-                videoWatchTimers: {}
-            };
-
-            // Generate session ID
-            appState.sessionId = 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-
-            // ============================================
-            // INITIAL DATA LOAD
-            // ============================================
-            async function loadInitialData() {
-                try {
-                    // Load buckets
-                    const { data: buckets, error: bucketsError } = await supabase
-                        .from(TABLES.buckets)
-                        .select('*')
-                        .eq('is_active', true);
-                    
-                    if (!bucketsError) appState.buckets = buckets || [];
-
-                    // Load accounts
-                    const { data: accounts, error: accountsError } = await supabase
-                        .from(TABLES.accounts)
-                        .select('*')
-                        .eq('is_active', true)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!accountsError) appState.accounts = accounts || [];
-
-                    // Load contacts
-                    const { data: contacts, error: contactsError } = await supabase
-                        .from(TABLES.contacts)
-                        .select('*')
-                        .eq('is_active', true)
-                        .order('priority', { ascending: false });
-                    
-                    if (!contactsError) appState.contacts = contacts || [];
-
-                    // Load ads
-                    const { data: ads, error: adsError } = await supabase
-                        .from(TABLES.ads)
-                        .select('*')
-                        .eq('is_active', true)
-                        .order('priority', { ascending: false });
-                    
-                    if (!adsError) appState.ads = ads || [];
-
-                    // Load settings
-                    const { data: settings, error: settingsError } = await supabase
-                        .from(TABLES.settings)
-                        .select('*');
-                    
-                    if (!settingsError && settings) {
-                        const usdtSetting = settings.find(s => s.key === 'usdt_address');
-                        if (usdtSetting) appState.usdtAddress = usdtSetting.value;
-                    }
-
-                    // Load stats
-                    await updateStats();
-
-                    renderAccounts();
-                    renderContacts();
-                    renderAdsSlider();
-                    
-                    if (appState.isAdminLoggedIn) {
-                        updateAdminStats();
-                        renderBookRequests();
-                        renderAdminAccounts();
-                        renderAdminContacts();
-                        renderAdminAds();
-                    }
-                } catch (e) {
-                    console.error('Error loading data:', e);
-                }
+        // ============================================
+        // GLOBAL FUNCTIONS - These need to be in global scope
+        // ============================================
+        
+        // Supabase configuration
+        const SUPABASE_URL = 'http://216.126.225.4:8000';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
+        
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true
             }
+        });
 
-            // ============================================
-            // STATS FUNCTIONS
-            // ============================================
-            async function updateStats() {
-                try {
-                    // Visitor count
-                    const { count: visitorCount } = await supabase
-                        .from(TABLES.visitors)
-                        .select('*', { count: 'exact', head: true });
-                    appState.visitorCount = visitorCount || 0;
+        // Table names
+        const TABLES = {
+            accounts: 'accounts',
+            contacts: 'contacts',
+            ads: 'ads',
+            book_requests: 'book_requests',
+            settings: 'settings',
+            visitors: 'visitors',
+            sessions: 'sessions',
+            buckets: 'buckets',
+            video_views: 'video_views',
+            online_users: 'online_users',
+            ad_views: 'ad_views',
+            ad_clicks: 'ad_clicks'
+        };
 
-                    // Online count
-                    const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
-                    const { count: onlineCount } = await supabase
-                        .from(TABLES.online_users)
-                        .select('*', { count: 'exact', head: true })
-                        .gt('last_activity', fiveMinAgo);
-                    appState.onlineCount = onlineCount || 0;
+        // ============================================
+        // APP STATE
+        // ============================================
+        const appState = {
+            accounts: [],
+            contacts: [],
+            ads: [],
+            bookRequests: [],
+            buckets: [],
+            videoViews: [],
+            visitorCount: 0,
+            onlineCount: 0,
+            currentFilter: 'all',
+            isAdminLoggedIn: false,
+            currentAccount: null,
+            currentMediaData: null,
+            currentAdData: null,
+            phoneInput: null,
+            bookPhoneInput: null,
+            currentLanguage: 'en',
+            autoSlideInterval: null,
+            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
+            sessionId: 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+            videoWatchTimers: {}
+        };
 
-                    // Video views count
-                    const { count: videoViewsCount } = await supabase
-                        .from(TABLES.video_views)
-                        .select('*', { count: 'exact', head: true });
-                    
-                    document.getElementById('online-count').innerText = appState.onlineCount;
-                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                    document.getElementById('online-user-count').innerText = appState.onlineCount;
-                    document.getElementById('video-views-count').innerText = videoViewsCount || 0;
-                } catch (e) {
-                    console.error('Error updating stats:', e);
-                }
+        // ============================================
+        // GLOBAL FUNCTIONS (must be at top level)
+        // ============================================
+        
+        // Screen switching
+        window.switchScreen = function(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screen + '-screen').classList.add('active');
+            if (screen === 'accounts') renderAccounts();
+            if (screen === 'contact') renderContacts();
+            if (screen === 'admin' && appState.isAdminLoggedIn) {
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-login-section').classList.add('hidden');
             }
+            trackVisitor();
+        };
 
-            // ============================================
-            // TRACK VISITOR
-            // ============================================
-            async function trackVisitor() {
-                try {
-                    const response = await fetch('https://api.ipify.org?format=json');
-                    const data = await response.json();
-                    const ip = data.ip;
-                    const now = new Date().toISOString();
-                    const userAgent = navigator.userAgent;
+        // Language
+        window.openLanguageModal = function() {
+            openModal('language-modal');
+        };
 
-                    // Update online status
-                    await supabase.rpc('update_online_status', {
-                        p_session_id: appState.sessionId,
-                        p_user_ip: ip,
-                        p_user_agent: userAgent,
-                        p_current_page: window.location.hash || 'main',
-                        p_is_admin: appState.isAdminLoggedIn
-                    });
+        window.setLanguage = function(lang) {
+            document.documentElement.lang = lang;
+            document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
+            appState.currentLanguage = lang;
+            localStorage.setItem('gk_language', lang);
+            renderAccounts();
+            renderContacts();
+            if (appState.isAdminLoggedIn) renderBookRequests();
+            closeModal('language-modal');
+        };
 
-                    // Track visitor
-                    const { data: existingVisitor } = await supabase
-                        .from(TABLES.visitors)
-                        .select('*')
-                        .eq('ip', ip)
-                        .maybeSingle();
+        // Filter accounts
+        window.filterAccounts = function(tier) {
+            appState.currentFilter = tier;
+            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
+            renderAccounts();
+        };
 
-                    if (existingVisitor) {
-                        await supabase
-                            .from(TABLES.visitors)
-                            .update({ 
-                                last_seen: now,
-                                visit_count: existingVisitor.visit_count + 1,
-                                user_agent: userAgent
-                            })
-                            .eq('id', existingVisitor.id);
-                    } else {
-                        await supabase
-                            .from(TABLES.visitors)
-                            .insert({
-                                ip: ip,
-                                first_seen: now,
-                                last_seen: now,
-                                user_agent: userAgent
-                            });
-                    }
-
-                    // Track session
-                    const { data: existingSession } = await supabase
-                        .from(TABLES.sessions)
-                        .select('*')
-                        .eq('session_id', appState.sessionId)
-                        .maybeSingle();
-
-                    if (existingSession) {
-                        await supabase
-                            .from(TABLES.sessions)
-                            .update({ 
-                                last_seen: now,
-                                page_views: existingSession.page_views + 1,
-                                user_agent: userAgent
-                            })
-                            .eq('id', existingSession.id);
-                    } else {
-                        await supabase
-                            .from(TABLES.sessions)
-                            .insert({
-                                session_id: appState.sessionId,
-                                ip: ip,
-                                user_agent: userAgent
-                            });
-                    }
-
-                    await updateStats();
-                } catch (e) {
-                    console.error('Error tracking visitor:', e);
-                }
+        // Modal functions
+        window.openModal = function(id) {
+            document.getElementById(id).classList.remove('hidden');
+        };
+        
+        window.closeModal = function(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'book-modal' && appState.bookPhoneInput) {
+                try { appState.bookPhoneInput.destroy(); } catch (e) {}
+                appState.bookPhoneInput = null;
             }
+        };
 
-            // ============================================
-            // VIDEO TRACKING
-            // ============================================
-            function trackVideoView(accountId, videoElement) {
-                if (!videoElement) return;
-                
-                const startTime = Date.now();
-                let watchedDuration = 0;
-                let completed = false;
-                
-                const updateInterval = setInterval(() => {
-                    watchedDuration = Math.floor((Date.now() - startTime) / 1000);
-                    
-                    // Update progress bar if exists
-                    const progressBar = document.getElementById(`progress-${accountId}`);
-                    if (progressBar) {
-                        const percentage = Math.min(100, (watchedDuration / 60) * 100); // Assume 60s video
-                        progressBar.style.width = percentage + '%';
-                    }
-                }, 1000);
-                
-                videoElement.addEventListener('ended', () => {
-                    clearInterval(updateInterval);
-                    completed = true;
-                    watchedDuration = Math.floor((Date.now() - startTime) / 1000);
-                    
-                    // Send view data to server
-                    supabase.rpc('track_video_view', {
-                        p_account_id: accountId,
-                        p_viewer_ip: 'web_user',
-                        p_session_id: appState.sessionId,
-                        p_watch_duration: watchedDuration,
-                        p_completed: true
-                    });
-                });
-                
-                videoElement.addEventListener('pause', () => {
-                    clearInterval(updateInterval);
-                    watchedDuration = Math.floor((Date.now() - startTime) / 1000);
-                    
-                    supabase.rpc('track_video_view', {
-                        p_account_id: accountId,
-                        p_viewer_ip: 'web_user',
-                        p_session_id: appState.sessionId,
-                        p_watch_duration: watchedDuration,
-                        p_completed: false
-                    });
-                });
-                
-                // Store timer to clean up
-                appState.videoWatchTimers[accountId] = updateInterval;
-            }
-
-            // ============================================
-            // RENDER FUNCTIONS
-            // ============================================
-            function renderAccounts() {
-                const grid = document.getElementById('accounts-grid');
-                if (!grid) return;
-                
-                let filtered = appState.accounts.filter(a => !a.sold);
-                if (appState.currentFilter !== 'all') {
-                    filtered = filtered.filter(a => a.tier === appState.currentFilter);
-                }
-                
-                if (filtered.length === 0) {
-                    grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
-                    return;
-                }
-
-                grid.innerHTML = filtered.map(acc => {
-                    const mediaTag = acc.media_type === 'video' 
-                        ? `<video src="${acc.media_url}" class="card-media" id="video-${acc.id}" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
-                        : `<img src="${acc.media_url}" class="card-media" alt="account">`;
-
-                    const viewCount = acc.view_count || 0;
-                    const bookCount = acc.book_count || 0;
-
-                    return `
-                        <div class="account-card" data-id="${acc.id}">
-                            ${mediaTag}
-                            ${acc.media_type === 'video' ? `
-                                <div class="video-progress">
-                                    <div class="video-progress-bar" id="progress-${acc.id}"></div>
-                                </div>
-                            ` : ''}
-                            <div class="card-content">
-                                <div class="card-title">
-                                    ${acc.title}
-                                    <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                                </div>
-                                <div class="card-desc">${acc.description || 'Premium PUBG account'}</div>
-                                <div class="price-row">
-                                    <span class="usd-price">$${acc.price_usd?.toFixed(2)}</span>
-                                    <span class="afn-price">${acc.price_afn?.toLocaleString()} AFN</span>
-                                </div>
-                                <div class="view-counter">
-                                    <i class="fa fa-eye"></i> ${viewCount} views
-                                    <i class="fa fa-bookmark" style="margin-left:10px;"></i> ${bookCount} bookings
-                                </div>
-                                <div class="action-buttons">
-                                    <button class="action-btn" onclick="bookAccount(${acc.id})"><i class="fa fa-bookmark"></i> Book</button>
-                                    <button class="action-btn buy" onclick="buyAccount(${acc.id})"><i class="fa fa-bolt"></i> Buy</button>
-                                    <button class="action-btn" onclick="infoAccount(${acc.id})"><i class="fa fa-info"></i> Info</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                // Setup video tracking
-                filtered.forEach(acc => {
-                    if (acc.media_type === 'video') {
-                        const video = document.getElementById(`video-${acc.id}`);
-                        if (video) {
-                            trackVideoView(acc.id, video);
-                        }
-                    }
-                });
-            }
-
-            function renderContacts() {
-                const container = document.getElementById('contacts-container');
-                if (!container) return;
-                
-                if (appState.contacts.length === 0) {
-                    container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
-                    return;
-                }
-
-                container.innerHTML = appState.contacts.map(contact => {
-                    let cleanPhone = contact.phone.replace(/\D/g, '');
-                    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
-                    if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) cleanPhone = '93' + cleanPhone;
-
-                    return `
-                        <div class="account-card" style="padding:1.5rem;">
-                            <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                            <p>${contact.description || 'WhatsApp support'}</p>
-                            <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
-                            <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> Chat Now
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            function renderAdsSlider() {
-                const container = document.getElementById('ads-slider');
-                if (!container) return;
-                
-                if (appState.ads.length === 0) {
-                    container.innerHTML = '<div class="swipe-ads" style="padding:2rem; text-align:center;">No ads</div>';
-                    return;
-                }
-                
-                let slides = '';
-                appState.ads.forEach((ad, idx) => {
-                    if (ad.type === 'video') {
-                        slides += `<div class="slide"><video src="${ad.media_url}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
-                    } else {
-                        slides += `<div class="slide"><img src="${ad.media_url}" alt="ad" onclick="trackAdClick(${ad.id})"><div class="slide-caption">${ad.caption || ''}</div></div>`;
-                    }
-                    
-                    // Track ad view
-                    supabase.rpc('track_ad_view', {
-                        p_ad_id: ad.id,
-                        p_viewer_ip: 'web_user',
-                        p_user_agent: navigator.userAgent
-                    });
-                });
-                
-                let dots = '';
-                appState.ads.forEach((_, idx) => {
-                    dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
-                });
-                
-                container.innerHTML = `
-                    <div class="slider-container">
-                        <div class="slider-track" id="slider-track">${slides}</div>
-                        <div class="slider-dots">${dots}</div>
-                    </div>
-                `;
-                
-                const track = document.getElementById('slider-track');
-                if (track) {
-                    track.addEventListener('scroll', function() {
-                        const idx = Math.round(track.scrollLeft / track.clientWidth);
-                        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-                    });
-                }
-                
+        // Slide functions
+        window.jumpToSlide = function(idx) {
+            const track = document.getElementById('slider-track');
+            if (track) {
+                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
                 startAutoSlide();
             }
+        };
 
-            function renderBookRequests() {
-                const list = document.getElementById('admin-book-requests-list');
-                if (!list) return;
-                
-                if (appState.bookRequests.length === 0) {
-                    list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
-                    return;
-                }
-
-                const sorted = [...appState.bookRequests].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                list.innerHTML = sorted.map(req => {
-                    const date = new Date(req.date).toLocaleString();
-                    const cleanPhone = req.whatsapp.replace(/\D/g, '');
-                    const statusClass = req.status === 'pending' ? 'btn-wa' : 'btn-cancel';
-
-                    return `
-                        <div class="book-request-item" data-id="${req.id}">
-                            <p><span class="label">Account:</span> ${req.account_title}</p>
-                            <p><span class="label">Name:</span> ${req.user_name}</p>
-                            <p><span class="label">WhatsApp:</span> +${cleanPhone}</p>
-                            <p><span class="label">Status:</span> <span style="color:${req.status === 'pending' ? '#f59e0b' : req.status === 'contacted' ? '#10b981' : '#ef4444'}">${req.status}</span></p>
-                            <p><span class="label">Date:</span> ${date}</p>
-                            <div class="request-actions">
-                                <button class="btn-wa" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                                    <i class="fab fa-whatsapp"></i> Contact
-                                </button>
-                                <button class="btn-cancel" onclick="updateBookRequestStatus('${req.id}', 'completed')">
-                                    <i class="fa fa-check"></i> Complete
-                                </button>
-                                <button class="btn-cancel" onclick="cancelBookRequest('${req.id}')">
-                                    <i class="fa fa-times"></i> Cancel
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            function renderAdminAccounts() {
-                const list = document.getElementById('admin-accounts-list');
-                if (!list) return;
-                
-                if (appState.accounts.length === 0) {
-                    list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
-                    return;
-                }
-
-                list.innerHTML = appState.accounts.map(acc => {
-                    const mediaTag = acc.media_type === 'video' 
-                        ? `<video src="${acc.media_url}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls controlsList="nodownload"></video>`
-                        : `<img src="${acc.media_url}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
-
-                    return `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        ${mediaTag}
-                        <div style="flex:1;">
-                            <strong>${acc.title}</strong> 
-                            <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
-                            <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
-                            <div style="font-size:0.7rem;">Views: ${acc.view_count || 0} | Bookings: ${acc.book_count || 0}</div>
-                        </div>
-                        <div style="display:flex; gap:0.3rem;">
-                            <button class="action-btn" style="background:#10b981; color:white; padding:0.4rem 0.8rem;" onclick="toggleFeatured(${acc.id}, ${acc.is_featured})">
-                                <i class="fa fa-star"></i>
-                            </button>
-                            <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 0.8rem;" onclick="deleteAccount(${acc.id})">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `}).join('');
-            }
-
-            function renderAdminContacts() {
-                const list = document.getElementById('admin-contacts-list');
-                if (!list) return;
-                
-                if (appState.contacts.length === 0) {
-                    list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
-                    return;
-                }
-
-                list.innerHTML = appState.contacts.map(contact => `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                            <i class="fab fa-whatsapp"></i>
-                        </div>
-                        <div style="flex:1;">
-                            <strong>${contact.name}</strong>
-                            <div style="font-size:0.8rem;">+${contact.phone}</div>
-                            <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.description || ''}</div>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact(${contact.id})">
-                            <i class="fa fa-trash"></i> Delete
-                        </button>
-                    </div>
-                `).join('');
-            }
-
-            function renderAdminAds() {
-                const list = document.getElementById('admin-ads-list');
-                if (!list) return;
-                
-                if (appState.ads.length === 0) {
-                    list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
-                    return;
-                }
-
-                list.innerHTML = appState.ads.map((ad) => `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
-                            ${ad.type === 'video' 
-                                ? `<video src="${ad.media_url}" style="width:100%; height:100%; object-fit:cover;" controls controlsList="nodownload"></video>`
-                                : `<img src="${ad.media_url}" style="width:100%; height:100%; object-fit:cover;">`
-                            }
-                        </div>
-                        <div style="flex:1;">
-                            <strong>${ad.caption || 'No caption'}</strong>
-                            <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type} | Views: ${ad.view_count || 0} | Clicks: ${ad.click_count || 0}</div>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${ad.id})">
-                            <i class="fa fa-trash"></i> Delete
-                        </button>
-                    </div>
-                `).join('');
-            }
-
-            function renderVideoStats() {
-                const content = document.getElementById('video-stats-content');
-                if (!content) return;
-                
-                // Get top viewed videos
-                const topVideos = [...appState.accounts]
-                    .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-                    .slice(0, 10);
-                
-                let html = '<h4>Top 10 Most Viewed Accounts</h4>';
-                html += '<div style="margin-top:1rem;">';
-                
-                topVideos.forEach((video, index) => {
-                    html += `
-                        <div style="display:flex; justify-content:space-between; padding:0.5rem; border-bottom:1px solid var(--border);">
-                            <span>${index+1}. ${video.title} (${video.tier})</span>
-                            <span style="color:var(--primary);">${video.view_count || 0} views</span>
-                        </div>
-                    `;
+        // Admin functions
+        window.adminLogin = async function() {
+            const email = document.getElementById('admin-email').value;
+            const pass = document.getElementById('admin-password').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: pass
                 });
                 
-                html += '</div>';
-                content.innerHTML = html;
-            }
-
-            function updateAdminStats() {
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-            }
-
-            // ============================================
-            // UPLOAD FUNCTIONS
-            // ============================================
-            window.previewMediaFromFile = function() {
-                const fileInput = document.getElementById('account-media-file');
-                const preview = document.getElementById('media-preview');
-                const uploadBtn = document.getElementById('upload-btn');
+                if (error) throw error;
                 
-                if (fileInput.files && fileInput.files[0]) {
-                    const file = fileInput.files[0];
-                    
-                    // Check file size (max 100MB)
-                    if (file.size > 100 * 1024 * 1024) {
-                        alert('File too large. Maximum size is 100MB');
-                        fileInput.value = '';
-                        return;
+                appState.isAdminLoggedIn = true;
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-error').innerText = '';
+                
+                // Load book requests
+                const { data: bookings, error: bookingsError } = await supabase
+                    .from(TABLES.book_requests)
+                    .select('*')
+                    .order('date', { ascending: false });
+                
+                if (!bookingsError) {
+                    appState.bookRequests = bookings || [];
+                }
+                
+                updateAdminStats();
+                renderBookRequests();
+                renderAdminAccounts();
+                renderAdminContacts();
+                renderAdminAds();
+                
+                // Update online status to admin
+                await trackVisitor();
+                
+            } catch (error) {
+                document.getElementById('admin-error').innerText = 'Invalid credentials';
+            }
+        };
+
+        window.logout = function() {
+            supabase.auth.signOut();
+            appState.isAdminLoggedIn = false;
+            appState.bookRequests = [];
+            document.getElementById('admin-login-section').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            switchScreen('main');
+        };
+
+        // Modal show functions
+        window.showAddAccountModal = function() {
+            document.getElementById('account-tier').value = '';
+            document.getElementById('account-title').value = '';
+            document.getElementById('account-description').value = '';
+            document.getElementById('account-price-usd').value = '';
+            document.getElementById('account-price-afn').value = '';
+            document.getElementById('account-media-file').value = '';
+            document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            document.getElementById('upload-progress').classList.remove('active');
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-text').innerHTML = '';
+            document.getElementById('upload-btn').disabled = true;
+            appState.currentMediaData = null;
+            openModal('add-account-modal');
+        };
+
+        window.showManageAccountsModal = function() {
+            renderAdminAccounts();
+            openModal('manage-accounts-modal');
+        };
+
+        window.showManageContactsModal = function() {
+            renderAdminContacts();
+            const input = document.getElementById('contact-phone');
+            if (input) {
+                if (appState.phoneInput) {
+                    try { appState.phoneInput.destroy(); } catch (e) {}
+                }
+                appState.phoneInput = intlTelInput(input, {
+                    initialCountry: 'af',
+                    separateDialCode: true,
+                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                    dropdownContainer: document.body
+                });
+            }
+            openModal('manage-contacts-modal');
+        };
+
+        window.showManageAdsModal = function() {
+            document.getElementById('ad-type').value = 'image';
+            document.getElementById('ad-media-file').value = '';
+            document.getElementById('ad-caption').value = '';
+            document.getElementById('ad-link').value = '';
+            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            appState.currentAdData = null;
+            renderAdminAds();
+            openModal('manage-ads-modal');
+        };
+
+        window.showEditUsdtModal = function() {
+            document.getElementById('new-usdt-address').value = appState.usdtAddress;
+            openModal('edit-usdt-modal');
+        };
+
+        window.showVideoStatsModal = function() {
+            renderVideoStats();
+            openModal('video-stats-modal');
+        };
+
+        // Account actions
+        window.bookAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            
+            const modalBody = document.getElementById('book-modal-body');
+            modalBody.innerHTML = `
+                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
+                <input type="text" id="book-name" class="input" placeholder="Your name" required>
+                <input type="email" id="book-email" class="input" placeholder="Your email (optional)">
+                <label class="input-label">WhatsApp number with country code</label>
+                <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322" required>
+            `;
+            
+            openModal('book-modal');
+            
+            setTimeout(() => {
+                const input = document.getElementById('book-phone');
+                if (input) {
+                    if (appState.bookPhoneInput) {
+                        try { appState.bookPhoneInput.destroy(); } catch (e) {}
                     }
-                    
-                    uploadBtn.disabled = false;
-                    
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const isVideo = file.type.startsWith('video/');
-                        if (isVideo) {
-                            preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
-                            appState.currentMediaData = { type: 'video', data: e.target.result, file };
-                        } else {
-                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                            appState.currentMediaData = { type: 'image', data: e.target.result, file };
-                        }
-                    };
-                    reader.readAsDataURL(file);
+                    appState.bookPhoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
+                    });
+                }
+            }, 200);
+        };
+
+        window.submitBook = async function() {
+            const name = document.getElementById('book-name')?.value;
+            const email = document.getElementById('book-email')?.value;
+            
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+            
+            let phone = '';
+            if (appState.bookPhoneInput) {
+                const number = appState.bookPhoneInput.getNumber();
+                if (number) {
+                    phone = number.replace(/\D/g, '');
                 } else {
-                    uploadBtn.disabled = true;
+                    alert('Please enter a valid WhatsApp number');
+                    return;
                 }
-            };
-
-            window.previewAdMedia = function() {
-                const fileInput = document.getElementById('ad-media-file');
-                const preview = document.getElementById('ad-preview');
-                
-                if (fileInput.files && fileInput.files[0]) {
-                    const file = fileInput.files[0];
-                    
-                    if (file.size > 100 * 1024 * 1024) {
-                        alert('File too large. Maximum size is 100MB');
-                        fileInput.value = '';
-                        return;
-                    }
-                    
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const isVideo = file.type.startsWith('video/');
-                        if (isVideo) {
-                            preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
-                            appState.currentAdData = { type: 'video', data: e.target.result, file };
-                        } else {
-                            preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                            appState.currentAdData = { type: 'image', data: e.target.result, file };
-                        }
-                    };
-                    reader.readAsDataURL(file);
+            } else {
+                phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+                if (!phone) {
+                    alert('Please enter a valid WhatsApp number');
+                    return;
                 }
-            };
-
-            function fileToBase64(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
-                });
             }
-
-            window.uploadNewAccount = async function() {
-                const tier = document.getElementById('account-tier').value;
-                const title = document.getElementById('account-title').value.trim();
-                const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-                const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-                const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-                
-                if (!tier || !title || !priceUsd || !priceAfn) {
-                    alert('Please fill all required fields');
-                    return;
-                }
-                
-                if (!appState.currentMediaData) {
-                    alert('Please select an image or video');
-                    return;
-                }
-                
-                const progressContainer = document.getElementById('upload-progress');
-                const progressBar = document.getElementById('progress-bar');
-                const progressText = document.getElementById('progress-text');
-                const uploadBtn = document.getElementById('upload-btn');
-                
-                progressContainer.classList.add('active');
-                uploadBtn.disabled = true;
-                
-                try {
-                    progressBar.style.width = '30%';
-                    progressText.innerHTML = 'Processing media...';
-                    
-                    const base64Data = await fileToBase64(appState.currentMediaData.file);
-                    
-                    progressBar.style.width = '60%';
-                    progressText.innerHTML = 'Saving to database...';
-                    
-                    // Get bucket for tier
-                    const bucket = appState.buckets.find(b => b.name === tier);
-                    
-                    const newAccount = {
-                        title,
-                        description: desc,
-                        tier,
-                        bucket_id: bucket?.id || null,
-                        media_url: base64Data,
-                        media_type: appState.currentMediaData.type,
-                        price_usd: priceUsd,
-                        price_afn: priceAfn,
-                        sold: false,
-                        is_active: true,
-                        created_by: (await supabase.auth.getUser()).data.user?.email || 'admin',
-                        created_at: new Date().toISOString()
-                    };
-                    
-                    const { data, error } = await supabase
-                        .from(TABLES.accounts)
-                        .insert([newAccount])
-                        .select();
-                    
-                    if (error) throw error;
-                    
-                    if (data && data[0]) {
-                        appState.accounts.unshift(data[0]);
-                    }
-                    
-                    progressBar.style.width = '100%';
-                    progressText.innerHTML = 'Upload complete!';
-                    
-                    setTimeout(() => {
-                        closeModal('add-account-modal');
-                        renderAccounts();
-                        if (appState.isAdminLoggedIn) {
-                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                            renderAdminAccounts();
-                        }
-                        alert('Account uploaded successfully!');
-                        
-                        progressContainer.classList.remove('active');
-                        progressBar.style.width = '0%';
-                        progressText.innerHTML = '';
-                        uploadBtn.disabled = false;
-                        
-                        // Reset form
-                        document.getElementById('account-tier').value = '';
-                        document.getElementById('account-title').value = '';
-                        document.getElementById('account-description').value = '';
-                        document.getElementById('account-price-usd').value = '';
-                        document.getElementById('account-price-afn').value = '';
-                        document.getElementById('account-media-file').value = '';
-                        document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                        appState.currentMediaData = null;
-                        
-                        // Log admin action
-                        await supabase.rpc('log_admin_action', {
-                            p_admin_email: (await supabase.auth.getUser()).data.user?.email,
-                            p_action: 'CREATE',
-                            p_table_name: 'accounts',
-                            p_record_id: data[0].id,
-                            p_details: { title, tier, price_usd },
-                            p_ip_address: 'admin'
-                        });
-                    }, 500);
-                    
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    alert('Upload failed: ' + error.message);
-                    progressContainer.classList.remove('active');
-                    uploadBtn.disabled = false;
-                }
+            
+            const req = {
+                account_id: appState.currentAccount.id,
+                account_title: appState.currentAccount.title,
+                account_tier: appState.currentAccount.tier,
+                user_name: name,
+                user_email: email || null,
+                whatsapp: phone,
+                status: 'pending',
+                date: new Date().toISOString()
             };
-
-            window.saveNewAd = async function() {
-                const type = document.getElementById('ad-type').value;
-                const caption = document.getElementById('ad-caption').value.trim();
-                const link = document.getElementById('ad-link').value.trim();
+            
+            const { data, error } = await supabase
+                .from(TABLES.book_requests)
+                .insert([req])
+                .select();
+            
+            if (error) throw error;
+            
+            if (data && data[0]) {
+                appState.bookRequests.push(data[0]);
                 
-                if (!appState.currentAdData) {
-                    alert('Please upload an image or video');
+                // Update account book count
+                await supabase
+                    .from(TABLES.accounts)
+                    .update({ book_count: (appState.currentAccount.book_count || 0) + 1 })
+                    .eq('id', appState.currentAccount.id);
+                
+                appState.currentAccount.book_count = (appState.currentAccount.book_count || 0) + 1;
+            }
+            
+            if (appState.isAdminLoggedIn) {
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                renderBookRequests();
+            }
+            
+            alert('✅ Booking submitted! We will contact you on WhatsApp.');
+            closeModal('book-modal');
+        };
+
+        window.buyAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            document.getElementById('buy-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
+                <p>Send exact USDT (TRC20) to:</p>
+                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
+                <button class="btn" onclick="copyUsdt()">Copy address</button>
+            `;
+            openModal('buy-modal');
+        };
+
+        window.confirmBuyWhatsApp = function() {
+            if (!appState.currentAccount) return;
+            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
+            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
+            closeModal('buy-modal');
+        };
+
+        window.infoAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            document.getElementById('info-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                <p>${acc.description || 'Premium PUBG account'}</p>
+                <p>Tier: ${acc.tier}</p>
+                <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
+                <p>👁️ Views: ${acc.view_count || 0}</p>
+                <p>📋 Bookings: ${acc.book_count || 0}</p>
+                <p>✅ Includes email & password, full access.</p>
+            `;
+            openModal('info-modal');
+        };
+
+        window.copyUsdt = function() {
+            navigator.clipboard.writeText(appState.usdtAddress);
+            alert('USDT address copied');
+        };
+
+        // File preview functions
+        window.previewMediaFromFile = function() {
+            const fileInput = document.getElementById('account-media-file');
+            const preview = document.getElementById('media-preview');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                
+                // Check file size (max 100MB)
+                if (file.size > 100 * 1024 * 1024) {
+                    alert('File too large. Maximum size is 100MB');
+                    fileInput.value = '';
                     return;
                 }
                 
-                try {
-                    const base64Data = await fileToBase64(appState.currentAdData.file);
-                    
-                    // Get ads bucket
-                    const bucket = appState.buckets.find(b => b.name === 'ads');
-                    
-                    const newAd = {
-                        type,
-                        media_url: base64Data,
-                        bucket_id: bucket?.id || null,
-                        caption,
-                        link: link || null,
-                        is_active: true,
-                        created_at: new Date().toISOString()
-                    };
-                    
-                    const { data, error } = await supabase
-                        .from(TABLES.ads)
-                        .insert([newAd])
-                        .select();
-                    
-                    if (error) throw error;
-                    
-                    if (data && data[0]) {
-                        appState.ads.push(data[0]);
+                uploadBtn.disabled = false;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const isVideo = file.type.startsWith('video/');
+                    if (isVideo) {
+                        preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
+                        appState.currentMediaData = { type: 'video', data: e.target.result, file };
+                    } else {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                        appState.currentMediaData = { type: 'image', data: e.target.result, file };
                     }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadBtn.disabled = true;
+            }
+        };
+
+        window.previewAdMedia = function() {
+            const fileInput = document.getElementById('ad-media-file');
+            const preview = document.getElementById('ad-preview');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                
+                if (file.size > 100 * 1024 * 1024) {
+                    alert('File too large. Maximum size is 100MB');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const isVideo = file.type.startsWith('video/');
+                    if (isVideo) {
+                        preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
+                        appState.currentAdData = { type: 'video', data: e.target.result, file };
+                    } else {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                        appState.currentAdData = { type: 'image', data: e.target.result, file };
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // Upload functions
+        window.uploadNewAccount = async function() {
+            const tier = document.getElementById('account-tier').value;
+            const title = document.getElementById('account-title').value.trim();
+            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            
+            if (!tier || !title || !priceUsd || !priceAfn) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            if (!appState.currentMediaData) {
+                alert('Please select an image or video');
+                return;
+            }
+            
+            const progressContainer = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            progressContainer.classList.add('active');
+            uploadBtn.disabled = true;
+            
+            try {
+                progressBar.style.width = '30%';
+                progressText.innerHTML = 'Processing media...';
+                
+                const base64Data = await fileToBase64(appState.currentMediaData.file);
+                
+                progressBar.style.width = '60%';
+                progressText.innerHTML = 'Saving to database...';
+                
+                // Get bucket for tier
+                const bucket = appState.buckets.find(b => b.name === tier);
+                
+                const newAccount = {
+                    title,
+                    description: desc,
+                    tier,
+                    bucket_id: bucket?.id || null,
+                    media_url: base64Data,
+                    media_type: appState.currentMediaData.type,
+                    price_usd: priceUsd,
+                    price_afn: priceAfn,
+                    sold: false,
+                    is_active: true,
+                    created_by: (await supabase.auth.getUser()).data.user?.email || 'admin',
+                    created_at: new Date().toISOString()
+                };
+                
+                const { data, error } = await supabase
+                    .from(TABLES.accounts)
+                    .insert([newAccount])
+                    .select();
+                
+                if (error) throw error;
+                
+                if (data && data[0]) {
+                    appState.accounts.unshift(data[0]);
+                }
+                
+                progressBar.style.width = '100%';
+                progressText.innerHTML = 'Upload complete!';
+                
+                setTimeout(() => {
+                    closeModal('add-account-modal');
+                    renderAccounts();
+                    if (appState.isAdminLoggedIn) {
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                        renderAdminAccounts();
+                    }
+                    alert('Account uploaded successfully!');
+                    
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
                     
                     // Reset form
-                    document.getElementById('ad-type').value = 'image';
-                    document.getElementById('ad-media-file').value = '';
-                    document.getElementById('ad-caption').value = '';
-                    document.getElementById('ad-link').value = '';
-                    document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    appState.currentAdData = null;
-                    
-                    renderAdsSlider();
-                    renderAdminAds();
-                    alert('Ad added successfully!');
-                    
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    alert('Upload failed: ' + error.message);
-                }
-            };
+                    document.getElementById('account-tier').value = '';
+                    document.getElementById('account-title').value = '';
+                    document.getElementById('account-description').value = '';
+                    document.getElementById('account-price-usd').value = '';
+                    document.getElementById('account-price-afn').value = '';
+                    document.getElementById('account-media-file').value = '';
+                    document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    appState.currentMediaData = null;
+                }, 500);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + error.message);
+                progressContainer.classList.remove('active');
+                uploadBtn.disabled = false;
+            }
+        };
 
-            window.saveNewContact = async function() {
-                const name = document.getElementById('contact-name').value.trim();
-                const desc = document.getElementById('contact-desc').value.trim();
+        window.saveNewAd = async function() {
+            const type = document.getElementById('ad-type').value;
+            const caption = document.getElementById('ad-caption').value.trim();
+            const link = document.getElementById('ad-link').value.trim();
+            
+            if (!appState.currentAdData) {
+                alert('Please upload an image or video');
+                return;
+            }
+            
+            try {
+                const base64Data = await fileToBase64(appState.currentAdData.file);
                 
-                if (!name) {
-                    alert('Please enter contact name');
-                    return;
-                }
+                // Get ads bucket
+                const bucket = appState.buckets.find(b => b.name === 'ads');
                 
-                let fullNumber = '';
-                if (appState.phoneInput) {
-                    const number = appState.phoneInput.getNumber();
-                    if (number) {
-                        fullNumber = number.replace(/\D/g, '');
-                    } else {
-                        alert('Please enter a valid phone number');
-                        return;
-                    }
-                } else {
-                    const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
-                    if (!phone) {
-                        alert('Please enter phone number');
-                        return;
-                    }
-                    fullNumber = phone;
-                }
-                
-                const newContact = {
-                    name,
-                    phone: fullNumber,
-                    description: desc,
+                const newAd = {
+                    type,
+                    media_url: base64Data,
+                    bucket_id: bucket?.id || null,
+                    caption,
+                    link: link || null,
                     is_active: true,
                     created_at: new Date().toISOString()
                 };
                 
                 const { data, error } = await supabase
-                    .from(TABLES.contacts)
-                    .insert([newContact])
+                    .from(TABLES.ads)
+                    .insert([newAd])
                     .select();
                 
                 if (error) throw error;
                 
                 if (data && data[0]) {
-                    appState.contacts.push(data[0]);
+                    appState.ads.push(data[0]);
                 }
                 
-                document.getElementById('contact-name').value = '';
-                document.getElementById('contact-phone').value = '';
-                document.getElementById('contact-desc').value = '';
+                // Reset form
+                document.getElementById('ad-type').value = 'image';
+                document.getElementById('ad-media-file').value = '';
+                document.getElementById('ad-caption').value = '';
+                document.getElementById('ad-link').value = '';
+                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentAdData = null;
                 
-                renderContacts();
-                renderAdminContacts();
-                alert('Contact added successfully!');
-            };
-
-            window.saveUsdtAddress = async function() {
-                const newAddress = document.getElementById('new-usdt-address').value.trim();
-                if (!newAddress) {
-                    alert('Please enter a USDT address');
-                    return;
-                }
-                
-                const { data: existingSettings } = await supabase
-                    .from(TABLES.settings)
-                    .select('*')
-                    .eq('key', 'usdt_address')
-                    .maybeSingle();
-                
-                if (existingSettings) {
-                    await supabase
-                        .from(TABLES.settings)
-                        .update({ value: newAddress, updated_at: new Date().toISOString() })
-                        .eq('id', existingSettings.id);
-                } else {
-                    await supabase
-                        .from(TABLES.settings)
-                        .insert({
-                            key: 'usdt_address',
-                            value: newAddress,
-                            type: 'text',
-                            description: 'USDT TRC20 wallet address'
-                        });
-                }
-                
-                appState.usdtAddress = newAddress;
-                document.getElementById('current-usdt-address').innerText = newAddress;
-                closeModal('edit-usdt-modal');
-                alert('USDT address updated successfully!');
-            };
-
-            // ============================================
-            // DELETE AND UPDATE FUNCTIONS
-            // ============================================
-            window.deleteAccount = async function(id) {
-                if (!confirm('Delete this account permanently?')) return;
-                
-                await supabase
-                    .from(TABLES.accounts)
-                    .update({ is_active: false })
-                    .eq('id', id);
-                
-                appState.accounts = appState.accounts.filter(a => a.id !== id);
-                renderAccounts();
-                renderAdminAccounts();
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-            };
-
-            window.deleteContact = async function(id) {
-                if (!confirm('Delete this contact?')) return;
-                
-                await supabase
-                    .from(TABLES.contacts)
-                    .update({ is_active: false })
-                    .eq('id', id);
-                
-                appState.contacts = appState.contacts.filter(c => c.id !== id);
-                renderContacts();
-                renderAdminContacts();
-            };
-
-            window.deleteAd = async function(id) {
-                if (!confirm('Delete this ad?')) return;
-                
-                await supabase
-                    .from(TABLES.ads)
-                    .update({ is_active: false })
-                    .eq('id', id);
-                
-                appState.ads = appState.ads.filter(a => a.id !== id);
                 renderAdsSlider();
                 renderAdminAds();
-            };
+                alert('Ad added successfully!');
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + error.message);
+            }
+        };
 
-            window.cancelBookRequest = async function(id) {
-                if (!confirm('Cancel this book request?')) return;
-                
-                await supabase
-                    .from(TABLES.book_requests)
-                    .update({ status: 'cancelled' })
-                    .eq('id', id);
-                
-                const index = appState.bookRequests.findIndex(r => r.id == id);
-                if (index !== -1) appState.bookRequests[index].status = 'cancelled';
-                
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                renderBookRequests();
-            };
-
-            window.updateBookRequestStatus = async function(id, status) {
-                await supabase
-                    .from(TABLES.book_requests)
-                    .update({ 
-                        status: status,
-                        contacted_at: status === 'contacted' ? new Date().toISOString() : null,
-                        completed_at: status === 'completed' ? new Date().toISOString() : null
-                    })
-                    .eq('id', id);
-                
-                const index = appState.bookRequests.findIndex(r => r.id == id);
-                if (index !== -1) appState.bookRequests[index].status = status;
-                
-                renderBookRequests();
-            };
-
-            window.toggleFeatured = async function(id, current) {
-                await supabase
-                    .from(TABLES.accounts)
-                    .update({ is_featured: !current })
-                    .eq('id', id);
-                
-                const account = appState.accounts.find(a => a.id === id);
-                if (account) account.is_featured = !current;
-                
-                renderAdminAccounts();
-            };
-
-            window.trackAdClick = async function(adId) {
-                await supabase.rpc('track_ad_click', {
-                    p_ad_id: adId,
-                    p_clicker_ip: 'web_user',
-                    p_user_agent: navigator.userAgent
-                });
-            };
-
-            // ============================================
-            // BOOK / BUY / INFO
-            // ============================================
-            window.bookAccount = function(id) {
-                const acc = appState.accounts.find(a => a.id === id);
-                if (!acc) return;
-                appState.currentAccount = acc;
-                
-                const modalBody = document.getElementById('book-modal-body');
-                modalBody.innerHTML = `
-                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                    <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                    <input type="text" id="book-name" class="input" placeholder="Your name" required>
-                    <input type="email" id="book-email" class="input" placeholder="Your email (optional)">
-                    <label class="input-label">WhatsApp number with country code</label>
-                    <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322" required>
-                `;
-                
-                openModal('book-modal');
-                
-                setTimeout(() => {
-                    const input = document.getElementById('book-phone');
-                    if (input) {
-                        if (appState.bookPhoneInput) {
-                            try { appState.bookPhoneInput.destroy(); } catch (e) {}
-                        }
-                        appState.bookPhoneInput = intlTelInput(input, {
-                            initialCountry: 'af',
-                            separateDialCode: true,
-                            utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                            dropdownContainer: document.body
-                        });
-                    }
-                }, 200);
-            };
-
-            window.submitBook = async function() {
-                const name = document.getElementById('book-name')?.value;
-                const email = document.getElementById('book-email')?.value;
-                
-                if (!name) {
-                    alert('Please enter your name');
+        window.saveNewContact = async function() {
+            const name = document.getElementById('contact-name').value.trim();
+            const desc = document.getElementById('contact-desc').value.trim();
+            
+            if (!name) {
+                alert('Please enter contact name');
+                return;
+            }
+            
+            let fullNumber = '';
+            if (appState.phoneInput) {
+                const number = appState.phoneInput.getNumber();
+                if (number) {
+                    fullNumber = number.replace(/\D/g, '');
+                } else {
+                    alert('Please enter a valid phone number');
                     return;
                 }
-                
-                let phone = '';
-                if (appState.bookPhoneInput) {
-                    const number = appState.bookPhoneInput.getNumber();
-                    if (number) {
-                        phone = number.replace(/\D/g, '');
-                    } else {
-                        alert('Please enter a valid WhatsApp number');
-                        return;
-                    }
-                } else {
-                    phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
-                    if (!phone) {
-                        alert('Please enter a valid WhatsApp number');
-                        return;
-                    }
+            } else {
+                const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
+                if (!phone) {
+                    alert('Please enter phone number');
+                    return;
                 }
+                fullNumber = phone;
+            }
+            
+            const newContact = {
+                name,
+                phone: fullNumber,
+                description: desc,
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            const { data, error } = await supabase
+                .from(TABLES.contacts)
+                .insert([newContact])
+                .select();
+            
+            if (error) throw error;
+            
+            if (data && data[0]) {
+                appState.contacts.push(data[0]);
+            }
+            
+            document.getElementById('contact-name').value = '';
+            document.getElementById('contact-phone').value = '';
+            document.getElementById('contact-desc').value = '';
+            
+            renderContacts();
+            renderAdminContacts();
+            alert('Contact added successfully!');
+        };
+
+        window.saveUsdtAddress = async function() {
+            const newAddress = document.getElementById('new-usdt-address').value.trim();
+            if (!newAddress) {
+                alert('Please enter a USDT address');
+                return;
+            }
+            
+            const { data: existingSettings } = await supabase
+                .from(TABLES.settings)
+                .select('*')
+                .eq('key', 'usdt_address')
+                .maybeSingle();
+            
+            if (existingSettings) {
+                await supabase
+                    .from(TABLES.settings)
+                    .update({ value: newAddress, updated_at: new Date().toISOString() })
+                    .eq('id', existingSettings.id);
+            } else {
+                await supabase
+                    .from(TABLES.settings)
+                    .insert({
+                        key: 'usdt_address',
+                        value: newAddress,
+                        type: 'text',
+                        description: 'USDT TRC20 wallet address'
+                    });
+            }
+            
+            appState.usdtAddress = newAddress;
+            document.getElementById('current-usdt-address').innerText = newAddress;
+            closeModal('edit-usdt-modal');
+            alert('USDT address updated successfully!');
+        };
+
+        // Delete functions
+        window.deleteAccount = async function(id) {
+            if (!confirm('Delete this account permanently?')) return;
+            
+            await supabase
+                .from(TABLES.accounts)
+                .update({ is_active: false })
+                .eq('id', id);
+            
+            appState.accounts = appState.accounts.filter(a => a.id !== id);
+            renderAccounts();
+            renderAdminAccounts();
+            document.getElementById('admin-account-count').innerText = appState.accounts.length;
+        };
+
+        window.deleteContact = async function(id) {
+            if (!confirm('Delete this contact?')) return;
+            
+            await supabase
+                .from(TABLES.contacts)
+                .update({ is_active: false })
+                .eq('id', id);
+            
+            appState.contacts = appState.contacts.filter(c => c.id !== id);
+            renderContacts();
+            renderAdminContacts();
+        };
+
+        window.deleteAd = async function(id) {
+            if (!confirm('Delete this ad?')) return;
+            
+            await supabase
+                .from(TABLES.ads)
+                .update({ is_active: false })
+                .eq('id', id);
+            
+            appState.ads = appState.ads.filter(a => a.id !== id);
+            renderAdsSlider();
+            renderAdminAds();
+        };
+
+        window.cancelBookRequest = async function(id) {
+            if (!confirm('Cancel this book request?')) return;
+            
+            await supabase
+                .from(TABLES.book_requests)
+                .update({ status: 'cancelled' })
+                .eq('id', id);
+            
+            const index = appState.bookRequests.findIndex(r => r.id == id);
+            if (index !== -1) appState.bookRequests[index].status = 'cancelled';
+            
+            document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+            renderBookRequests();
+        };
+
+        window.updateBookRequestStatus = async function(id, status) {
+            await supabase
+                .from(TABLES.book_requests)
+                .update({ 
+                    status: status,
+                    contacted_at: status === 'contacted' ? new Date().toISOString() : null,
+                    completed_at: status === 'completed' ? new Date().toISOString() : null
+                })
+                .eq('id', id);
+            
+            const index = appState.bookRequests.findIndex(r => r.id == id);
+            if (index !== -1) appState.bookRequests[index].status = status;
+            
+            renderBookRequests();
+        };
+
+        window.toggleFeatured = async function(id, current) {
+            await supabase
+                .from(TABLES.accounts)
+                .update({ is_featured: !current })
+                .eq('id', id);
+            
+            const account = appState.accounts.find(a => a.id === id);
+            if (account) account.is_featured = !current;
+            
+            renderAdminAccounts();
+        };
+
+        window.trackAdClick = async function(adId) {
+            await supabase.rpc('track_ad_click', {
+                p_ad_id: adId,
+                p_clicker_ip: 'web_user',
+                p_user_agent: navigator.userAgent
+            });
+        };
+
+        // ============================================
+        // HELPER FUNCTIONS (internal, not global)
+        // ============================================
+        
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function loadInitialData() {
+            try {
+                // Load buckets
+                const { data: buckets, error: bucketsError } = await supabase
+                    .from(TABLES.buckets)
+                    .select('*')
+                    .eq('is_active', true);
                 
-                const req = {
-                    account_id: appState.currentAccount.id,
-                    account_title: appState.currentAccount.title,
-                    account_tier: appState.currentAccount.tier,
-                    user_name: name,
-                    user_email: email || null,
-                    whatsapp: phone,
-                    status: 'pending',
-                    date: new Date().toISOString()
-                };
+                if (!bucketsError) appState.buckets = buckets || [];
+
+                // Load accounts
+                const { data: accounts, error: accountsError } = await supabase
+                    .from(TABLES.accounts)
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
                 
-                const { data, error } = await supabase
-                    .from(TABLES.book_requests)
-                    .insert([req])
-                    .select();
+                if (!accountsError) appState.accounts = accounts || [];
+
+                // Load contacts
+                const { data: contacts, error: contactsError } = await supabase
+                    .from(TABLES.contacts)
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('priority', { ascending: false });
                 
-                if (error) throw error;
+                if (!contactsError) appState.contacts = contacts || [];
+
+                // Load ads
+                const { data: ads, error: adsError } = await supabase
+                    .from(TABLES.ads)
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('priority', { ascending: false });
                 
-                if (data && data[0]) {
-                    appState.bookRequests.push(data[0]);
-                    
-                    // Update account book count
-                    await supabase
-                        .from(TABLES.accounts)
-                        .update({ book_count: (appState.currentAccount.book_count || 0) + 1 })
-                        .eq('id', appState.currentAccount.id);
-                    
-                    appState.currentAccount.book_count = (appState.currentAccount.book_count || 0) + 1;
+                if (!adsError) appState.ads = ads || [];
+
+                // Load settings
+                const { data: settings, error: settingsError } = await supabase
+                    .from(TABLES.settings)
+                    .select('*');
+                
+                if (!settingsError && settings) {
+                    const usdtSetting = settings.find(s => s.key === 'usdt_address');
+                    if (usdtSetting) appState.usdtAddress = usdtSetting.value;
                 }
+
+                // Load stats
+                await updateStats();
+
+                renderAccounts();
+                renderContacts();
+                renderAdsSlider();
                 
                 if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    updateAdminStats();
                     renderBookRequests();
+                    renderAdminAccounts();
+                    renderAdminContacts();
+                    renderAdminAds();
+                }
+            } catch (e) {
+                console.error('Error loading data:', e);
+            }
+        }
+
+        async function updateStats() {
+            try {
+                // Visitor count
+                const { count: visitorCount } = await supabase
+                    .from(TABLES.visitors)
+                    .select('*', { count: 'exact', head: true });
+                appState.visitorCount = visitorCount || 0;
+
+                // Online count
+                const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+                const { count: onlineCount } = await supabase
+                    .from(TABLES.online_users)
+                    .select('*', { count: 'exact', head: true })
+                    .gt('last_activity', fiveMinAgo);
+                appState.onlineCount = onlineCount || 0;
+
+                // Video views count
+                const { count: videoViewsCount } = await supabase
+                    .from(TABLES.video_views)
+                    .select('*', { count: 'exact', head: true });
+                
+                document.getElementById('online-count').innerText = appState.onlineCount;
+                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('video-views-count').innerText = videoViewsCount || 0;
+            } catch (e) {
+                console.error('Error updating stats:', e);
+            }
+        }
+
+        async function trackVisitor() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const ip = data.ip;
+                const now = new Date().toISOString();
+                const userAgent = navigator.userAgent;
+
+                // Update online status
+                const { error } = await supabase
+                    .from(TABLES.online_users)
+                    .upsert({
+                        session_id: appState.sessionId,
+                        user_ip: ip,
+                        user_agent: userAgent,
+                        current_page: window.location.hash || 'main',
+                        is_admin: appState.isAdminLoggedIn,
+                        last_activity: now
+                    }, { onConflict: 'session_id' });
+
+                // Track visitor
+                const { data: existingVisitor } = await supabase
+                    .from(TABLES.visitors)
+                    .select('*')
+                    .eq('ip', ip)
+                    .maybeSingle();
+
+                if (existingVisitor) {
+                    await supabase
+                        .from(TABLES.visitors)
+                        .update({ 
+                            last_seen: now,
+                            visit_count: existingVisitor.visit_count + 1,
+                            user_agent: userAgent
+                        })
+                        .eq('id', existingVisitor.id);
+                } else {
+                    await supabase
+                        .from(TABLES.visitors)
+                        .insert({
+                            ip: ip,
+                            first_seen: now,
+                            last_seen: now,
+                            user_agent: userAgent
+                        });
+                }
+
+                // Track session
+                const { data: existingSession } = await supabase
+                    .from(TABLES.sessions)
+                    .select('*')
+                    .eq('session_id', appState.sessionId)
+                    .maybeSingle();
+
+                if (existingSession) {
+                    await supabase
+                        .from(TABLES.sessions)
+                        .update({ 
+                            last_seen: now,
+                            page_views: existingSession.page_views + 1,
+                            user_agent: userAgent
+                        })
+                        .eq('id', existingSession.id);
+                } else {
+                    await supabase
+                        .from(TABLES.sessions)
+                        .insert({
+                            session_id: appState.sessionId,
+                            ip: ip,
+                            user_agent: userAgent
+                        });
+                }
+
+                await updateStats();
+            } catch (e) {
+                console.error('Error tracking visitor:', e);
+            }
+        }
+
+        function trackVideoView(accountId, videoElement) {
+            if (!videoElement) return;
+            
+            const startTime = Date.now();
+            let watchedDuration = 0;
+            let completed = false;
+            
+            const updateInterval = setInterval(() => {
+                watchedDuration = Math.floor((Date.now() - startTime) / 1000);
+                
+                // Update progress bar if exists
+                const progressBar = document.getElementById(`progress-${accountId}`);
+                if (progressBar) {
+                    const percentage = Math.min(100, (watchedDuration / 60) * 100); // Assume 60s video
+                    progressBar.style.width = percentage + '%';
+                }
+            }, 1000);
+            
+            videoElement.addEventListener('ended', () => {
+                clearInterval(updateInterval);
+                completed = true;
+                watchedDuration = Math.floor((Date.now() - startTime) / 1000);
+                
+                // Send view data to server
+                supabase
+                    .from(TABLES.video_views)
+                    .insert({
+                        account_id: accountId,
+                        viewer_ip: 'web_user',
+                        viewer_session_id: appState.sessionId,
+                        watch_duration: watchedDuration,
+                        completed: true,
+                        viewed_at: new Date().toISOString()
+                    })
+                    .then(() => {
+                        supabase
+                            .from(TABLES.accounts)
+                            .update({ view_count: (appState.accounts.find(a => a.id === accountId)?.view_count || 0) + 1 })
+                            .eq('id', accountId);
+                    });
+            });
+            
+            videoElement.addEventListener('pause', () => {
+                clearInterval(updateInterval);
+                watchedDuration = Math.floor((Date.now() - startTime) / 1000);
+                
+                supabase
+                    .from(TABLES.video_views)
+                    .insert({
+                        account_id: accountId,
+                        viewer_ip: 'web_user',
+                        viewer_session_id: appState.sessionId,
+                        watch_duration: watchedDuration,
+                        completed: false,
+                        viewed_at: new Date().toISOString()
+                    });
+            });
+            
+            // Store timer to clean up
+            appState.videoWatchTimers[accountId] = updateInterval;
+        }
+
+        function renderAccounts() {
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            let filtered = appState.accounts.filter(a => !a.sold);
+            if (appState.currentFilter !== 'all') {
+                filtered = filtered.filter(a => a.tier === appState.currentFilter);
+            }
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(acc => {
+                const mediaTag = acc.media_type === 'video' 
+                    ? `<video src="${acc.media_url}" class="card-media" id="video-${acc.id}" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
+                    : `<img src="${acc.media_url}" class="card-media" alt="account">`;
+
+                const viewCount = acc.view_count || 0;
+                const bookCount = acc.book_count || 0;
+
+                return `
+                    <div class="account-card" data-id="${acc.id}">
+                        ${mediaTag}
+                        ${acc.media_type === 'video' ? `
+                            <div class="video-progress">
+                                <div class="video-progress-bar" id="progress-${acc.id}"></div>
+                            </div>
+                        ` : ''}
+                        <div class="card-content">
+                            <div class="card-title">
+                                ${acc.title}
+                                <span class="tier-badge ${acc.tier}">${acc.tier}</span>
+                            </div>
+                            <div class="card-desc">${acc.description || 'Premium PUBG account'}</div>
+                            <div class="price-row">
+                                <span class="usd-price">$${acc.price_usd?.toFixed(2)}</span>
+                                <span class="afn-price">${acc.price_afn?.toLocaleString()} AFN</span>
+                            </div>
+                            <div class="view-counter">
+                                <i class="fa fa-eye"></i> ${viewCount} views
+                                <i class="fa fa-bookmark" style="margin-left:10px;"></i> ${bookCount} bookings
+                            </div>
+                            <div class="action-buttons">
+                                <button class="action-btn" onclick="bookAccount(${acc.id})"><i class="fa fa-bookmark"></i> Book</button>
+                                <button class="action-btn buy" onclick="buyAccount(${acc.id})"><i class="fa fa-bolt"></i> Buy</button>
+                                <button class="action-btn" onclick="infoAccount(${acc.id})"><i class="fa fa-info"></i> Info</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Setup video tracking
+            filtered.forEach(acc => {
+                if (acc.media_type === 'video') {
+                    const video = document.getElementById(`video-${acc.id}`);
+                    if (video) {
+                        trackVideoView(acc.id, video);
+                    }
+                }
+            });
+        }
+
+        function renderContacts() {
+            const container = document.getElementById('contacts-container');
+            if (!container) return;
+            
+            if (appState.contacts.length === 0) {
+                container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
+                return;
+            }
+
+            container.innerHTML = appState.contacts.map(contact => {
+                let cleanPhone = contact.phone.replace(/\D/g, '');
+                if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) cleanPhone = '93' + cleanPhone;
+
+                return `
+                    <div class="account-card" style="padding:1.5rem;">
+                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                        <p>${contact.description || 'WhatsApp support'}</p>
+                        <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
+                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                            <i class="fab fa-whatsapp"></i> Chat Now
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAdsSlider() {
+            const container = document.getElementById('ads-slider');
+            if (!container) return;
+            
+            if (appState.ads.length === 0) {
+                container.innerHTML = '<div class="swipe-ads" style="padding:2rem; text-align:center;">No ads</div>';
+                return;
+            }
+            
+            let slides = '';
+            appState.ads.forEach((ad, idx) => {
+                if (ad.type === 'video') {
+                    slides += `<div class="slide"><video src="${ad.media_url}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                } else {
+                    slides += `<div class="slide"><img src="${ad.media_url}" alt="ad" onclick="trackAdClick(${ad.id})"><div class="slide-caption">${ad.caption || ''}</div></div>`;
                 }
                 
-                alert('✅ Booking submitted! We will contact you on WhatsApp.');
-                closeModal('book-modal');
-            };
-
-            window.buyAccount = function(id) {
-                const acc = appState.accounts.find(a => a.id === id);
-                if (!acc) return;
-                appState.currentAccount = acc;
-                document.getElementById('buy-modal-body').innerHTML = `
-                    <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
-                    <p>Send exact USDT (TRC20) to:</p>
-                    <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
-                    <button class="btn" onclick="copyUsdt()">Copy address</button>
-                `;
-                openModal('buy-modal');
-            };
-
-            window.confirmBuyWhatsApp = function() {
-                if (!appState.currentAccount) return;
-                const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
-                window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
-                closeModal('buy-modal');
-            };
-
-            window.infoAccount = function(id) {
-                const acc = appState.accounts.find(a => a.id === id);
-                if (!acc) return;
-                document.getElementById('info-modal-body').innerHTML = `
-                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                    <p>${acc.description || 'Premium PUBG account'}</p>
-                    <p>Tier: ${acc.tier}</p>
-                    <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                    <p>👁️ Views: ${acc.view_count || 0}</p>
-                    <p>📋 Bookings: ${acc.book_count || 0}</p>
-                    <p>✅ Includes email & password, full access.</p>
-                `;
-                openModal('info-modal');
-            };
-
-            window.copyUsdt = function() {
-                navigator.clipboard.writeText(appState.usdtAddress);
-                alert('USDT address copied');
-            };
-
-            // ============================================
-            // ADMIN AUTH
-            // ============================================
-            window.adminLogin = async function() {
-                const email = document.getElementById('admin-email').value;
-                const pass = document.getElementById('admin-password').value;
-                
-                try {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: pass
+                // Track ad view
+                supabase
+                    .from(TABLES.ad_views)
+                    .insert({
+                        ad_id: ad.id,
+                        viewer_ip: 'web_user',
+                        user_agent: navigator.userAgent,
+                        viewed_at: new Date().toISOString()
+                    })
+                    .then(() => {
+                        supabase
+                            .from(TABLES.ads)
+                            .update({ view_count: (ad.view_count || 0) + 1 })
+                            .eq('id', ad.id);
                     });
-                    
-                    if (error) throw error;
-                    
+            });
+            
+            let dots = '';
+            appState.ads.forEach((_, idx) => {
+                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
+            });
+            
+            container.innerHTML = `
+                <div class="slider-container">
+                    <div class="slider-track" id="slider-track">${slides}</div>
+                    <div class="slider-dots">${dots}</div>
+                </div>
+            `;
+            
+            const track = document.getElementById('slider-track');
+            if (track) {
+                track.addEventListener('scroll', function() {
+                    const idx = Math.round(track.scrollLeft / track.clientWidth);
+                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+                });
+            }
+            
+            startAutoSlide();
+        }
+
+        function renderBookRequests() {
+            const list = document.getElementById('admin-book-requests-list');
+            if (!list) return;
+            
+            if (appState.bookRequests.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
+                return;
+            }
+
+            const sorted = [...appState.bookRequests].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            list.innerHTML = sorted.map(req => {
+                const date = new Date(req.date).toLocaleString();
+                const cleanPhone = req.whatsapp.replace(/\D/g, '');
+                const statusClass = req.status === 'pending' ? 'btn-wa' : 'btn-cancel';
+
+                return `
+                    <div class="book-request-item" data-id="${req.id}">
+                        <p><span class="label">Account:</span> ${req.account_title}</p>
+                        <p><span class="label">Name:</span> ${req.user_name}</p>
+                        <p><span class="label">WhatsApp:</span> +${cleanPhone}</p>
+                        <p><span class="label">Status:</span> <span style="color:${req.status === 'pending' ? '#f59e0b' : req.status === 'contacted' ? '#10b981' : '#ef4444'}">${req.status}</span></p>
+                        <p><span class="label">Date:</span> ${date}</p>
+                        <div class="request-actions">
+                            <button class="btn-wa" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                                <i class="fab fa-whatsapp"></i> Contact
+                            </button>
+                            <button class="btn-cancel" onclick="updateBookRequestStatus(${req.id}, 'completed')">
+                                <i class="fa fa-check"></i> Complete
+                            </button>
+                            <button class="btn-cancel" onclick="cancelBookRequest(${req.id})">
+                                <i class="fa fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAdminAccounts() {
+            const list = document.getElementById('admin-accounts-list');
+            if (!list) return;
+            
+            if (appState.accounts.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
+                return;
+            }
+
+            list.innerHTML = appState.accounts.map(acc => {
+                const mediaTag = acc.media_type === 'video' 
+                    ? `<video src="${acc.media_url}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls controlsList="nodownload"></video>`
+                    : `<img src="${acc.media_url}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
+
+                return `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    ${mediaTag}
+                    <div style="flex:1;">
+                        <strong>${acc.title}</strong> 
+                        <span class="tier-badge ${acc.tier}" style="margin-left:0.5rem;">${acc.tier}</span>
+                        <div style="font-size:0.8rem; color:var(--text-secondary);">$${acc.price_usd} / ${acc.price_afn} AFN</div>
+                        <div style="font-size:0.7rem;">Views: ${acc.view_count || 0} | Bookings: ${acc.book_count || 0}</div>
+                    </div>
+                    <div style="display:flex; gap:0.3rem;">
+                        <button class="action-btn" style="background:#10b981; color:white; padding:0.4rem 0.8rem;" onclick="toggleFeatured(${acc.id}, ${acc.is_featured})">
+                            <i class="fa fa-star"></i>
+                        </button>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 0.8rem;" onclick="deleteAccount(${acc.id})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function renderAdminContacts() {
+            const list = document.getElementById('admin-contacts-list');
+            if (!list) return;
+            
+            if (appState.contacts.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
+                return;
+            }
+
+            list.innerHTML = appState.contacts.map(contact => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <strong>${contact.name}</strong>
+                        <div style="font-size:0.8rem;">+${contact.phone}</div>
+                        <div style="font-size:0.7rem; color:var(--text-secondary);">${contact.description || ''}</div>
+                    </div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact(${contact.id})">
+                        <i class="fa fa-trash"></i> Delete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminAds() {
+            const list = document.getElementById('admin-ads-list');
+            if (!list) return;
+            
+            if (appState.ads.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
+                return;
+            }
+
+            list.innerHTML = appState.ads.map((ad) => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
+                        ${ad.type === 'video' 
+                            ? `<video src="${ad.media_url}" style="width:100%; height:100%; object-fit:cover;" controls controlsList="nodownload"></video>`
+                            : `<img src="${ad.media_url}" style="width:100%; height:100%; object-fit:cover;">`
+                        }
+                    </div>
+                    <div style="flex:1;">
+                        <strong>${ad.caption || 'No caption'}</strong>
+                        <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type} | Views: ${ad.view_count || 0} | Clicks: ${ad.click_count || 0}</div>
+                    </div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${ad.id})">
+                        <i class="fa fa-trash"></i> Delete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderVideoStats() {
+            const content = document.getElementById('video-stats-content');
+            if (!content) return;
+            
+            // Get top viewed videos
+            const topVideos = [...appState.accounts]
+                .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+                .slice(0, 10);
+            
+            let html = '<h4>Top 10 Most Viewed Accounts</h4>';
+            html += '<div style="margin-top:1rem;">';
+            
+            topVideos.forEach((video, index) => {
+                html += `
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem; border-bottom:1px solid var(--border);">
+                        <span>${index+1}. ${video.title} (${video.tier})</span>
+                        <span style="color:var(--primary);">${video.view_count || 0} views</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        function updateAdminStats() {
+            document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+            document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+            document.getElementById('online-user-count').innerText = appState.onlineCount;
+            document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+        }
+
+        function startAutoSlide() {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            
+            appState.autoSlideInterval = setInterval(() => {
+                const track = document.getElementById('slider-track');
+                if (!track || appState.ads.length === 0) return;
+                
+                const slideWidth = track.clientWidth;
+                const currentScroll = track.scrollLeft;
+                const currentIndex = Math.round(currentScroll / slideWidth);
+                const nextIndex = (currentIndex + 1) % appState.ads.length;
+                
+                track.scrollTo({
+                    left: nextIndex * slideWidth,
+                    behavior: 'smooth'
+                });
+                
+                document.querySelectorAll('.dot').forEach((dot, i) => {
+                    dot.classList.toggle('active', i === nextIndex);
+                });
+            }, 3000);
+        }
+
+        async function checkAdminSession() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
                     appState.isAdminLoggedIn = true;
                     document.getElementById('admin-login-section').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
-                    document.getElementById('admin-error').innerText = '';
                     
-                    // Load book requests
                     const { data: bookings, error: bookingsError } = await supabase
                         .from(TABLES.book_requests)
                         .select('*')
@@ -2153,215 +2334,30 @@
                     renderAdminAccounts();
                     renderAdminContacts();
                     renderAdminAds();
-                    
-                    // Update online status to admin
-                    await trackVisitor();
-                    
-                } catch (error) {
-                    document.getElementById('admin-error').innerText = 'Invalid credentials';
                 }
-            };
-
-            window.logout = function() {
-                supabase.auth.signOut();
-                appState.isAdminLoggedIn = false;
-                appState.bookRequests = [];
-                document.getElementById('admin-login-section').classList.remove('hidden');
-                document.getElementById('admin-dashboard').classList.add('hidden');
-                switchScreen('main');
-            };
-
-            // ============================================
-            // UI HELPERS
-            // ============================================
-            window.filterAccounts = function(tier) {
-                appState.currentFilter = tier;
-                document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
-                document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
-                renderAccounts();
-            };
-
-            window.switchScreen = function(screen) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(screen + '-screen').classList.add('active');
-                if (screen === 'accounts') renderAccounts();
-                if (screen === 'contact') renderContacts();
-                if (screen === 'admin' && appState.isAdminLoggedIn) {
-                    document.getElementById('admin-dashboard').classList.remove('hidden');
-                    document.getElementById('admin-login-section').classList.add('hidden');
-                }
-                trackVisitor();
-            };
-
-            window.jumpToSlide = function(idx) {
-                const track = document.getElementById('slider-track');
-                if (track) {
-                    track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-                    startAutoSlide();
-                }
-            };
-
-            window.openModal = function(id) {
-                document.getElementById(id).classList.remove('hidden');
-            };
-            
-            window.closeModal = function(id) {
-                document.getElementById(id).classList.add('hidden');
-                if (id === 'book-modal' && appState.bookPhoneInput) {
-                    try { appState.bookPhoneInput.destroy(); } catch (e) {}
-                    appState.bookPhoneInput = null;
-                }
-            };
-            
-            window.openLanguageModal = function() {
-                openModal('language-modal');
-            };
-            
-            window.setLanguage = function(lang) {
-                document.documentElement.lang = lang;
-                document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
-                appState.currentLanguage = lang;
-                localStorage.setItem('gk_language', lang);
-                renderAccounts();
-                renderContacts();
-                if (appState.isAdminLoggedIn) renderBookRequests();
-                closeModal('language-modal');
-            };
-
-            window.showAddAccountModal = function() {
-                document.getElementById('account-tier').value = '';
-                document.getElementById('account-title').value = '';
-                document.getElementById('account-description').value = '';
-                document.getElementById('account-price-usd').value = '';
-                document.getElementById('account-price-afn').value = '';
-                document.getElementById('account-media-file').value = '';
-                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                document.getElementById('upload-progress').classList.remove('active');
-                document.getElementById('progress-bar').style.width = '0%';
-                document.getElementById('progress-text').innerHTML = '';
-                document.getElementById('upload-btn').disabled = true;
-                appState.currentMediaData = null;
-                openModal('add-account-modal');
-            };
-
-            window.showManageAccountsModal = function() {
-                renderAdminAccounts();
-                openModal('manage-accounts-modal');
-            };
-
-            window.showManageContactsModal = function() {
-                renderAdminContacts();
-                const input = document.getElementById('contact-phone');
-                if (input) {
-                    if (appState.phoneInput) {
-                        try { appState.phoneInput.destroy(); } catch (e) {}
-                    }
-                    appState.phoneInput = intlTelInput(input, {
-                        initialCountry: 'af',
-                        separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                        dropdownContainer: document.body
-                    });
-                }
-                openModal('manage-contacts-modal');
-            };
-
-            window.showManageAdsModal = function() {
-                document.getElementById('ad-type').value = 'image';
-                document.getElementById('ad-media-file').value = '';
-                document.getElementById('ad-caption').value = '';
-                document.getElementById('ad-link').value = '';
-                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                appState.currentAdData = null;
-                renderAdminAds();
-                openModal('manage-ads-modal');
-            };
-
-            window.showEditUsdtModal = function() {
-                document.getElementById('new-usdt-address').value = appState.usdtAddress;
-                openModal('edit-usdt-modal');
-            };
-
-            window.showVideoStatsModal = function() {
-                renderVideoStats();
-                openModal('video-stats-modal');
-            };
-
-            function startAutoSlide() {
-                if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
-                
-                appState.autoSlideInterval = setInterval(() => {
-                    const track = document.getElementById('slider-track');
-                    if (!track || appState.ads.length === 0) return;
-                    
-                    const slideWidth = track.clientWidth;
-                    const currentScroll = track.scrollLeft;
-                    const currentIndex = Math.round(currentScroll / slideWidth);
-                    const nextIndex = (currentIndex + 1) % appState.ads.length;
-                    
-                    track.scrollTo({
-                        left: nextIndex * slideWidth,
-                        behavior: 'smooth'
-                    });
-                    
-                    document.querySelectorAll('.dot').forEach((dot, i) => {
-                        dot.classList.toggle('active', i === nextIndex);
-                    });
-                }, 3000);
+            } catch (e) {
+                console.log('No active session');
             }
+        }
 
-            // ============================================
-            // CHECK ADMIN SESSION ON LOAD
-            // ============================================
-            async function checkAdminSession() {
-                try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                        appState.isAdminLoggedIn = true;
-                        document.getElementById('admin-login-section').classList.add('hidden');
-                        document.getElementById('admin-dashboard').classList.remove('hidden');
-                        
-                        const { data: bookings, error: bookingsError } = await supabase
-                            .from(TABLES.book_requests)
-                            .select('*')
-                            .order('date', { ascending: false });
-                        
-                        if (!bookingsError) {
-                            appState.bookRequests = bookings || [];
-                        }
-                        
-                        updateAdminStats();
-                        renderBookRequests();
-                        renderAdminAccounts();
-                        renderAdminContacts();
-                        renderAdminAds();
-                    }
-                } catch (e) {
-                    console.log('No active session');
+        async function init() {
+            const savedLang = localStorage.getItem('gk_language') || 'en';
+            setLanguage(savedLang);
+            
+            await loadInitialData();
+            await checkAdminSession();
+            
+            trackVisitor();
+            setInterval(trackVisitor, 30000);
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    trackVisitor();
                 }
-            }
+            }, 60000);
+        }
 
-            // ============================================
-            // INIT
-            // ============================================
-            async function init() {
-                const savedLang = localStorage.getItem('gk_language') || 'en';
-                setLanguage(savedLang);
-                
-                await loadInitialData();
-                await checkAdminSession();
-                
-                trackVisitor();
-                setInterval(trackVisitor, 30000);
-                setInterval(() => {
-                    if (document.visibilityState === 'visible') {
-                        trackVisitor();
-                    }
-                }, 60000);
-            }
-
-            init();
-        })();
+        // Start the app
+        init();
     </script>
 </body>
 </html>
