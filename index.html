@@ -1042,7 +1042,6 @@
                 isSuperAdmin: false,
                 adminToken: null,
                 adminId: null,
-                adminRole: null,
                 currentAccount: null,
                 currentMediaData: null,
                 currentAdData: null,
@@ -1086,19 +1085,9 @@
                 }
             }
 
-            // ========== SECURE ADMIN AUTHENTICATION ==========
+            // ========== SECURE ADMIN AUTHENTICATION USING USERS COLLECTION ==========
             
-            // Hash password using SHA-256
-            async function hashPassword(password) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(password);
-                const hash = await crypto.subtle.digest('SHA-256', data);
-                return Array.from(new Uint8Array(hash))
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join('');
-            }
-
-            // Login function - NO HARDCODED CREDENTIALS
+            // Login function - checks against PocketBase users collection
             window.adminLogin = async function() {
                 const email = document.getElementById('admin-email').value;
                 const pass = document.getElementById('admin-password').value;
@@ -1131,29 +1120,27 @@
                         return;
                     }
                     
-                    // Check custom admins collection
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/admins/records?filter=(email='${email}')`);
-                    const data = await response.json();
+                    // If not super admin, try the users collection (where you just created the user)
+                    const userResponse = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-with-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            identity: email,
+                            password: pass
+                        })
+                    });
                     
-                    if (data.items && data.items.length > 0) {
-                        const admin = data.items[0];
-                        
-                        // Hash the input password and compare
-                        const hashedInput = await hashPassword(pass);
-                        
-                        if (hashedInput === admin.password) {
-                            appState.isAdminLoggedIn = true;
-                            appState.adminId = admin.id;
-                            appState.adminRole = admin.role;
-                            localStorage.setItem('admin_id', admin.id);
-                            
-                            afterAdminLogin();
-                            errorEl.innerText = '';
-                        } else {
-                            errorEl.innerText = 'Invalid credentials';
-                        }
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        localStorage.setItem('user_token', userData.token);
+                        localStorage.setItem('user_id', userData.record.id);
+                        appState.isAdminLoggedIn = true;
+                        appState.isSuperAdmin = false;
+                        appState.adminId = userData.record.id;
+                        afterAdminLogin();
+                        errorEl.innerText = '';
                     } else {
-                        errorEl.innerText = 'Invalid credentials';
+                        errorEl.innerText = 'Invalid email or password';
                     }
                 } catch (error) {
                     console.error('Login error:', error);
@@ -1177,6 +1164,7 @@
 
             // Check if already logged in
             async function checkAdminSession() {
+                // Check super admin token
                 const token = localStorage.getItem('admin_token');
                 if (token) {
                     try {
@@ -1195,16 +1183,20 @@
                     }
                 }
                 
-                const adminId = localStorage.getItem('admin_id');
-                if (adminId) {
+                // Check user token
+                const userToken = localStorage.getItem('user_token');
+                if (userToken) {
                     try {
-                        const response = await fetch(`${POCKETBASE_URL}/api/collections/admins/records/${adminId}`);
+                        const response = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
+                            method: 'POST',
+                            headers: { 'Authorization': userToken }
+                        });
                         if (response.ok) {
                             appState.isAdminLoggedIn = true;
                             return true;
                         }
                     } catch (e) {
-                        // Admin not found
+                        // Token invalid
                     }
                 }
                 
@@ -1217,9 +1209,9 @@
                 appState.isSuperAdmin = false;
                 appState.adminToken = null;
                 appState.adminId = null;
-                appState.adminRole = null;
                 localStorage.removeItem('admin_token');
-                localStorage.removeItem('admin_id');
+                localStorage.removeItem('user_token');
+                localStorage.removeItem('user_id');
                 document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 switchScreen('main');
