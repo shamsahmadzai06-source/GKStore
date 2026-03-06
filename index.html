@@ -4,12 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>GK Store · PUBG accounts with total & online users</title>
+    <!-- PWA Support for Android/iOS -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        &quot;name&quot;: &quot;GK Store&quot;,
+        &quot;short_name&quot;: &quot;GK Store&quot;,
+        &quot;start_url&quot;: &quot;.&quot;,
+        &quot;display&quot;: &quot;standalone&quot;,
+        &quot;background_color&quot;: &quot;#0a0a0f&quot;,
+        &quot;theme_color&quot;: &quot;#ec4899&quot;,
+        &quot;icons&quot;: [{
+            &quot;src&quot;: &quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ec4899' rx='20'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white' font-family='Arial'%3EGK%3C/text%3E%3C/svg%3E&quot;,
+            &quot;sizes&quot;: &quot;192x192&quot;,
+            &quot;type&quot;: &quot;image/svg+xml&quot;
+        }]
+    }">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GK Store">
+    <meta name="theme-color" content="#ec4899">
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <!-- Fix for mixed content - allows HTTP requests from HTTPS pages -->
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <style>
         * {
             margin: 0;
@@ -122,6 +138,14 @@
         .nav-btn:hover {
             background: var(--gradient-primary);
             border-color: transparent;
+        }
+
+        /* Install button for PWA */
+        #install-btn {
+            display: none;
+        }
+        #install-btn.show {
+            display: flex;
         }
 
         /* main container */
@@ -683,13 +707,14 @@
     </style>
 </head>
 <body dir="ltr">
-    <!-- top nav -->
+    <!-- top nav with install button -->
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
             <span class="brand-text" data-i18n="brand">GK Store</span>
         </div>
         <div class="nav-actions">
+            <button class="nav-btn" id="install-btn" onclick="installPWA()"><i class="fa fa-download"></i><span>Install App</span></button>
             <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
             <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
             <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
@@ -1024,10 +1049,38 @@
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
+        // PWA Install Handler
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.add('show');
+        });
+
+        window.installPWA = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    installBtn.classList.remove('show');
+                });
+            }
+        };
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            installBtn.classList.remove('show');
+        });
+
         (function() {
             // ========== POCKETBASE CONFIGURATION ==========
-            // Your PocketBase URL (no credentials here!)
-            const POCKETBASE_URL = 'http://216.126.225.4:8090';
+            // Updated URL - no port needed (Nginx proxies to 8090)
+            const POCKETBASE_URL = 'http://216.126.225.4';
             
             // ---------- APP STATE ----------
             const appState = {
