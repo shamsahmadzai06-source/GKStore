@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>GK Store · PUBG accounts with total & online users</title>
-    <!-- PWA Support for Android/iOS -->
-    <link rel="manifest" href="https://shamsahmadzai06-source.github.io/GKStore/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GK Store">
-    <meta name="theme-color" content="#ec4899">
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+    <!-- PocketBase SDK -->
+    <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     <style>
         * {
             margin: 0;
@@ -39,7 +35,6 @@
             --gradient-big: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
-        /* Mobile-optimized base font size */
         html {
             font-size: 14px;
         }
@@ -63,15 +58,12 @@
             line-height: 1.5;
             min-height: 100vh;
             padding-bottom: 20px;
-            transition: background 0.3s, color 0.3s;
         }
 
-        /* RTL support */
         body[dir="rtl"] {
             font-family: 'Segoe UI', 'Tahoma', 'Vazirmatn', sans-serif;
         }
 
-        /* top navigation */
         .top-nav {
             background: rgba(22, 22, 31, 0.98);
             backdrop-filter: blur(8px);
@@ -128,22 +120,12 @@
             border-color: transparent;
         }
 
-        /* Install button for PWA */
-        #install-btn {
-            display: none;
-        }
-        #install-btn.show {
-            display: flex;
-        }
-
-        /* main container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 16px;
         }
 
-        /* screen visibility */
         .screen {
             display: none;
         }
@@ -152,7 +134,6 @@
             display: block;
         }
 
-        /* MAIN SCREEN */
         #main-screen .main-layout {
             display: flex;
             flex-direction: column;
@@ -174,7 +155,6 @@
             margin-bottom: 1rem;
         }
 
-        /* big CTA button */
         .cta-button {
             background: var(--gradient-primary);
             border: none;
@@ -204,7 +184,6 @@
             transform: scale(0.97);
         }
 
-        /* swipe ads slider - automatic (2 seconds) */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -249,15 +228,9 @@
             display: block;
         }
 
-        /* Disable download button for videos */
-        .slide video::-internal-media-controls-download-button {
-            display: none;
-        }
+        .slide video::-internal-media-controls-download-button,
         .slide video::-webkit-media-controls-enclosure {
-            overflow: hidden;
-        }
-        .slide video::-webkit-media-controls-panel {
-            width: calc(100% + 30px);
+            display: none;
         }
 
         .slide-caption {
@@ -294,7 +267,6 @@
             width: 24px;
         }
 
-        /* ACCOUNT BROWSER SCREEN */
         .tier-header {
             display: flex;
             gap: 0.8rem;
@@ -325,7 +297,6 @@
         .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
         .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
 
-        /* account cards grid */
         .accounts-grid {
             display: grid;
             gap: 1.5rem;
@@ -354,12 +325,9 @@
             background: #1a1a24;
         }
 
-        /* Disable download on video in cards */
-        .card-media::-internal-media-controls-download-button {
-            display: none;
-        }
+        .card-media::-internal-media-controls-download-button,
         .card-media::-webkit-media-controls-enclosure {
-            overflow: hidden;
+            display: none;
         }
 
         .card-content {
@@ -427,8 +395,8 @@
 
         .action-btn i { font-size: 0.9rem; }
 
-        /* admin panel */
         .hidden { display: none !important; }
+        
         .input { 
             width:100%; 
             padding:0.8rem; 
@@ -440,7 +408,6 @@
             font-size:0.95rem;
         }
         
-        /* Media preview */
         .media-preview {
             width: 100%;
             min-height: 150px;
@@ -460,12 +427,9 @@
             object-fit: contain;
         }
         
-        /* Disable download button in preview */
-        .media-preview video::-internal-media-controls-download-button {
-            display: none;
-        }
+        .media-preview video::-internal-media-controls-download-button,
         .media-preview video::-webkit-media-controls-enclosure {
-            overflow: hidden;
+            display: none;
         }
         
         .media-preview i {
@@ -473,7 +437,6 @@
             color: var(--text-secondary);
         }
 
-        /* Progress bar for upload */
         .upload-progress {
             width: 100%;
             height: 8px;
@@ -503,7 +466,6 @@
             margin-top: 0.3rem;
         }
 
-        /* Tier badges */
         .tier-badge {
             display: inline-block;
             padding: 0.2rem 1rem;
@@ -515,7 +477,6 @@
         .tier-badge.medium { background: var(--gradient-medium); color: white; }
         .tier-badge.big { background: var(--gradient-big); color: white; }
 
-        /* modals */
         .modal-overlay {
             position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
@@ -538,7 +499,6 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
         
-        /* online users indicator */
         .online-badge {
             background: #10b981;
             color: white;
@@ -550,7 +510,6 @@
             gap: 5px;
         }
 
-        /* intl-tel-input customization - COMPLETELY FIXED */
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
@@ -577,7 +536,6 @@
             border-radius: 12px;
         }
         
-        /* visitor stats - now 3 columns for total/online/accounts */
         .visitor-stats {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -585,7 +543,6 @@
             margin: 1rem 0;
         }
         
-        /* book request items */
         .book-request-item {
             background: var(--surface-light);
             border-radius: 1rem;
@@ -625,7 +582,6 @@
             color: white;
         }
         
-        /* User count cards */
         .user-card {
             background: var(--surface);
             border-radius: 1rem;
@@ -656,7 +612,6 @@
             margin-top: 0.3rem;
         }
         
-        /* Online indicator */
         .online-indicator {
             display: inline-block;
             width: 10px;
@@ -673,7 +628,6 @@
             100% { opacity: 1; transform: scale(1); }
         }
         
-        /* Upload button styling */
         .upload-btn {
             background: var(--gradient-primary);
             color: white;
@@ -692,21 +646,36 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- top nav with install button -->
+    <!-- top nav -->
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
             <span class="brand-text" data-i18n="brand">GK Store</span>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn" id="install-btn" onclick="installPWA()"><i class="fa fa-download"></i><span>Install App</span></button>
             <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
             <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
             <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
         </div>
+    </div>
+
+    <div class="loading" id="initial-loading" style="display: none;">
+        <i class="fa fa-spinner fa-spin"></i>
+        <p>Loading...</p>
     </div>
 
     <div class="container">
@@ -735,30 +704,29 @@
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
 
-        <!-- CONTACT SCREEN with working WhatsApp numbers -->
+        <!-- CONTACT SCREEN -->
         <div id="contact-screen" class="screen">
             <h2 class="contact-title" data-i18n="contactTitle">Contact & Support</h2>
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
-        <!-- ADMIN SCREEN - NO HARDCODED CREDENTIALS -->
+        <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
             <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
-                <!-- Login Section - Empty fields, no default values -->
+                <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
                     <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
-                    <input type="email" id="admin-email" class="input" placeholder="Enter your email">
-                    <input type="password" id="admin-password" class="input" placeholder="Enter your password">
+                    <input type="email" id="admin-email" class="input" placeholder="admin@gkstore.com">
+                    <input type="password" id="admin-password" class="input" placeholder="password">
                     <button class="action-btn buy" style="width:100%;" onclick="adminLogin()"><span data-i18n="loginBtn">Login</span></button>
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
-                    <!-- TWO MAIN CARDS: TOTAL USERS and ONLINE USERS -->
+                    <!-- User Stats Cards -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
-                        <!-- TOTAL USERS Card -->
                         <div class="user-card">
                             <div class="icon" style="background:#10b981;">
                                 <i class="fa fa-users"></i>
@@ -768,7 +736,6 @@
                             <div class="info" data-i18n="visitorInfo">Unique IPs</div>
                         </div>
                         
-                        <!-- ONLINE USERS Card (NEW) -->
                         <div class="user-card">
                             <div class="icon" style="background:#ec4899;">
                                 <span class="online-indicator"></span>
@@ -780,7 +747,7 @@
                         </div>
                     </div>
                     
-                    <!-- Stats - Accounts and Book Requests (3 columns) -->
+                    <!-- Stats Summary -->
                     <div class="visitor-stats">
                         <div class="account-card" style="padding:1rem; text-align:center;">
                             <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
@@ -793,13 +760,13 @@
                         </div>
                     </div>
                     
-                    <!-- Book Requests List - with WhatsApp button and Cancel -->
+                    <!-- Book Requests List -->
                     <div class="account-card" style="padding:1rem; margin:1rem 0;">
                         <h3 style="margin-bottom:1rem;" data-i18n="bookRequestsTitle">📋 Book Requests</h3>
                         <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
                     </div>
                     
-                    <!-- USDT Address Display and Edit Button -->
+                    <!-- USDT Address Display -->
                     <div class="account-card" style="padding:1rem; margin:1rem 0;">
                         <div style="display:flex; align-items:center; justify-content:space-between;">
                             <h3 style="margin-bottom:0;">💳 USDT Address (TRC20)</h3>
@@ -807,7 +774,7 @@
                                 <i class="fa fa-edit"></i> <span data-i18n="edit">Edit</span>
                             </button>
                         </div>
-                        <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; margin:0.8rem 0; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                        <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; margin:0.8rem 0; word-break:break-all;"></code>
                     </div>
                     
                     <!-- Management Buttons -->
@@ -842,7 +809,7 @@
             </div>
             <div class="modal-body">
                 <label class="input-label" data-i18n="newUsdtAddress">New USDT Address (TRC20)</label>
-                <input type="text" id="new-usdt-address" class="input" placeholder="Enter new USDT address" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY">
+                <input type="text" id="new-usdt-address" class="input" placeholder="Enter new USDT address">
                 <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:-0.5rem;" data-i18n="usdtWarning">Make sure it's a valid TRC20 address</p>
             </div>
             <div class="modal-footer">
@@ -852,7 +819,7 @@
         </div>
     </div>
 
-    <!-- ADD ACCOUNT MODAL - WITH UPLOAD BUTTON AND PROGRESS TRACKING -->
+    <!-- ADD ACCOUNT MODAL -->
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -876,13 +843,11 @@
                         <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
                     </div>
                     
-                    <!-- Media upload - with progress tracking -->
                     <label class="input-label"><span data-i18n="mediaLabel">Account Media (Image or Video) *</span></label>
                     <div class="media-preview" id="media-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     
-                    <!-- Progress bar -->
                     <div class="upload-progress" id="upload-progress">
                         <div class="progress-bar" id="progress-bar" style="width:0%"></div>
                     </div>
@@ -890,7 +855,6 @@
                     
                     <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
                     
-                    <!-- UPLOAD BUTTON instead of Save Account -->
                     <button type="button" class="upload-btn" id="upload-btn" style="width:100%; padding:1rem;" onclick="uploadNewAccount()" disabled>
                         <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
                     </button>
@@ -899,7 +863,7 @@
         </div>
     </div>
 
-    <!-- MANAGE ACCOUNTS MODAL (delete only) -->
+    <!-- MANAGE ACCOUNTS MODAL -->
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -913,7 +877,7 @@
         </div>
     </div>
 
-    <!-- MANAGE CONTACTS MODAL (with country code) -->
+    <!-- MANAGE CONTACTS MODAL -->
     <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -921,12 +885,10 @@
                 <button class="modal-close" onclick="closeModal('manage-contacts-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Add new contact form with country code picker -->
                 <h4 style="margin-bottom:1rem;"><span data-i18n="addContact">➕ Add New Contact</span></h4>
                 <form id="add-contact-form" onsubmit="return false;">
                     <input type="text" id="contact-name" class="input" placeholder="Contact Name (e.g., Support 1)" required>
                     
-                    <!-- Phone with country code picker -->
                     <label class="input-label"><span data-i18n="whatsappNumberLabel">WhatsApp Number with Country Code</span></label>
                     <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322">
                     
@@ -935,14 +897,13 @@
                     <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewContact()"><span data-i18n="saveContactBtn">Save Contact</span></button>
                 </form>
                 
-                <!-- Existing contacts list -->
                 <h4 style="margin:2rem 0 1rem;"><span data-i18n="existingContacts">📋 Existing Contacts</span></h4>
                 <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
 
-    <!-- MANAGE ADS MODAL - with file upload only -->
+    <!-- MANAGE ADS MODAL -->
     <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -950,7 +911,6 @@
                 <button class="modal-close" onclick="closeModal('manage-ads-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Add new ad with file upload -->
                 <h4 style="margin-bottom:1rem;"><span data-i18n="addAd">➕ Add New Ad (Image/Video)</span></h4>
                 <form id="add-ad-form" onsubmit="return false;">
                     <select id="ad-type" class="input">
@@ -958,7 +918,6 @@
                         <option value="video"><span data-i18n="videoOption">Video</span></option>
                     </select>
                     
-                    <!-- File upload instead of URL -->
                     <label class="input-label"><span data-i18n="adMediaLabel">Ad Media *</span></label>
                     <div class="media-preview" id="ad-preview">
                         <i class="fa fa-cloud-upload-alt"></i>
@@ -970,14 +929,13 @@
                     <button class="btn-primary" style="width:100%; padding:0.8rem;" onclick="saveNewAd()"><span data-i18n="addAdBtn">Add Ad</span></button>
                 </form>
                 
-                <!-- Existing ads list -->
                 <h4 style="margin:2rem 0 1rem;"><span data-i18n="currentAds">📋 Current Ads</span></h4>
                 <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
 
-    <!-- BOOK MODAL - with FIXED country code picker -->
+    <!-- BOOK MODAL -->
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -985,7 +943,7 @@
                 <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
             </div>
             <div class="modal-body" id="book-modal-body">
-                <!-- Will be populated dynamically with country code picker -->
+                <!-- Will be populated dynamically -->
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('book-modal')"><span data-i18n="cancel">Cancel</span></button>
@@ -1020,7 +978,7 @@
         </div>
     </div>
 
-    <!-- LANGUAGE MODAL with translation -->
+    <!-- LANGUAGE MODAL -->
     <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -1037,520 +995,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
-        // PWA Install Handler
-        let deferredPrompt;
-        const installBtn = document.getElementById('install-btn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.classList.add('show');
-        });
-
-        window.installPWA = function() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
-                    deferredPrompt = null;
-                    installBtn.classList.remove('show');
-                });
-            }
-        };
-
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
-            installBtn.classList.remove('show');
-        });
-
         (function() {
-            // ========== POCKETBASE CONFIGURATION ==========
-            // Using AllOrigins proxy to fix mixed content issues - OPTION 3
-            const POCKETBASE_URL = 'https://api.allorigins.win/raw?url=http://216.126.225.4';
-            
-            // ---------- APP STATE ----------
+            // PocketBase Configuration
+            const PB_URL = 'http://216.126.225.4:8090'; // Your PocketBase URL
+            const pb = new PocketBase(PB_URL);
+
+            // App State
             const appState = {
                 accounts: [],
                 contacts: [],
                 ads: [],
                 bookRequests: [],
+                settings: {},
                 uniqueVisitors: new Set(),
                 activeSessions: new Map(),
                 visitorCount: 0,
                 onlineCount: 0,
                 currentFilter: 'all',
                 isAdminLoggedIn: false,
-                isSuperAdmin: false,
-                adminToken: null,
-                adminId: null,
                 currentAccount: null,
                 currentMediaData: null,
                 currentAdData: null,
                 phoneInput: null,
                 bookPhoneInput: null,
                 currentLanguage: 'en',
-                autoSlideInterval: null,
-                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
+                autoSlideInterval: null
             };
 
-            // Load USDT address from localStorage
-            if (localStorage.getItem('gk_usdt_address')) {
-                appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-            }
-
-            // Load unique visitors from localStorage
-            if (localStorage.getItem('gk_visitors')) {
-                try {
-                    const saved = JSON.parse(localStorage.getItem('gk_visitors'));
-                    appState.uniqueVisitors = new Set(saved);
-                    appState.visitorCount = appState.uniqueVisitors.size;
-                } catch (e) {
-                    appState.uniqueVisitors = new Set();
-                }
-            }
-            
-            // Load active sessions from localStorage
-            if (localStorage.getItem('gk_sessions')) {
-                try {
-                    const saved = JSON.parse(localStorage.getItem('gk_sessions'));
-                    appState.activeSessions = new Map(saved);
-                    const now = Date.now();
-                    for (let [ip, time] of appState.activeSessions.entries()) {
-                        if (now - time > 300000) {
-                            appState.activeSessions.delete(ip);
-                        }
-                    }
-                    appState.onlineCount = appState.activeSessions.size;
-                } catch (e) {
-                    appState.activeSessions = new Map();
-                }
-            }
-
-            // ========== SECURE ADMIN AUTHENTICATION USING USERS COLLECTION ==========
-            
-            // Login function - checks against PocketBase users collection
-            window.adminLogin = async function() {
-                const email = document.getElementById('admin-email').value;
-                const pass = document.getElementById('admin-password').value;
-                const errorEl = document.getElementById('admin-error');
-                
-                if (!email || !pass) {
-                    errorEl.innerText = 'Please enter email and password';
-                    return;
-                }
-                
-                try {
-                    // Try PocketBase super admin first
-                    const superAdminResponse = await fetch(`${POCKETBASE_URL}/api/admins/auth-with-password`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            identity: email,
-                            password: pass
-                        })
-                    });
-                    
-                    if (superAdminResponse.ok) {
-                        const authData = await superAdminResponse.json();
-                        localStorage.setItem('admin_token', authData.token);
-                        appState.isAdminLoggedIn = true;
-                        appState.isSuperAdmin = true;
-                        appState.adminToken = authData.token;
-                        afterAdminLogin();
-                        errorEl.innerText = '';
-                        return;
-                    }
-                    
-                    // If not super admin, try the users collection (where you just created the user)
-                    const userResponse = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-with-password`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            identity: email,
-                            password: pass
-                        })
-                    });
-                    
-                    if (userResponse.ok) {
-                        const userData = await userResponse.json();
-                        localStorage.setItem('user_token', userData.token);
-                        localStorage.setItem('user_id', userData.record.id);
-                        appState.isAdminLoggedIn = true;
-                        appState.isSuperAdmin = false;
-                        appState.adminId = userData.record.id;
-                        afterAdminLogin();
-                        errorEl.innerText = '';
-                    } else {
-                        errorEl.innerText = 'Invalid email or password';
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    errorEl.innerText = 'Login failed. Check connection.';
-                }
-            };
-
-            // After successful login
-            function afterAdminLogin() {
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('admin-error').innerText = '';
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                renderBookRequests();
-            }
-
-            // Check if already logged in
-            async function checkAdminSession() {
-                // Check super admin token
-                const token = localStorage.getItem('admin_token');
-                if (token) {
-                    try {
-                        const response = await fetch(`${POCKETBASE_URL}/api/admins/refresh`, {
-                            method: 'POST',
-                            headers: { 'Authorization': token }
-                        });
-                        if (response.ok) {
-                            appState.isAdminLoggedIn = true;
-                            appState.isSuperAdmin = true;
-                            appState.adminToken = token;
-                            return true;
-                        }
-                    } catch (e) {
-                        // Token invalid
-                    }
-                }
-                
-                // Check user token
-                const userToken = localStorage.getItem('user_token');
-                if (userToken) {
-                    try {
-                        const response = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
-                            method: 'POST',
-                            headers: { 'Authorization': userToken }
-                        });
-                        if (response.ok) {
-                            appState.isAdminLoggedIn = true;
-                            return true;
-                        }
-                    } catch (e) {
-                        // Token invalid
-                    }
-                }
-                
-                return false;
-            }
-
-            // Logout function
-            window.logout = function() {
-                appState.isAdminLoggedIn = false;
-                appState.isSuperAdmin = false;
-                appState.adminToken = null;
-                appState.adminId = null;
-                localStorage.removeItem('admin_token');
-                localStorage.removeItem('user_token');
-                localStorage.removeItem('user_id');
-                document.getElementById('admin-login-section').classList.remove('hidden');
-                document.getElementById('admin-dashboard').classList.add('hidden');
-                switchScreen('main');
-            };
-
-            // ========== POCKETBASE DATA FUNCTIONS ==========
-            
-            async function fetchAccounts() {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/accounts/records?sort=-created`);
-                    const data = await response.json();
-                    
-                    if (data.items) {
-                        appState.accounts = data.items.map(item => ({
-                            id: item.id,
-                            title: item.title,
-                            desc: item.description || '',
-                            tier: item.tier,
-                            price_usd: item.price_usd,
-                            price_afn: item.price_afn,
-                            media: item.media ? `${POCKETBASE_URL}/api/files/accounts/${item.id}/${item.media}` : '',
-                            mediaType: item.media_type || 'image',
-                            sold: item.sold || false
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Error fetching accounts:', error);
-                    loadFromLocalStorage();
-                }
-                renderAccounts();
-            }
-            
-            async function fetchContacts() {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/contacts/records?sort=-created`);
-                    const data = await response.json();
-                    
-                    if (data.items) {
-                        appState.contacts = data.items.map(item => ({
-                            id: item.id,
-                            name: item.name,
-                            phone: item.phone,
-                            desc: item.description || ''
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Error fetching contacts:', error);
-                    loadContactsFromLocalStorage();
-                }
-                renderContacts();
-            }
-            
-            async function fetchAds() {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/ads/records?sort=-created`);
-                    const data = await response.json();
-                    
-                    if (data.items) {
-                        appState.ads = data.items.map(item => ({
-                            type: item.type,
-                            data: item.media ? `${POCKETBASE_URL}/api/files/ads/${item.id}/${item.media}` : '',
-                            caption: item.caption || ''
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Error fetching ads:', error);
-                    loadAdsFromLocalStorage();
-                }
-                renderAdsSlider();
-            }
-            
-            async function fetchBookRequests() {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/bookings/records?sort=-created`);
-                    const data = await response.json();
-                    
-                    if (data.items) {
-                        appState.bookRequests = data.items.map(item => ({
-                            id: item.id,
-                            account_id: item.account_id,
-                            account_title: item.account_title,
-                            user_name: item.user_name,
-                            whatsapp: item.whatsapp,
-                            date: item.created
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Error fetching bookings:', error);
-                    loadBookingsFromLocalStorage();
-                }
-                if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderBookRequests();
-                }
-            }
-            
-            async function saveAccountToPocketBase(accountData, file) {
-                try {
-                    const formData = new FormData();
-                    formData.append('title', accountData.title);
-                    formData.append('description', accountData.description);
-                    formData.append('tier', accountData.tier);
-                    formData.append('price_usd', accountData.price_usd.toString());
-                    formData.append('price_afn', accountData.price_afn.toString());
-                    formData.append('media_type', accountData.mediaType);
-                    formData.append('sold', 'false');
-                    
-                    if (file) {
-                        formData.append('media', file);
-                    }
-                    
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/accounts/records`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        await fetchAccounts();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error saving account:', error);
-                    return false;
-                }
-            }
-            
-            async function saveContactToPocketBase(contactData) {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/contacts/records`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            name: contactData.name,
-                            phone: contactData.phone,
-                            description: contactData.desc || ''
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        await fetchContacts();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error saving contact:', error);
-                    return false;
-                }
-            }
-            
-            async function saveAdToPocketBase(adData, file) {
-                try {
-                    const formData = new FormData();
-                    formData.append('type', adData.type);
-                    formData.append('caption', adData.caption || '');
-                    
-                    if (file) {
-                        formData.append('media', file);
-                    }
-                    
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/ads/records`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        await fetchAds();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error saving ad:', error);
-                    return false;
-                }
-            }
-            
-            async function saveBookingToPocketBase(bookingData) {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/bookings/records`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            account_id: bookingData.account_id,
-                            account_title: bookingData.account_title,
-                            user_name: bookingData.user_name,
-                            whatsapp: bookingData.whatsapp
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        await fetchBookRequests();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error saving booking:', error);
-                    return false;
-                }
-            }
-            
-            async function deleteAccountFromPocketBase(id) {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/accounts/records/${id}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        await fetchAccounts();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error deleting account:', error);
-                    return false;
-                }
-            }
-            
-            async function deleteContactFromPocketBase(id) {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/contacts/records/${id}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        await fetchContacts();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error deleting contact:', error);
-                    return false;
-                }
-            }
-            
-            async function deleteBookingFromPocketBase(id) {
-                try {
-                    const response = await fetch(`${POCKETBASE_URL}/api/collections/bookings/records/${id}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        await fetchBookRequests();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Error deleting booking:', error);
-                    return false;
-                }
-            }
-
-            // Fallback functions
-            function loadFromLocalStorage() {
-                if (localStorage.getItem('gk_accounts')) {
-                    appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
-                } else {
-                    appState.accounts = [
-                        { id:'a1', title:'Pro Level 500', desc:'20+ rare skins', tier:'small', price_usd:199.99, price_afn:12800, media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                        { id:'a2', title:'Competitive', desc:'Max weapons', tier:'small', price_usd:399.99, price_afn:25600, media:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                        { id:'a3', title:'Ultimate Collector', desc:'All skins', tier:'medium', price_usd:799.99, price_afn:51200, media:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                        { id:'a4', title:'Tournament Winner', desc:'Championship skins', tier:'medium', price_usd:999.99, price_afn:64000, media:'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', mediaType:'image', sold:false },
-                        { id:'a5', title:'Legendary Limited', desc:'All collab skins', tier:'big', price_usd:4999.99, price_afn:320000, media:'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', mediaType:'image', sold:false }
-                    ];
-                }
-            }
-            
-            function loadContactsFromLocalStorage() {
-                if (localStorage.getItem('gk_contacts')) {
-                    appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-                } else {
-                    appState.contacts = [
-                        { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
-                        { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
-                    ];
-                }
-            }
-            
-            function loadAdsFromLocalStorage() {
-                if (localStorage.getItem('gk_ads')) {
-                    appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-                } else {
-                    appState.ads = [
-                        { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
-                        { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
-                        { type: 'image', data: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
-                    ];
-                }
-            }
-            
-            function loadBookingsFromLocalStorage() {
-                if (localStorage.getItem('gk_bookings')) {
-                    appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-                }
-            }
-
-            // ========== TRANSLATION DICTIONARY ==========
+            // Translations
             const translations = {
                 en: {
                     brand: 'GK Store',
@@ -1591,14 +1063,14 @@
                     mediaLabel: 'Account Media (Image or Video) *',
                     uploadBtn: 'UPLOAD',
                     manageModalTitle: 'Manage Accounts',
-                    existingAccounts: '📋 Existing Accounts (click delete to remove)',
+                    existingAccounts: '📋 Existing Accounts',
                     manageContactsTitle: 'Manage Contacts',
                     addContact: '➕ Add New Contact',
                     whatsappNumberLabel: 'WhatsApp Number with Country Code',
                     saveContactBtn: 'Save Contact',
                     existingContacts: '📋 Existing Contacts',
                     manageAdsTitle: 'Manage Swipe Ads',
-                    addAd: '➕ Add New Ad (Image/Video)',
+                    addAd: '➕ Add New Ad',
                     imageOption: 'Image',
                     videoOption: 'Video',
                     adMediaLabel: 'Ad Media *',
@@ -1621,7 +1093,12 @@
                     editUsdtTitle: 'Edit USDT Address',
                     newUsdtAddress: 'New USDT Address (TRC20)',
                     usdtWarning: 'Make sure it\'s a valid TRC20 address',
-                    save: 'Save'
+                    save: 'Save',
+                    loginError: 'Invalid credentials',
+                    uploadSuccess: 'Upload successful!',
+                    uploadFailed: 'Upload failed',
+                    confirmDelete: 'Delete this item?',
+                    noData: 'No data available'
                 },
                 ps: {
                     brand: 'جی کے سټور',
@@ -1650,7 +1127,7 @@
                     activeSessions: 'فعال غونډې',
                     bookRequestsTitle: '📋 د بکنګ غوښتنې',
                     addAccountBtn: 'نوی حساب اضافه کړئ',
-                    manageAccountsBtn: 'حسابونه اداره کړئ (ړنګول)',
+                    manageAccountsBtn: 'حسابونه اداره کړئ',
                     manageContactsBtn: 'اړیکې اداره کړئ',
                     manageAdsBtn: 'اعلانونه اداره کړئ',
                     logoutBtn: 'وتل',
@@ -1662,14 +1139,14 @@
                     mediaLabel: 'د حساب میډیا (انځور یا ویډیو) *',
                     uploadBtn: 'اپلوډ',
                     manageModalTitle: 'حسابونه اداره کړئ',
-                    existingAccounts: '📋 موجود حسابونه (ړنګولو لپاره کلیک وکړئ)',
+                    existingAccounts: '📋 موجود حسابونه',
                     manageContactsTitle: 'اړیکې اداره کړئ',
                     addContact: '➕ نوې اړیکه اضافه کړئ',
                     whatsappNumberLabel: 'د واټساپ شمیره د هیواد کوډ سره',
                     saveContactBtn: 'اړیکه خوندي کړئ',
                     existingContacts: '📋 موجوده اړیکې',
                     manageAdsTitle: 'اعلانونه اداره کړئ',
-                    addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)',
+                    addAd: '➕ نوی اعلان اضافه کړئ',
                     imageOption: 'انځور',
                     videoOption: 'ویډیو',
                     adMediaLabel: 'د اعلان میډیا *',
@@ -1692,7 +1169,12 @@
                     editUsdtTitle: 'د USDT پته سمول',
                     newUsdtAddress: 'نوې USDT پته (TRC20)',
                     usdtWarning: 'ډاډ ترلاسه کړئ چې دا سمه TRC20 پته ده',
-                    save: 'خوندي کول'
+                    save: 'خوندي کول',
+                    loginError: 'غلط معلومات',
+                    uploadSuccess: 'اپلوډ بریالی شو!',
+                    uploadFailed: 'اپلوډ ناکام شو',
+                    confirmDelete: 'دا توکی ړنګ کړم؟',
+                    noData: 'هیڅ معلومات نشته'
                 },
                 fa: {
                     brand: 'جی کی استور',
@@ -1721,7 +1203,7 @@
                     activeSessions: 'نشست‌های فعال',
                     bookRequestsTitle: '📋 درخواست‌های رزرو',
                     addAccountBtn: 'افزودن حساب جدید',
-                    manageAccountsBtn: 'مدیریت حساب‌ها (حذف)',
+                    manageAccountsBtn: 'مدیریت حساب‌ها',
                     manageContactsBtn: 'مدیریت مخاطبین',
                     manageAdsBtn: 'مدیریت تبلیغات',
                     logoutBtn: 'خروج',
@@ -1733,14 +1215,14 @@
                     mediaLabel: 'رسانه حساب (تصویر یا ویدیو) *',
                     uploadBtn: 'آپلود',
                     manageModalTitle: 'مدیریت حساب‌ها',
-                    existingAccounts: '📋 حساب‌های موجود (برای حذف کلیک کنید)',
+                    existingAccounts: '📋 حساب‌های موجود',
                     manageContactsTitle: 'مدیریت مخاطبین',
                     addContact: '➕ افزودن مخاطب جدید',
                     whatsappNumberLabel: 'شماره واتساپ با کد کشور',
                     saveContactBtn: 'ذخیره مخاطب',
                     existingContacts: '📋 مخاطبین موجود',
                     manageAdsTitle: 'مدیریت تبلیغات',
-                    addAd: '➕ تبلیغ جدید (تصویر/ویدیو)',
+                    addAd: '➕ تبلیغ جدید',
                     imageOption: 'تصویر',
                     videoOption: 'ویدیو',
                     adMediaLabel: 'رسانه تبلیغ *',
@@ -1763,9 +1245,179 @@
                     editUsdtTitle: 'ویرایش آدرس USDT',
                     newUsdtAddress: 'آدرس جدید USDT (TRC20)',
                     usdtWarning: 'مطمئن شوید آدرس TRC20 معتبر است',
-                    save: 'ذخیره'
+                    save: 'ذخیره',
+                    loginError: 'اطلاعات نادرست',
+                    uploadSuccess: 'آپلود موفق!',
+                    uploadFailed: 'آپلود ناموفق',
+                    confirmDelete: 'این مورد حذف شود؟',
+                    noData: 'داده‌ای موجود نیست'
                 }
             };
+
+            // Initialize PocketBase collections
+            async function initializeCollections() {
+                try {
+                    // Check if collections exist, if not they'll be created automatically
+                    const collections = await pb.collections.getFullList();
+                    
+                    // Create settings collection if it doesn't exist
+                    if (!collections.find(c => c.name === 'settings')) {
+                        await pb.collections.create({
+                            name: 'settings',
+                            type: 'base',
+                            schema: [
+                                { name: 'key', type: 'text', required: true },
+                                { name: 'value', type: 'text' }
+                            ]
+                        });
+                    }
+                    
+                    // Create contacts collection if it doesn't exist
+                    if (!collections.find(c => c.name === 'contacts')) {
+                        await pb.collections.create({
+                            name: 'contacts',
+                            type: 'base',
+                            schema: [
+                                { name: 'name', type: 'text', required: true },
+                                { name: 'phone', type: 'text', required: true },
+                                { name: 'description', type: 'text' }
+                            ]
+                        });
+                    }
+                    
+                    // Create ads collection if it doesn't exist
+                    if (!collections.find(c => c.name === 'ads')) {
+                        await pb.collections.create({
+                            name: 'ads',
+                            type: 'base',
+                            schema: [
+                                { name: 'type', type: 'text', required: true },
+                                { name: 'media', type: 'file' },
+                                { name: 'caption', type: 'text' }
+                            ]
+                        });
+                    }
+                    
+                    // Create bookings collection if it doesn't exist
+                    if (!collections.find(c => c.name === 'bookings')) {
+                        await pb.collections.create({
+                            name: 'bookings',
+                            type: 'base',
+                            schema: [
+                                { name: 'account_id', type: 'text', required: true },
+                                { name: 'account_title', type: 'text', required: true },
+                                { name: 'user_name', type: 'text', required: true },
+                                { name: 'whatsapp', type: 'text', required: true },
+                                { name: 'status', type: 'text' }
+                            ]
+                        });
+                    }
+                    
+                    console.log('Collections initialized');
+                } catch (error) {
+                    console.error('Error initializing collections:', error);
+                }
+            }
+
+            // Load data from PocketBase
+            async function loadData() {
+                try {
+                    // Load accounts
+                    const accounts = await pb.collection('accounts').getFullList();
+                    appState.accounts = accounts.map(a => ({
+                        id: a.id,
+                        title: a.title,
+                        desc: a.description,
+                        tier: a.tier,
+                        price_usd: a.price_usd,
+                        price_afn: a.price_afn,
+                        media: pb.files.getUrl(a, a.media),
+                        mediaType: a.mediaType || 'image',
+                        sold: a.sold || false
+                    }));
+                    
+                    // Load contacts
+                    const contacts = await pb.collection('contacts').getFullList();
+                    appState.contacts = contacts.map(c => ({
+                        id: c.id,
+                        name: c.name,
+                        phone: c.phone,
+                        desc: c.description
+                    }));
+                    
+                    // Load ads
+                    const ads = await pb.collection('ads').getFullList();
+                    appState.ads = ads.map(ad => ({
+                        type: ad.type,
+                        data: pb.files.getUrl(ad, ad.media),
+                        caption: ad.caption || ''
+                    }));
+                    
+                    // Load bookings
+                    const bookings = await pb.collection('bookings').getFullList();
+                    appState.bookRequests = bookings.map(b => ({
+                        id: b.id,
+                        account_id: b.account_id,
+                        account_title: b.account_title,
+                        user_name: b.user_name,
+                        whatsapp: b.whatsapp,
+                        date: b.created,
+                        status: b.status
+                    }));
+                    
+                    // Load settings (USDT address)
+                    try {
+                        const settings = await pb.collection('settings').getFirstListItem('key="usdt_address"');
+                        appState.usdtAddress = settings.value;
+                    } catch {
+                        // Create default USDT address
+                        await pb.collection('settings').create({
+                            key: 'usdt_address',
+                            value: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
+                        });
+                        appState.usdtAddress = 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY';
+                    }
+                    
+                    // Update UI
+                    renderAccounts();
+                    renderContacts();
+                    renderAdsSlider();
+                    
+                    if (appState.isAdminLoggedIn) {
+                        updateAdminStats();
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                }
+            }
+
+            // Track visitors
+            async function trackVisitor() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    const ip = data.ip;
+                    const now = Date.now();
+                    
+                    appState.uniqueVisitors.add(ip);
+                    appState.visitorCount = appState.uniqueVisitors.size;
+                    
+                    appState.activeSessions.set(ip, now);
+                    for (let [sessionIp, time] of appState.activeSessions.entries()) {
+                        if (now - time > 300000) {
+                            appState.activeSessions.delete(sessionIp);
+                        }
+                    }
+                    appState.onlineCount = appState.activeSessions.size;
+                    
+                    if (appState.isAdminLoggedIn) {
+                        updateAdminStats();
+                    }
+                } catch (error) {
+                    console.error('Error tracking visitor:', error);
+                }
+            }
 
             // Apply translation
             function applyTranslation(lang) {
@@ -1786,184 +1438,18 @@
                 
                 renderAccounts();
                 renderContacts();
-                if (appState.isAdminLoggedIn) renderBookRequests();
-                
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-            }
-
-            // Track visitors
-            function trackVisitor() {
-                fetch('https://api.ipify.org?format=json')
-                    .then(response => response.json())
-                    .then(data => {
-                        const ip = data.ip;
-                        const now = Date.now();
-                        
-                        appState.uniqueVisitors.add(ip);
-                        appState.visitorCount = appState.uniqueVisitors.size;
-                        localStorage.setItem('gk_visitors', JSON.stringify([...appState.uniqueVisitors]));
-                        
-                        appState.activeSessions.set(ip, now);
-                        for (let [sessionIp, time] of appState.activeSessions.entries()) {
-                            if (now - time > 300000) {
-                                appState.activeSessions.delete(sessionIp);
-                            }
-                        }
-                        appState.onlineCount = appState.activeSessions.size;
-                        
-                        localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
-                        
-                        document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                        document.getElementById('online-user-count').innerText = appState.onlineCount;
-                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                    })
-                    .catch(() => {
-                        let sessionId = localStorage.getItem('gk_session_id');
-                        if (!sessionId) {
-                            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                            localStorage.setItem('gk_session_id', sessionId);
-                        }
-                        
-                        const now = Date.now();
-                        
-                        appState.uniqueVisitors.add(sessionId);
-                        appState.visitorCount = appState.uniqueVisitors.size;
-                        localStorage.setItem('gk_visitors', JSON.stringify([...appState.uniqueVisitors]));
-                        
-                        appState.activeSessions.set(sessionId, now);
-                        for (let [sessionIp, time] of appState.activeSessions.entries()) {
-                            if (now - time > 300000) {
-                                appState.activeSessions.delete(sessionIp);
-                            }
-                        }
-                        appState.onlineCount = appState.activeSessions.size;
-                        localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
-                        
-                        document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                        document.getElementById('online-user-count').innerText = appState.onlineCount;
-                        document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                    });
-            }
-
-            // Initialize phone input
-            function initPhoneInput() {
-                const input = document.querySelector('#contact-phone');
-                if (input && !appState.phoneInput) {
-                    appState.phoneInput = intlTelInput(input, {
-                        initialCountry: 'af',
-                        separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                        dropdownContainer: document.body
-                    });
-                }
-            }
-
-            // Auto slide function
-            function startAutoSlide() {
-                if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
-                
-                appState.autoSlideInterval = setInterval(() => {
-                    const track = document.getElementById('slider-track');
-                    if (!track || appState.ads.length === 0) return;
-                    
-                    const slideWidth = track.clientWidth;
-                    const currentScroll = track.scrollLeft;
-                    const currentIndex = Math.round(currentScroll / slideWidth);
-                    const nextIndex = (currentIndex + 1) % appState.ads.length;
-                    
-                    track.scrollTo({
-                        left: nextIndex * slideWidth,
-                        behavior: 'smooth'
-                    });
-                    
-                    document.querySelectorAll('.dot').forEach((dot, i) => {
-                        dot.classList.toggle('active', i === nextIndex);
-                    });
-                }, 2000);
             }
 
             // Render functions
-            function renderAdsSlider() {
-                const container = document.getElementById('ads-slider');
-                if (!container) return;
-                if (appState.ads.length === 0) {
-                    container.innerHTML = '<div class="swipe-ads" style="padding:2rem; text-align:center;">No ads</div>';
-                    return;
-                }
-                let slides = '';
-                appState.ads.forEach((ad, idx) => {
-                    if (ad.type === 'video') {
-                        slides += `<div class="slide"><video src="${ad.data}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
-                    } else {
-                        slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
-                    }
-                });
-                let dots = '';
-                appState.ads.forEach((_, idx) => {
-                    dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
-                });
-                container.innerHTML = `
-                    <div class="slider-container">
-                        <div class="slider-track" id="slider-track">${slides}</div>
-                        <div class="slider-dots">${dots}</div>
-                    </div>
-                `;
-                const track = document.getElementById('slider-track');
-                if (track) {
-                    track.addEventListener('scroll', function() {
-                        const idx = Math.round(track.scrollLeft / track.clientWidth);
-                        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-                    });
-                }
-                startAutoSlide();
-            }
-
-            window.jumpToSlide = function(idx) {
-                const track = document.getElementById('slider-track');
-                if (track) {
-                    track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-                    startAutoSlide();
-                }
-            };
-
-            function renderContacts() {
-                const container = document.getElementById('contacts-container');
-                if (!container) return;
-                if (appState.contacts.length === 0) {
-                    container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
-                    return;
-                }
-                const t = translations[appState.currentLanguage] || translations.en;
-                
-                container.innerHTML = appState.contacts.map(contact => {
-                    let cleanPhone = contact.phone.replace(/\D/g, '');
-                    if (cleanPhone.startsWith('0')) {
-                        cleanPhone = cleanPhone.substring(1);
-                    }
-                    if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
-                        cleanPhone = '93' + cleanPhone;
-                    }
-                    
-                    return `
-                        <div class="account-card" style="padding:1.5rem;">
-                            <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                            <p>${contact.desc || 'WhatsApp support'}</p>
-                            <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
-                            <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> ${t.chatNow}
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            }
-
             function renderAccounts() {
                 const grid = document.getElementById('accounts-grid');
                 if (!grid) return;
+                
                 let filtered = appState.accounts.filter(a => !a.sold);
                 if (appState.currentFilter !== 'all') {
                     filtered = filtered.filter(a => a.tier === appState.currentFilter);
                 }
+                
                 if (filtered.length === 0) {
                     grid.innerHTML = '<div style="grid-column:1/-1; padding:2rem; text-align:center;">No accounts in this tier</div>';
                     return;
@@ -1974,7 +1460,7 @@
                 grid.innerHTML = filtered.map(acc => {
                     const mediaTag = acc.mediaType === 'video' 
                         ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
-                        : `<img src="${acc.media}" class="card-media" alt="account" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">`;
+                        : `<img src="${acc.media}" class="card-media" alt="account">`;
                     
                     return `
                         <div class="account-card" data-id="${acc.id}">
@@ -2000,13 +1486,109 @@
                 }).join('');
             }
 
+            function renderContacts() {
+                const container = document.getElementById('contacts-container');
+                if (!container) return;
+                
+                if (appState.contacts.length === 0) {
+                    container.innerHTML = '<div class="account-card" style="padding:2rem; text-align:center;">No contacts available</div>';
+                    return;
+                }
+                
+                const t = translations[appState.currentLanguage] || translations.en;
+                
+                container.innerHTML = appState.contacts.map(contact => {
+                    let cleanPhone = contact.phone.replace(/\D/g, '');
+                    if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
+                        cleanPhone = '93' + cleanPhone;
+                    }
+                    
+                    return `
+                        <div class="account-card" style="padding:1.5rem;">
+                            <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                            <p>${contact.desc || 'WhatsApp support'}</p>
+                            <p style="margin:0.5rem 0;"><strong>+${cleanPhone}</strong></p>
+                            <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                                <i class="fab fa-whatsapp"></i> ${t.chatNow}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function renderAdsSlider() {
+                const container = document.getElementById('ads-slider');
+                if (!container) return;
+                
+                if (appState.ads.length === 0) {
+                    container.innerHTML = '<div class="swipe-ads" style="padding:2rem; text-align:center;">No ads</div>';
+                    return;
+                }
+                
+                let slides = '';
+                appState.ads.forEach((ad, idx) => {
+                    if (ad.type === 'video') {
+                        slides += `<div class="slide"><video src="${ad.data}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                    } else {
+                        slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                    }
+                });
+                
+                let dots = '';
+                appState.ads.forEach((_, idx) => {
+                    dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
+                });
+                
+                container.innerHTML = `
+                    <div class="slider-container">
+                        <div class="slider-track" id="slider-track">${slides}</div>
+                        <div class="slider-dots">${dots}</div>
+                    </div>
+                `;
+                
+                startAutoSlide();
+            }
+
+            function startAutoSlide() {
+                if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+                
+                appState.autoSlideInterval = setInterval(() => {
+                    const track = document.getElementById('slider-track');
+                    if (!track || appState.ads.length === 0) return;
+                    
+                    const slideWidth = track.clientWidth;
+                    const currentScroll = track.scrollLeft;
+                    const currentIndex = Math.round(currentScroll / slideWidth);
+                    const nextIndex = (currentIndex + 1) % appState.ads.length;
+                    
+                    track.scrollTo({
+                        left: nextIndex * slideWidth,
+                        behavior: 'smooth'
+                    });
+                    
+                    document.querySelectorAll('.dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === nextIndex);
+                    });
+                }, 2000);
+            }
+
+            window.jumpToSlide = function(idx) {
+                const track = document.getElementById('slider-track');
+                if (track) {
+                    track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                    startAutoSlide();
+                }
+            };
+
             function renderAdminAccounts() {
                 const list = document.getElementById('admin-accounts-list');
                 if (!list) return;
+                
                 if (appState.accounts.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
                     return;
                 }
+                
                 const t = translations[appState.currentLanguage] || translations.en;
                 
                 list.innerHTML = appState.accounts.map(acc => {
@@ -2032,10 +1614,12 @@
             function renderAdminContacts() {
                 const list = document.getElementById('admin-contacts-list');
                 if (!list) return;
+                
                 if (appState.contacts.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
                     return;
                 }
+                
                 const t = translations[appState.currentLanguage] || translations.en;
                 
                 list.innerHTML = appState.contacts.map(contact => `
@@ -2058,10 +1642,12 @@
             function renderAdminAds() {
                 const list = document.getElementById('admin-ads-list');
                 if (!list) return;
+                
                 if (appState.ads.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
                     return;
                 }
+                
                 const t = translations[appState.currentLanguage] || translations.en;
                 
                 list.innerHTML = appState.ads.map((ad, index) => `
@@ -2076,7 +1662,7 @@
                             <strong>${ad.caption || 'No caption'}</strong>
                             <div style="font-size:0.7rem; color:var(--text-secondary);">${ad.type}</div>
                         </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd('${ad.id}')">
                             <i class="fa fa-trash"></i> ${t.delete}
                         </button>
                     </div>
@@ -2086,6 +1672,7 @@
             function renderBookRequests() {
                 const list = document.getElementById('admin-book-requests-list');
                 if (!list) return;
+                
                 if (appState.bookRequests.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
                     return;
@@ -2118,18 +1705,17 @@
                 }).join('');
             }
 
-            window.cancelBookRequest = async function(id) {
-                if (confirm('Cancel this book request?')) {
-                    const success = await deleteBookingFromPocketBase(id);
-                    if (!success) {
-                        appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
-                        localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-                    }
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderBookRequests();
-                }
-            };
+            function updateAdminStats() {
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                renderBookRequests();
+            }
 
+            // Account actions
             window.filterAccounts = function(tier) {
                 appState.currentFilter = tier;
                 document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
@@ -2145,17 +1731,11 @@
                 if (screen === 'admin' && appState.isAdminLoggedIn) {
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-login-section').classList.add('hidden');
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                    document.getElementById('online-user-count').innerText = appState.onlineCount;
-                    document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                    document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                    renderBookRequests();
+                    updateAdminStats();
                 }
             };
 
-            // Media preview functions
+            // Media preview
             window.previewMediaFromFile = function() {
                 const fileInput = document.getElementById('account-media-file');
                 const preview = document.getElementById('media-preview');
@@ -2185,6 +1765,7 @@
             window.previewAdMedia = function() {
                 const fileInput = document.getElementById('ad-media-file');
                 const preview = document.getElementById('ad-preview');
+                
                 if (fileInput.files && fileInput.files[0]) {
                     const file = fileInput.files[0];
                     const reader = new FileReader();
@@ -2192,73 +1773,43 @@
                         const isVideo = file.type.startsWith('video/');
                         if (isVideo) {
                             preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
-                            appState.currentAdData = { type: 'video', data: e.target.result, file: file };
+                            appState.currentAdData = { type: isVideo ? 'video' : 'image', file: file };
                         } else {
                             preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                            appState.currentAdData = { type: 'image', data: e.target.result, file: file };
+                            appState.currentAdData = { type: 'image', file: file };
                         }
                     };
                     reader.readAsDataURL(file);
                 }
             };
 
-            // Modal functions
-            window.showAddAccountModal = function() {
-                document.getElementById('account-tier').value = '';
-                document.getElementById('account-title').value = '';
-                document.getElementById('account-description').value = '';
-                document.getElementById('account-price-usd').value = '';
-                document.getElementById('account-price-afn').value = '';
-                document.getElementById('account-media-file').value = '';
-                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                document.getElementById('upload-progress').classList.remove('active');
-                document.getElementById('progress-bar').style.width = '0%';
-                document.getElementById('progress-text').innerHTML = '';
-                document.getElementById('upload-btn').disabled = true;
-                appState.currentMediaData = null;
-                openModal('add-account-modal');
-            };
-
-            window.showManageAccountsModal = function() {
-                renderAdminAccounts();
-                openModal('manage-accounts-modal');
-            };
-
-            window.showManageContactsModal = function() {
-                renderAdminContacts();
-                initPhoneInput();
-                openModal('manage-contacts-modal');
-            };
-
-            window.showManageAdsModal = function() {
-                document.getElementById('ad-type').value = 'image';
-                document.getElementById('ad-media-file').value = '';
-                document.getElementById('ad-caption').value = '';
-                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                appState.currentAdData = null;
-                renderAdminAds();
-                openModal('manage-ads-modal');
-            };
-
-            window.showEditUsdtModal = function() {
-                document.getElementById('new-usdt-address').value = appState.usdtAddress;
-                openModal('edit-usdt-modal');
-            };
-
-            window.saveUsdtAddress = function() {
-                const newAddress = document.getElementById('new-usdt-address').value.trim();
-                if (!newAddress) {
-                    alert('Please enter a USDT address');
-                    return;
-                }
+            // Admin login
+            window.adminLogin = async function() {
+                const email = document.getElementById('admin-email').value;
+                const pass = document.getElementById('admin-password').value;
                 
-                appState.usdtAddress = newAddress;
-                localStorage.setItem('gk_usdt_address', newAddress);
-                document.getElementById('current-usdt-address').innerText = newAddress;
-                closeModal('edit-usdt-modal');
-                alert('USDT address updated successfully!');
+                try {
+                    await pb.admins.authWithPassword(email, pass);
+                    appState.isAdminLoggedIn = true;
+                    document.getElementById('admin-login-section').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    document.getElementById('admin-error').innerText = '';
+                    updateAdminStats();
+                } catch (error) {
+                    const t = translations[appState.currentLanguage] || translations.en;
+                    document.getElementById('admin-error').innerText = t.loginError;
+                }
             };
 
+            window.logout = function() {
+                pb.authStore.clear();
+                appState.isAdminLoggedIn = false;
+                document.getElementById('admin-login-section').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                switchScreen('main');
+            };
+
+            // Upload new account
             window.uploadNewAccount = async function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
@@ -2276,6 +1827,7 @@
                     return;
                 }
                 
+                // Show progress
                 const progressContainer = document.getElementById('upload-progress');
                 const progressBar = document.getElementById('progress-bar');
                 const progressText = document.getElementById('progress-text');
@@ -2284,79 +1836,95 @@
                 progressContainer.classList.add('active');
                 uploadBtn.disabled = true;
                 
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += Math.random() * 15;
-                    if (progress >= 100) {
-                        progress = 100;
-                        clearInterval(interval);
-                        
-                        setTimeout(async () => {
-                            progressBar.style.width = '100%';
-                            progressText.innerHTML = 'Upload complete!';
-                            
-                            const accountData = {
-                                title: title,
-                                description: desc,
-                                tier: tier,
-                                price_usd: priceUsd,
-                                price_afn: priceAfn,
-                                mediaType: appState.currentMediaData.type
-                            };
-                            
-                            const success = await saveAccountToPocketBase(accountData, appState.currentMediaData.file);
-                            
-                            if (!success) {
-                                const newAccount = {
-                                    id: 'a' + Date.now(),
-                                    title: title,
-                                    desc: desc,
-                                    tier: tier,
-                                    price_usd: priceUsd,
-                                    price_afn: priceAfn,
-                                    media: appState.currentMediaData.data,
-                                    mediaType: appState.currentMediaData.type,
-                                    sold: false
-                                };
-                                
-                                appState.accounts.push(newAccount);
-                                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                            }
-                            
-                            setTimeout(() => {
-                                closeModal('add-account-modal');
-                                renderAccounts();
-                                if (appState.isAdminLoggedIn) {
-                                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                                }
-                                alert('Account uploaded successfully!');
-                                
-                                progressContainer.classList.remove('active');
-                                progressBar.style.width = '0%';
-                                progressText.innerHTML = '';
-                                uploadBtn.disabled = false;
-                            }, 500);
-                        }, 300);
-                    }
+                try {
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('title', title);
+                    formData.append('description', desc);
+                    formData.append('tier', tier);
+                    formData.append('price_usd', priceUsd);
+                    formData.append('price_afn', priceAfn);
+                    formData.append('mediaType', appState.currentMediaData.type);
+                    formData.append('media', appState.currentMediaData.file);
+                    formData.append('sold', 'false');
                     
-                    progressBar.style.width = progress + '%';
-                    progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
-                }, 200);
-            };
-
-            window.deleteAccount = async function(id) {
-                if (confirm('Delete this account permanently?')) {
-                    const success = await deleteAccountFromPocketBase(id);
-                    if (!success) {
-                        appState.accounts = appState.accounts.filter(a => a.id !== id);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    }
-                    renderAccounts();
-                    renderAdminAccounts();
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    // Simulate progress
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress >= 100) progress = 100;
+                        progressBar.style.width = progress + '%';
+                        progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
+                    }, 200);
+                    
+                    // Upload to PocketBase
+                    const record = await pb.collection('accounts').create(formData);
+                    
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    progressText.innerHTML = 'Upload complete!';
+                    
+                    // Add to local state
+                    const newAccount = {
+                        id: record.id,
+                        title: title,
+                        desc: desc,
+                        tier: tier,
+                        price_usd: priceUsd,
+                        price_afn: priceAfn,
+                        media: pb.files.getUrl(record, record.media),
+                        mediaType: appState.currentMediaData.type,
+                        sold: false
+                    };
+                    
+                    appState.accounts.push(newAccount);
+                    
+                    setTimeout(() => {
+                        closeModal('add-account-modal');
+                        renderAccounts();
+                        if (appState.isAdminLoggedIn) {
+                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                        }
+                        
+                        const t = translations[appState.currentLanguage] || translations.en;
+                        alert(t.uploadSuccess);
+                        
+                        // Reset
+                        progressContainer.classList.remove('active');
+                        progressBar.style.width = '0%';
+                        progressText.innerHTML = '';
+                        uploadBtn.disabled = false;
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    const t = translations[appState.currentLanguage] || translations.en;
+                    alert(t.uploadFailed);
+                    
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
                 }
             };
 
+            // Delete account
+            window.deleteAccount = async function(id) {
+                const t = translations[appState.currentLanguage] || translations.en;
+                if (!confirm(t.confirmDelete)) return;
+                
+                try {
+                    await pb.collection('accounts').delete(id);
+                    appState.accounts = appState.accounts.filter(a => a.id !== id);
+                    renderAccounts();
+                    renderAdminAccounts();
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                } catch (error) {
+                    console.error('Delete error:', error);
+                }
+            };
+
+            // Save new contact
             window.saveNewContact = async function() {
                 const name = document.getElementById('contact-name').value.trim();
                 const desc = document.getElementById('contact-desc').value.trim();
@@ -2384,47 +1952,50 @@
                     fullNumber = phone;
                 }
                 
-                const contactData = {
-                    name: name,
-                    phone: fullNumber,
-                    desc: desc
-                };
-                
-                const success = await saveContactToPocketBase(contactData);
-                
-                if (!success) {
+                try {
+                    const record = await pb.collection('contacts').create({
+                        name: name,
+                        phone: fullNumber,
+                        description: desc
+                    });
+                    
                     const newContact = {
-                        id: 'c' + Date.now(),
+                        id: record.id,
                         name: name,
                         phone: fullNumber,
                         desc: desc
                     };
                     
                     appState.contacts.push(newContact);
-                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                }
-                
-                document.getElementById('contact-name').value = '';
-                document.getElementById('contact-phone').value = '';
-                document.getElementById('contact-desc').value = '';
-                
-                renderContacts();
-                renderAdminContacts();
-                alert('Contact added successfully!');
-            };
-
-            window.deleteContact = async function(id) {
-                if (confirm('Delete this contact?')) {
-                    const success = await deleteContactFromPocketBase(id);
-                    if (!success) {
-                        appState.contacts = appState.contacts.filter(c => c.id !== id);
-                        localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                    }
+                    
+                    document.getElementById('contact-name').value = '';
+                    document.getElementById('contact-phone').value = '';
+                    document.getElementById('contact-desc').value = '';
+                    
                     renderContacts();
                     renderAdminContacts();
+                    alert('Contact added successfully!');
+                } catch (error) {
+                    console.error('Error saving contact:', error);
                 }
             };
 
+            // Delete contact
+            window.deleteContact = async function(id) {
+                const t = translations[appState.currentLanguage] || translations.en;
+                if (!confirm(t.confirmDelete)) return;
+                
+                try {
+                    await pb.collection('contacts').delete(id);
+                    appState.contacts = appState.contacts.filter(c => c.id !== id);
+                    renderContacts();
+                    renderAdminContacts();
+                } catch (error) {
+                    console.error('Delete error:', error);
+                }
+            };
+
+            // Save new ad
             window.saveNewAd = async function() {
                 const type = document.getElementById('ad-type').value;
                 const caption = document.getElementById('ad-caption').value.trim();
@@ -2434,44 +2005,53 @@
                     return;
                 }
                 
-                const adData = {
-                    type: type,
-                    caption: caption
-                };
-                
-                const success = await saveAdToPocketBase(adData, appState.currentAdData.file);
-                
-                if (!success) {
+                try {
+                    const formData = new FormData();
+                    formData.append('type', type);
+                    formData.append('caption', caption);
+                    formData.append('media', appState.currentAdData.file);
+                    
+                    const record = await pb.collection('ads').create(formData);
+                    
                     const newAd = {
+                        id: record.id,
                         type: type,
-                        data: appState.currentAdData.data,
+                        data: pb.files.getUrl(record, record.media),
                         caption: caption
                     };
                     
                     appState.ads.push(newAd);
-                    localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-                }
-                
-                document.getElementById('ad-type').value = 'image';
-                document.getElementById('ad-media-file').value = '';
-                document.getElementById('ad-caption').value = '';
-                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                appState.currentAdData = null;
-                
-                renderAdsSlider();
-                renderAdminAds();
-                alert('Ad added successfully!');
-            };
-
-            window.deleteAd = async function(index) {
-                if (confirm('Delete this ad?')) {
-                    appState.ads.splice(index, 1);
-                    localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+                    
+                    document.getElementById('ad-type').value = 'image';
+                    document.getElementById('ad-media-file').value = '';
+                    document.getElementById('ad-caption').value = '';
+                    document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    appState.currentAdData = null;
+                    
                     renderAdsSlider();
                     renderAdminAds();
+                    alert('Ad added successfully!');
+                } catch (error) {
+                    console.error('Error saving ad:', error);
                 }
             };
 
+            // Delete ad
+            window.deleteAd = async function(id) {
+                const t = translations[appState.currentLanguage] || translations.en;
+                if (!confirm(t.confirmDelete)) return;
+                
+                try {
+                    await pb.collection('ads').delete(id);
+                    appState.ads = appState.ads.filter(ad => ad.id !== id);
+                    renderAdsSlider();
+                    renderAdminAds();
+                } catch (error) {
+                    console.error('Delete error:', error);
+                }
+            };
+
+            // Book account
             window.bookAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
@@ -2504,14 +2084,11 @@
                             utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
                             dropdownContainer: document.body
                         });
-                        
-                        input.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                        });
                     }
                 }, 200);
             };
 
+            // Submit booking
             window.submitBook = async function() {
                 const name = document.getElementById('book-name')?.value;
                 
@@ -2537,37 +2114,55 @@
                     }
                 }
                 
-                const bookingData = {
-                    account_id: appState.currentAccount.id,
-                    account_title: appState.currentAccount.title,
-                    user_name: name,
-                    whatsapp: phone
-                };
-                
-                const success = await saveBookingToPocketBase(bookingData);
-                
-                if (!success) {
-                    const req = {
-                        id: Date.now(),
+                try {
+                    const record = await pb.collection('bookings').create({
                         account_id: appState.currentAccount.id,
                         account_title: appState.currentAccount.title,
                         user_name: name,
                         whatsapp: phone,
-                        date: new Date().toISOString()
+                        status: 'pending'
+                    });
+                    
+                    const req = {
+                        id: record.id,
+                        account_id: appState.currentAccount.id,
+                        account_title: appState.currentAccount.title,
+                        user_name: name,
+                        whatsapp: phone,
+                        date: record.created,
+                        status: 'pending'
                     };
+                    
                     appState.bookRequests.push(req);
-                    localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
+                    
+                    if (appState.isAdminLoggedIn) {
+                        document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                        renderBookRequests();
+                    }
+                    
+                    alert('✅ Booking submitted! We will contact you on WhatsApp.');
+                    closeModal('book-modal');
+                } catch (error) {
+                    console.error('Error creating booking:', error);
                 }
-                
-                if (appState.isAdminLoggedIn) {
-                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                    renderBookRequests();
-                }
-                
-                alert('✅ Booking submitted! We will contact you on WhatsApp.');
-                closeModal('book-modal');
             };
 
+            // Cancel book request
+            window.cancelBookRequest = async function(id) {
+                const t = translations[appState.currentLanguage] || translations.en;
+                if (!confirm(t.confirmDelete)) return;
+                
+                try {
+                    await pb.collection('bookings').delete(id);
+                    appState.bookRequests = appState.bookRequests.filter(r => r.id !== id);
+                    document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                    renderBookRequests();
+                } catch (error) {
+                    console.error('Error canceling booking:', error);
+                }
+            };
+
+            // Buy account
             window.buyAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
@@ -2588,6 +2183,7 @@
                 closeModal('buy-modal');
             };
 
+            // Info account
             window.infoAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
@@ -2601,11 +2197,36 @@
                 openModal('info-modal');
             };
 
+            // USDT address
+            window.saveUsdtAddress = async function() {
+                const newAddress = document.getElementById('new-usdt-address').value.trim();
+                if (!newAddress) {
+                    alert('Please enter a USDT address');
+                    return;
+                }
+                
+                try {
+                    const settings = await pb.collection('settings').getFirstListItem('key="usdt_address"');
+                    await pb.collection('settings').update(settings.id, { value: newAddress });
+                } catch {
+                    await pb.collection('settings').create({
+                        key: 'usdt_address',
+                        value: newAddress
+                    });
+                }
+                
+                appState.usdtAddress = newAddress;
+                document.getElementById('current-usdt-address').innerText = newAddress;
+                closeModal('edit-usdt-modal');
+                alert('USDT address updated successfully!');
+            };
+
             window.copyUsdt = function() {
                 navigator.clipboard.writeText(appState.usdtAddress);
                 alert('USDT address copied');
             };
 
+            // Modal functions
             window.openModal = function(id) {
                 document.getElementById(id).classList.remove('hidden');
             };
@@ -2620,6 +2241,58 @@
                 }
             };
             
+            // Show modals
+            window.showAddAccountModal = function() {
+                document.getElementById('account-tier').value = '';
+                document.getElementById('account-title').value = '';
+                document.getElementById('account-description').value = '';
+                document.getElementById('account-price-usd').value = '';
+                document.getElementById('account-price-afn').value = '';
+                document.getElementById('account-media-file').value = '';
+                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                document.getElementById('upload-progress').classList.remove('active');
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('progress-text').innerHTML = '';
+                document.getElementById('upload-btn').disabled = true;
+                appState.currentMediaData = null;
+                openModal('add-account-modal');
+            };
+
+            window.showManageAccountsModal = function() {
+                renderAdminAccounts();
+                openModal('manage-accounts-modal');
+            };
+
+            window.showManageContactsModal = function() {
+                renderAdminContacts();
+                const input = document.querySelector('#contact-phone');
+                if (input && !appState.phoneInput) {
+                    appState.phoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
+                    });
+                }
+                openModal('manage-contacts-modal');
+            };
+
+            window.showManageAdsModal = function() {
+                document.getElementById('ad-type').value = 'image';
+                document.getElementById('ad-media-file').value = '';
+                document.getElementById('ad-caption').value = '';
+                document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                appState.currentAdData = null;
+                renderAdminAds();
+                openModal('manage-ads-modal');
+            };
+
+            window.showEditUsdtModal = function() {
+                document.getElementById('new-usdt-address').value = appState.usdtAddress;
+                openModal('edit-usdt-modal');
+            };
+
+            // Language
             window.openLanguageModal = function() {
                 openModal('language-modal');
             };
@@ -2629,33 +2302,50 @@
                 closeModal('language-modal');
             };
 
-            // Initialize
-            async function initPocketBase() {
-                await fetchAccounts();
-                await fetchContacts();
-                await fetchAds();
-                await fetchBookRequests();
+            // Initialize phone input for contacts
+            function initPhoneInput() {
+                const input = document.querySelector('#contact-phone');
+                if (input && !appState.phoneInput) {
+                    appState.phoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
+                    });
+                }
             }
 
-            // Check login status on page load
+            // Initialize
             (async function() {
-                const savedLang = localStorage.getItem('gk_language') || 'en';
-                applyTranslation(savedLang);
+                // Show loading
+                document.getElementById('initial-loading').style.display = 'block';
                 
-                await initPocketBase();
-                
-                const loggedIn = await checkAdminSession();
-                if (loggedIn && document.getElementById('admin-screen').classList.contains('active')) {
-                    afterAdminLogin();
+                try {
+                    // Initialize collections
+                    await initializeCollections();
+                    
+                    // Load data
+                    await loadData();
+                    
+                    // Apply saved language
+                    const savedLang = localStorage.getItem('gk_language') || 'en';
+                    applyTranslation(savedLang);
+                    
+                    // Track visitor
+                    trackVisitor();
+                    setInterval(trackVisitor, 30000);
+                    
+                    // Hide loading
+                    document.getElementById('initial-loading').style.display = 'none';
+                    
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    document.getElementById('initial-loading').innerHTML = `
+                        <i class="fa fa-exclamation-triangle" style="color:#ef4444;"></i>
+                        <p>Error connecting to server. Please check your connection.</p>
+                        <button class="btn-primary" onclick="location.reload()">Retry</button>
+                    `;
                 }
-                
-                trackVisitor();
-                setInterval(trackVisitor, 30000);
-                setInterval(() => {
-                    if (document.visibilityState === 'visible') {
-                        trackVisitor();
-                    }
-                }, 60000);
             })();
         })();
     </script>
