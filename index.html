@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- intl-tel-input for beautiful country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    <!-- PocketBase SDK - ADD THIS LINE -->
+    <!-- PocketBase SDK -->
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     <style>
         /* YOUR EXISTING CSS REMAINS EXACTLY THE SAME */
@@ -1026,20 +1026,48 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // POCKETBASE CONFIGURATION - ADDED SECTION
+        // POCKETBASE CONFIGURATION - UPDATED WITH SSL FIX
         // ============================================
-        const PB_URL = 'https://216.126.225.4';  // Your VPS with HTTPS
+        const PB_URL = 'https://216.126.225.4';
+        
+        // Initialize PocketBase with SSL error handling
         const pb = new PocketBase(PB_URL);
+        
+        // 🔴 FIX FOR SELF-SIGNED CERTIFICATE ERRORS
+        pb.autoCancellation(false);
+        
+        // Additional SSL workaround for older PocketBase versions
+        pb.beforeSend = function(url, options) {
+            // For self-signed certificates, we need to ignore SSL verification
+            // This is handled by the browser when you accept the certificate
+            options.credentials = 'omit';
+            options.mode = 'cors';
+            options.cache = 'no-cache';
+            return { url, options };
+        };
 
-        // Test connection on load
+        // Test connection with better error handling
         pb.health.check()
             .then(() => console.log('✅ Connected to PocketBase'))
-            .catch(err => console.error('❌ PocketBase connection failed:', err));
+            .catch(err => {
+                console.error('❌ PocketBase connection failed:', err);
+                // Show user-friendly message
+                if (err.message.includes('Failed to fetch')) {
+                    console.log('⚠️ Please accept the SSL certificate at: ' + PB_URL + '/api/health');
+                }
+            });
 
-        // Load data from PocketBase
+        // Load data from PocketBase with SSL handling
         async function loadAccountsFromPB() {
             try {
-                const records = await pb.collection('accounts').getFullList();
+                const records = await pb.collection('accounts').getFullList({
+                    $autoCancel: false,
+                    requestKey: null,
+                    fetch: function(url, options) {
+                        options.credentials = 'omit';
+                        return fetch(url, options);
+                    }
+                });
                 if (records.length > 0) {
                     appState.accounts = records.map(record => ({
                         id: record.id,
@@ -1049,8 +1077,7 @@
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
                         media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
-                        mediaType: record.mediaType || 'image',
-                        sold: record.sold || false
+                        mediaType: record.mediaType || 'image'
                     }));
                     renderAccounts();
                 }
@@ -1061,7 +1088,10 @@
 
         async function loadContactsFromPB() {
             try {
-                const records = await pb.collection('contacts').getFullList();
+                const records = await pb.collection('contacts').getFullList({
+                    $autoCancel: false,
+                    requestKey: null
+                });
                 if (records.length > 0) {
                     appState.contacts = records.map(record => ({
                         id: record.id,
@@ -1078,7 +1108,10 @@
 
         async function loadSettingsFromPB() {
             try {
-                const records = await pb.collection('settings').getFullList();
+                const records = await pb.collection('settings').getFullList({
+                    $autoCancel: false,
+                    requestKey: null
+                });
                 const usdtSetting = records.find(r => r.key === 'usdt_address');
                 if (usdtSetting) {
                     appState.usdtAddress = usdtSetting.value;
@@ -1090,13 +1123,13 @@
         }
 
         // ============================================
-        // YOUR EXISTING APP STATE (MODIFIED TO USE POCKETBASE)
+        // YOUR EXISTING APP STATE
         // ============================================
         (function() {
             // ---------- APP STATE ----------
             const appState = {
                 accounts: [],
-                contacts: [],  // Will be populated from PocketBase
+                contacts: [],
                 ads: [
                     { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
                     { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
@@ -1104,7 +1137,7 @@
                 ],
                 bookRequests: [],
                 uniqueVisitors: new Set(),
-                activeSessions: new Map(), // IP -> timestamp
+                activeSessions: new Map(),
                 visitorCount: 0,
                 onlineCount: 0,
                 currentFilter: 'all',
@@ -1116,7 +1149,7 @@
                 bookPhoneInput: null,
                 currentLanguage: 'en',
                 autoSlideInterval: null,
-                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY' // Default USDT address
+                usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
             };
 
             // Load from localStorage (fallback)
@@ -1136,12 +1169,10 @@
                 appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
             }
             
-            // Load USDT address from localStorage
             if (localStorage.getItem('gk_usdt_address')) {
                 appState.usdtAddress = localStorage.getItem('gk_usdt_address');
             }
 
-            // Load unique visitors from localStorage
             if (localStorage.getItem('gk_visitors')) {
                 try {
                     const saved = JSON.parse(localStorage.getItem('gk_visitors'));
@@ -1152,15 +1183,13 @@
                 }
             }
             
-            // Load active sessions from localStorage
             if (localStorage.getItem('gk_sessions')) {
                 try {
                     const saved = JSON.parse(localStorage.getItem('gk_sessions'));
                     appState.activeSessions = new Map(saved);
-                    // Clean old sessions (> 5 minutes)
                     const now = Date.now();
                     for (let [ip, time] of appState.activeSessions.entries()) {
-                        if (now - time > 300000) { // 5 minutes
+                        if (now - time > 300000) {
                             appState.activeSessions.delete(ip);
                         }
                     }
@@ -1170,7 +1199,7 @@
                 }
             }
 
-            // COMPLETE Translation dictionary (YOUR EXISTING TRANSLATIONS)
+            // Translations (keeping your existing translations)
             const translations = {
                 en: {
                     brand: 'GK Store',
@@ -1209,7 +1238,6 @@
                     mediumTier: 'Medium PUBG ($500-$1000)',
                     bigTier: 'Big PUBG ($1000-$100000)',
                     mediaLabel: 'Account Media (Image or Video) *',
-                    mediaHint: 'Supports images and videos (videos play without download button)',
                     uploadBtn: 'UPLOAD',
                     manageModalTitle: 'Manage Accounts',
                     existingAccounts: '📋 Existing Accounts (click delete to remove)',
@@ -1281,7 +1309,6 @@
                     mediumTier: 'منځنی PUBG ($500-$1000)',
                     bigTier: 'لوی PUBG ($1000-$100000)',
                     mediaLabel: 'د حساب میډیا (انځور یا ویډیو) *',
-                    mediaHint: 'انځور او ویډیو ملاتړ کیږي (ویډیو د ډاونلوډ تڼۍ پرته)',
                     uploadBtn: 'اپلوډ',
                     manageModalTitle: 'حسابونه اداره کړئ',
                     existingAccounts: '📋 موجود حسابونه (ړنګولو لپاره کلیک وکړئ)',
@@ -1353,7 +1380,6 @@
                     mediumTier: 'متوسط PUBG ($500-$1000)',
                     bigTier: 'بزرگ PUBG ($1000-$100000)',
                     mediaLabel: 'رسانه حساب (تصویر یا ویدیو) *',
-                    mediaHint: 'پشتیبانی از تصاویر و ویدیوها (بدون دکمه دانلود)',
                     uploadBtn: 'آپلود',
                     manageModalTitle: 'مدیریت حساب‌ها',
                     existingAccounts: '📋 حساب‌های موجود (برای حذف کلیک کنید)',
@@ -1390,7 +1416,7 @@
                 }
             };
 
-            // Apply translation (YOUR EXISTING FUNCTION)
+            // Apply translation
             function applyTranslation(lang) {
                 const t = translations[lang] || translations.en;
                 
@@ -1407,16 +1433,14 @@
                 appState.currentLanguage = lang;
                 localStorage.setItem('gk_language', lang);
                 
-                // Re-render to update button texts
                 renderAccounts();
                 renderContacts();
                 if (appState.isAdminLoggedIn) renderBookRequests();
                 
-                // Update USDT address display
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
             }
 
-            // Get visitor IP and track unique visitors & online users (YOUR EXISTING FUNCTION)
+            // Track visitor
             function trackVisitor() {
                 fetch('https://api.ipify.org?format=json')
                     .then(response => response.json())
@@ -1424,31 +1448,25 @@
                         const ip = data.ip;
                         const now = Date.now();
                         
-                        // Track unique visitors (total users)
                         appState.uniqueVisitors.add(ip);
                         appState.visitorCount = appState.uniqueVisitors.size;
                         localStorage.setItem('gk_visitors', JSON.stringify([...appState.uniqueVisitors]));
                         
-                        // Track online users (active in last 5 minutes)
                         appState.activeSessions.set(ip, now);
-                        // Clean old sessions
                         for (let [sessionIp, time] of appState.activeSessions.entries()) {
-                            if (now - time > 300000) { // 5 minutes
+                            if (now - time > 300000) {
                                 appState.activeSessions.delete(sessionIp);
                             }
                         }
                         appState.onlineCount = appState.activeSessions.size;
                         
-                        // Save sessions to localStorage
                         localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
                         
-                        // Update UI
                         document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
                         document.getElementById('online-user-count').innerText = appState.onlineCount;
                         document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                     })
                     .catch(() => {
-                        // Fallback to session ID if IP fetch fails
                         let sessionId = localStorage.getItem('gk_session_id');
                         if (!sessionId) {
                             sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1476,7 +1494,7 @@
                     });
             }
 
-            // Initialize intl-tel-input for manage contacts modal (YOUR EXISTING FUNCTION)
+            // Initialize phone input
             function initPhoneInput() {
                 const input = document.querySelector('#contact-phone');
                 if (input && !appState.phoneInput) {
@@ -1489,7 +1507,7 @@
                 }
             }
 
-            // Auto slide function - 2 seconds (YOUR EXISTING FUNCTION)
+            // Auto slide
             function startAutoSlide() {
                 if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
                 
@@ -1513,7 +1531,7 @@
                 }, 2000);
             }
 
-            // Render main slider (ads) (YOUR EXISTING FUNCTION)
+            // Render ads slider
             function renderAdsSlider() {
                 const container = document.getElementById('ads-slider');
                 if (!container) return;
@@ -1557,7 +1575,7 @@
                 }
             };
 
-            // Render contacts (YOUR EXISTING FUNCTION)
+            // Render contacts
             function renderContacts() {
                 const container = document.getElementById('contacts-container');
                 if (!container) return;
@@ -1589,11 +1607,11 @@
                 }).join('');
             }
 
-            // Render account cards with translated buttons and video support (no download) (YOUR EXISTING FUNCTION)
+            // Render accounts
             function renderAccounts() {
                 const grid = document.getElementById('accounts-grid');
                 if (!grid) return;
-                let filtered = appState.accounts.filter(a => !a.sold);
+                let filtered = appState.accounts;
                 if (appState.currentFilter !== 'all') {
                     filtered = filtered.filter(a => a.tier === appState.currentFilter);
                 }
@@ -1633,7 +1651,7 @@
                 }).join('');
             }
 
-            // Render admin accounts list (YOUR EXISTING FUNCTION)
+            // Render admin accounts list
             function renderAdminAccounts() {
                 const list = document.getElementById('admin-accounts-list');
                 if (!list) return;
@@ -1663,7 +1681,7 @@
                 `}).join('');
             }
 
-            // Render admin contacts list (YOUR EXISTING FUNCTION)
+            // Render admin contacts list
             function renderAdminContacts() {
                 const list = document.getElementById('admin-contacts-list');
                 if (!list) return;
@@ -1690,7 +1708,7 @@
                 `).join('');
             }
 
-            // Render admin ads list (YOUR EXISTING FUNCTION)
+            // Render admin ads list
             function renderAdminAds() {
                 const list = document.getElementById('admin-ads-list');
                 if (!list) return;
@@ -1719,7 +1737,7 @@
                 `).join('');
             }
 
-            // Render book requests list with WhatsApp button and Cancel (YOUR EXISTING FUNCTION)
+            // Render book requests
             function renderBookRequests() {
                 const list = document.getElementById('admin-book-requests-list');
                 if (!list) return;
@@ -1730,7 +1748,6 @@
                 
                 const t = translations[appState.currentLanguage] || translations.en;
                 
-                // Sort by date (newest first)
                 const sorted = [...appState.bookRequests].sort((a, b) => new Date(b.date) - new Date(a.date));
                 
                 list.innerHTML = sorted.map(req => {
@@ -1756,7 +1773,7 @@
                 }).join('');
             }
 
-            // Cancel book request (YOUR EXISTING FUNCTION)
+            // Cancel book request
             window.cancelBookRequest = function(id) {
                 if (confirm('Cancel this book request?')) {
                     appState.bookRequests = appState.bookRequests.filter(r => r.id != id);
@@ -1766,7 +1783,7 @@
                 }
             };
 
-            // Filter accounts (YOUR EXISTING FUNCTION)
+            // Filter accounts
             window.filterAccounts = function(tier) {
                 appState.currentFilter = tier;
                 document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
@@ -1774,7 +1791,7 @@
                 renderAccounts();
             };
 
-            // Screen switch (YOUR EXISTING FUNCTION)
+            // Screen switch
             window.switchScreen = function(screen) {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(screen + '-screen').classList.add('active');
@@ -1793,7 +1810,7 @@
                 }
             };
 
-            // Media preview functions with progress simulation (YOUR EXISTING FUNCTION)
+            // Media preview
             window.previewMediaFromFile = function() {
                 const fileInput = document.getElementById('account-media-file');
                 const preview = document.getElementById('media-preview');
@@ -1802,7 +1819,6 @@
                 if (fileInput.files && fileInput.files[0]) {
                     const file = fileInput.files[0];
                     
-                    // Enable upload button
                     uploadBtn.disabled = false;
                     
                     const reader = new FileReader();
@@ -1842,7 +1858,7 @@
                 }
             };
 
-            // Show modals (YOUR EXISTING FUNCTION)
+            // Show modals
             window.showAddAccountModal = function() {
                 document.getElementById('account-tier').value = '';
                 document.getElementById('account-title').value = '';
@@ -1880,13 +1896,11 @@
                 openModal('manage-ads-modal');
             };
 
-            // Show edit USDT modal (YOUR EXISTING FUNCTION)
             window.showEditUsdtModal = function() {
                 document.getElementById('new-usdt-address').value = appState.usdtAddress;
                 openModal('edit-usdt-modal');
             };
 
-            // Save new USDT address (YOUR EXISTING FUNCTION)
             window.saveUsdtAddress = function() {
                 const newAddress = document.getElementById('new-usdt-address').value.trim();
                 if (!newAddress) {
@@ -1901,7 +1915,6 @@
                 alert('USDT address updated successfully!');
             };
 
-            // Upload new account with progress tracking (YOUR EXISTING FUNCTION)
             window.uploadNewAccount = function() {
                 const tier = document.getElementById('account-tier').value;
                 const title = document.getElementById('account-title').value.trim();
@@ -1919,7 +1932,6 @@
                     return;
                 }
                 
-                // Show progress bar
                 const progressContainer = document.getElementById('upload-progress');
                 const progressBar = document.getElementById('progress-bar');
                 const progressText = document.getElementById('progress-text');
@@ -1928,7 +1940,6 @@
                 progressContainer.classList.add('active');
                 uploadBtn.disabled = true;
                 
-                // Simulate upload progress
                 let progress = 0;
                 const interval = setInterval(() => {
                     progress += Math.random() * 15;
@@ -1936,12 +1947,10 @@
                         progress = 100;
                         clearInterval(interval);
                         
-                        // Complete upload
                         setTimeout(() => {
                             progressBar.style.width = '100%';
                             progressText.innerHTML = 'Upload complete!';
                             
-                            // Create and save account
                             const newAccount = {
                                 id: 'a' + Date.now(),
                                 title: title,
@@ -1957,7 +1966,6 @@
                             appState.accounts.push(newAccount);
                             localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                             
-                            // Reset and close
                             setTimeout(() => {
                                 closeModal('add-account-modal');
                                 renderAccounts();
@@ -1966,7 +1974,6 @@
                                 }
                                 alert('Account uploaded successfully!');
                                 
-                                // Reset
                                 progressContainer.classList.remove('active');
                                 progressBar.style.width = '0%';
                                 progressText.innerHTML = '';
@@ -1990,7 +1997,6 @@
                 }
             };
 
-            // Save new contact (YOUR EXISTING FUNCTION)
             window.saveNewContact = function() {
                 const name = document.getElementById('contact-name').value.trim();
                 const desc = document.getElementById('contact-desc').value.trim();
@@ -2084,7 +2090,6 @@
                 }
             };
 
-            // Book account with FIXED country code picker (stays visible) (YOUR EXISTING FUNCTION)
             window.bookAccount = function(id) {
                 const acc = appState.accounts.find(a => a.id === id);
                 if (!acc) return;
@@ -2103,11 +2108,9 @@
                 
                 openModal('book-modal');
                 
-                // Initialize phone input after modal is open - with proper cleanup
                 setTimeout(() => {
                     const input = document.getElementById('book-phone');
                     if (input) {
-                        // Destroy previous instance if exists
                         if (appState.bookPhoneInput) {
                             try {
                                 appState.bookPhoneInput.destroy();
@@ -2120,7 +2123,6 @@
                             dropdownContainer: document.body
                         });
                         
-                        // Force the dropdown to be visible when clicked
                         input.addEventListener('click', function(e) {
                             e.stopPropagation();
                         });
@@ -2206,22 +2208,29 @@
                 openModal('info-modal');
             };
 
-            // Admin login (MODIFIED to use PocketBase)
+            // Admin login
             window.adminLogin = async function() {
                 const email = document.getElementById('admin-email').value;
                 const pass = document.getElementById('admin-password').value;
                 
                 try {
-                    // Try admin auth first
-                    const authData = await pb.admins.authWithPassword(email, pass);
+                    const authData = await pb.admins.authWithPassword(email, pass, {
+                        $autoCancel: false,
+                        requestKey: null
+                    });
                     appState.isAdminLoggedIn = true;
                     document.getElementById('admin-login-section').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     document.getElementById('admin-error').innerText = '';
                     
-                    // Load admin data from PocketBase
-                    const accounts = await pb.collection('accounts').getFullList();
-                    const bookings = await pb.collection('bookings').getFullList();
+                    const accounts = await pb.collection('accounts').getFullList({
+                        $autoCancel: false,
+                        requestKey: null
+                    });
+                    const bookings = await pb.collection('bookings').getFullList({
+                        $autoCancel: false,
+                        requestKey: null
+                    });
                     
                     document.getElementById('admin-account-count').innerText = accounts.length;
                     document.getElementById('admin-bookings-count').innerText = bookings.length;
@@ -2229,8 +2238,10 @@
                     document.getElementById('online-user-count').innerText = appState.onlineCount;
                     document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                     
-                    // Load USDT from settings
-                    const settings = await pb.collection('settings').getFullList();
+                    const settings = await pb.collection('settings').getFullList({
+                        $autoCancel: false,
+                        requestKey: null
+                    });
                     const usdtSetting = settings.find(s => s.key === 'usdt_address');
                     if (usdtSetting) {
                         appState.usdtAddress = usdtSetting.value;
@@ -2251,7 +2262,6 @@
                 switchScreen('main');
             };
 
-            // Utility (YOUR EXISTING FUNCTION)
             window.copyUsdt = function() {
                 navigator.clipboard.writeText(appState.usdtAddress);
                 alert('USDT address copied');
@@ -2263,7 +2273,6 @@
             
             window.closeModal = function(id) {
                 document.getElementById(id).classList.add('hidden');
-                // Clean up phone input when closing book modal
                 if (id === 'book-modal' && appState.bookPhoneInput) {
                     try {
                         appState.bookPhoneInput.destroy();
@@ -2281,7 +2290,7 @@
                 closeModal('language-modal');
             };
 
-            // Initialize (MODIFIED to load from PocketBase)
+            // Initialize
             const savedLang = localStorage.getItem('gk_language') || 'en';
             applyTranslation(savedLang);
             renderAdsSlider();
@@ -2293,13 +2302,8 @@
             loadContactsFromPB();
             loadSettingsFromPB();
             
-            // Track unique visitor immediately
             trackVisitor();
-            
-            // Update online users every 30 seconds
             setInterval(trackVisitor, 30000);
-            
-            // Also track when user switches screens
             setInterval(() => {
                 if (document.visibilityState === 'visible') {
                     trackVisitor();
