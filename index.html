@@ -12,7 +12,7 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- PWA Manifest -->
+    <!-- PWA Manifest (inline) -->
     <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22GK%20Store%20-%20PUBG%20Accounts%22%2C%22short_name%22%3A%22GK%20Store%22%2C%22description%22%3A%22Buy%20and%20sell%20PUBG%20accounts%20securely%22%2C%22start_url%22%3A%22%2FGKStore%2F%22%2C%22scope%22%3A%22%2FGKStore%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%23ec4899%22%2C%22background_color%22%3A%22%230a0a0f%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F192%2Fec4899%2Fffffff%3Ftext%3DGK%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F512%2Fec4899%2Fffffff%3Ftext%3DGK%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
     
     <title>GK Store · PUBG accounts</title>
@@ -349,12 +349,17 @@
             gap: 3px;
             cursor: pointer;
             color: var(--text);
+            transition: 0.2s;
         }
 
         .action-btn.buy {
             background: var(--gradient-primary);
             border: none;
             color: white;
+        }
+
+        .action-btn.buy:hover {
+            transform: scale(0.95);
         }
 
         .hidden { display: none !important; }
@@ -437,6 +442,9 @@
             align-items:center;
         }
 
+        .modal-header h3 { font-size:1.2rem; }
+        .modal-close { background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; }
+
         .modal-body { padding:1rem; }
         .modal-footer { padding:1rem; display:flex; gap:0.8rem; }
 
@@ -448,7 +456,7 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button */
+        /* Install Button - Always visible and working */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
@@ -464,10 +472,16 @@
             font-size: 16px;
             box-shadow: 0 4px 15px rgba(236,72,153,0.5);
             cursor: pointer;
-            display: none;
+            display: flex;
             align-items: center;
             gap: 8px;
             animation: bounce 2s infinite;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .install-btn-fixed:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 6px 20px rgba(236,72,153,0.7);
         }
 
         @keyframes bounce {
@@ -475,7 +489,7 @@
             50% { transform: translateX(-50%) translateY(-5px); }
         }
 
-        /* SSL Helper */
+        /* SSL Helper - Shows only once */
         .ssl-helper {
             position: fixed;
             bottom: 80px;
@@ -489,6 +503,7 @@
             z-index: 9998;
             font-size: 14px;
             border: 2px solid var(--primary);
+            animation: slideUp 0.3s ease;
         }
 
         .ssl-helper button {
@@ -502,17 +517,46 @@
             cursor: pointer;
         }
 
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
             z-index: 2001;
         }
+
+        .book-request-item {
+            background: var(--surface-light);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border: 1px solid var(--border);
+        }
+        .book-request-item .label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: inline-block;
+            width: 80px;
+        }
+        .btn-wa {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 2rem;
+            width: 100%;
+            margin-top: 0.5rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- Install Button -->
+    <!-- Install Button - Always visible and working -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()">
-        <i class="fas fa-download"></i> Install App
+        <i class="fas fa-download"></i> Install GK Store
     </button>
 
     <!-- top nav -->
@@ -735,63 +779,93 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // PWA INSTALLATION - FIXED
+        // FIXED PWA INSTALLATION - WORKING NATIVE INSTALL
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
-
-        // Show install button after 2 seconds (always visible for testing)
-        setTimeout(() => {
-            installButton.style.display = 'flex';
-        }, 2000);
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installButton.style.display = 'flex';
-        });
-
-        window.installApp = function() {
-            if (!deferredPrompt) {
-                alert('To install: Tap browser menu → "Add to Home Screen"');
-                return;
-            }
-            
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    installButton.style.display = 'none';
-                }
-                deferredPrompt = null;
-            });
-        };
+        let installPromptShown = false;
 
         // Check if already installed
         if (window.matchMedia('(display-mode: standalone)').matches) {
             installButton.style.display = 'none';
         }
 
+        // Listen for beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'flex';
+            console.log('✅ Install prompt available');
+        });
+
+        // Install function - triggers native install
+        window.installApp = function() {
+            if (!deferredPrompt) {
+                // If no deferred prompt, check if we can still install
+                if (window.matchMedia('(display-mode: browser)').matches) {
+                    alert('To install: Tap browser menu → "Add to Home Screen"');
+                } else {
+                    installButton.style.display = 'none';
+                }
+                return;
+            }
+            
+            // Show the native install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for user choice
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('✅ User accepted install');
+                    installButton.style.display = 'none';
+                } else {
+                    console.log('❌ User dismissed install');
+                }
+                deferredPrompt = null;
+            });
+        };
+
+        // Also show button after 2 seconds if not installed
+        setTimeout(() => {
+            if (!window.matchMedia('(display-mode: standalone)').matches && !deferredPrompt) {
+                installButton.style.display = 'flex';
+            }
+        }, 2000);
+
         // ============================================
-        // SSL CERTIFICATE HELPER
+        // SSL CERTIFICATE HELPER - SHOWS ONLY ONCE
         // ============================================
         const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         
-        if (isMobile) {
+        // Check if SSL was already accepted
+        const sslAccepted = localStorage.getItem('ssl_accepted');
+        
+        if (isMobile && !sslAccepted) {
             setTimeout(() => {
-                fetch('https://216.126.225.4/api/health', { mode: 'cors' })
-                    .catch(() => {
-                        const sslDiv = document.createElement('div');
-                        sslDiv.className = 'ssl-helper';
-                        sslDiv.innerHTML = `
-                            <strong>🔒 Accept SSL Certificate</strong>
-                            <p>Click to accept the security certificate</p>
-                            <button onclick="window.open('https://216.126.225.4/api/health', '_blank')">Open Link</button>
-                            <button onclick="this.parentElement.remove()">Close</button>
-                        `;
-                        document.body.appendChild(sslDiv);
-                    });
+                fetch('https://216.126.225.4/api/health', { 
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    timeout: 5000
+                })
+                .catch(() => {
+                    const sslDiv = document.createElement('div');
+                    sslDiv.className = 'ssl-helper';
+                    sslDiv.innerHTML = `
+                        <strong>🔒 Accept SSL Certificate</strong>
+                        <p>Please accept the security certificate to view images</p>
+                        <button onclick="acceptSSL(this)">Open Link & Accept</button>
+                        <button onclick="this.parentElement.remove()">Close</button>
+                    `;
+                    document.body.appendChild(sslDiv);
+                });
             }, 2000);
         }
+
+        window.acceptSSL = function(btn) {
+            window.open('https://216.126.225.4/api/health', '_blank');
+            localStorage.setItem('ssl_accepted', 'true');
+            btn.parentElement.remove();
+        };
 
         // ============================================
         // POCKETBASE CONFIGURATION
@@ -822,7 +896,8 @@
             currentFilter: 'all',
             isAdminLoggedIn: false,
             currentAccount: null,
-            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
+            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
+            currentLanguage: 'en'
         };
 
         // Load from localStorage
@@ -830,6 +905,16 @@
             try {
                 appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_bookings')) {
+            try {
+                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_usdt_address')) {
+            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
         }
 
         // ============================================
@@ -1048,16 +1133,22 @@
             
             const t = translations[appState.currentLanguage || 'en'];
             
-            container.innerHTML = appState.contacts.map(contact => `
-                <div class="account-card" style="padding:1.5rem;">
-                    <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                    <p>${contact.desc || ''}</p>
-                    <p><strong>+${contact.phone}</strong></p>
-                    <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${contact.phone}', '_blank')">
-                        <i class="fab fa-whatsapp"></i> ${t.chatNow}
-                    </button>
-                </div>
-            `).join('');
+            container.innerHTML = appState.contacts.map(contact => {
+                let cleanPhone = contact.phone.replace(/\D/g, '');
+                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
+                    cleanPhone = '93' + cleanPhone;
+                }
+                return `
+                    <div class="account-card" style="padding:1.5rem;">
+                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                        <p>${contact.desc || ''}</p>
+                        <p><strong>+${cleanPhone}</strong></p>
+                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                            <i class="fab fa-whatsapp"></i> ${t.chatNow}
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderAdsSlider() {
@@ -1116,7 +1207,7 @@
         };
 
         // ============================================
-        // ACTION FUNCTIONS - RESTORED
+        // ACTION FUNCTIONS
         // ============================================
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
