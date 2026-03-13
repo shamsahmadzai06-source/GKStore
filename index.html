@@ -3,13 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    
+    <!-- PWA Required Meta Tags -->
+    <meta name="theme-color" content="#ec4899">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GK Store">
+    <meta name="application-name" content="GK Store">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- PWA Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/ec4899/ffffff?text=GK">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://via.placeholder.com/192/ec4899/ffffff?text=GK">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://via.placeholder.com/512/ec4899/ffffff?text=GK">
+    
     <title>GK Store · PUBG accounts with total & online users</title>
+    
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- intl-tel-input for beautiful country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+    
     <!-- PocketBase SDK -->
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -57,9 +76,10 @@
             color: var(--text);
             line-height: 1.5;
             min-height: 100vh;
-            padding-bottom: 20px;
+            padding-bottom: 70px; /* Space for bottom nav */
         }
 
+        /* top navigation */
         .top-nav {
             background: rgba(22, 22, 31, 0.98);
             backdrop-filter: blur(8px);
@@ -116,12 +136,14 @@
             border-color: transparent;
         }
 
+        /* main container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 16px;
         }
 
+        /* screen visibility */
         .screen {
             display: none;
         }
@@ -130,6 +152,7 @@
             display: block;
         }
 
+        /* MAIN SCREEN */
         #main-screen .main-layout {
             display: flex;
             flex-direction: column;
@@ -151,6 +174,7 @@
             margin-bottom: 1rem;
         }
 
+        /* big CTA button */
         .cta-button {
             background: var(--gradient-primary);
             border: none;
@@ -180,6 +204,7 @@
             transform: scale(0.97);
         }
 
+        /* swipe ads slider */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -258,6 +283,7 @@
             width: 24px;
         }
 
+        /* ACCOUNT BROWSER SCREEN */
         .tier-header {
             display: flex;
             gap: 0.8rem;
@@ -284,6 +310,11 @@
             border-color: transparent;
         }
 
+        .tier-tab[data-tier="small"].active { background: var(--gradient-small); }
+        .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
+        .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
+
+        /* account cards grid */
         .accounts-grid {
             display: grid;
             gap: 1.5rem;
@@ -377,8 +408,8 @@
 
         .action-btn i { font-size: 0.9rem; }
 
+        /* admin panel */
         .hidden { display: none !important; }
-        
         .input { 
             width:100%; 
             padding:0.8rem; 
@@ -454,6 +485,7 @@
         .tier-badge.medium { background: var(--gradient-medium); color: white; }
         .tier-badge.big { background: var(--gradient-big); color: white; }
 
+        /* modals */
         .modal-overlay {
             position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
@@ -638,13 +670,13 @@
             object-fit: cover;
         }
         
-        /* Mobile helper message */
-        .mobile-helper {
+        /* Install button for PWA */
+        .install-prompt {
             position: fixed;
             bottom: 80px;
             left: 10px;
             right: 10px;
-            background: var(--primary);
+            background: var(--gradient-primary);
             color: white;
             padding: 15px;
             border-radius: 10px;
@@ -655,20 +687,21 @@
             animation: slideUp 0.3s ease;
         }
         
-        @keyframes slideUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .mobile-helper button {
+        .install-prompt button {
             background: white;
             color: var(--primary);
             border: none;
-            padding: 8px 20px;
+            padding: 10px 20px;
             border-radius: 20px;
-            margin-top: 10px;
+            margin: 10px 5px 0;
             font-weight: bold;
             cursor: pointer;
+        }
+        
+        .install-prompt .close {
+            background: transparent;
+            color: white;
+            border: 1px solid white;
         }
     </style>
 </head>
@@ -1004,6 +1037,46 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
+        // PWA INSTALLATION HANDLER
+        // ============================================
+        let deferredPrompt;
+        const installPrompt = document.createElement('div');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install prompt after 5 seconds
+            setTimeout(() => {
+                showInstallPrompt();
+            }, 5000);
+        });
+
+        function showInstallPrompt() {
+            installPrompt.className = 'install-prompt';
+            installPrompt.innerHTML = `
+                <strong>📱 Install GK Store App</strong>
+                <p>Install this app on your home screen for easier access</p>
+                <button onclick="installApp()">Install Now</button>
+                <button class="close" onclick="this.parentElement.remove()">Maybe Later</button>
+            `;
+            document.body.appendChild(installPrompt);
+        }
+
+        window.installApp = function() {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                installPrompt.remove();
+            });
+        };
+
+        // ============================================
         // POCKETBASE CONFIGURATION
         // ============================================
         const PB_URL = 'https://216.126.225.4';
@@ -1025,23 +1098,22 @@
                 return url.replace('http://', 'https://');
             };
             
-            // Show helper message after 3 seconds if no accounts
+            // Show SSL instruction message
             setTimeout(() => {
-                const accountsGrid = document.getElementById('accounts-grid');
-                if (accountsGrid && accountsGrid.children.length === 0) {
-                    const helper = document.createElement('div');
-                    helper.className = 'mobile-helper';
-                    helper.innerHTML = `
-                        <strong>📱 Mobile Connection Guide:</strong><br><br>
-                        1. First visit: <strong>https://216.126.225.4/api/health</strong><br>
-                        2. Tap "Advanced" → "Proceed to site"<br>
-                        3. Return here and refresh<br>
-                        <br>
-                        <button onclick="this.parentElement.remove()">OK, Got It</button>
+                if (document.getElementById('accounts-grid').children.length === 0) {
+                    const sslMsg = document.createElement('div');
+                    sslMsg.className = 'install-prompt';
+                    sslMsg.style.background = 'var(--surface-light)';
+                    sslMsg.innerHTML = `
+                        <strong>🔒 SSL Certificate Required</strong>
+                        <p>Please visit this URL and accept the certificate:</p>
+                        <p style="font-size:12px; word-break:break-all;">${PB_URL}/api/health</p>
+                        <button onclick="window.open('${PB_URL}/api/health', '_blank')">Open Link</button>
+                        <button class="close" onclick="this.parentElement.remove()">Close</button>
                     `;
-                    document.body.appendChild(helper);
+                    document.body.appendChild(sslMsg);
                 }
-            }, 3000);
+            }, 2000);
         }
 
         // Test connection
@@ -1085,9 +1157,7 @@
             try {
                 const saved = JSON.parse(localStorage.getItem('gk_accounts'));
                 appState.accounts = saved.filter(acc => !acc.media || !acc.media.startsWith('data:'));
-            } catch (e) {
-                console.log('No valid accounts in localStorage');
-            }
+            } catch (e) {}
         }
         
         if (localStorage.getItem('gk_contacts')) {
@@ -1464,7 +1534,6 @@
                 });
                 if (records.length > 0) {
                     appState.accounts = records.map(record => {
-                        // Get media URL and ensure HTTPS
                         let mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
                         
                         // Force HTTPS for mobile
@@ -1548,7 +1617,7 @@
             
             grid.innerHTML = filtered.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline crossorigin="anonymous" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-media\\' style=\\'display:flex;align-items:center;justify-content:center;background:var(--surface-lighter);\\'><span style=\\'font-size:3rem;\\'>📹</span></div>';"></video>`
+                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline x5-playsinline preload="metadata" poster="${acc.media.replace(/\.[^/.]+$/, '.jpg')}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-media\\' style=\\'display:flex;align-items:center;justify-content:center;background:var(--surface-lighter);\\'><span style=\\'font-size:3rem;\\'>📹</span><p style=\\'color:var(--text-secondary);margin-top:0.5rem;\\'>Video</p></div>';">Your browser does not support the video tag.</video>`
                     : `<img src="${acc.media}" class="card-media" alt="${acc.title}" crossorigin="anonymous" loading="lazy" onerror="this.onerror=null; this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
@@ -1622,7 +1691,7 @@
             let slides = '';
             appState.ads.forEach((ad, idx) => {
                 if (ad.type === 'video') {
-                    slides += `<div class="slide"><video src="${ad.data}" controls controlsList="nodownload" muted loop playsinline></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
+                    slides += `<div class="slide"><video src="${ad.data}" controls playsinline webkit-playsinline x5-playsinline muted loop preload="metadata"></video><div class="slide-caption">${ad.caption || ''}</div></div>`;
                 } else {
                     slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption || ''}</div></div>`;
                 }
@@ -1694,7 +1763,7 @@
             
             list.innerHTML = appState.accounts.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls controlsList="nodownload"></video>`
+                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline></video>`
                     : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
                 
                 return `
@@ -1756,7 +1825,7 @@
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                     <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#000;">
                         ${ad.type === 'video' 
-                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" controls controlsList="nodownload"></video>`
+                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" controls playsinline></video>`
                             : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
                         }
                     </div>
@@ -1831,14 +1900,12 @@
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
             
-            // File size limits
             const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '20MB' : '5MB'}`);
                 return;
             }
             
-            // Show progress
             const progressContainer = document.getElementById('upload-progress');
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
@@ -1859,7 +1926,6 @@
                 formData.append('mediaType', isVideo ? 'video' : 'image');
                 formData.append('media', file);
                 
-                // Simulate progress
                 let progress = 0;
                 const interval = setInterval(() => {
                     progress += Math.random() * 10;
@@ -1880,7 +1946,6 @@
                 progressBar.style.width = '100%';
                 progressText.innerHTML = 'Upload complete!';
                 
-                // Get media URL and ensure HTTPS for mobile
                 let mediaUrl = pb.files.getUrl(record, record.media);
                 if (isMobile) {
                     mediaUrl = mediaUrl.replace('http://', 'https://');
@@ -1987,9 +2052,8 @@
                 
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const isVideo = file.type.startsWith('video/');
                     if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
+                        preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="max-height:200px;"></video>`;
                     } else {
                         preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
                     }
@@ -2010,7 +2074,7 @@
                 reader.onload = function(e) {
                     const isVideo = file.type.startsWith('video/');
                     if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
+                        preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="max-height:200px;"></video>`;
                     } else {
                         preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
                     }
