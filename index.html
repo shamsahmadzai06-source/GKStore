@@ -12,11 +12,8 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- PWA Icons -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/ec4899/ffffff?text=GK">
-    <link rel="icon" type="image/png" sizes="192x192" href="https://via.placeholder.com/192/ec4899/ffffff?text=GK">
-    <link rel="icon" type="image/png" sizes="512x512" href="https://via.placeholder.com/512/ec4899/ffffff?text=GK">
+    <!-- PWA Manifest (inline for all-in-one) -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22GK%20Store%20-%20PUBG%20Accounts%22%2C%22short_name%22%3A%22GK%20Store%22%2C%22description%22%3A%22Buy%20and%20sell%20PUBG%20accounts%20securely%22%2C%22start_url%22%3A%22%2FGKStore%2F%22%2C%22scope%22%3A%22%2FGKStore%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%23ec4899%22%2C%22background_color%22%3A%22%230a0a0f%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F192%2Fec4899%2Fffffff%3Ftext%3DGK%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F512%2Fec4899%2Fffffff%3Ftext%3DGK%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
     
     <title>GK Store · PUBG accounts with total & online users</title>
     
@@ -79,7 +76,6 @@
             padding-bottom: 70px; /* Space for bottom nav */
         }
 
-        /* top navigation */
         .top-nav {
             background: rgba(22, 22, 31, 0.98);
             backdrop-filter: blur(8px);
@@ -136,14 +132,12 @@
             border-color: transparent;
         }
 
-        /* main container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 16px;
         }
 
-        /* screen visibility */
         .screen {
             display: none;
         }
@@ -152,7 +146,6 @@
             display: block;
         }
 
-        /* MAIN SCREEN */
         #main-screen .main-layout {
             display: flex;
             flex-direction: column;
@@ -174,7 +167,6 @@
             margin-bottom: 1rem;
         }
 
-        /* big CTA button */
         .cta-button {
             background: var(--gradient-primary);
             border: none;
@@ -204,7 +196,6 @@
             transform: scale(0.97);
         }
 
-        /* swipe ads slider */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -283,7 +274,6 @@
             width: 24px;
         }
 
-        /* ACCOUNT BROWSER SCREEN */
         .tier-header {
             display: flex;
             gap: 0.8rem;
@@ -314,7 +304,6 @@
         .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
         .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
 
-        /* account cards grid */
         .accounts-grid {
             display: grid;
             gap: 1.5rem;
@@ -408,8 +397,8 @@
 
         .action-btn i { font-size: 0.9rem; }
 
-        /* admin panel */
         .hidden { display: none !important; }
+        
         .input { 
             width:100%; 
             padding:0.8rem; 
@@ -485,7 +474,6 @@
         .tier-badge.medium { background: var(--gradient-medium); color: white; }
         .tier-badge.big { background: var(--gradient-big); color: white; }
 
-        /* modals */
         .modal-overlay {
             position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
@@ -670,7 +658,7 @@
             object-fit: cover;
         }
         
-        /* Install button for PWA */
+        /* Install prompt for PWA */
         .install-prompt {
             position: fixed;
             bottom: 80px;
@@ -702,6 +690,45 @@
             background: transparent;
             color: white;
             border: 1px solid white;
+        }
+        
+        /* SSL helper message */
+        .ssl-helper {
+            position: fixed;
+            bottom: 80px;
+            left: 10px;
+            right: 10px;
+            background: var(--surface-light);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 9999;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid var(--primary);
+            animation: slideUp 0.3s ease;
+        }
+        
+        .ssl-helper button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin: 10px 5px 0;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .ssl-helper .link-btn {
+            background: transparent;
+            border: 1px solid var(--primary);
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </head>
@@ -1053,6 +1080,11 @@
         });
 
         function showInstallPrompt() {
+            // Check if already installed
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                return;
+            }
+            
             installPrompt.className = 'install-prompt';
             installPrompt.innerHTML = `
                 <strong>📱 Install GK Store App</strong>
@@ -1076,6 +1108,11 @@
             });
         };
 
+        // Check if running as installed PWA
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('📱 Running as installed PWA');
+        }
+
         // ============================================
         // POCKETBASE CONFIGURATION
         // ============================================
@@ -1098,22 +1135,45 @@
                 return url.replace('http://', 'https://');
             };
             
-            // Show SSL instruction message
-            setTimeout(() => {
-                if (document.getElementById('accounts-grid').children.length === 0) {
-                    const sslMsg = document.createElement('div');
-                    sslMsg.className = 'install-prompt';
-                    sslMsg.style.background = 'var(--surface-light)';
-                    sslMsg.innerHTML = `
-                        <strong>🔒 SSL Certificate Required</strong>
-                        <p>Please visit this URL and accept the certificate:</p>
-                        <p style="font-size:12px; word-break:break-all;">${PB_URL}/api/health</p>
-                        <button onclick="window.open('${PB_URL}/api/health', '_blank')">Open Link</button>
-                        <button class="close" onclick="this.parentElement.remove()">Close</button>
-                    `;
-                    document.body.appendChild(sslMsg);
-                }
-            }, 2000);
+            // Function to check SSL certificate
+            function checkSSLCertificate() {
+                fetch(PB_URL + '/api/health', { 
+                    mode: 'cors',
+                    cache: 'no-cache'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('✅ SSL certificate accepted');
+                    }
+                })
+                .catch(error => {
+                    console.log('❌ SSL certificate error:', error.message);
+                    showSSLHelper();
+                });
+            }
+            
+            // Show SSL helper message
+            function showSSLHelper() {
+                const sslHelper = document.createElement('div');
+                sslHelper.className = 'ssl-helper';
+                sslHelper.innerHTML = `
+                    <strong>🔒 SSL Certificate Required</strong>
+                    <p>Please accept the security certificate to view images and videos</p>
+                    <button onclick="window.open('${PB_URL}/api/health', '_blank')">Open Link & Accept</button>
+                    <button class="link-btn" onclick="this.parentElement.remove()">Close</button>
+                `;
+                document.body.appendChild(sslHelper);
+                
+                // Auto-remove after 30 seconds
+                setTimeout(() => {
+                    if (sslHelper.parentNode) {
+                        sslHelper.remove();
+                    }
+                }, 30000);
+            }
+            
+            // Check SSL after 2 seconds
+            setTimeout(checkSSLCertificate, 2000);
         }
 
         // Test connection
@@ -1536,10 +1596,8 @@
                     appState.accounts = records.map(record => {
                         let mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
                         
-                        // Force HTTPS for mobile
-                        if (isMobile) {
-                            mediaUrl = mediaUrl.replace('http://', 'https://');
-                        }
+                        // Force HTTPS
+                        mediaUrl = mediaUrl.replace('http://', 'https://');
                         
                         return {
                             id: record.id,
@@ -1617,7 +1675,7 @@
             
             grid.innerHTML = filtered.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline x5-playsinline preload="metadata" poster="${acc.media.replace(/\.[^/.]+$/, '.jpg')}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-media\\' style=\\'display:flex;align-items:center;justify-content:center;background:var(--surface-lighter);\\'><span style=\\'font-size:3rem;\\'>📹</span><p style=\\'color:var(--text-secondary);margin-top:0.5rem;\\'>Video</p></div>';">Your browser does not support the video tag.</video>`
+                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline x5-playsinline preload="metadata" poster="${acc.media.replace(/\.[^/.]+$/, '.jpg')}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-media\\' style=\\'display:flex;align-items:center;justify-content:center;background:var(--surface-lighter);\\'><span style=\\'font-size:3rem;\\'>📹</span></div>';">Your browser does not support the video tag.</video>`
                     : `<img src="${acc.media}" class="card-media" alt="${acc.title}" crossorigin="anonymous" loading="lazy" onerror="this.onerror=null; this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
@@ -1947,9 +2005,7 @@
                 progressText.innerHTML = 'Upload complete!';
                 
                 let mediaUrl = pb.files.getUrl(record, record.media);
-                if (isMobile) {
-                    mediaUrl = mediaUrl.replace('http://', 'https://');
-                }
+                mediaUrl = mediaUrl.replace('http://', 'https://');
                 
                 const newAccount = {
                     id: record.id,
