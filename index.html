@@ -12,7 +12,7 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- PWA Manifest (inline) -->
+    <!-- PWA Manifest -->
     <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22GK%20Store%20-%20PUBG%20Accounts%22%2C%22short_name%22%3A%22GK%20Store%22%2C%22description%22%3A%22Buy%20and%20sell%20PUBG%20accounts%20securely%22%2C%22start_url%22%3A%22%2FGKStore%2F%22%2C%22scope%22%3A%22%2FGKStore%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%23ec4899%22%2C%22background_color%22%3A%22%230a0a0f%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F192%2Fec4899%2Fffffff%3Ftext%3DGK%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F512%2Fec4899%2Fffffff%3Ftext%3DGK%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
     
     <title>GK Store · PUBG accounts</title>
@@ -271,6 +271,10 @@
             border-color: transparent;
         }
 
+        .tier-tab[data-tier="small"].active { background: var(--gradient-small); }
+        .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
+        .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
+
         .accounts-grid {
             display: grid;
             gap: 1rem;
@@ -308,6 +312,12 @@
             flex-wrap: wrap;
         }
 
+        .card-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+
         .price-row {
             display: flex;
             justify-content: space-between;
@@ -316,6 +326,9 @@
             border-radius: 2rem;
             margin: 0.5rem 0;
         }
+
+        .usd-price { color: var(--primary); }
+        .afn-price { color: var(--secondary); }
 
         .action-buttons {
             display: grid;
@@ -389,14 +402,6 @@
             margin: 1rem 0;
         }
 
-        .book-request-item {
-            background: var(--surface-light);
-            border-radius: 1rem;
-            padding: 1rem;
-            margin-bottom: 0.8rem;
-            border: 1px solid var(--border);
-        }
-
         .online-indicator {
             display: inline-block;
             width: 10px;
@@ -441,11 +446,12 @@
         }
 
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
+        .whatsapp-btn { background: #25D366; color:white; border:none; }
 
         /* Install Button */
         .install-btn-fixed {
             position: fixed;
-            bottom: 80px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 9999;
@@ -472,7 +478,7 @@
         /* SSL Helper */
         .ssl-helper {
             position: fixed;
-            bottom: 140px;
+            bottom: 80px;
             left: 10px;
             right: 10px;
             background: var(--surface-light);
@@ -494,6 +500,12 @@
             margin: 5px;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        .iti {
+            width: 100%;
+            margin-bottom: 0.8rem;
+            z-index: 2001;
         }
     </style>
 </head>
@@ -553,7 +565,7 @@
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
-        <!-- ADMIN SCREEN (Full Features) -->
+        <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
             <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
@@ -598,7 +610,12 @@
                     </div>
                     
                     <div class="account-card" style="padding:1rem;">
-                        <h3>💳 USDT Address</h3>
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <h3>💳 USDT Address</h3>
+                            <button class="action-btn" style="padding:0.3rem 1rem;" onclick="showEditUsdtModal()">
+                                <i class="fa fa-edit"></i> <span data-i18n="edit">Edit</span>
+                            </button>
+                        </div>
                         <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
                     </div>
                     
@@ -615,6 +632,24 @@
         </div>
     </div>
 
+    <!-- EDIT USDT MODAL -->
+    <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-edit"></i> <span data-i18n="editUsdtTitle">Edit USDT Address</span></h3>
+                <button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY">
+                <p style="color:var(--text-secondary); font-size:0.8rem;" data-i18n="usdtWarning">Make sure it's a valid TRC20 address</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('edit-usdt-modal')"><span data-i18n="cancel">Cancel</span></button>
+                <button class="btn-primary" onclick="saveUsdtAddress()"><span data-i18n="save">Save</span></button>
+            </div>
+        </div>
+    </div>
+
     <!-- ADD ACCOUNT MODAL -->
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
         <div class="modal" onclick="event.stopPropagation()">
@@ -624,11 +659,11 @@
             </div>
             <div class="modal-body">
                 <select id="account-tier" class="input">
-                    <option value="small">Small PUBG</option>
-                    <option value="medium">Medium PUBG</option>
-                    <option value="big">Big PUBG</option>
+                    <option value="small"><span data-i18n="smallTier">Small PUBG ($10-$500)</span></option>
+                    <option value="medium"><span data-i18n="mediumTier">Medium PUBG ($500-$1000)</span></option>
+                    <option value="big"><span data-i18n="bigTier">Big PUBG ($1000-$100000)</span></option>
                 </select>
-                <input type="text" id="account-title" class="input" placeholder="Title">
+                <input type="text" id="account-title" class="input" placeholder="Account Title">
                 <textarea id="account-description" class="input" placeholder="Description"></textarea>
                 <input type="number" id="account-price-usd" class="input" placeholder="USD Price">
                 <input type="number" id="account-price-afn" class="input" placeholder="AFN Price">
@@ -638,6 +673,47 @@
                 </div>
                 <button class="btn-primary" style="width:100%;" onclick="uploadNewAccount()">Upload Account</button>
             </div>
+        </div>
+    </div>
+
+    <!-- BOOK MODAL -->
+    <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>📘 <span data-i18n="bookTitle">Book account</span></h3>
+                <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
+            </div>
+            <div class="modal-body" id="book-modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('book-modal')"><span data-i18n="cancel">Cancel</span></button>
+                <button class="btn-primary" onclick="submitBook()"><span data-i18n="confirm">Confirm booking</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUY MODAL -->
+    <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>💳 <span data-i18n="buyTitle">Buy with USDT</span></h3>
+                <button class="modal-close" onclick="closeModal('buy-modal')">&times;</button>
+            </div>
+            <div class="modal-body" id="buy-modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('buy-modal')"><span data-i18n="cancel">Cancel</span></button>
+                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()"><span data-i18n="confirmWA">Confirm via WhatsApp</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFO MODAL -->
+    <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>ℹ️ <span data-i18n="infoTitle">Account details</span></h3>
+                <button class="modal-close" onclick="closeModal('info-modal')">&times;</button>
+            </div>
+            <div class="modal-body" id="info-modal-body"></div>
         </div>
     </div>
 
@@ -664,10 +740,10 @@
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
 
-        // Check if already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            installButton.style.display = 'none';
-        }
+        // Show install button after 2 seconds (always visible for testing)
+        setTimeout(() => {
+            installButton.style.display = 'flex';
+        }, 2000);
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -689,6 +765,11 @@
                 deferredPrompt = null;
             });
         };
+
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            installButton.style.display = 'none';
+        }
 
         // ============================================
         // SSL CERTIFICATE HELPER
@@ -774,7 +855,8 @@
                 infoTitle: 'Account details', selectLang: 'Select language',
                 yourName: 'Your name', whatsappNumber: 'WhatsApp number', chatNow: 'Chat Now',
                 delete: 'Delete', cancelRequest: 'Cancel', contactViaWA: 'Contact', edit: 'Edit',
-                save: 'Save'
+                editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
+                usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
             },
             ps: {
                 brand: 'جی کے سټور', lang: 'ژبه', contact: 'اړیکه', admin: 'مدیر',
@@ -795,7 +877,8 @@
                 infoTitle: 'د حساب تفصیل', selectLang: 'ژبه غوره کړئ',
                 yourName: 'ستاسو نوم', whatsappNumber: 'د واټساپ شمیره', chatNow: 'اوس خبرې وکړئ',
                 delete: 'ړنګول', cancelRequest: 'لغوه کول', contactViaWA: 'اړیکه', edit: 'سمول',
-                save: 'خوندي کول'
+                editUsdtTitle: 'د USDT پته سمول', newUsdtAddress: 'نوې USDT پته',
+                usdtWarning: 'ډاډ ترلاسه کړئ چې دا سمه TRC20 پته ده', save: 'خوندي کول'
             },
             fa: {
                 brand: 'جی کی استور', lang: 'زبان', contact: 'تماس', admin: 'مدیر',
@@ -816,7 +899,8 @@
                 infoTitle: 'جزئیات حساب', selectLang: 'انتخاب زبان',
                 yourName: 'نام شما', whatsappNumber: 'شماره واتساپ', chatNow: 'گفتگو',
                 delete: 'حذف', cancelRequest: 'لغو', contactViaWA: 'تماس', edit: 'ویرایش',
-                save: 'ذخیره'
+                editUsdtTitle: 'ویرایش آدرس USDT', newUsdtAddress: 'آدرس جدید USDT',
+                usdtWarning: 'مطمئن شوید آدرس TRC20 معتبر است', save: 'ذخیره'
             }
         };
 
@@ -928,7 +1012,7 @@
                     : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
-                    <div class="account-card">
+                    <div class="account-card" data-id="${acc.id}">
                         <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter);">
                             ${mediaHtml}
                         </div>
@@ -943,9 +1027,9 @@
                                 <span class="afn-price">${acc.price_afn} AFN</span>
                             </div>
                             <div class="action-buttons">
-                                <button class="action-btn" onclick="alert('${t.bookTitle}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
-                                <button class="action-btn buy" onclick="alert('${t.buyTitle}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
-                                <button class="action-btn" onclick="alert('${acc.desc}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
+                                <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
+                                <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
+                                <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
                             </div>
                         </div>
                     </div>
@@ -1032,7 +1116,7 @@
         };
 
         // ============================================
-        // ACTION FUNCTIONS
+        // ACTION FUNCTIONS - RESTORED
         // ============================================
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
@@ -1052,6 +1136,89 @@
             }
         };
 
+        // Book Account Functions
+        window.bookAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            
+            const t = translations[appState.currentLanguage || 'en'];
+            
+            document.getElementById('book-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
+                <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
+                <input type="tel" id="book-phone" class="input" placeholder="WhatsApp Number">
+            `;
+            openModal('book-modal');
+        };
+
+        window.submitBook = function() {
+            const name = document.getElementById('book-name')?.value;
+            const phone = document.getElementById('book-phone')?.value;
+            
+            if (!name || !phone) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const req = {
+                id: Date.now(),
+                account_id: appState.currentAccount.id,
+                account_title: appState.currentAccount.title,
+                user_name: name,
+                whatsapp: phone,
+                date: new Date().toISOString()
+            };
+            appState.bookRequests.push(req);
+            localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
+            
+            alert('✅ Booking submitted! We will contact you on WhatsApp.');
+            closeModal('book-modal');
+        };
+
+        // Buy Account Functions
+        window.buyAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            
+            document.getElementById('buy-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
+                <p>Send exact USDT (TRC20) to:</p>
+                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
+                <button class="btn" onclick="copyUsdt()">Copy address</button>
+            `;
+            openModal('buy-modal');
+        };
+
+        window.confirmBuyWhatsApp = function() {
+            if (!appState.currentAccount) return;
+            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
+            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
+            closeModal('buy-modal');
+        };
+
+        window.copyUsdt = function() {
+            navigator.clipboard.writeText(appState.usdtAddress);
+            alert('USDT address copied');
+        };
+
+        // Info Account Function
+        window.infoAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            
+            document.getElementById('info-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                <p>${acc.desc || 'Premium PUBG account'}</p>
+                <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
+                <p>✅ Includes email & password, full access.</p>
+            `;
+            openModal('info-modal');
+        };
+
+        // Admin Functions
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -1068,6 +1235,9 @@
                 
                 document.getElementById('admin-account-count').innerText = accounts.length;
                 document.getElementById('admin-bookings-count').innerText = bookings.length;
+                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                 
                 renderBookRequests();
@@ -1079,8 +1249,43 @@
         function renderBookRequests() {
             const list = document.getElementById('admin-book-requests-list');
             if (!list) return;
-            list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
+            
+            if (appState.bookRequests.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage || 'en'];
+            
+            list.innerHTML = appState.bookRequests.map(req => `
+                <div class="book-request-item">
+                    <p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p>
+                    <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
+                    <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
+                    <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')">
+                        <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
+                    </button>
+                </div>
+            `).join('');
         }
+
+        window.showEditUsdtModal = function() {
+            document.getElementById('new-usdt-address').value = appState.usdtAddress;
+            openModal('edit-usdt-modal');
+        };
+
+        window.saveUsdtAddress = function() {
+            const newAddress = document.getElementById('new-usdt-address').value.trim();
+            if (!newAddress) {
+                alert('Please enter a USDT address');
+                return;
+            }
+            appState.usdtAddress = newAddress;
+            localStorage.setItem('gk_usdt_address', newAddress);
+            document.getElementById('current-usdt-address').innerText = newAddress;
+            closeModal('edit-usdt-modal');
+            alert('USDT address updated successfully!');
+        };
 
         window.showAddAccountModal = function() {
             openModal('add-account-modal');
@@ -1099,16 +1304,17 @@
             switchScreen('main');
         };
 
+        // Modal Functions
+        window.openModal = function(id) {
+            document.getElementById(id).classList.remove('hidden');
+        };
+        
         window.closeModal = function(id) {
             document.getElementById(id).classList.add('hidden');
         };
 
-        window.openModal = function(id) {
-            document.getElementById(id).classList.remove('hidden');
-        };
-
         // ============================================
-        // TRACK VISITOR (simplified)
+        // TRACK VISITOR
         // ============================================
         function trackVisitor() {
             fetch('https://api.ipify.org?format=json')
