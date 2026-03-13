@@ -11,7 +11,6 @@
     <!-- PocketBase SDK -->
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     <style>
-        /* Your existing CSS - keep it exactly as you have it */
         * {
             margin: 0;
             padding: 0;
@@ -624,6 +623,20 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        /* Mobile video fixes */
+        video {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            background: #000;
+        }
+        
+        .card-media {
+            background-color: #1a1a24;
+            min-height: 200px;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -1000,27 +1013,33 @@
             usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'
         };
 
-        // Load from localStorage (fallback)
+        // Load from localStorage (fallback for non-media data only)
         if (localStorage.getItem('gk_accounts')) {
-            appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
-        } else {
-            appState.accounts = [
-                { id:'a1', title:'Pro Level 500', desc:'20+ rare skins', tier:'small', price_usd:199.99, price_afn:12800, media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType:'image' },
-                { id:'a2', title:'Competitive', desc:'Max weapons', tier:'small', price_usd:399.99, price_afn:25600, media:'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType:'image' },
-                { id:'a3', title:'Ultimate Collector', desc:'All skins', tier:'medium', price_usd:799.99, price_afn:51200, media:'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType:'image' }
-            ];
+            try {
+                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                // Only load non-media accounts data
+                appState.accounts = saved.filter(acc => !acc.media || !acc.media.startsWith('data:'));
+            } catch (e) {
+                console.log('No valid accounts in localStorage');
+            }
         }
         
         if (localStorage.getItem('gk_contacts')) {
-            appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+            try {
+                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+            } catch (e) {}
         }
         
         if (localStorage.getItem('gk_ads')) {
-            appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+            try {
+                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+            } catch (e) {}
         }
         
         if (localStorage.getItem('gk_bookings')) {
-            appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            try {
+                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            } catch (e) {}
         }
         
         if (localStorage.getItem('gk_usdt_address')) {
@@ -1293,6 +1312,7 @@
             
             renderAccounts();
             renderContacts();
+            renderAdsSlider();
             if (appState.isAdminLoggedIn) renderBookRequests();
             
             const usdtEl = document.getElementById('current-usdt-address');
@@ -1304,9 +1324,6 @@
             closeModal('language-modal');
         }
 
-        // ============================================
-        // FIXED TRACKVISITOR FUNCTION WITH NULL CHECKS
-        // ============================================
         function trackVisitor() {
             fetch('https://api.ipify.org?format=json')
                 .then(response => response.json())
@@ -1328,7 +1345,6 @@
                     
                     localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
                     
-                    // ✅ FIXED: Added null checks for all DOM elements
                     const uniqueVisitorEl = document.getElementById('unique-visitor-count');
                     if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
                     
@@ -1360,7 +1376,6 @@
                     appState.onlineCount = appState.activeSessions.size;
                     localStorage.setItem('gk_sessions', JSON.stringify([...appState.activeSessions]));
                     
-                    // ✅ FIXED: Added null checks here too
                     const uniqueVisitorEl = document.getElementById('unique-visitor-count');
                     if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
                     
@@ -1457,12 +1472,14 @@
             
             grid.innerHTML = filtered.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline></video>`
-                    : `<img src="${acc.media}" class="card-media" alt="account" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">`;
+                    ? `<video src="${acc.media}" class="card-media" controls controlsList="nodownload" autoplay muted loop playsinline crossorigin="anonymous" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-media\\' style=\\'display:flex;align-items:center;justify-content:center;background:var(--surface-lighter);\\'><span style=\\'font-size:3rem;\\'>📹</span></div>';"></video>`
+                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" crossorigin="anonymous" loading="lazy" onerror="this.onerror=null; this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
                     <div class="account-card" data-id="${acc.id}">
-                        ${mediaTag}
+                        <div style="position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; background:var(--surface-lighter);">
+                            ${mediaTag}
+                        </div>
                         <div class="card-content">
                             <div class="card-title">
                                 ${acc.title}
@@ -1715,7 +1732,125 @@
         }
 
         // ============================================
-        // ACTION FUNCTIONS
+        // FIXED UPLOAD FUNCTION - NO LOCALSTORAGE FOR MEDIA
+        // ============================================
+        window.uploadNewAccount = async function() {
+            const tier = document.getElementById('account-tier').value;
+            const title = document.getElementById('account-title').value.trim();
+            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            const fileInput = document.getElementById('account-media-file');
+            
+            if (!tier || !title || !priceUsd || !priceAfn) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Please select an image or video');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const isVideo = file.type.startsWith('video/');
+            
+            // Check file size (max 50MB for videos, 10MB for images)
+            const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+                return;
+            }
+            
+            // Show progress
+            const progressContainer = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            progressContainer.classList.add('active');
+            uploadBtn.disabled = true;
+            progressBar.style.width = '0%';
+            progressText.innerHTML = 'Preparing upload...';
+            
+            try {
+                // Create form data for PocketBase
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('description', desc);
+                formData.append('tier', tier);
+                formData.append('price_usd', priceUsd);
+                formData.append('price_afn', priceAfn);
+                formData.append('mediaType', isVideo ? 'video' : 'image');
+                formData.append('media', file);
+                
+                // Simulate progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress >= 90) progress = 90;
+                    progressBar.style.width = progress + '%';
+                    progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
+                }, 300);
+                
+                // Upload to PocketBase
+                const record = await pb.collection('accounts').create(formData);
+                
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressText.innerHTML = 'Upload complete!';
+                
+                // Add to app state (but NOT to localStorage)
+                const newAccount = {
+                    id: record.id,
+                    title: title,
+                    desc: desc,
+                    tier: tier,
+                    price_usd: priceUsd,
+                    price_afn: priceAfn,
+                    media: pb.files.getUrl(record, record.media).replace('http://', 'https://'),
+                    mediaType: isVideo ? 'video' : 'image'
+                };
+                
+                appState.accounts.push(newAccount);
+                
+                // DON'T save to localStorage - this was causing the quota error!
+                // localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                
+                setTimeout(() => {
+                    closeModal('add-account-modal');
+                    renderAccounts();
+                    if (appState.isAdminLoggedIn) {
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    }
+                    alert('Account uploaded successfully to PocketBase!');
+                    
+                    // Reset
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
+                    
+                    // Clear the file input
+                    document.getElementById('account-media-file').value = '';
+                    document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    appState.currentMediaData = null;
+                }, 500);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + (error.message || 'Unknown error'));
+                
+                // Reset on error
+                progressContainer.classList.remove('active');
+                progressBar.style.width = '0%';
+                progressText.innerHTML = '';
+                uploadBtn.disabled = false;
+            }
+        };
+
+        // ============================================
+        // OTHER ACTION FUNCTIONS
         // ============================================
         window.cancelBookRequest = function(id) {
             if (confirm('Cancel this book request?')) {
@@ -1760,20 +1895,20 @@
                 const file = fileInput.files[0];
                 uploadBtn.disabled = false;
                 
+                // Just show preview, don't store the data
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const isVideo = file.type.startsWith('video/');
                     if (isVideo) {
                         preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
-                        appState.currentMediaData = { type: 'video', data: e.target.result };
                     } else {
                         preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        appState.currentMediaData = { type: 'image', data: e.target.result };
                     }
                 };
                 reader.readAsDataURL(file);
             } else {
                 uploadBtn.disabled = true;
+                preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
             }
         };
 
@@ -1787,10 +1922,8 @@
                     const isVideo = file.type.startsWith('video/');
                     if (isVideo) {
                         preview.innerHTML = `<video src="${e.target.result}" controls controlsList="nodownload" style="max-height:200px;"></video>`;
-                        appState.currentAdData = { type: 'video', data: e.target.result };
                     } else {
                         preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-                        appState.currentAdData = { type: 'image', data: e.target.result };
                     }
                 };
                 reader.readAsDataURL(file);
@@ -1853,81 +1986,10 @@
             alert('USDT address updated successfully!');
         };
 
-        window.uploadNewAccount = function() {
-            const tier = document.getElementById('account-tier').value;
-            const title = document.getElementById('account-title').value.trim();
-            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-            
-            if (!tier || !title || !priceUsd || !priceAfn) {
-                alert('Please fill all required fields');
-                return;
-            }
-            
-            if (!appState.currentMediaData) {
-                alert('Please select an image or video');
-                return;
-            }
-            
-            const progressContainer = document.getElementById('upload-progress');
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-            const uploadBtn = document.getElementById('upload-btn');
-            
-            progressContainer.classList.add('active');
-            uploadBtn.disabled = true;
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 15;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    
-                    setTimeout(() => {
-                        progressBar.style.width = '100%';
-                        progressText.innerHTML = 'Upload complete!';
-                        
-                        const newAccount = {
-                            id: 'a' + Date.now(),
-                            title: title,
-                            desc: desc,
-                            tier: tier,
-                            price_usd: priceUsd,
-                            price_afn: priceAfn,
-                            media: appState.currentMediaData.data,
-                            mediaType: appState.currentMediaData.type
-                        };
-                        
-                        appState.accounts.push(newAccount);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                        
-                        setTimeout(() => {
-                            closeModal('add-account-modal');
-                            renderAccounts();
-                            if (appState.isAdminLoggedIn) {
-                                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                            }
-                            alert('Account uploaded successfully!');
-                            
-                            progressContainer.classList.remove('active');
-                            progressBar.style.width = '0%';
-                            progressText.innerHTML = '';
-                            uploadBtn.disabled = false;
-                        }, 500);
-                    }, 300);
-                }
-                
-                progressBar.style.width = progress + '%';
-                progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
-            }, 200);
-        };
-
         window.deleteAccount = function(id) {
             if (confirm('Delete this account permanently?')) {
                 appState.accounts = appState.accounts.filter(a => a.id !== id);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                // Don't save to localStorage
                 renderAccounts();
                 renderAdminAccounts();
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
@@ -2243,6 +2305,7 @@
         renderContacts();
         renderAccounts();
         
+        // Load from PocketBase
         loadAccountsFromPB();
         loadContactsFromPB();
         loadSettingsFromPB();
@@ -2254,6 +2317,19 @@
                 trackVisitor();
             }
         }, 60000);
+
+        // Clear any old media data from localStorage to free up quota
+        try {
+            const keys = ['gk_accounts', 'gk_contacts', 'gk_ads', 'gk_bookings'];
+            keys.forEach(key => {
+                const item = localStorage.getItem(key);
+                if (item && item.length > 1000000) { // If > 1MB, remove it
+                    localStorage.removeItem(key);
+                }
+            });
+        } catch (e) {
+            console.log('Could not clean localStorage');
+        }
     </script>
 </body>
 </html>
