@@ -20,7 +20,7 @@
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- intl-tel-input -->
+    <!-- intl-tel-input for country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     
     <!-- PocketBase SDK -->
@@ -456,12 +456,14 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button - Always visible and working */
+        /* Install Button - Centered at bottom */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: fit-content;
             z-index: 9999;
             background: var(--gradient-primary);
             color: white;
@@ -480,16 +482,16 @@
         }
 
         .install-btn-fixed:hover {
-            transform: translateX(-50%) scale(1.05);
+            transform: scale(1.05);
             box-shadow: 0 6px 20px rgba(236,72,153,0.7);
         }
 
         @keyframes bounce {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(-5px); }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
 
-        /* SSL Helper - Shows only once */
+        /* SSL Helper */
         .ssl-helper {
             position: fixed;
             bottom: 80px;
@@ -522,10 +524,24 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
+        /* intl-tel-input customization */
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
             z-index: 2001;
+        }
+        .iti__selected-flag {
+            background: var(--surface-lighter) !important;
+            border-radius: 12px 0 0 12px;
+        }
+        .iti__country-list {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            max-width: 300px;
+            z-index: 99999 !important;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 12px;
         }
 
         .book-request-item {
@@ -554,7 +570,7 @@
     </style>
 </head>
 <body dir="ltr">
-    <!-- Install Button - Always visible and working -->
+    <!-- Install Button - Centered at bottom -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()">
         <i class="fas fa-download"></i> Install GK Store
     </button>
@@ -609,15 +625,15 @@
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
-        <!-- ADMIN SCREEN -->
+        <!-- ADMIN SCREEN - NO HARDCODED CREDENTIALS -->
         <div id="admin-screen" class="screen">
             <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
-                <!-- Login Section -->
+                <!-- Login Section - Empty placeholders, no hardcoded values -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
                     <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
-                    <input type="email" id="admin-email" class="input" placeholder="admin@gkstore.com" value="shamsahmadzai06@gmail.com">
-                    <input type="password" id="admin-password" class="input" placeholder="password" value="Shams12357@">
+                    <input type="email" id="admin-email" class="input" placeholder="your@email.com">
+                    <input type="password" id="admin-password" class="input" placeholder="password">
                     <button class="action-btn buy" style="width:100%;" onclick="adminLogin()"><span data-i18n="loginBtn">Login</span></button>
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
                 </div>
@@ -720,14 +736,16 @@
         </div>
     </div>
 
-    <!-- BOOK MODAL -->
+    <!-- BOOK MODAL - WITH COUNTRY CODE PICKER -->
     <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <h3>📘 <span data-i18n="bookTitle">Book account</span></h3>
                 <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
             </div>
-            <div class="modal-body" id="book-modal-body"></div>
+            <div class="modal-body" id="book-modal-body">
+                <!-- Will be populated dynamically with country code picker -->
+            </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('book-modal')"><span data-i18n="cancel">Cancel</span></button>
                 <button class="btn-primary" onclick="submitBook()"><span data-i18n="confirm">Confirm booking</span></button>
@@ -779,11 +797,10 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // FIXED PWA INSTALLATION - WORKING NATIVE INSTALL
+        // PWA INSTALLATION - WORKING NATIVE INSTALL
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
-        let installPromptShown = false;
 
         // Check if already installed
         if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -844,8 +861,7 @@
             setTimeout(() => {
                 fetch('https://216.126.225.4/api/health', { 
                     mode: 'cors',
-                    cache: 'no-cache',
-                    timeout: 5000
+                    cache: 'no-cache'
                 })
                 .catch(() => {
                     const sslDiv = document.createElement('div');
@@ -897,7 +913,8 @@
             isAdminLoggedIn: false,
             currentAccount: null,
             usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-            currentLanguage: 'en'
+            currentLanguage: 'en',
+            bookPhoneInput: null
         };
 
         // Load from localStorage
@@ -1227,7 +1244,7 @@
             }
         };
 
-        // Book Account Functions
+        // Book Account Functions - WITH COUNTRY CODE PICKER
         window.bookAccount = function(id) {
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
@@ -1235,22 +1252,59 @@
             
             const t = translations[appState.currentLanguage || 'en'];
             
-            document.getElementById('book-modal-body').innerHTML = `
+            const modalBody = document.getElementById('book-modal-body');
+            modalBody.innerHTML = `
                 <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
                 <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
                 <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
-                <input type="tel" id="book-phone" class="input" placeholder="WhatsApp Number">
+                <label class="input-label">${t.whatsappNumber} with country code</label>
+                <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
             `;
+            
             openModal('book-modal');
+            
+            // Initialize phone input after modal is open
+            setTimeout(() => {
+                const input = document.getElementById('book-phone');
+                if (input) {
+                    if (appState.bookPhoneInput) {
+                        try {
+                            appState.bookPhoneInput.destroy();
+                        } catch (e) {}
+                    }
+                    appState.bookPhoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
+                    });
+                }
+            }, 200);
         };
 
         window.submitBook = function() {
             const name = document.getElementById('book-name')?.value;
-            const phone = document.getElementById('book-phone')?.value;
             
-            if (!name || !phone) {
-                alert('Please fill all fields');
+            if (!name) {
+                alert('Please enter your name');
                 return;
+            }
+            
+            let phone = '';
+            if (appState.bookPhoneInput) {
+                const number = appState.bookPhoneInput.getNumber();
+                if (number) {
+                    phone = number.replace(/\D/g, '');
+                } else {
+                    alert('Please enter a valid WhatsApp number');
+                    return;
+                }
+            } else {
+                phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+                if (!phone) {
+                    alert('Please enter a valid WhatsApp number');
+                    return;
+                }
             }
             
             const req = {
@@ -1309,10 +1363,15 @@
             openModal('info-modal');
         };
 
-        // Admin Functions
+        // Admin Functions - NO HARDCODED CREDENTIALS
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
+            
+            if (!email || !pass) {
+                document.getElementById('admin-error').innerText = 'Please enter email and password';
+                return;
+            }
             
             try {
                 await pb.admins.authWithPassword(email, pass);
@@ -1402,6 +1461,12 @@
         
         window.closeModal = function(id) {
             document.getElementById(id).classList.add('hidden');
+            if (id === 'book-modal' && appState.bookPhoneInput) {
+                try {
+                    appState.bookPhoneInput.destroy();
+                } catch (e) {}
+                appState.bookPhoneInput = null;
+            }
         };
 
         // ============================================
