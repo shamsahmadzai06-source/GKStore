@@ -637,6 +637,39 @@
             min-height: 200px;
             object-fit: cover;
         }
+        
+        /* Mobile helper message */
+        .mobile-helper {
+            position: fixed;
+            bottom: 80px;
+            left: 10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 9999;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .mobile-helper button {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -975,27 +1008,46 @@
         // ============================================
         const PB_URL = 'https://216.126.225.4';
         const pb = new PocketBase(PB_URL);
-        
-        // Disable auto-cancellation to prevent timeout issues
         pb.autoCancellation(false);
 
-        // Test connection with timeout
-        async function testConnection() {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const result = await pb.health.check({ signal: controller.signal });
-                clearTimeout(timeoutId);
-                console.log('✅ Connected to PocketBase');
-                return true;
-            } catch (err) {
-                console.error('❌ PocketBase connection failed:', err);
-                return false;
-            }
-        }
+        // ============================================
+        // MOBILE DETECTION AND FIXES
+        // ============================================
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        testConnection();
+        if (isMobile) {
+            console.log('📱 Mobile device detected - applying fixes');
+            
+            // Override getUrl to ensure HTTPS
+            const originalGetUrl = pb.files.getUrl;
+            pb.files.getUrl = function(record, filename) {
+                let url = originalGetUrl.call(this, record, filename);
+                return url.replace('http://', 'https://');
+            };
+            
+            // Show helper message after 3 seconds if no accounts
+            setTimeout(() => {
+                const accountsGrid = document.getElementById('accounts-grid');
+                if (accountsGrid && accountsGrid.children.length === 0) {
+                    const helper = document.createElement('div');
+                    helper.className = 'mobile-helper';
+                    helper.innerHTML = `
+                        <strong>📱 Mobile Connection Guide:</strong><br><br>
+                        1. First visit: <strong>https://216.126.225.4/api/health</strong><br>
+                        2. Tap "Advanced" → "Proceed to site"<br>
+                        3. Return here and refresh<br>
+                        <br>
+                        <button onclick="this.parentElement.remove()">OK, Got It</button>
+                    `;
+                    document.body.appendChild(helper);
+                }
+            }, 3000);
+        }
+
+        // Test connection
+        pb.health.check()
+            .then(() => console.log('✅ Connected to PocketBase'))
+            .catch(err => console.error('❌ PocketBase connection failed:', err));
 
         // ============================================
         // APP STATE
@@ -1411,16 +1463,26 @@
                     requestKey: null
                 });
                 if (records.length > 0) {
-                    appState.accounts = records.map(record => ({
-                        id: record.id,
-                        title: record.title,
-                        desc: record.description,
-                        tier: record.tier,
-                        price_usd: record.price_usd,
-                        price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media).replace('http://', 'https://') : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
-                        mediaType: record.mediaType || 'image'
-                    }));
+                    appState.accounts = records.map(record => {
+                        // Get media URL and ensure HTTPS
+                        let mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
+                        
+                        // Force HTTPS for mobile
+                        if (isMobile) {
+                            mediaUrl = mediaUrl.replace('http://', 'https://');
+                        }
+                        
+                        return {
+                            id: record.id,
+                            title: record.title,
+                            desc: record.description,
+                            tier: record.tier,
+                            price_usd: record.price_usd,
+                            price_afn: record.price_afn,
+                            media: mediaUrl,
+                            mediaType: record.mediaType || 'image'
+                        };
+                    });
                     renderAccounts();
                 }
             } catch (error) {
@@ -1746,7 +1808,7 @@
         }
 
         // ============================================
-        // FIXED UPLOAD FUNCTION WITH RETRY LOGIC
+        // UPLOAD FUNCTION
         // ============================================
         window.uploadNewAccount = async function(retryCount = 0) {
             const tier = document.getElementById('account-tier').value;
@@ -1769,8 +1831,8 @@
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
             
-            // Stricter file size limits
-            const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024; // 20MB for videos, 5MB for images
+            // File size limits
+            const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '20MB' : '5MB'}`);
                 return;
@@ -1788,7 +1850,6 @@
             progressText.innerHTML = 'Preparing upload...';
             
             try {
-                // Create form data for PocketBase
                 const formData = new FormData();
                 formData.append('title', title);
                 formData.append('description', desc);
@@ -1807,9 +1868,8 @@
                     progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
                 }, 500);
                 
-                // Upload to PocketBase with increased timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
                 
                 const record = await pb.collection('accounts').create(formData, {
                     signal: controller.signal
@@ -1820,7 +1880,12 @@
                 progressBar.style.width = '100%';
                 progressText.innerHTML = 'Upload complete!';
                 
-                // Add to app state
+                // Get media URL and ensure HTTPS for mobile
+                let mediaUrl = pb.files.getUrl(record, record.media);
+                if (isMobile) {
+                    mediaUrl = mediaUrl.replace('http://', 'https://');
+                }
+                
                 const newAccount = {
                     id: record.id,
                     title: title,
@@ -1828,7 +1893,7 @@
                     tier: tier,
                     price_usd: priceUsd,
                     price_afn: priceAfn,
-                    media: pb.files.getUrl(record, record.media).replace('http://', 'https://'),
+                    media: mediaUrl,
                     mediaType: isVideo ? 'video' : 'image'
                 };
                 
@@ -1842,13 +1907,11 @@
                     }
                     alert('Account uploaded successfully to PocketBase!');
                     
-                    // Reset
                     progressContainer.classList.remove('active');
                     progressBar.style.width = '0%';
                     progressText.innerHTML = '';
                     uploadBtn.disabled = false;
                     
-                    // Clear the file input
                     document.getElementById('account-media-file').value = '';
                     document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                 }, 500);
@@ -1856,8 +1919,7 @@
             } catch (error) {
                 console.error('Upload error:', error);
                 
-                // Retry logic (max 2 retries)
-                if (retryCount < 2 && error.message.includes('timeout') || error.message.includes('network')) {
+                if (retryCount < 2 && (error.message.includes('timeout') || error.message.includes('network'))) {
                     progressText.innerHTML = `Retrying... (${retryCount + 1}/2)`;
                     setTimeout(() => {
                         window.uploadNewAccount(retryCount + 1);
@@ -1865,7 +1927,6 @@
                 } else {
                     alert('Upload failed: ' + (error.message || 'Unknown error'));
                     
-                    // Reset on error
                     progressContainer.classList.remove('active');
                     progressBar.style.width = '0%';
                     progressText.innerHTML = '';
@@ -1899,7 +1960,6 @@
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
             if (screen === 'admin') {
-                // Always show login section initially
                 document.getElementById('admin-login-section').classList.remove('hidden');
                 document.getElementById('admin-dashboard').classList.add('hidden');
             }
@@ -1912,9 +1972,7 @@
             
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
-                uploadBtn.disabled = false;
                 
-                // Check file size before enabling upload
                 const isVideo = file.type.startsWith('video/');
                 const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
                 
@@ -1925,7 +1983,8 @@
                     return;
                 }
                 
-                // Just show preview, don't store the data
+                uploadBtn.disabled = false;
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const isVideo = file.type.startsWith('video/');
@@ -2230,21 +2289,16 @@
             openModal('info-modal');
         };
 
-        // ============================================
-        // FIXED ADMIN LOGIN FUNCTION
-        // ============================================
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
             
             try {
-                // Show loading state
                 const loginBtn = document.querySelector('#admin-login-section .action-btn');
                 const originalText = loginBtn.innerHTML;
                 loginBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Logging in...';
                 loginBtn.disabled = true;
                 
-                // Try admin auth
                 const authData = await pb.admins.authWithPassword(email, pass, {
                     $autoCancel: false,
                     requestKey: null
@@ -2255,7 +2309,6 @@
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 document.getElementById('admin-error').innerText = '';
                 
-                // Load admin data
                 const accounts = await pb.collection('accounts').getFullList({
                     $autoCancel: false,
                     requestKey: null
@@ -2283,7 +2336,6 @@
                 
                 renderBookRequests();
                 
-                // Reset button
                 loginBtn.innerHTML = originalText;
                 loginBtn.disabled = false;
                 
@@ -2291,7 +2343,6 @@
                 console.error('Login error:', error);
                 document.getElementById('admin-error').innerText = 'Invalid credentials or connection error';
                 
-                // Reset button
                 const loginBtn = document.querySelector('#admin-login-section .action-btn');
                 loginBtn.innerHTML = '<span data-i18n="loginBtn">Login</span>';
                 loginBtn.disabled = false;
@@ -2355,7 +2406,6 @@
         renderContacts();
         renderAccounts();
         
-        // Load from PocketBase
         loadAccountsFromPB();
         loadContactsFromPB();
         loadSettingsFromPB();
@@ -2368,12 +2418,12 @@
             }
         }, 60000);
 
-        // Clear any old media data from localStorage to free up quota
+        // Clean localStorage
         try {
             const keys = ['gk_accounts', 'gk_contacts', 'gk_ads', 'gk_bookings'];
             keys.forEach(key => {
                 const item = localStorage.getItem(key);
-                if (item && item.length > 1000000) { // If > 1MB, remove it
+                if (item && item.length > 1000000) {
                     localStorage.removeItem(key);
                 }
             });
