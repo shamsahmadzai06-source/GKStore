@@ -975,12 +975,27 @@
         // ============================================
         const PB_URL = 'https://216.126.225.4';
         const pb = new PocketBase(PB_URL);
+        
+        // Disable auto-cancellation to prevent timeout issues
         pb.autoCancellation(false);
 
-        // Test connection
-        pb.health.check()
-            .then(() => console.log('✅ Connected to PocketBase'))
-            .catch(err => console.error('❌ PocketBase connection failed:', err));
+        // Test connection with timeout
+        async function testConnection() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const result = await pb.health.check({ signal: controller.signal });
+                clearTimeout(timeoutId);
+                console.log('✅ Connected to PocketBase');
+                return true;
+            } catch (err) {
+                console.error('❌ PocketBase connection failed:', err);
+                return false;
+            }
+        }
+        
+        testConnection();
 
         // ============================================
         // APP STATE
@@ -1017,7 +1032,6 @@
         if (localStorage.getItem('gk_accounts')) {
             try {
                 const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                // Only load non-media accounts data
                 appState.accounts = saved.filter(acc => !acc.media || !acc.media.startsWith('data:'));
             } catch (e) {
                 console.log('No valid accounts in localStorage');
@@ -1404,7 +1418,7 @@
                         tier: record.tier,
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        media: record.media ? pb.files.getUrl(record, record.media).replace('http://', 'https://') : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
                         mediaType: record.mediaType || 'image'
                     }));
                     renderAccounts();
@@ -1732,9 +1746,9 @@
         }
 
         // ============================================
-        // FIXED UPLOAD FUNCTION - NO LOCALSTORAGE FOR MEDIA
+        // FIXED UPLOAD FUNCTION WITH RETRY LOGIC
         // ============================================
-        window.uploadNewAccount = async function() {
+        window.uploadNewAccount = async function(retryCount = 0) {
             const tier = document.getElementById('account-tier').value;
             const title = document.getElementById('account-title').value.trim();
             const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
@@ -1755,10 +1769,10 @@
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
             
-            // Check file size (max 50MB for videos, 10MB for images)
-            const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+            // Stricter file size limits
+            const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024; // 20MB for videos, 5MB for images
             if (file.size > maxSize) {
-                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '20MB' : '5MB'}`);
                 return;
             }
             
@@ -1787,20 +1801,26 @@
                 // Simulate progress
                 let progress = 0;
                 const interval = setInterval(() => {
-                    progress += Math.random() * 15;
+                    progress += Math.random() * 10;
                     if (progress >= 90) progress = 90;
                     progressBar.style.width = progress + '%';
                     progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
-                }, 300);
+                }, 500);
                 
-                // Upload to PocketBase
-                const record = await pb.collection('accounts').create(formData);
+                // Upload to PocketBase with increased timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
                 
+                const record = await pb.collection('accounts').create(formData, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
                 clearInterval(interval);
                 progressBar.style.width = '100%';
                 progressText.innerHTML = 'Upload complete!';
                 
-                // Add to app state (but NOT to localStorage)
+                // Add to app state
                 const newAccount = {
                     id: record.id,
                     title: title,
@@ -1813,9 +1833,6 @@
                 };
                 
                 appState.accounts.push(newAccount);
-                
-                // DON'T save to localStorage - this was causing the quota error!
-                // localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 
                 setTimeout(() => {
                     closeModal('add-account-modal');
@@ -1834,18 +1851,26 @@
                     // Clear the file input
                     document.getElementById('account-media-file').value = '';
                     document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    appState.currentMediaData = null;
                 }, 500);
                 
             } catch (error) {
                 console.error('Upload error:', error);
-                alert('Upload failed: ' + (error.message || 'Unknown error'));
                 
-                // Reset on error
-                progressContainer.classList.remove('active');
-                progressBar.style.width = '0%';
-                progressText.innerHTML = '';
-                uploadBtn.disabled = false;
+                // Retry logic (max 2 retries)
+                if (retryCount < 2 && error.message.includes('timeout') || error.message.includes('network')) {
+                    progressText.innerHTML = `Retrying... (${retryCount + 1}/2)`;
+                    setTimeout(() => {
+                        window.uploadNewAccount(retryCount + 1);
+                    }, 2000);
+                } else {
+                    alert('Upload failed: ' + (error.message || 'Unknown error'));
+                    
+                    // Reset on error
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
+                }
             }
         };
 
@@ -1873,16 +1898,10 @@
             document.getElementById(screen + '-screen').classList.add('active');
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
-            if (screen === 'admin' && appState.isAdminLoggedIn) {
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                renderBookRequests();
+            if (screen === 'admin') {
+                // Always show login section initially
+                document.getElementById('admin-login-section').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
             }
         };
 
@@ -1894,6 +1913,17 @@
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 uploadBtn.disabled = false;
+                
+                // Check file size before enabling upload
+                const isVideo = file.type.startsWith('video/');
+                const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
+                
+                if (file.size > maxSize) {
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '20MB' : '5MB'}`);
+                    uploadBtn.disabled = true;
+                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    return;
+                }
                 
                 // Just show preview, don't store the data
                 const reader = new FileReader();
@@ -1942,7 +1972,6 @@
             document.getElementById('progress-bar').style.width = '0%';
             document.getElementById('progress-text').innerHTML = '';
             document.getElementById('upload-btn').disabled = true;
-            appState.currentMediaData = null;
             openModal('add-account-modal');
         };
 
@@ -1962,7 +1991,6 @@
             document.getElementById('ad-media-file').value = '';
             document.getElementById('ad-caption').value = '';
             document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            appState.currentAdData = null;
             renderAdminAds();
             openModal('manage-ads-modal');
         };
@@ -1989,7 +2017,6 @@
         window.deleteAccount = function(id) {
             if (confirm('Delete this account permanently?')) {
                 appState.accounts = appState.accounts.filter(a => a.id !== id);
-                // Don't save to localStorage
                 renderAccounts();
                 renderAdminAccounts();
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
@@ -2203,20 +2230,32 @@
             openModal('info-modal');
         };
 
+        // ============================================
+        // FIXED ADMIN LOGIN FUNCTION
+        // ============================================
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
             
             try {
+                // Show loading state
+                const loginBtn = document.querySelector('#admin-login-section .action-btn');
+                const originalText = loginBtn.innerHTML;
+                loginBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Logging in...';
+                loginBtn.disabled = true;
+                
+                // Try admin auth
                 const authData = await pb.admins.authWithPassword(email, pass, {
                     $autoCancel: false,
                     requestKey: null
                 });
+                
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 document.getElementById('admin-error').innerText = '';
                 
+                // Load admin data
                 const accounts = await pb.collection('accounts').getFullList({
                     $autoCancel: false,
                     requestKey: null
@@ -2243,8 +2282,19 @@
                 }
                 
                 renderBookRequests();
+                
+                // Reset button
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
+                
             } catch (error) {
-                document.getElementById('admin-error').innerText = 'Invalid credentials';
+                console.error('Login error:', error);
+                document.getElementById('admin-error').innerText = 'Invalid credentials or connection error';
+                
+                // Reset button
+                const loginBtn = document.querySelector('#admin-login-section .action-btn');
+                loginBtn.innerHTML = '<span data-i18n="loginBtn">Login</span>';
+                loginBtn.disabled = false;
             }
         };
 
