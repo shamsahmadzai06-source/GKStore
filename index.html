@@ -618,36 +618,35 @@
             cursor: not-allowed;
         }
 
-        /* Error message */
-        .error-message {
-            background: #ef4444;
-            color: white;
-            padding: 1rem;
-            border-radius: 1rem;
-            text-align: center;
-            margin: 1rem 0;
+        /* Connection status */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: var(--surface-light);
+            color: var(--text);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid var(--border);
+            z-index: 9999;
         }
-        
-        .retry-button {
-            background: white;
-            color: #ef4444;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-weight: bold;
-            margin-top: 0.5rem;
-            cursor: pointer;
+        .connection-status.connected {
+            border-color: #10b981;
+        }
+        .connection-status.disconnected {
+            border-color: #ef4444;
         }
     </style>
 </head>
 <body dir="ltr">
+    <!-- Connection Status -->
+    <div id="connection-status" class="connection-status">📡 Connecting...</div>
+
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
         <i class="fas fa-download"></i> Install GK Store
     </button>
-
-    <!-- Error Display -->
-    <div id="error-display" style="display: none;"></div>
 
     <!-- top nav -->
     <div class="top-nav">
@@ -978,17 +977,38 @@
         ];
 
         // ============================================
-        // POCKETBASE CONFIGURATION - USING HTTP INSTEAD OF HTTPS
+        // POCKETBASE CONFIGURATION - USING CORRECT HTTPS
         // ============================================
-        const PB_URL = 'http://216.126.225.4:8090'; // Using HTTP to avoid SSL issues
+        const PB_URL = 'https://216.126.225.4';
         let pb;
+        let connectionStatus = document.getElementById('connection-status');
         
         try {
             pb = new PocketBase(PB_URL);
             pb.autoCancellation(false);
-            console.log('✅ PocketBase initialized with HTTP');
+            console.log('✅ PocketBase initialized with HTTPS');
+            connectionStatus.textContent = '📡 Connecting...';
         } catch (e) {
             console.error('❌ Failed to initialize PocketBase:', e);
+            connectionStatus.textContent = '❌ Connection failed';
+            connectionStatus.classList.add('disconnected');
+        }
+
+        // Test connection
+        if (pb) {
+            pb.health.check()
+                .then(() => {
+                    console.log('✅ Connected to PocketBase');
+                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.classList.add('connected');
+                    connectionStatus.classList.remove('disconnected');
+                })
+                .catch(err => {
+                    console.error('❌ PocketBase connection failed:', err);
+                    connectionStatus.textContent = '❌ Offline mode';
+                    connectionStatus.classList.add('disconnected');
+                    connectionStatus.classList.remove('connected');
+                });
         }
 
         // ============================================
@@ -1257,11 +1277,13 @@
                         tier: record.tier,
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media).replace('http://', 'https://') : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
                         mediaType: record.mediaType || 'image'
                     }));
                     appState.usingFallback = false;
                     console.log('✅ Loaded accounts from PocketBase');
+                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.classList.add('connected');
                 }
                 renderAccounts();
             } catch (error) {
