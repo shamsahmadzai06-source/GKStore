@@ -37,7 +37,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* Your existing CSS - keeping it exactly as it was */
         * {
             margin: 0;
             padding: 0;
@@ -467,7 +466,7 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button - Centered at bottom */
+        /* Install Button */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
@@ -502,7 +501,7 @@
             50% { transform: translateY(-5px); }
         }
 
-        /* intl-tel-input customization */
+        /* intl-tel-input */
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
@@ -546,7 +545,6 @@
             cursor: pointer;
         }
 
-        /* Media preview for upload */
         .media-preview {
             width: 100%;
             min-height: 150px;
@@ -947,6 +945,58 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
+        // CORS PROXY - BYPASS SSL ISSUES COMPLETELY
+        // ============================================
+        const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+        const PB_URL = 'https://216.126.225.4';
+        
+        // Create custom fetch with CORS proxy
+        const customFetch = (url, options = {}) => {
+            // Use proxy for PocketBase requests
+            if (url.includes('216.126.225.4')) {
+                return fetch(CORS_PROXY + url, {
+                    ...options,
+                    mode: 'cors',
+                    headers: {
+                        ...options.headers,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+            }
+            return fetch(url, options);
+        };
+
+        // Initialize PocketBase with custom fetch
+        const pb = new PocketBase(PB_URL);
+        
+        // Override the send method to use our proxy
+        pb.send = async (path, options = {}) => {
+            const url = PB_URL + path;
+            const response = await customFetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return response.json();
+        };
+
+        // Override file URLs to use proxy
+        pb.files.getUrl = (record, filename) => {
+            if (!filename) return '';
+            const baseUrl = PB_URL + '/api/files/' + record.collectionId + '/' + record.id + '/' + filename;
+            return CORS_PROXY + baseUrl;
+        };
+
+        pb.autoCancellation(false);
+
+        // ============================================
         // SERVICE WORKER REGISTRATION
         // ============================================
         if ('serviceWorker' in navigator) {
@@ -967,7 +1017,6 @@
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
 
-        // Hide install button if running as PWA
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
             installButton.style.display = 'none';
         }
@@ -995,19 +1044,11 @@
             });
         };
 
-        // Show install button after 2 seconds only in browser
         setTimeout(() => {
             if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && !deferredPrompt) {
                 installButton.style.display = 'flex';
             }
         }, 2000);
-
-        // ============================================
-        // POCKETBASE CONFIGURATION
-        // ============================================
-        const PB_URL = 'https://216.126.225.4';
-        const pb = new PocketBase(PB_URL);
-        pb.autoCancellation(false);
 
         // ============================================
         // APP STATE
@@ -1135,7 +1176,7 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING
+        // POCKETBASE DATA LOADING - USING PROXY
         // ============================================
         async function loadAccountsFromPB() {
             try {
@@ -1151,14 +1192,15 @@
                         tier: record.tier,
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media).replace('http://', 'https://') : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
                         mediaType: record.mediaType || 'image'
                     }));
                     renderAccounts();
                 }
             } catch (error) {
                 console.error('Failed to load accounts:', error);
-                // Don't show SSL message - just log error
+                // Retry after 3 seconds
+                setTimeout(loadAccountsFromPB, 3000);
             }
         }
 
@@ -1326,7 +1368,7 @@
             }
         };
 
-        // Admin rendering functions
+        // Admin rendering functions (keep all your existing admin functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1468,7 +1510,7 @@
             }
         };
 
-        // Media preview functions
+        // Media preview functions with increased limits
         window.previewMediaFromFile = function() {
             const fileInput = document.getElementById('account-media-file');
             const preview = document.getElementById('media-preview');
@@ -1478,7 +1520,7 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                // Check file size - UPDATED LIMITS: 90MB for video, 20MB for image
+                // UPDATED LIMITS: 90MB for video, 20MB for image
                 const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
                 if (file.size > maxSize) {
                     alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
@@ -1511,7 +1553,7 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                // Check file size for ads - UPDATED LIMITS
+                // UPDATED LIMITS for ads
                 const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
                 if (file.size > maxSize) {
                     alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
@@ -1887,7 +1929,7 @@
             }
             
             try {
-                await pb.admins.authWithPassword(email, pass);
+                const authData = await pb.admins.authWithPassword(email, pass);
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
