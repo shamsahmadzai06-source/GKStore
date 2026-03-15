@@ -12,7 +12,7 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Your Icons -->
+    <!-- Your Icons - Linked from GitHub -->
     <link rel="icon" type="image/png" sizes="72x72" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png">
     <link rel="icon" type="image/png" sizes="96x96" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png">
     <link rel="icon" type="image/png" sizes="144x144" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png">
@@ -30,13 +30,14 @@
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- intl-tel-input -->
+    <!-- intl-tel-input for country code picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     
     <!-- PocketBase SDK -->
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* Your existing CSS - keeping it exactly as it was */
         * {
             margin: 0;
             padding: 0;
@@ -466,7 +467,7 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button */
+        /* Install Button - Centered at bottom */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
@@ -501,62 +502,40 @@
             50% { transform: translateY(-5px); }
         }
 
-        /* SSL Helper - Shows only once per device */
+        /* SSL Helper */
         .ssl-helper {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 350px;
+            bottom: 80px;
+            left: 10px;
+            right: 10px;
             background: var(--surface-light);
             color: white;
-            padding: 25px;
-            border-radius: 20px;
+            padding: 15px;
+            border-radius: 10px;
             text-align: center;
-            z-index: 10000;
-            font-size: 15px;
-            border: 3px solid var(--primary);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .ssl-helper h3 {
-            color: var(--primary);
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        .ssl-helper p {
-            margin-bottom: 20px;
-            line-height: 1.5;
+            z-index: 9998;
+            font-size: 14px;
+            border: 2px solid var(--primary);
+            animation: slideUp 0.3s ease;
         }
 
         .ssl-helper button {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 30px;
+            padding: 8px 16px;
+            border-radius: 20px;
             margin: 5px;
             font-weight: bold;
-            font-size: 16px;
             cursor: pointer;
-            width: 100%;
         }
 
-        .ssl-helper .secondary-btn {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: white;
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translate(-50%, -60%); }
-            to { opacity: 1; transform: translate(-50%, -50%); }
-        }
-
-        /* intl-tel-input */
+        /* intl-tel-input customization */
         .iti {
             width: 100%;
             margin-bottom: 0.8rem;
@@ -600,6 +579,7 @@
             cursor: pointer;
         }
 
+        /* Media preview for upload */
         .media-preview {
             width: 100%;
             min-height: 150px;
@@ -675,16 +655,8 @@
     </style>
 </head>
 <body dir="ltr">
-    <!-- SSL Helper - Will be shown if needed -->
-    <div id="ssl-helper" class="ssl-helper" style="display: none;">
-        <h3>🔒 SSL Certificate Required</h3>
-        <p>To view accounts and images, please accept the security certificate first.</p>
-        <button onclick="acceptSSL()">Open Link & Accept</button>
-        <button class="secondary-btn" onclick="dismissSSL()">Continue Anyway</button>
-    </div>
-
     <!-- Install Button -->
-    <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
+    <button class="install-btn-fixed" id="install-button" onclick="installApp()">
         <i class="fas fa-download"></i> Install GK Store
     </button>
 
@@ -738,7 +710,7 @@
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
-        <!-- ADMIN SCREEN -->
+        <!-- ADMIN SCREEN - FULL FEATURES -->
         <div id="admin-screen" class="screen">
             <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
@@ -1008,54 +980,13 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // SSL CERTIFICATE HANDLER - ONE TIME PER DEVICE
-        // ============================================
-        const sslHelper = document.getElementById('ssl-helper');
-        const sslAccepted = localStorage.getItem('ssl_accepted');
-        
-        // Check if SSL is accepted
-        if (!sslAccepted) {
-            // Try to fetch the API
-            fetch('https://216.126.225.4/api/health', { 
-                mode: 'cors', 
-                cache: 'no-cache',
-                timeout: 5000
-            })
-            .then(response => {
-                if (response.ok) {
-                    localStorage.setItem('ssl_accepted', 'true');
-                }
-            })
-            .catch(() => {
-                // Show SSL helper on first failure
-                sslHelper.style.display = 'block';
-            });
-        }
-
-        window.acceptSSL = function() {
-            window.open('https://216.126.225.4/api/health', '_blank');
-            localStorage.setItem('ssl_accepted', 'true');
-            sslHelper.style.display = 'none';
-            // Reload after a moment to load accounts
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
-        };
-
-        window.dismissSSL = function() {
-            sslHelper.style.display = 'none';
-            // Still try to load accounts
-            loadAccountsFromPB();
-        };
-
-        // ============================================
         // SERVICE WORKER REGISTRATION
         // ============================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
-                        console.log('✅ ServiceWorker registered');
+                        console.log('✅ ServiceWorker registered:', registration.scope);
                     })
                     .catch(error => {
                         console.log('❌ ServiceWorker registration failed:', error);
@@ -1069,21 +1000,21 @@
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
 
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
             installButton.style.display = 'none';
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
-                installButton.style.display = 'flex';
-            }
+            installButton.style.display = 'flex';
         });
 
         window.installApp = function() {
             if (!deferredPrompt) {
-                alert('To install: Tap browser menu → "Add to Home Screen"');
+                if (window.matchMedia('(display-mode: browser)').matches) {
+                    alert('To install: Tap browser menu → "Add to Home Screen"');
+                }
                 return;
             }
             
@@ -1097,10 +1028,39 @@
         };
 
         setTimeout(() => {
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && !deferredPrompt) {
+            if (!window.matchMedia('(display-mode: standalone)').matches && !deferredPrompt) {
                 installButton.style.display = 'flex';
             }
         }, 2000);
+
+        // ============================================
+        // SSL CERTIFICATE HELPER
+        // ============================================
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const sslAccepted = localStorage.getItem('ssl_accepted');
+        
+        if (isMobile && !sslAccepted) {
+            setTimeout(() => {
+                fetch('https://216.126.225.4/api/health', { mode: 'cors', cache: 'no-cache' })
+                .catch(() => {
+                    const sslDiv = document.createElement('div');
+                    sslDiv.className = 'ssl-helper';
+                    sslDiv.innerHTML = `
+                        <strong>🔒 Accept SSL Certificate</strong>
+                        <p>Please accept the security certificate to view images</p>
+                        <button onclick="acceptSSL(this)">Open Link & Accept</button>
+                        <button onclick="this.parentElement.remove()">Close</button>
+                    `;
+                    document.body.appendChild(sslDiv);
+                });
+            }, 2000);
+        }
+
+        window.acceptSSL = function(btn) {
+            window.open('https://216.126.225.4/api/health', '_blank');
+            localStorage.setItem('ssl_accepted', 'true');
+            btn.parentElement.remove();
+        };
 
         // ============================================
         // POCKETBASE CONFIGURATION
@@ -1203,8 +1163,66 @@
                 editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
             },
-            ps: { /* ... keep your existing ps translations ... */ },
-            fa: { /* ... keep your existing fa translations ... */ }
+            ps: {
+                brand: 'جی کے سټور', lang: 'ژبه', contact: 'اړیکه', admin: 'مدیر',
+                mainTitle: 'PUBG بازار', mainSubtitle: 'خوندي · سمدستي تحویل',
+                cta: 'د PUBG حساب لیدو لپاره کلیک وکړئ', sliderHint: '— اعلانونه (اتومات بدلون ۲ ثانیې) —',
+                all: 'ټول', small: 'کوچنی PUBG', medium: 'منځنی PUBG', big: 'لوی PUBG',
+                accountsTitle: 'PUBG حسابونه', contactTitle: 'اړیکه او مرسته',
+                adminTitle: 'مدیر پینل', loginTitle: 'مدیر ننوتل', loginBtn: 'ننوتل',
+                totalUsers: 'ټول کارونکي', onlineUsers: 'آنلاین اوس', onlineInfo: 'وروستۍ ۵ دقیقې',
+                visitorInfo: 'بی‌نظیره IP پتې', accountsStat: 'حسابونه', bookingsStat: 'بکنګونه',
+                activeSessions: 'فعال غونډې', bookRequestsTitle: '📋 د بکنګ غوښتنې',
+                addAccountBtn: 'نوی حساب اضافه کړئ', manageAccountsBtn: 'حسابونه اداره کړئ (ړنګول)',
+                manageContactsBtn: 'اړیکې اداره کړئ', manageAdsBtn: 'اعلانونه اداره کړئ',
+                logoutBtn: 'وتل', addModalTitle: 'نوی حساب اضافه کړئ', selectTier: '-- کچه غوره کړئ --',
+                smallTier: 'کوچنی PUBG ($10-$500)', mediumTier: 'منځنی PUBG ($500-$1000)',
+                bigTier: 'لوی PUBG ($1000-$100000)', mediaLabel: 'د حساب میډیا (انځور یا ویډیو) *',
+                uploadBtn: 'اپلوډ', manageModalTitle: 'حسابونه اداره کړئ',
+                existingAccounts: '📋 موجود حسابونه (ړنګولو لپاره کلیک وکړئ)',
+                manageContactsTitle: 'اړیکې اداره کړئ', addContact: '➕ نوې اړیکه اضافه کړئ',
+                whatsappNumberLabel: 'د واټساپ شمیره د هیواد کوډ سره', saveContactBtn: 'اړیکه خوندي کړئ',
+                existingContacts: '📋 موجوده اړیکې', manageAdsTitle: 'اعلانونه اداره کړئ',
+                addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)', imageOption: 'انځور', videoOption: 'ویډیو',
+                adMediaLabel: 'د اعلان میډیا *', addAdBtn: 'اعلان اضافه کړئ', currentAds: '📋 اوسني اعلانونه',
+                bookTitle: 'حساب بک کړئ', cancel: 'لغوه', confirm: 'بک تایید کړئ',
+                buyTitle: 'د USDT سره واخلئ', confirmWA: 'د واټساپ له لارې تایید کړئ',
+                infoTitle: 'د حساب تفصیل', selectLang: 'ژبه غوره کړئ',
+                yourName: 'ستاسو نوم', whatsappNumber: 'د واټساپ شمیره', chatNow: 'اوس خبرې وکړئ',
+                delete: 'ړنګول', cancelRequest: 'لغوه کول', contactViaWA: 'اړیکه', edit: 'سمول',
+                editUsdtTitle: 'د USDT پته سمول', newUsdtAddress: 'نوې USDT پته',
+                usdtWarning: 'ډاډ ترلاسه کړئ چې دا سمه TRC20 پته ده', save: 'خوندي کول'
+            },
+            fa: {
+                brand: 'جی کی استور', lang: 'زبان', contact: 'تماس', admin: 'مدیر',
+                mainTitle: 'بازار PUBG', mainSubtitle: 'امن · تحویل فوری',
+                cta: 'برای دیدن حساب PUBG کلیک کنید', sliderHint: '— تبلیغات (تغییر خودکار ۲ ثانیه) —',
+                all: 'همه', small: 'کوچک PUBG', medium: 'متوسط PUBG', big: 'بزرگ PUBG',
+                accountsTitle: 'حساب‌های PUBG', contactTitle: 'تماس و پشتیبانی',
+                adminTitle: 'پنل مدیریت', loginTitle: 'ورود مدیر', loginBtn: 'ورود',
+                totalUsers: 'کل کاربران', onlineUsers: 'آنلاین اکنون', onlineInfo: '۵ دقیقه آخر',
+                visitorInfo: 'IPهای یکتا', accountsStat: 'حساب‌ها', bookingsStat: 'رزروها',
+                activeSessions: 'نشست‌های فعال', bookRequestsTitle: '📋 درخواست‌های رزرو',
+                addAccountBtn: 'افزودن حساب جدید', manageAccountsBtn: 'مدیریت حساب‌ها (حذف)',
+                manageContactsBtn: 'مدیریت مخاطبین', manageAdsBtn: 'مدیریت تبلیغات',
+                logoutBtn: 'خروج', addModalTitle: 'افزودن حساب جدید', selectTier: '-- سطح را انتخاب کنید --',
+                smallTier: 'کوچک PUBG ($10-$500)', mediumTier: 'متوسط PUBG ($500-$1000)',
+                bigTier: 'بزرگ PUBG ($1000-$100000)', mediaLabel: 'رسانه حساب (تصویر یا ویدیو) *',
+                uploadBtn: 'آپلود', manageModalTitle: 'مدیریت حساب‌ها',
+                existingAccounts: '📋 حساب‌های موجود (برای حذف کلیک کنید)',
+                manageContactsTitle: 'مدیریت مخاطبین', addContact: '➕ افزودن مخاطب جدید',
+                whatsappNumberLabel: 'شماره واتساپ با کد کشور', saveContactBtn: 'ذخیره مخاطب',
+                existingContacts: '📋 مخاطبین موجود', manageAdsTitle: 'مدیریت تبلیغات',
+                addAd: '➕ تبلیغ جدید (تصویر/ویدیو)', imageOption: 'تصویر', videoOption: 'ویدیو',
+                adMediaLabel: 'رسانه تبلیغ *', addAdBtn: 'افزودن تبلیغ', currentAds: '📋 تبلیغات فعلی',
+                bookTitle: 'رزرو حساب', cancel: 'انصراف', confirm: 'تایید رزرو',
+                buyTitle: 'خرید با USDT', confirmWA: 'تایید از طریق واتساپ',
+                infoTitle: 'جزئیات حساب', selectLang: 'انتخاب زبان',
+                yourName: 'نام شما', whatsappNumber: 'شماره واتساپ', chatNow: 'گفتگو',
+                delete: 'حذف', cancelRequest: 'لغو', contactViaWA: 'تماس', edit: 'ویرایش',
+                editUsdtTitle: 'ویرایش آدرس USDT', newUsdtAddress: 'آدرس جدید USDT',
+                usdtWarning: 'مطمئن شوید آدرس TRC20 معتبر است', save: 'ذخیره'
+            }
         };
 
         // ============================================
@@ -1235,7 +1253,7 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING - WITH RETRY
+        // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
             try {
@@ -1258,12 +1276,6 @@
                 }
             } catch (error) {
                 console.error('Failed to load accounts:', error);
-                // If SSL not accepted, show helper
-                if (!localStorage.getItem('ssl_accepted')) {
-                    sslHelper.style.display = 'block';
-                }
-                // Retry after 3 seconds
-                setTimeout(loadAccountsFromPB, 3000);
             }
         }
 
@@ -1298,7 +1310,7 @@
         }
 
         // ============================================
-        // RENDERING FUNCTIONS (All preserved)
+        // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1546,7 +1558,7 @@
         }
 
         // ============================================
-        // ACTION FUNCTIONS (All preserved)
+        // ACTION FUNCTIONS
         // ============================================
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
@@ -1573,28 +1585,18 @@
             }
         };
 
-        // Media preview functions with increased limits
+        // Media preview functions
         window.previewMediaFromFile = function() {
             const fileInput = document.getElementById('account-media-file');
             const preview = document.getElementById('media-preview');
             const uploadBtn = document.getElementById('upload-btn');
             
             if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                const isVideo = file.type.startsWith('video/');
-                
-                // UPDATED LIMITS: 90MB for video, 20MB for image
-                const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
-                    uploadBtn.disabled = true;
-                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    return;
-                }
-                
                 uploadBtn.disabled = false;
+                const file = fileInput.files[0];
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const isVideo = file.type.startsWith('video/');
                     if (isVideo) {
                         preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
                         appState.currentMediaData = { type: 'video', data: e.target.result };
@@ -1614,17 +1616,9 @@
             const preview = document.getElementById('ad-preview');
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
-                const isVideo = file.type.startsWith('video/');
-                
-                // UPDATED LIMITS for ads
-                const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
-                    return;
-                }
-                
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const isVideo = file.type.startsWith('video/');
                     if (isVideo) {
                         preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
                         appState.currentAdData = { type: 'video', data: e.target.result };
