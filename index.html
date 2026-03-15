@@ -653,11 +653,26 @@
         .connection-status.disconnected {
             border-color: #ef4444;
         }
+
+        /* Fallback notice */
+        .fallback-notice {
+            background: var(--surface-light);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
     </style>
 </head>
 <body dir="ltr">
     <!-- Connection Status -->
     <div id="connection-status" class="connection-status">📡 Connecting...</div>
+
+    <!-- Fallback Notice -->
+    <div id="fallback-notice" class="fallback-notice" style="display: none;">
+        ⚠️ Using offline demo data (PocketBase connection failed)
+    </div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
@@ -727,7 +742,6 @@
                         <span data-i18n="loginBtn">Login</span>
                     </button>
                     <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
-                    <div id="connection-details" style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.5rem;"></div>
                 </div>
                 
                 <!-- Admin Dashboard -->
@@ -995,58 +1009,13 @@
             { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' }
         ];
 
-        // ============================================
-        // POCKETBASE CONFIGURATION - TRY MULTIPLE URLS
-        // ============================================
-        const possibleUrls = [
-            'https://216.126.225.4',
-            'https://216.126.225.4:8090',
-            'http://216.126.225.4:8090',
-            'http://216.126.225.4'
+        const fallbackContacts = [
+            { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
+            { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
         ];
-        
-        let pb = null;
-        let currentUrl = null;
-        let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
-        let connectionDetails = document.getElementById('connection-details');
-
-        // Test all possible URLs to find the working one
-        async function findWorkingUrl() {
-            for (const url of possibleUrls) {
-                try {
-                    connectionDetails.innerText = `Testing: ${url}`;
-                    const testPb = new PocketBase(url);
-                    testPb.autoCancellation(false);
-                    await testPb.health.check();
-                    pb = testPb;
-                    currentUrl = url;
-                    isConnected = true;
-                    connectionStatus.textContent = `✅ Connected to PocketBase`;
-                    connectionStatus.classList.add('connected');
-                    connectionDetails.innerText = `Connected to: ${url}`;
-                    console.log(`✅ Connected to PocketBase at ${url}`);
-                    
-                    // Load data in background
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                    return true;
-                } catch (e) {
-                    console.log(`❌ Failed to connect to ${url}`);
-                }
-            }
-            connectionStatus.textContent = `⚠️ Offline mode (using fallback)`;
-            connectionStatus.classList.add('disconnected');
-            connectionDetails.innerText = `Could not connect to PocketBase`;
-            return false;
-        }
-
-        // Start connection attempt
-        findWorkingUrl();
 
         // ============================================
-        // SERVICE WORKER REGISTRATION
+        // SERVICE WORKER REGISTRATION - WITH ERROR HANDLING
         // ============================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -1058,6 +1027,59 @@
                         console.log('❌ ServiceWorker registration failed:', error);
                     });
             });
+        }
+
+        // ============================================
+        // POCKETBASE CONFIGURATION
+        // ============================================
+        const PB_URL = 'https://216.126.225.4';
+        let pb = null;
+        let isConnected = false;
+        let connectionStatus = document.getElementById('connection-status');
+        let fallbackNotice = document.getElementById('fallback-notice');
+
+        // Initialize PocketBase
+        try {
+            pb = new PocketBase(PB_URL);
+            pb.autoCancellation(false);
+            
+            // Test connection
+            pb.health.check()
+                .then(() => {
+                    isConnected = true;
+                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.classList.add('connected');
+                    fallbackNotice.style.display = 'none';
+                    console.log('✅ Connected to PocketBase');
+                    
+                    // Load real data
+                    loadAccountsFromPB();
+                    loadContactsFromPB();
+                    loadSettingsFromPB();
+                })
+                .catch(err => {
+                    console.log('⚠️ PocketBase connection failed, using fallback data');
+                    connectionStatus.textContent = '⚠️ Offline mode';
+                    connectionStatus.classList.add('disconnected');
+                    fallbackNotice.style.display = 'block';
+                    
+                    // Use fallback data
+                    appState.accounts = fallbackAccounts;
+                    appState.contacts = fallbackContacts;
+                    renderAccounts();
+                    renderContacts();
+                });
+        } catch (e) {
+            console.error('❌ Failed to initialize PocketBase:', e);
+            connectionStatus.textContent = '⚠️ Offline mode';
+            connectionStatus.classList.add('disconnected');
+            fallbackNotice.style.display = 'block';
+            
+            // Use fallback data
+            appState.accounts = fallbackAccounts;
+            appState.contacts = fallbackContacts;
+            renderAccounts();
+            renderContacts();
         }
 
         // ============================================
@@ -1103,11 +1125,8 @@
         // APP STATE
         // ============================================
         const appState = {
-            accounts: fallbackAccounts, // Start with fallback data immediately
-            contacts: [
-                { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
-                { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
-            ],
+            accounts: fallbackAccounts, // Start with fallback data
+            contacts: fallbackContacts,
             ads: [
                 { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
                 { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
@@ -1131,7 +1150,7 @@
             usingFallback: true
         };
 
-        // Load from localStorage
+        // Load from localStorage if available
         if (localStorage.getItem('gk_accounts')) {
             try {
                 const saved = JSON.parse(localStorage.getItem('gk_accounts'));
@@ -1144,7 +1163,10 @@
         
         if (localStorage.getItem('gk_contacts')) {
             try {
-                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+                const saved = JSON.parse(localStorage.getItem('gk_contacts'));
+                if (saved && saved.length > 0) {
+                    appState.contacts = saved;
+                }
             } catch (e) {}
         }
         
@@ -1198,8 +1220,8 @@
                 editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
             },
-            ps: { /* ... keep your existing ps translations ... */ },
-            fa: { /* ... keep your existing fa translations ... */ }
+            ps: { /* ... */ },
+            fa: { /* ... */ }
         };
 
         // ============================================
@@ -1291,7 +1313,7 @@
         }
 
         // ============================================
-        // RENDERING FUNCTIONS (shortened for brevity - keep all your existing rendering functions)
+        // RENDERING FUNCTIONS (shortened for brevity)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1424,7 +1446,7 @@
             }
         };
 
-        // Admin rendering functions (keep your existing admin rendering functions)
+        // Admin rendering functions (keep existing)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1972,9 +1994,7 @@
             openModal('info-modal');
         };
 
-        // ============================================
-        // FIXED ADMIN LOGIN FUNCTION
-        // ============================================
+        // Admin Login
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -1993,29 +2013,21 @@
             errorDiv.innerText = '';
             
             try {
-                // If we're not connected yet, try to find working URL
                 if (!pb || !isConnected) {
-                    const found = await findWorkingUrl();
-                    if (!found) {
-                        throw new Error('Could not connect to PocketBase server');
-                    }
+                    throw new Error('Not connected to PocketBase');
                 }
                 
-                // Try admin login
                 const authData = await pb.admins.authWithPassword(email, pass);
                 
-                // Success
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 errorDiv.innerText = '';
                 
-                // Load data
                 await loadAccountsFromPB();
                 await loadContactsFromPB();
                 await loadSettingsFromPB();
                 
-                // Update stats
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
@@ -2030,7 +2042,7 @@
                 
             } catch (error) {
                 console.error('Login error:', error);
-                errorDiv.innerText = 'Invalid credentials or connection failed. Check console for details.';
+                errorDiv.innerText = 'Invalid credentials or connection failed';
                 loginBtn.innerHTML = originalText;
                 loginBtn.disabled = false;
             }
