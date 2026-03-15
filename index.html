@@ -1006,7 +1006,9 @@
         const fallbackAccounts = [
             { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
             { id: 'a2', title: 'Competitive Player', desc: 'Conqueror tier, mythic outfits', tier: 'medium', price_usd: 499.99, price_afn: 32000, media: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' }
+            { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' },
+            { id: 'a4', title: 'Tournament Winner', desc: 'Championship skins', tier: 'medium', price_usd: 799.99, price_afn: 51200, media: 'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', mediaType: 'image' },
+            { id: 'a5', title: 'Legendary Limited', desc: 'All collab skins', tier: 'big', price_usd: 4999.99, price_afn: 320000, media: 'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', mediaType: 'image' }
         ];
 
         const fallbackContacts = [
@@ -1015,10 +1017,16 @@
         ];
 
         // ============================================
-        // SERVICE WORKER REGISTRATION - WITH ERROR HANDLING
+        // SERVICE WORKER REGISTRATION - FIXED
         // ============================================
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            // Unregister any existing service workers first
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            }).then(function() {
+                // Register new service worker
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
                         console.log('✅ ServiceWorker registered');
@@ -1030,7 +1038,7 @@
         }
 
         // ============================================
-        // POCKETBASE CONFIGURATION
+        // POCKETBASE CONFIGURATION - WITH FALLBACK
         // ============================================
         const PB_URL = 'https://216.126.225.4';
         let pb = null;
@@ -1043,9 +1051,13 @@
             pb = new PocketBase(PB_URL);
             pb.autoCancellation(false);
             
-            // Test connection
-            pb.health.check()
+            // Test connection with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            pb.health.check({ signal: controller.signal })
                 .then(() => {
+                    clearTimeout(timeoutId);
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected';
                     connectionStatus.classList.add('connected');
@@ -1058,12 +1070,13 @@
                     loadSettingsFromPB();
                 })
                 .catch(err => {
+                    clearTimeout(timeoutId);
                     console.log('⚠️ PocketBase connection failed, using fallback data');
                     connectionStatus.textContent = '⚠️ Offline mode';
                     connectionStatus.classList.add('disconnected');
                     fallbackNotice.style.display = 'block';
                     
-                    // Use fallback data
+                    // Use fallback data immediately
                     appState.accounts = fallbackAccounts;
                     appState.contacts = fallbackContacts;
                     renderAccounts();
@@ -1125,7 +1138,7 @@
         // APP STATE
         // ============================================
         const appState = {
-            accounts: fallbackAccounts, // Start with fallback data
+            accounts: fallbackAccounts, // Start with fallback data immediately
             contacts: fallbackContacts,
             ads: [
                 { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
@@ -1187,7 +1200,7 @@
         }
 
         // ============================================
-        // TRANSLATIONS
+        // TRANSLATIONS (keep your existing translations)
         // ============================================
         const translations = {
             en: {
@@ -1220,8 +1233,8 @@
                 editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
             },
-            ps: { /* ... */ },
-            fa: { /* ... */ }
+            ps: { /* ... keep your ps translations */ },
+            fa: { /* ... keep your fa translations */ }
         };
 
         // ============================================
@@ -1252,7 +1265,7 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING
+        // POCKETBASE DATA LOADING - WITH ERROR HANDLING
         // ============================================
         async function loadAccountsFromPB() {
             if (!pb || !isConnected) return;
@@ -1313,7 +1326,7 @@
         }
 
         // ============================================
-        // RENDERING FUNCTIONS (shortened for brevity)
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1446,7 +1459,7 @@
             }
         };
 
-        // Admin rendering functions (keep existing)
+        // Admin rendering functions (keep your existing admin functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1994,7 +2007,7 @@
             openModal('info-modal');
         };
 
-        // Admin Login
+        // Admin Login - FIXED
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -2013,10 +2026,11 @@
             errorDiv.innerText = '';
             
             try {
-                if (!pb || !isConnected) {
-                    throw new Error('Not connected to PocketBase');
+                if (!pb) {
+                    throw new Error('PocketBase not initialized');
                 }
                 
+                // Try to login
                 const authData = await pb.admins.authWithPassword(email, pass);
                 
                 appState.isAdminLoggedIn = true;
@@ -2024,10 +2038,12 @@
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 errorDiv.innerText = '';
                 
+                // Load fresh data
                 await loadAccountsFromPB();
                 await loadContactsFromPB();
                 await loadSettingsFromPB();
                 
+                // Update stats
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
