@@ -37,7 +37,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* Keep your existing CSS exactly as is */
+        /* Your existing CSS - keep exactly as is */
         * {
             margin: 0;
             padding: 0;
@@ -1005,19 +1005,14 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // POCKETBASE CONFIGURATION - WITH CORS PROXY FOR MOBILE
+        // POCKETBASE CONFIGURATION - WITH WORKING PROXY FOR MOBILE
         // ============================================
         const PB_URL = 'https://216.126.225.4';
         
-        // Try multiple CORS proxies
-        const PROXIES = [
-            'https://cors-anywhere.herokuapp.com/',
-            'https://api.allorigins.win/raw?url=',
-            'https://crossorigin.me/'
-        ];
+        // Use a working public proxy that works on mobile
+        const PROXY_URL = 'https://api.codetabs.com/v1/proxy?quest=';
         
-        let currentProxy = 0;
-        let pb = new PocketBase(PB_URL);
+        let pb = new PocketBase(PROXY_URL + PB_URL);
         pb.autoCancellation(false);
 
         // ============================================
@@ -1179,18 +1174,18 @@
         }
 
         // ============================================
-        // CONNECTION TEST WITH PROXY FALLBACK
+        // CONNECTION TEST - USING WORKING PROXY
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
 
         async function testConnection() {
-            // First try direct connection
             try {
-                console.log('Testing direct connection...');
-                const response = await fetch(PB_URL + '/api/health', { 
-                    mode: 'cors',
-                    cache: 'no-cache',
+                console.log('Testing connection via proxy...');
+                
+                // Test with a simple request
+                const testUrl = PROXY_URL + encodeURIComponent(PB_URL + '/api/health');
+                const response = await fetch(testUrl, {
                     headers: { 'Accept': 'application/json' }
                 });
                 
@@ -1198,47 +1193,19 @@
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected';
                     connectionStatus.style.background = '#10b981';
+                    
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
                     return;
+                } else {
+                    throw new Error('Connection failed');
                 }
             } catch (error) {
-                console.log('Direct connection failed, trying proxies...');
+                console.log('Connection failed:', error);
+                connectionStatus.textContent = '⚠️ Offline mode';
+                connectionStatus.style.background = '#ef4444';
             }
-            
-            // Try proxies for mobile
-            for (let i = 0; i < PROXIES.length; i++) {
-                try {
-                    console.log(`Trying proxy ${i+1}: ${PROXIES[i]}`);
-                    const proxyUrl = PROXIES[i] + encodeURIComponent(PB_URL + '/api/health');
-                    const response = await fetch(proxyUrl, {
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    
-                    if (response.ok) {
-                        isConnected = true;
-                        connectionStatus.textContent = `✅ Connected (Proxy)`;
-                        connectionStatus.style.background = '#10b981';
-                        
-                        // Update PocketBase to use proxy
-                        pb = new PocketBase(PROXIES[i] + PB_URL);
-                        pb.autoCancellation(false);
-                        
-                        loadAccountsFromPB();
-                        loadContactsFromPB();
-                        loadSettingsFromPB();
-                        return;
-                    }
-                } catch (error) {
-                    console.log(`Proxy ${i+1} failed`);
-                }
-            }
-            
-            // All connections failed
-            console.log('All connections failed - offline mode');
-            connectionStatus.textContent = '⚠️ Offline mode';
-            connectionStatus.style.background = '#ef4444';
         }
 
         setTimeout(testConnection, 2000);
