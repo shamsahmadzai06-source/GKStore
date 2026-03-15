@@ -37,7 +37,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* Keep your existing CSS exactly as it was */
+        /* Keep your existing CSS */
         * {
             margin: 0;
             padding: 0;
@@ -648,61 +648,11 @@
             border: 1px solid var(--border);
             z-index: 9999;
         }
-        .connection-status.connected {
-            border-color: #10b981;
-        }
-        .connection-status.disconnected {
-            border-color: #ef4444;
-        }
-
-        /* Fallback notice */
-        .fallback-notice {
-            background: var(--surface-light);
-            color: var(--text-secondary);
-            padding: 0.5rem;
-            text-align: center;
-            font-size: 0.8rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        /* CORS notice */
-        .cors-notice {
-            position: fixed;
-            bottom: 80px;
-            left: 10px;
-            right: 10px;
-            background: var(--surface-light);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 10000;
-            font-size: 14px;
-            border: 2px solid var(--primary);
-            animation: slideUp 0.3s ease;
-        }
-        
-        .cors-notice button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            margin: 5px;
-            font-weight: bold;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body dir="ltr">
     <!-- Connection Status -->
     <div id="connection-status" class="connection-status">📡 Connecting...</div>
-
-    <!-- Fallback Notice -->
-    <div id="fallback-notice" class="fallback-notice" style="display: none;">
-        ⚠️ Using offline demo data (PocketBase connection failed)
-        <button class="retry-button" onclick="retryConnection()" style="background:var(--primary); color:white; border:none; padding:5px 10px; border-radius:20px; margin-left:10px; cursor:pointer;">Retry</button>
-    </div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
@@ -1031,17 +981,11 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // MULTIPLE CORS PROXIES - Try until one works
+        // POCKETBASE CONFIGURATION - DIRECT HTTPS
         // ============================================
-        const CORS_PROXIES = [
-            'https://api.allorigins.win/raw?url=',
-            'https://corsproxy.io/?',
-            'https://cors-anywhere.herokuapp.com/',
-            'https://thingproxy.freeboard.io/fetch/'
-        ];
-        
-        let currentProxyIndex = 0;
-        const PB_HTTP_URL = 'http://216.126.225.4:8090';
+        const PB_URL = 'https://216.126.225.4';  // No proxy, direct HTTPS
+        const pb = new PocketBase(PB_URL);
+        pb.autoCancellation(false);
 
         // ============================================
         // FALLBACK DATA
@@ -1058,46 +1002,7 @@
         ];
 
         // ============================================
-        // CUSTOM FETCH WITH PROXY ROTATION
-        // ============================================
-        async function proxiedFetch(url, options = {}) {
-            // For API calls to your PocketBase, use proxy
-            if (url.includes('216.126.225.4')) {
-                // Try each proxy until one works
-                for (let i = 0; i < CORS_PROXIES.length; i++) {
-                    const proxy = CORS_PROXIES[currentProxyIndex];
-                    const proxiedUrl = proxy + encodeURIComponent(url);
-                    console.log(`Trying proxy ${currentProxyIndex + 1}: ${proxy}`);
-                    
-                    try {
-                        const response = await fetch(proxiedUrl, {
-                            ...options,
-                            headers: {
-                                ...options.headers,
-                                'Origin': window.location.origin
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            console.log(`✅ Proxy ${currentProxyIndex + 1} working`);
-                            return response;
-                        }
-                    } catch (e) {
-                        console.log(`❌ Proxy ${currentProxyIndex + 1} failed`);
-                    }
-                    
-                    // Try next proxy
-                    currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
-                }
-                
-                // If all proxies fail, throw error
-                throw new Error('All CORS proxies failed');
-            }
-            return fetch(url, options);
-        }
-
-        // ============================================
-        // SERVICE WORKER - Unregister old ones
+        // SERVICE WORKER
         // ============================================
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -1178,7 +1083,7 @@
         }
 
         // ============================================
-        // TRANSLATIONS (keep your existing translations)
+        // TRANSLATIONS
         // ============================================
         const translations = {
             en: {
@@ -1247,20 +1152,18 @@
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
-        let fallbackNotice = document.getElementById('fallback-notice');
 
         async function testConnection() {
             try {
-                console.log('Testing connection through proxies...');
-                const response = await proxiedFetch(PB_HTTP_URL + '/api/health');
+                console.log('Testing direct HTTPS connection...');
+                const response = await fetch(PB_URL + '/api/health');
                 
                 if (response.ok) {
                     const data = await response.json();
                     isConnected = true;
-                    connectionStatus.textContent = '✅ Connected via proxy';
+                    connectionStatus.textContent = '✅ Connected';
                     connectionStatus.classList.add('connected');
-                    fallbackNotice.style.display = 'none';
-                    console.log('✅ Connected to PocketBase via proxy');
+                    console.log('✅ Connected to PocketBase');
                     
                     loadAccountsFromPB();
                     loadContactsFromPB();
@@ -1272,15 +1175,8 @@
                 console.log('⚠️ Using fallback data');
                 connectionStatus.textContent = '⚠️ Offline mode';
                 connectionStatus.classList.add('disconnected');
-                fallbackNotice.style.display = 'block';
             }
         }
-
-        window.retryConnection = function() {
-            connectionStatus.textContent = '📡 Connecting...';
-            connectionStatus.classList.remove('connected', 'disconnected');
-            testConnection();
-        };
 
         setTimeout(testConnection, 2000);
 
@@ -1324,7 +1220,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS (include all your rendering functions here)
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1572,24 +1468,26 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING VIA PROXY
+        // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
             if (!isConnected) return;
             
             try {
-                const response = await proxiedFetch(PB_HTTP_URL + '/api/collections/accounts/records?page=1&perPage=500');
-                const data = await response.json();
+                const records = await pb.collection('accounts').getFullList({
+                    $autoCancel: false,
+                    requestKey: null
+                });
                 
-                if (data && data.items && data.items.length > 0) {
-                    appState.accounts = data.items.map(record => ({
+                if (records && records.length > 0) {
+                    appState.accounts = records.map(record => ({
                         id: record.id,
                         title: record.title,
                         desc: record.description,
                         tier: record.tier,
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
-                        media: record.media ? (PB_HTTP_URL + '/api/files/' + record.collectionId + '/' + record.id + '/' + record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
                         mediaType: record.mediaType || 'image'
                     }));
                     appState.usingFallback = false;
@@ -1604,11 +1502,9 @@
             if (!isConnected) return;
             
             try {
-                const response = await proxiedFetch(PB_HTTP_URL + '/api/collections/contacts/records?page=1&perPage=500');
-                const data = await response.json();
-                
-                if (data && data.items && data.items.length > 0) {
-                    appState.contacts = data.items.map(record => ({
+                const records = await pb.collection('contacts').getFullList();
+                if (records && records.length > 0) {
+                    appState.contacts = records.map(record => ({
                         id: record.id,
                         name: record.name,
                         phone: record.phone,
@@ -1623,21 +1519,17 @@
             if (!isConnected) return;
             
             try {
-                const response = await proxiedFetch(PB_HTTP_URL + '/api/collections/settings/records?page=1&perPage=500');
-                const data = await response.json();
-                
-                if (data && data.items && data.items.length > 0) {
-                    const usdtSetting = data.items.find(r => r.key === 'usdt_address');
-                    if (usdtSetting) {
-                        appState.usdtAddress = usdtSetting.value;
-                        document.getElementById('current-usdt-address').innerText = usdtSetting.value;
-                    }
+                const records = await pb.collection('settings').getFullList();
+                const usdtSetting = records.find(r => r.key === 'usdt_address');
+                if (usdtSetting) {
+                    appState.usdtAddress = usdtSetting.value;
+                    document.getElementById('current-usdt-address').innerText = usdtSetting.value;
                 }
             } catch (error) {}
         }
 
         // ============================================
-        // ACTION FUNCTIONS (include all your action functions)
+        // ACTION FUNCTIONS
         // ============================================
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
@@ -2065,7 +1957,7 @@
             openModal('info-modal');
         };
 
-        // Admin Login via Proxy
+        // Admin Login
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -2083,17 +1975,7 @@
             errorDiv.innerText = '';
             
             try {
-                const response = await proxiedFetch(PB_HTTP_URL + '/api/admins/auth-with-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identity: email, password: pass })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Login failed');
-                }
-                
-                const data = await response.json();
+                const authData = await pb.admins.authWithPassword(email, pass);
                 
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
@@ -2127,6 +2009,7 @@
         };
 
         window.logout = function() {
+            pb.authStore.clear();
             appState.isAdminLoggedIn = false;
             document.getElementById('admin-login-section').classList.remove('hidden');
             document.getElementById('admin-dashboard').classList.add('hidden');
