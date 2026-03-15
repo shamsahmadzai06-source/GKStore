@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- CRITICAL: This meta tag MUST be first for mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     
     <!-- PWA Required Meta Tags -->
@@ -648,6 +649,30 @@
             border: 1px solid var(--border);
             z-index: 9999;
         }
+        
+        /* Mobile-specific fixes */
+        @media (max-width: 768px) {
+            .card-media {
+                object-fit: contain;
+                background: #000;
+            }
+            
+            video.card-media {
+                max-height: 100%;
+                width: 100%;
+                background: #000;
+            }
+            
+            .action-btn {
+                min-height: 44px;
+                font-size: 0.8rem;
+            }
+            
+            .nav-btn {
+                min-height: 44px;
+                padding: 0.5rem 0.8rem;
+            }
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -983,7 +1008,7 @@
         // ============================================
         // POCKETBASE CONFIGURATION - DIRECT HTTPS
         // ============================================
-        const PB_URL = 'https://216.126.225.4';  // No proxy, direct HTTPS
+        const PB_URL = 'https://216.126.225.4';
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
 
@@ -1043,38 +1068,43 @@
             usingFallback: true
         };
 
-        // Load from localStorage
-        if (localStorage.getItem('gk_accounts')) {
-            try {
-                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                if (saved && saved.length > 0) {
-                    appState.accounts = saved;
-                    appState.usingFallback = false;
-                }
-            } catch (e) {}
+        // Load from localStorage IMMEDIATELY
+        function loadFromStorage() {
+            if (localStorage.getItem('gk_accounts')) {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                    if (saved && saved.length > 0) {
+                        appState.accounts = saved;
+                        appState.usingFallback = false;
+                    }
+                } catch (e) {}
+            }
+            
+            if (localStorage.getItem('gk_contacts')) {
+                try {
+                    appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+                } catch (e) {}
+            }
+            
+            if (localStorage.getItem('gk_ads')) {
+                try {
+                    appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+                } catch (e) {}
+            }
+            
+            if (localStorage.getItem('gk_bookings')) {
+                try {
+                    appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+                } catch (e) {}
+            }
+            
+            if (localStorage.getItem('gk_usdt_address')) {
+                appState.usdtAddress = localStorage.getItem('gk_usdt_address');
+            }
         }
         
-        if (localStorage.getItem('gk_contacts')) {
-            try {
-                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_ads')) {
-            try {
-                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_bookings')) {
-            try {
-                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_usdt_address')) {
-            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-        }
+        // Load immediately
+        loadFromStorage();
 
         // ============================================
         // TRANSLATIONS
@@ -1142,50 +1172,23 @@
         }
 
         // ============================================
-        // CONNECTION TEST - FIXED FOR MOBILE
+        // CONNECTION TEST - SIMPLIFIED
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
 
-        function loadFromLocalStorage() {
-            if (localStorage.getItem('gk_accounts')) {
-                try {
-                    appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
-                    renderAccounts();
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_contacts')) {
-                try {
-                    appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-                    renderContacts();
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_ads')) {
-                try {
-                    appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-                    renderAdsSlider();
-                } catch (e) {}
-            }
-        }
-
         async function testConnection() {
             try {
-                console.log('Testing direct HTTPS connection...');
-                const response = await fetch(PB_URL + '/api/health', {
+                const response = await fetch(PB_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    timeout: 5000
                 });
                 
                 if (response.ok) {
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected';
-                    connectionStatus.classList.add('connected');
-                    console.log('✅ Connected to PocketBase');
+                    connectionStatus.style.background = '#10b981';
                     
                     loadAccountsFromPB();
                     loadContactsFromPB();
@@ -1194,10 +1197,10 @@
                     throw new Error('Connection failed');
                 }
             } catch (error) {
-                console.log('⚠️ Using fallback data');
+                console.log('Offline mode');
                 connectionStatus.textContent = '⚠️ Offline mode';
-                connectionStatus.classList.add('disconnected');
-                loadFromLocalStorage();
+                connectionStatus.style.background = '#ef4444';
+                // Already loaded from localStorage
             }
         }
 
@@ -1376,7 +1379,7 @@
             }
         };
 
-        // Admin rendering functions
+        // Admin rendering functions (keep as is)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1588,9 +1591,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // 50MB for video, 10MB for image
+                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024; // 30MB for video, 5MB for image
                 if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '30MB' : '5MB'}`);
                     uploadBtn.disabled = true;
                     preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                     return;
@@ -1620,9 +1623,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // 50MB for video, 10MB for image
+                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024; // 30MB for video, 5MB for image
                 if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '30MB' : '5MB'}`);
                     return;
                 }
                 
@@ -1695,9 +1698,6 @@
             alert('USDT address updated successfully!');
         };
 
-        // ============================================
-        // UPLOAD FUNCTION - FIXED FOR MOBILE
-        // ============================================
         window.uploadNewAccount = function() {
             const tier = document.getElementById('account-tier').value;
             const title = document.getElementById('account-title').value.trim();
@@ -2098,7 +2098,7 @@
         applyTranslation(savedLang);
         renderAdsSlider();
         renderContacts();
-        renderAccounts();
+        renderAccounts(); // This will now show localStorage data immediately
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
