@@ -664,32 +664,17 @@
             border-bottom: 1px solid var(--border);
         }
 
-        /* Mobile connection helper */
-        .mobile-helper {
-            position: fixed;
-            bottom: 80px;
-            left: 10px;
-            right: 10px;
-            background: var(--surface-light);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 10000;
-            font-size: 14px;
-            border: 2px solid var(--primary);
-            animation: slideUp 0.3s ease;
-        }
-        
-        .mobile-helper button {
+        /* Retry button */
+        .retry-button {
             background: var(--primary);
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 20px;
-            margin: 5px;
-            font-weight: bold;
+            margin: 10px auto;
+            display: block;
             cursor: pointer;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -700,15 +685,13 @@
     <!-- Fallback Notice -->
     <div id="fallback-notice" class="fallback-notice" style="display: none;">
         ⚠️ Using offline demo data (PocketBase connection failed)
+        <button class="retry-button" onclick="retryConnection()">Retry Connection</button>
     </div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
         <i class="fas fa-download"></i> Install GK Store
     </button>
-
-    <!-- Mobile Helper (will show only if needed) -->
-    <div id="mobile-helper" class="mobile-helper" style="display: none;"></div>
 
     <!-- top nav -->
     <div class="top-nav">
@@ -1032,62 +1015,7 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CORS PROXY - BYPASS SSL FOR MOBILE
-        // ============================================
-        const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
-        const PB_URL = 'https://216.126.225.4';
-        
-        // Check if running on mobile
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Create custom fetch with CORS proxy for mobile
-        const customFetch = (url, options = {}) => {
-            // For mobile devices, use CORS proxy
-            if (isMobile && url.includes('216.126.225.4')) {
-                return fetch(CORS_PROXY + url, {
-                    ...options,
-                    mode: 'cors',
-                    headers: {
-                        ...options.headers,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-            }
-            return fetch(url, options);
-        };
-
-        // Initialize PocketBase with custom fetch for mobile
-        class CustomPocketBase extends PocketBase {
-            async send(path, options = {}) {
-                const url = this.baseURL + path;
-                const response = await customFetch(url, {
-                    ...options,
-                    headers: {
-                        ...options.headers,
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json().catch(() => ({}));
-                    throw new Error(error.message || `HTTP error! status: ${response.status}`);
-                }
-                
-                return response.json();
-            }
-        }
-
-        // Initialize
-        let pb;
-        try {
-            pb = new CustomPocketBase(PB_URL);
-            pb.autoCancellation(false);
-        } catch (e) {
-            console.error('Failed to initialize PocketBase:', e);
-        }
-
-        // ============================================
-        // FALLBACK DATA
+        // FALLBACK DATA - SHOWS ACCOUNTS IMMEDIATELY
         // ============================================
         const fallbackAccounts = [
             { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
@@ -1101,7 +1029,74 @@
         ];
 
         // ============================================
-        // SERVICE WORKER - Unregister old and register new
+        // POCKETBASE CONFIGURATION - TRY MULTIPLE URLS
+        // ============================================
+        const possibleUrls = [
+            'http://216.126.225.4:8090',  // HTTP with port
+            'https://216.126.225.4:8090', // HTTPS with port
+            'http://216.126.225.4',       // HTTP without port
+            'https://216.126.225.4'       // HTTPS without port
+        ];
+        
+        let pb = null;
+        let currentUrl = null;
+        let isConnected = false;
+        let connectionStatus = document.getElementById('connection-status');
+        let fallbackNotice = document.getElementById('fallback-notice');
+
+        // Try all possible URLs
+        async function findWorkingUrl() {
+            for (const url of possibleUrls) {
+                try {
+                    console.log('Trying:', url);
+                    const testPb = new PocketBase(url);
+                    testPb.autoCancellation(false);
+                    
+                    // Test with timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    
+                    await testPb.health.check({ signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    
+                    pb = testPb;
+                    currentUrl = url;
+                    isConnected = true;
+                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.classList.add('connected');
+                    fallbackNotice.style.display = 'none';
+                    console.log('✅ Connected to PocketBase at', url);
+                    
+                    // Load real data
+                    loadAccountsFromPB();
+                    loadContactsFromPB();
+                    loadSettingsFromPB();
+                    return true;
+                } catch (e) {
+                    console.log('❌ Failed to connect to', url);
+                }
+            }
+            
+            // All URLs failed
+            connectionStatus.textContent = '⚠️ Offline mode';
+            connectionStatus.classList.add('disconnected');
+            fallbackNotice.style.display = 'block';
+            return false;
+        }
+
+        // Start connection attempts
+        setTimeout(findWorkingUrl, 1000);
+
+        // Retry connection
+        window.retryConnection = function() {
+            connectionStatus.textContent = '📡 Connecting...';
+            connectionStatus.classList.remove('connected', 'disconnected');
+            fallbackNotice.style.display = 'none';
+            findWorkingUrl();
+        };
+
+        // ============================================
+        // SERVICE WORKER - Unregister old ones
         // ============================================
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -1118,67 +1113,6 @@
                     });
             });
         }
-
-        // ============================================
-        // MOBILE HELPER - Show if connection fails
-        // ============================================
-        const mobileHelper = document.getElementById('mobile-helper');
-        
-        function showMobileHelper() {
-            if (!isMobile) return;
-            
-            mobileHelper.innerHTML = `
-                <strong>📱 Mobile Connection</strong>
-                <p>To connect to your PocketBase backend:</p>
-                <button onclick="window.open('https://cors-anywhere.herokuapp.com/https://216.126.225.4/api/health', '_blank')">Test Connection</button>
-                <button onclick="this.parentElement.remove()">Dismiss</button>
-            `;
-            mobileHelper.style.display = 'block';
-            
-            setTimeout(() => {
-                mobileHelper.style.display = 'none';
-            }, 10000);
-        }
-
-        // ============================================
-        // CONNECTION TEST
-        // ============================================
-        let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
-        let fallbackNotice = document.getElementById('fallback-notice');
-
-        async function testConnection() {
-            try {
-                const response = await customFetch(PB_URL + '/api/health');
-                if (response.ok) {
-                    isConnected = true;
-                    connectionStatus.textContent = '✅ Connected';
-                    connectionStatus.classList.add('connected');
-                    fallbackNotice.style.display = 'none';
-                    console.log('✅ Connected to PocketBase');
-                    
-                    // Load real data
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                } else {
-                    throw new Error('Not connected');
-                }
-            } catch (error) {
-                console.log('⚠️ Using fallback data');
-                connectionStatus.textContent = '⚠️ Offline mode';
-                connectionStatus.classList.add('disconnected');
-                fallbackNotice.style.display = 'block';
-                
-                // Show mobile helper on first failure
-                if (isMobile) {
-                    showMobileHelper();
-                }
-            }
-        }
-
-        // Test connection
-        setTimeout(testConnection, 1000);
 
         // ============================================
         // PWA INSTALLATION
@@ -1223,7 +1157,7 @@
         // APP STATE
         // ============================================
         const appState = {
-            accounts: fallbackAccounts,
+            accounts: fallbackAccounts, // Start with fallback data
             contacts: fallbackContacts,
             ads: [
                 { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
@@ -1350,24 +1284,26 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING - USING PROXY FOR MOBILE
+        // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
-            if (!isConnected) return;
+            if (!pb || !isConnected) return;
             
             try {
-                const response = await customFetch(PB_URL + '/api/collections/accounts/records?page=1&perPage=500');
-                const data = await response.json();
+                const records = await pb.collection('accounts').getFullList({
+                    $autoCancel: false,
+                    requestKey: null
+                });
                 
-                if (data && data.items && data.items.length > 0) {
-                    appState.accounts = data.items.map(record => ({
+                if (records && records.length > 0) {
+                    appState.accounts = records.map(record => ({
                         id: record.id,
                         title: record.title,
                         desc: record.description,
                         tier: record.tier,
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
-                        media: record.media ? (PB_URL + '/api/files/' + record.collectionId + '/' + record.id + '/' + record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
                         mediaType: record.mediaType || 'image'
                     }));
                     appState.usingFallback = false;
@@ -1379,14 +1315,12 @@
         }
 
         async function loadContactsFromPB() {
-            if (!isConnected) return;
+            if (!pb || !isConnected) return;
             
             try {
-                const response = await customFetch(PB_URL + '/api/collections/contacts/records?page=1&perPage=500');
-                const data = await response.json();
-                
-                if (data && data.items && data.items.length > 0) {
-                    appState.contacts = data.items.map(record => ({
+                const records = await pb.collection('contacts').getFullList();
+                if (records && records.length > 0) {
+                    appState.contacts = records.map(record => ({
                         id: record.id,
                         name: record.name,
                         phone: record.phone,
@@ -1398,18 +1332,14 @@
         }
 
         async function loadSettingsFromPB() {
-            if (!isConnected) return;
+            if (!pb || !isConnected) return;
             
             try {
-                const response = await customFetch(PB_URL + '/api/collections/settings/records?page=1&perPage=500');
-                const data = await response.json();
-                
-                if (data && data.items && data.items.length > 0) {
-                    const usdtSetting = data.items.find(r => r.key === 'usdt_address');
-                    if (usdtSetting) {
-                        appState.usdtAddress = usdtSetting.value;
-                        document.getElementById('current-usdt-address').innerText = usdtSetting.value;
-                    }
+                const records = await pb.collection('settings').getFullList();
+                const usdtSetting = records.find(r => r.key === 'usdt_address');
+                if (usdtSetting) {
+                    appState.usdtAddress = usdtSetting.value;
+                    document.getElementById('current-usdt-address').innerText = usdtSetting.value;
                 }
             } catch (error) {}
         }
@@ -1548,7 +1478,7 @@
             }
         };
 
-        // Admin rendering functions (keep your existing admin functions)
+        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -2096,7 +2026,7 @@
             openModal('info-modal');
         };
 
-        // Admin Login - USING PROXY FOR MOBILE
+        // Admin Login - FIXED
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -2114,44 +2044,17 @@
             errorDiv.innerText = '';
             
             try {
-                let response;
-                if (isMobile) {
-                    // Use proxy for mobile
-                    response = await fetch(CORS_PROXY + PB_URL + '/api/admins/auth-with-password', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            identity: email,
-                            password: pass
-                        })
-                    });
-                } else {
-                    // Direct for desktop
-                    response = await fetch(PB_URL + '/api/admins/auth-with-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            identity: email,
-                            password: pass
-                        })
-                    });
+                if (!pb) {
+                    throw new Error('No PocketBase connection');
                 }
                 
-                if (!response.ok) {
-                    throw new Error('Login failed');
-                }
-                
-                const data = await response.json();
+                const authData = await pb.admins.authWithPassword(email, pass);
                 
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 errorDiv.innerText = '';
                 
-                // Try to load data
                 if (isConnected) {
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
@@ -2179,6 +2082,7 @@
         };
 
         window.logout = function() {
+            if (pb) pb.authStore.clear();
             appState.isAdminLoggedIn = false;
             document.getElementById('admin-login-section').classList.remove('hidden');
             document.getElementById('admin-dashboard').classList.add('hidden');
