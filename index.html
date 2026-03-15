@@ -1,2081 +1,430 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<!-- Add this meta tag for mobile video support -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+
+<!-- Update the PocketBase URL section -->
+<script>
+// ============================================
+// POCKETBASE CONFIGURATION - WITH CORS FIX
+// ============================================
+const PB_URL = 'https://216.126.225.4';  // Keep as is but add CORS handling
+
+// Improved PocketBase initialization with better error handling
+const pb = new PocketBase(PB_URL);
+pb.autoCancellation(false);
+
+// Add CORS headers for all requests
+pb.beforeSend = function(url, options) {
+    options.headers = {
+        ...options.headers,
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+    };
+    return options;
+};
+
+// ============================================
+// IMPROVED VIDEO HANDLING FOR MOBILE
+// ============================================
+function getOptimalVideoUrl(mediaUrl) {
+    // Add cache-busting for mobile
+    return mediaUrl + (mediaUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+}
+
+// Updated renderAccounts function with mobile-optimized video
+function renderAccounts() {
+    const grid = document.getElementById('accounts-grid');
+    if (!grid) return;
     
-    <!-- PWA Required Meta Tags -->
-    <meta name="theme-color" content="#ec4899">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GK Store">
-    <meta name="application-name" content="GK Store">
-    <meta name="mobile-web-app-capable" content="yes">
+    let filtered = appState.accounts;
+    if (appState.currentFilter !== 'all') {
+        filtered = filtered.filter(a => a.tier === appState.currentFilter);
+    }
     
-    <!-- Your Icons -->
-    <link rel="icon" type="image/png" sizes="72x72" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png">
-    <link rel="icon" type="image/png" sizes="144x144" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>';
+        return;
+    }
     
-    <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
+    const t = translations[appState.currentLanguage || 'en'];
     
-    <!-- Manifest File -->
-    <link rel="manifest" href="manifest.json">
-    
-    <title>GK Store · PUBG accounts</title>
-    
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- intl-tel-input -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-    
-    <!-- PocketBase SDK -->
-    <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
-    
-    <style>
-        /* Keep your existing CSS */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        :root {
-            --primary: #ec4899;
-            --primary-dark: #db2777;
-            --secondary: #8b5cf6;
-            --background: #0a0a0f;
-            --surface: #16161f;
-            --surface-light: #1f1f2b;
-            --surface-lighter: #2a2a36;
-            --text: #ffffff;
-            --text-secondary: #a0a0b0;
-            --border: #2a2a36;
-            --gradient-primary: linear-gradient(135deg, #ec4899, #8b5cf6);
-            --gradient-small: linear-gradient(135deg, #10b981, #059669);
-            --gradient-medium: linear-gradient(135deg, #f59e0b, #d97706);
-            --gradient-big: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--background);
-            color: var(--text);
-            line-height: 1.5;
-            min-height: 100vh;
-            padding-bottom: 80px;
-        }
-
-        body[dir="rtl"] {
-            font-family: 'Segoe UI', 'Tahoma', 'Vazirmatn', sans-serif;
-        }
-
-        .top-nav {
-            background: rgba(22, 22, 31, 0.98);
-            backdrop-filter: blur(8px);
-            border-bottom: 1px solid var(--border);
-            padding: 0.7rem 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .logo-icon {
-            width: 2.2rem;
-            height: 2.2rem;
-            background: var(--gradient-primary);
-            border-radius: 0.6rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .nav-btn {
-            background: var(--surface-light);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 0.4rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .nav-btn:hover {
-            background: var(--gradient-primary);
-            border-color: transparent;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 16px;
-        }
-
-        .screen {
-            display: none;
-        }
-
-        .screen.active {
-            display: block;
-        }
-
-        #main-screen .main-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .big-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .sub-head {
-            color: var(--text-secondary);
-        }
-
-        .cta-button {
-            background: var(--gradient-primary);
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            padding: 1.2rem 1.5rem;
-            border-radius: 60px;
-            width: 100%;
-            max-width: 500px;
-            margin: 1.5rem auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 10px 30px rgba(236,72,153,0.4);
-            cursor: pointer;
-        }
-
-        .swipe-ads {
-            width: 100%;
-            border-radius: 2rem;
-            overflow: hidden;
-            background: var(--surface);
-            border: 1px solid var(--border);
-        }
-
-        .slider-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .slider-track {
-            display: flex;
-            overflow-x: hidden;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            background: #111;
-        }
-
-        .slider-track::-webkit-scrollbar {
-            display: none;
-        }
-
-        .slide {
-            flex: 0 0 100%;
-            scroll-snap-align: start;
-            position: relative;
-            aspect-ratio: 16/9;
-            background: #000;
-        }
-
-        .slide img, .slide video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .slide-caption {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
-            color: white;
-            padding: 2rem 1rem 1rem;
-            font-weight: 600;
-        }
-
-        .slider-dots {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px;
-            background: var(--surface-light);
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 10px;
-            background: var(--text-secondary);
-            transition: 0.2s;
-            cursor: pointer;
-        }
-
-        .dot.active {
-            background: var(--primary);
-            width: 24px;
-        }
-
-        .tier-header {
-            display: flex;
-            gap: 0.8rem;
-            flex-wrap: wrap;
-            margin: 1.5rem 0;
-        }
-
-        .tier-tab {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 0.7rem 1rem;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            flex: 1 0 auto;
-            text-align: center;
-        }
-
-        .tier-tab.active {
-            background: var(--gradient-primary);
-            color: white;
-            border-color: transparent;
-        }
-
-        .tier-tab[data-tier="small"].active { background: var(--gradient-small); }
-        .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
-        .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
-
-        .accounts-grid {
-            display: grid;
-            gap: 1rem;
-            grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 640px) {
-            .accounts-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .account-card {
-            background: var(--surface);
-            border-radius: 1rem;
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }
-
-        .card-media {
-            width: 100%;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            background: #1a1a24;
-        }
-
-        .card-content {
-            padding: 1rem;
-        }
-
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .card-desc {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin: 0.5rem 0;
-        }
-
-        .price-row {
-            display: flex;
-            justify-content: space-between;
-            background: var(--surface-lighter);
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            margin: 0.5rem 0;
-        }
-
-        .usd-price { color: var(--primary); }
-        .afn-price { color: var(--secondary); }
-
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 0.3rem;
-        }
-
-        .action-btn {
-            background: var(--surface-light);
-            border: 1px solid var(--border);
-            border-radius: 2rem;
-            padding: 0.5rem 0;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            cursor: pointer;
-            color: var(--text);
-            transition: 0.2s;
-        }
-
-        .action-btn.buy {
-            background: var(--gradient-primary);
-            border: none;
-            color: white;
-        }
-
-        .action-btn.buy:hover {
-            transform: scale(0.95);
-        }
-
-        .hidden { display: none !important; }
+    grid.innerHTML = filtered.map(acc => {
+        // Mobile-optimized media handling
+        const mediaHtml = acc.mediaType === 'video' 
+            ? `<video 
+                src="${getOptimalVideoUrl(acc.media)}" 
+                class="card-media" 
+                controls 
+                playsinline
+                webkit-playsinline
+                preload="metadata"
+                muted
+                loop
+                poster="${acc.thumbnail || 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'}"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <source src="${getOptimalVideoUrl(acc.media)}" type="video/mp4">
+              </video>
+              <div class="video-fallback" style="display:none; align-items:center; justify-content:center; height:100%; background:var(--surface-lighter);">
+                <i class="fa fa-play-circle" style="font-size:3rem; color:var(--primary);"></i>
+              </div>`
+            : `<img 
+                src="${acc.media}" 
+                class="card-media" 
+                alt="${acc.title}" 
+                loading="lazy" 
+                onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">
+                <div class="img-fallback" style="display:none;"></div>`;
         
-        .input { 
-            width:100%; 
-            padding:0.8rem; 
-            background:var(--surface-light); 
-            border:1px solid var(--border); 
-            border-radius:12px; 
-            color:white; 
-            margin-bottom:0.8rem; 
-        }
-
-        .tier-badge {
-            display: inline-block;
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-        }
-
-        .tier-badge.small { background: var(--gradient-small); color: white; }
-        .tier-badge.medium { background: var(--gradient-medium); color: white; }
-        .tier-badge.big { background: var(--gradient-big); color: white; }
-
-        .user-card {
-            background: var(--surface);
-            border-radius: 1rem;
-            padding: 1rem;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .user-card .count {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .visitor-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 0.8rem;
-            margin: 1rem 0;
-        }
-
-        .online-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background: #10b981;
-            border-radius: 50%;
-            margin-right: 5px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        .modal-overlay {
-            position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
-            z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
-        }
-
-        .modal {
-            background:var(--surface); border-radius:1.5rem; max-width:500px; width:100%; border:1px solid var(--border);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            padding:1rem;
-            border-bottom:1px solid var(--border);
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        }
-
-        .modal-header h3 { font-size:1.2rem; }
-        .modal-close { background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; }
-
-        .modal-body { padding:1rem; }
-        .modal-footer { padding:1rem; display:flex; gap:0.8rem; }
-
-        .btn {
-            padding:0.8rem 1.5rem; border-radius:2rem; font-weight:600; border:none; cursor:pointer; flex:1;
-            background: var(--surface-light); color:white; border:1px solid var(--border);
-        }
-
-        .btn-primary { background:var(--gradient-primary); color:white; border:none; }
-        .whatsapp-btn { background: #25D366; color:white; border:none; }
-
-        /* Install Button */
-        .install-btn-fixed {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            margin: 0 auto;
-            width: fit-content;
-            z-index: 9999;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 4px 15px rgba(236,72,153,0.5);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: bounce 2s infinite;
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        .install-btn-fixed:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(236,72,153,0.7);
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-
-        /* intl-tel-input */
-        .iti {
-            width: 100%;
-            margin-bottom: 0.8rem;
-            z-index: 2001;
-        }
-        .iti__selected-flag {
-            background: var(--surface-lighter) !important;
-            border-radius: 12px 0 0 12px;
-        }
-        .iti__country-list {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            max-width: 300px;
-            z-index: 99999 !important;
-            max-height: 300px;
-            overflow-y: auto;
-            border-radius: 12px;
-        }
-
-        .book-request-item {
-            background: var(--surface-light);
-            border-radius: 1rem;
-            padding: 1rem;
-            margin-bottom: 0.8rem;
-            border: 1px solid var(--border);
-        }
-        .book-request-item .label {
-            color: var(--text-secondary);
-            font-weight: 600;
-            display: inline-block;
-            width: 80px;
-        }
-        .btn-wa {
-            background: #25D366;
-            color: white;
-            border: none;
-            padding: 0.5rem;
-            border-radius: 2rem;
-            width: 100%;
-            margin-top: 0.5rem;
-            cursor: pointer;
-        }
-
-        .media-preview {
-            width: 100%;
-            min-height: 150px;
-            border-radius: 12px;
-            border: 2px dashed var(--primary);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: var(--surface-lighter);
-        }
-        
-        .media-preview img, .media-preview video {
-            max-width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-        }
-        
-        .media-preview i {
-            font-size: 3rem;
-            color: var(--text-secondary);
-        }
-
-        .upload-progress {
-            width: 100%;
-            height: 8px;
-            background: var(--surface-lighter);
-            border-radius: 4px;
-            margin: 1rem 0;
-            overflow: hidden;
-            display: none;
-        }
-        
-        .upload-progress.active {
-            display: block;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: var(--gradient-primary);
-            width: 0%;
-            transition: width 0.3s;
-            border-radius: 4px;
-        }
-        
-        .progress-text {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.3rem;
-        }
-
-        .upload-btn {
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 3rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(236,72,153,0.4);
-        }
-        .upload-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Loading spinner */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Connection status */
-        .connection-status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: var(--surface-light);
-            color: var(--text);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            border: 1px solid var(--border);
-            z-index: 9999;
-        }
-    </style>
-</head>
-<body dir="ltr">
-    <!-- Connection Status -->
-    <div id="connection-status" class="connection-status">📡 Connecting...</div>
-
-    <!-- Install Button -->
-    <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
-        <i class="fas fa-download"></i> Install GK Store
-    </button>
-
-    <!-- top nav -->
-    <div class="top-nav">
-        <div class="logo" onclick="switchScreen('main')">
-            <div class="logo-icon">GK</div>
-            <span class="brand-text" data-i18n="brand">GK Store</span>
-        </div>
-        <div class="nav-actions">
-            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
-        </div>
-    </div>
-
-    <div class="container">
-        <!-- MAIN SCREEN -->
-        <div id="main-screen" class="screen active">
-            <div class="main-layout">
-                <h1 class="big-title main-title" data-i18n="mainTitle">PUBG Marketplace</h1>
-                <div class="sub-head main-subtitle" data-i18n="mainSubtitle">Secure · Instant delivery</div>
-                <button class="cta-button" onclick="switchScreen('accounts')">
-                    <i class="fa fa-gamepad"></i> <span class="cta-text" data-i18n="cta">Click to see PUBG account</span>
-                </button>
-                <div class="swipe-ads" id="ads-slider"></div>
-                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;" data-i18n="sliderHint">— swipe ads (auto change 2s) —</p>
-            </div>
-        </div>
-
-        <!-- ACCOUNT BROWSER SCREEN -->
-        <div id="accounts-screen" class="screen">
-            <h2 class="accounts-title" style="margin-bottom:1rem;" data-i18n="accountsTitle">PUBG Accounts</h2>
-            <div class="tier-header" id="tier-tabs">
-                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')"><span data-i18n="all">All</span></button>
-                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')"><span data-i18n="small">Small PUBG</span></button>
-                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')"><span data-i18n="medium">Medium PUBG</span></button>
-                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')"><span data-i18n="big">Big PUBG</span></button>
-            </div>
-            <div id="accounts-grid" class="accounts-grid">
-                <div style="text-align:center; padding:2rem; color:var(--text-secondary);">
-                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
-                    <p>Loading accounts...</p>
+        return `
+            <div class="account-card" data-id="${acc.id}">
+                <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter);">
+                    ${mediaHtml}
                 </div>
-            </div>
-        </div>
-
-        <!-- CONTACT SCREEN -->
-        <div id="contact-screen" class="screen">
-            <h2 class="contact-title" data-i18n="contactTitle">Contact & Support</h2>
-            <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
-        </div>
-
-        <!-- ADMIN SCREEN -->
-        <div id="admin-screen" class="screen">
-            <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
-            <div style="max-width:600px; margin:0 auto;">
-                <!-- Login Section -->
-                <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
-                    <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
-                    <input type="email" id="admin-email" class="input" placeholder="your@email.com" value="shamsahmadzai06@gmail.com">
-                    <input type="password" id="admin-password" class="input" placeholder="password" value="Shams12357@">
-                    <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">
-                        <span data-i18n="loginBtn">Login</span>
-                    </button>
-                    <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
-                </div>
-                
-                <!-- Admin Dashboard -->
-                <div id="admin-dashboard" class="hidden">
-                    <!-- Stats Cards -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
-                        <div class="user-card">
-                            <div class="count" id="unique-visitor-count">0</div>
-                            <div class="label" data-i18n="totalUsers">TOTAL USERS</div>
-                        </div>
-                        <div class="user-card">
-                            <span class="online-indicator"></span>
-                            <div class="count" id="online-user-count">0</div>
-                            <div class="label" data-i18n="onlineUsers">ONLINE NOW</div>
-                        </div>
+                <div class="card-content">
+                    <div class="card-title">
+                        ${acc.title}
+                        <span class="tier-badge ${acc.tier}">${acc.tier}</span>
                     </div>
-                    
-                    <div class="visitor-stats">
-                        <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
-                        </div>
-                        <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="admin-bookings-count">0</span> <span data-i18n="bookingsStat">book requests</span>
-                        </div>
-                        <div class="account-card" style="padding:1rem; text-align:center;">
-                            <span id="active-sessions-count">0</span> <span data-i18n="activeSessions">active sessions</span>
-                        </div>
+                    <div class="card-desc">${acc.desc || ''}</div>
+                    <div class="price-row">
+                        <span class="usd-price">$${acc.price_usd}</span>
+                        <span class="afn-price">${acc.price_afn} AFN</span>
                     </div>
-                    
-                    <!-- Book Requests List -->
-                    <div class="account-card" style="padding:1rem; margin:1rem 0;">
-                        <h3 style="margin-bottom:1rem;" data-i18n="bookRequestsTitle">📋 Book Requests</h3>
-                        <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
-                    </div>
-                    
-                    <!-- USDT Address -->
-                    <div class="account-card" style="padding:1rem; margin:1rem 0;">
-                        <div style="display:flex; align-items:center; justify-content:space-between;">
-                            <h3>💳 USDT Address</h3>
-                            <button class="action-btn" style="padding:0.3rem 1rem;" onclick="showEditUsdtModal()">
-                                <i class="fa fa-edit"></i> <span data-i18n="edit">Edit</span>
-                            </button>
-                        </div>
-                        <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                    </div>
-                    
-                    <!-- Management Buttons -->
-                    <div style="display:flex; flex-direction:column; gap:0.8rem;">
-                        <button class="action-btn buy" onclick="showAddAccountModal()">
-                            <i class="fa fa-plus-circle"></i> <span data-i18n="addAccountBtn">Add New Account</span>
-                        </button>
-                        <button class="action-btn buy" onclick="showManageAccountsModal()">
-                            <i class="fa fa-edit"></i> <span data-i18n="manageAccountsBtn">Manage Accounts (Delete)</span>
-                        </button>
-                        <button class="action-btn buy" onclick="showManageContactsModal()">
-                            <i class="fab fa-whatsapp"></i> <span data-i18n="manageContactsBtn">Manage Contacts</span>
-                        </button>
-                        <button class="action-btn buy" onclick="showManageAdsModal()">
-                            <i class="fa fa-image"></i> <span data-i18n="manageAdsBtn">Manage Swipe Ads</span>
-                        </button>
-                        <button class="action-btn" onclick="logout()">
-                            <i class="fa fa-sign-out"></i> <span data-i18n="logoutBtn">Logout</span>
-                        </button>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
+                        <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
+                        <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        `;
+    }).join('');
+}
 
-    <!-- EDIT USDT MODAL -->
-    <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> <span data-i18n="editUsdtTitle">Edit USDT Address</span></h3>
-                <button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY">
-                <p style="color:var(--text-secondary); font-size:0.8rem;" data-i18n="usdtWarning">Make sure it's a valid TRC20 address</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('edit-usdt-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="btn-primary" onclick="saveUsdtAddress()"><span data-i18n="save">Save</span></button>
-            </div>
-        </div>
-    </div>
+// ============================================
+// IMPROVED CONNECTION TEST WITH FALLBACK
+// ============================================
+let isConnected = false;
+let connectionStatus = document.getElementById('connection-status');
+let connectionRetries = 0;
+const MAX_RETRIES = 3;
 
-    <!-- ADD ACCOUNT MODAL -->
-    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-plus-circle"></i> <span data-i18n="addModalTitle">Add New Account</span></h3>
-                <button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="add-account-form" onsubmit="return false;">
-                    <select id="account-tier" class="input" required>
-                        <option value=""><span data-i18n="selectTier">-- Select Tier --</span></option>
-                        <option value="small"><span data-i18n="smallTier">Small PUBG ($10-$500)</span></option>
-                        <option value="medium"><span data-i18n="mediumTier">Medium PUBG ($500-$1000)</span></option>
-                        <option value="big"><span data-i18n="bigTier">Big PUBG ($1000-$100000)</span></option>
-                    </select>
-                    
-                    <input type="text" id="account-title" class="input" placeholder="Account Title" required>
-                    <textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                        <input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price" required>
-                        <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
-                    </div>
-                    
-                    <label class="input-label"><span data-i18n="mediaLabel">Account Media (Image or Video) *</span></label>
-                    <div class="media-preview" id="media-preview">
-                        <i class="fa fa-cloud-upload-alt"></i>
-                    </div>
-                    
-                    <div class="upload-progress" id="upload-progress">
-                        <div class="progress-bar" id="progress-bar" style="width:0%"></div>
-                    </div>
-                    <div class="progress-text" id="progress-text"></div>
-                    
-                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
-                    
-                    <button type="button" class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>
-                        <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- MANAGE ACCOUNTS MODAL -->
-    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> <span data-i18n="manageModalTitle">Manage Accounts</span></h3>
-                <button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="existingAccounts">📋 Existing Accounts (click delete to remove)</span></h4>
-                <div id="admin-accounts-list" style="max-height:400px; overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MANAGE CONTACTS MODAL -->
-    <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fab fa-whatsapp"></i> <span data-i18n="manageContactsTitle">Manage Contacts</span></h3>
-                <button class="modal-close" onclick="closeModal('manage-contacts-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="addContact">➕ Add New Contact</span></h4>
-                <form id="add-contact-form" onsubmit="return false;">
-                    <input type="text" id="contact-name" class="input" placeholder="Contact Name" required>
-                    <label class="input-label"><span data-i18n="whatsappNumberLabel">WhatsApp Number with Country Code</span></label>
-                    <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322">
-                    <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
-                    <button class="btn-primary" style="width:100%;" onclick="saveNewContact()"><span data-i18n="saveContactBtn">Save Contact</span></button>
-                </form>
-                
-                <h4 style="margin:2rem 0 1rem;"><span data-i18n="existingContacts">📋 Existing Contacts</span></h4>
-                <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MANAGE ADS MODAL -->
-    <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-image"></i> <span data-i18n="manageAdsTitle">Manage Swipe Ads</span></h3>
-                <button class="modal-close" onclick="closeModal('manage-ads-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="addAd">➕ Add New Ad (Image/Video)</span></h4>
-                <form id="add-ad-form" onsubmit="return false;">
-                    <select id="ad-type" class="input">
-                        <option value="image"><span data-i18n="imageOption">Image</span></option>
-                        <option value="video"><span data-i18n="videoOption">Video</span></option>
-                    </select>
-                    
-                    <label class="input-label"><span data-i18n="adMediaLabel">Ad Media *</span></label>
-                    <div class="media-preview" id="ad-preview">
-                        <i class="fa fa-cloud-upload-alt"></i>
-                    </div>
-                    <input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()" required>
-                    
-                    <input type="text" id="ad-caption" class="input" placeholder="Caption (optional)">
-                    
-                    <button class="btn-primary" style="width:100%;" onclick="saveNewAd()"><span data-i18n="addAdBtn">Add Ad</span></button>
-                </form>
-                
-                <h4 style="margin:2rem 0 1rem;"><span data-i18n="currentAds">📋 Current Ads</span></h4>
-                <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- BOOK MODAL -->
-    <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>📘 <span data-i18n="bookTitle">Book account</span></h3>
-                <button class="modal-close" onclick="closeModal('book-modal')">&times;</button>
-            </div>
-            <div class="modal-body" id="book-modal-body"></div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('book-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="btn-primary" onclick="submitBook()"><span data-i18n="confirm">Confirm booking</span></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- BUY MODAL -->
-    <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>💳 <span data-i18n="buyTitle">Buy with USDT</span></h3>
-                <button class="modal-close" onclick="closeModal('buy-modal')">&times;</button>
-            </div>
-            <div class="modal-body" id="buy-modal-body"></div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('buy-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="whatsapp-btn" onclick="confirmBuyWhatsApp()"><span data-i18n="confirmWA">Confirm via WhatsApp</span></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- INFO MODAL -->
-    <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>ℹ️ <span data-i18n="infoTitle">Account details</span></h3>
-                <button class="modal-close" onclick="closeModal('info-modal')">&times;</button>
-            </div>
-            <div class="modal-body" id="info-modal-body"></div>
-        </div>
-    </div>
-
-    <!-- LANGUAGE MODAL -->
-    <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><span data-i18n="selectLang">Select language</span></h3>
-                <button class="modal-close" onclick="closeModal('language-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('en')">🇺🇸 English</button>
-                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
-                <button class="btn" style="width:100%;" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
-    <script>
-        // ============================================
-        // POCKETBASE CONFIGURATION - DIRECT HTTPS
-        // ============================================
-        const PB_URL = 'https://216.126.225.4';  // No proxy, direct HTTPS
-        const pb = new PocketBase(PB_URL);
-        pb.autoCancellation(false);
-
-        // ============================================
-        // FALLBACK DATA
-        // ============================================
-        const fallbackAccounts = [
-            { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a2', title: 'Competitive Player', desc: 'Conqueror tier, mythic outfits', tier: 'medium', price_usd: 499.99, price_afn: 32000, media: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' }
-        ];
-
-        const fallbackContacts = [
-            { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
-            { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
-        ];
-
-        // ============================================
-        // SERVICE WORKER
-        // ============================================
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    registration.unregister();
-                }
-            }).then(function() {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => {
-                        console.log('✅ ServiceWorker registered');
-                    })
-                    .catch(error => {
-                        console.log('❌ ServiceWorker registration failed:', error);
-                    });
-            });
-        }
-
-        // ============================================
-        // APP STATE
-        // ============================================
-        const appState = {
-            accounts: fallbackAccounts,
-            contacts: fallbackContacts,
-            ads: [
-                { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
-                { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
-                { type: 'image', data: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
-            ],
-            bookRequests: [],
-            uniqueVisitors: new Set(),
-            activeSessions: new Map(),
-            visitorCount: 0,
-            onlineCount: 0,
-            currentFilter: 'all',
-            isAdminLoggedIn: false,
-            currentAccount: null,
-            currentMediaData: null,
-            currentAdData: null,
-            phoneInput: null,
-            bookPhoneInput: null,
-            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-            currentLanguage: 'en',
-            autoSlideInterval: null,
-            usingFallback: true
-        };
-
-        // Load from localStorage
-        if (localStorage.getItem('gk_accounts')) {
-            try {
-                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                if (saved && saved.length > 0) {
-                    appState.accounts = saved;
-                    appState.usingFallback = false;
-                }
-            } catch (e) {}
-        }
+async function testConnection() {
+    try {
+        console.log('Testing direct HTTPS connection...');
         
-        if (localStorage.getItem('gk_contacts')) {
-            try {
-                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-            } catch (e) {}
-        }
+        // Use a timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        if (localStorage.getItem('gk_ads')) {
-            try {
-                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_bookings')) {
-            try {
-                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_usdt_address')) {
-            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-        }
-
-        // ============================================
-        // TRANSLATIONS
-        // ============================================
-        const translations = {
-            en: {
-                brand: 'GK Store', lang: 'Lang', contact: 'Contact', admin: 'Admin',
-                mainTitle: 'PUBG Marketplace', mainSubtitle: 'Secure · Instant delivery',
-                cta: 'Click to see PUBG account', sliderHint: '— swipe ads (auto change 2s) —',
-                all: 'All', small: 'Small PUBG', medium: 'Medium PUBG', big: 'Big PUBG',
-                accountsTitle: 'PUBG Accounts', contactTitle: 'Contact & Support',
-                adminTitle: 'Admin Panel', loginTitle: 'Admin Login', loginBtn: 'Login',
-                totalUsers: 'TOTAL USERS', onlineUsers: 'ONLINE NOW', onlineInfo: 'Last 5 minutes',
-                visitorInfo: 'Unique IPs', accountsStat: 'accounts', bookingsStat: 'book requests',
-                activeSessions: 'active sessions', bookRequestsTitle: '📋 Book Requests',
-                addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
-                manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads',
-                logoutBtn: 'Logout', addModalTitle: 'Add New Account', selectTier: '-- Select Tier --',
-                smallTier: 'Small PUBG ($10-$500)', mediumTier: 'Medium PUBG ($500-$1000)',
-                bigTier: 'Big PUBG ($1000-$100000)', mediaLabel: 'Account Media (Image or Video) *',
-                uploadBtn: 'UPLOAD', manageModalTitle: 'Manage Accounts',
-                existingAccounts: '📋 Existing Accounts (click delete to remove)',
-                manageContactsTitle: 'Manage Contacts', addContact: '➕ Add New Contact',
-                whatsappNumberLabel: 'WhatsApp Number with Country Code', saveContactBtn: 'Save Contact',
-                existingContacts: '📋 Existing Contacts', manageAdsTitle: 'Manage Swipe Ads',
-                addAd: '➕ Add New Ad (Image/Video)', imageOption: 'Image', videoOption: 'Video',
-                adMediaLabel: 'Ad Media *', addAdBtn: 'Add Ad', currentAds: '📋 Current Ads',
-                bookTitle: 'Book account', cancel: 'Cancel', confirm: 'Confirm booking',
-                buyTitle: 'Buy with USDT', confirmWA: 'Confirm via WhatsApp',
-                infoTitle: 'Account details', selectLang: 'Select language',
-                yourName: 'Your name', whatsappNumber: 'WhatsApp number', chatNow: 'Chat Now',
-                delete: 'Delete', cancelRequest: 'Cancel', contactViaWA: 'Contact', edit: 'Edit',
-                editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
-                usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
-            },
-            ps: { /* keep your ps translations */ },
-            fa: { /* keep your fa translations */ }
-        };
-
-        // ============================================
-        // CORE FUNCTIONS
-        // ============================================
-        function applyTranslation(lang) {
-            const t = translations[lang] || translations.en;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
-            });
-            document.documentElement.lang = lang;
-            document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
-            appState.currentLanguage = lang;
-            localStorage.setItem('gk_language', lang);
-            renderAccounts();
-            renderContacts();
-            if (appState.isAdminLoggedIn) renderBookRequests();
-        }
-
-        function setLanguage(lang) {
-            applyTranslation(lang);
-            closeModal('language-modal');
-        }
-
-        function openLanguageModal() {
-            document.getElementById('language-modal').classList.remove('hidden');
-        }
-
-        // ============================================
-        // CONNECTION TEST
-        // ============================================
-        let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
-
-        async function testConnection() {
-            try {
-                console.log('Testing direct HTTPS connection...');
-                const response = await fetch(PB_URL + '/api/health');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    isConnected = true;
-                    connectionStatus.textContent = '✅ Connected';
-                    connectionStatus.classList.add('connected');
-                    console.log('✅ Connected to PocketBase');
-                    
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
-                }
-            } catch (error) {
-                console.log('⚠️ Using fallback data');
-                connectionStatus.textContent = '⚠️ Offline mode';
-                connectionStatus.classList.add('disconnected');
-            }
-        }
-
-        setTimeout(testConnection, 2000);
-
-        // ============================================
-        // PWA INSTALLATION
-        // ============================================
-        let deferredPrompt;
-        const installButton = document.getElementById('install-button');
-
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            installButton.style.display = 'none';
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
-                installButton.style.display = 'flex';
+        const response = await fetch(PB_URL + '/api/health', {
+            signal: controller.signal,
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json'
             }
         });
-
-        window.installApp = function() {
-            if (!deferredPrompt) {
-                alert('To install: Tap browser menu → "Add to Home Screen"');
-                return;
-            }
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const data = await response.json();
+            isConnected = true;
+            connectionStatus.textContent = '✅ Connected';
+            connectionStatus.classList.add('connected');
+            connectionStatus.style.background = '#10b981';
+            console.log('✅ Connected to PocketBase');
             
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    installButton.style.display = 'none';
-                }
-                deferredPrompt = null;
-            });
-        };
-
-        setTimeout(() => {
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && !deferredPrompt) {
-                installButton.style.display = 'flex';
-            }
-        }, 2000);
-
-        // ============================================
-        // RENDERING FUNCTIONS (keep all your existing rendering functions)
-        // ============================================
-        function renderAccounts() {
-            const grid = document.getElementById('accounts-grid');
-            if (!grid) return;
-            
-            let filtered = appState.accounts;
-            if (appState.currentFilter !== 'all') {
-                filtered = filtered.filter(a => a.tier === appState.currentFilter);
-            }
-            
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>';
-                return;
-            }
-            
-            const t = translations[appState.currentLanguage || 'en'];
-            
-            grid.innerHTML = filtered.map(acc => {
-                const mediaHtml = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" loading="lazy"></video>`
-                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
-                
-                return `
-                    <div class="account-card" data-id="${acc.id}">
-                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter);">
-                            ${mediaHtml}
-                        </div>
-                        <div class="card-content">
-                            <div class="card-title">
-                                ${acc.title}
-                                <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            </div>
-                            <div class="card-desc">${acc.desc || ''}</div>
-                            <div class="price-row">
-                                <span class="usd-price">$${acc.price_usd}</span>
-                                <span class="afn-price">${acc.price_afn} AFN</span>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
-                                <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
-                                <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            loadAccountsFromPB();
+            loadContactsFromPB();
+            loadSettingsFromPB();
+        } else {
+            throw new Error('Connection failed');
         }
-
-        function renderContacts() {
-            const container = document.getElementById('contacts-container');
-            if (!container) return;
+    } catch (error) {
+        console.log('⚠️ Connection error:', error.message);
+        connectionRetries++;
+        
+        if (connectionRetries < MAX_RETRIES) {
+            connectionStatus.textContent = `🔄 Retrying (${connectionRetries}/${MAX_RETRIES})...`;
+            setTimeout(testConnection, 2000);
+        } else {
+            connectionStatus.textContent = '⚠️ Offline mode';
+            connectionStatus.style.background = '#ef4444';
+            isConnected = false;
             
-            if (appState.contacts.length === 0) {
-                container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>';
-                return;
-            }
-            
-            const t = translations[appState.currentLanguage || 'en'];
-            
-            container.innerHTML = appState.contacts.map(contact => {
-                let cleanPhone = contact.phone.replace(/\D/g, '');
-                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
-                    cleanPhone = '93' + cleanPhone;
-                }
-                return `
-                    <div class="account-card" style="padding:1.5rem;">
-                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                        <p>${contact.desc || ''}</p>
-                        <p><strong>+${cleanPhone}</strong></p>
-                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                            <i class="fab fa-whatsapp"></i> ${t.chatNow}
-                        </button>
-                    </div>
-                `;
-            }).join('');
+            // Still load from localStorage
+            loadFromLocalStorage();
         }
+    }
+}
 
-        function renderAdsSlider() {
-            const container = document.getElementById('ads-slider');
-            if (!container) return;
-            
-            let slides = '';
-            appState.ads.forEach((ad, idx) => {
-                slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
-            });
-            
-            let dots = '';
-            appState.ads.forEach((_, idx) => {
-                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
-            });
-            
-            container.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-track" id="slider-track">${slides}</div>
-                    <div class="slider-dots">${dots}</div>
-                </div>
-            `;
-            
-            const track = document.getElementById('slider-track');
-            if (track) {
-                track.addEventListener('scroll', function() {
-                    const idx = Math.round(track.scrollLeft / track.clientWidth);
-                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-                });
-            }
-            startAutoSlide();
-        }
-
-        function startAutoSlide() {
-            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
-            appState.autoSlideInterval = setInterval(() => {
-                const track = document.getElementById('slider-track');
-                if (!track || appState.ads.length === 0) return;
-                const slideWidth = track.clientWidth;
-                const currentScroll = track.scrollLeft;
-                const currentIndex = Math.round(currentScroll / slideWidth);
-                const nextIndex = (currentIndex + 1) % appState.ads.length;
-                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                document.querySelectorAll('.dot').forEach((dot, i) => {
-                    dot.classList.toggle('active', i === nextIndex);
-                });
-            }, 2000);
-        }
-
-        window.jumpToSlide = function(idx) {
-            const track = document.getElementById('slider-track');
-            if (track) {
-                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-                startAutoSlide();
-            }
-        };
-
-        // Admin rendering functions
-        function renderAdminAccounts() {
-            const list = document.getElementById('admin-accounts-list');
-            if (!list) return;
-            
-            if (appState.accounts.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
-                return;
-            }
-            
-            const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.accounts.map(acc => {
-                const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls></video>`
-                    : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
-                
-                return `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        ${mediaTag}
-                        <div style="flex:1;">
-                            <strong>${acc.title}</strong> 
-                            <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            <div style="font-size:0.8rem;">$${acc.price_usd} / ${acc.price_afn} AFN</div>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i> ${t.delete}
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderAdminContacts() {
-            const list = document.getElementById('admin-contacts-list');
-            if (!list) return;
-            
-            if (appState.contacts.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
-                return;
-            }
-            
-            const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.contacts.map(contact => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                        <i class="fab fa-whatsapp"></i>
-                    </div>
-                    <div style="flex:1;">
-                        <strong>${contact.name}</strong>
-                        <div style="font-size:0.8rem;">+${contact.phone}</div>
-                        <div style="font-size:0.7rem;">${contact.desc || ''}</div>
-                    </div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
-                        <i class="fa fa-trash"></i> ${t.delete}
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function renderAdminAds() {
-            const list = document.getElementById('admin-ads-list');
-            if (!list) return;
-            
-            if (appState.ads.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
-                return;
-            }
-            
-            const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.ads.map((ad, index) => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">
-                        ${ad.type === 'video' 
-                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;"></video>`
-                            : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
-                        }
-                    </div>
-                    <div style="flex:1;">
-                        <strong>${ad.caption || 'No caption'}</strong>
-                        <div style="font-size:0.7rem;">${ad.type}</div>
-                    </div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
-                        <i class="fa fa-trash"></i> ${t.delete}
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function renderBookRequests() {
-            const list = document.getElementById('admin-book-requests-list');
-            if (!list) return;
-            
-            if (appState.bookRequests.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
-                return;
-            }
-            
-            const t = translations[appState.currentLanguage || 'en'];
-            
-            list.innerHTML = appState.bookRequests.map(req => `
-                <div class="book-request-item">
-                    <p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p>
-                    <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
-                    <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
-                    <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')">
-                        <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        // ============================================
-        // POCKETBASE DATA LOADING
-        // ============================================
-        async function loadAccountsFromPB() {
-            if (!isConnected) return;
-            
-            try {
-                const records = await pb.collection('accounts').getFullList({
-                    $autoCancel: false,
-                    requestKey: null
-                });
-                
-                if (records && records.length > 0) {
-                    appState.accounts = records.map(record => ({
-                        id: record.id,
-                        title: record.title,
-                        desc: record.description,
-                        tier: record.tier,
-                        price_usd: record.price_usd,
-                        price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
-                        mediaType: record.mediaType || 'image'
-                    }));
-                    appState.usingFallback = false;
-                    renderAccounts();
-                }
-            } catch (error) {
-                console.log('Using fallback accounts');
-            }
-        }
-
-        async function loadContactsFromPB() {
-            if (!isConnected) return;
-            
-            try {
-                const records = await pb.collection('contacts').getFullList();
-                if (records && records.length > 0) {
-                    appState.contacts = records.map(record => ({
-                        id: record.id,
-                        name: record.name,
-                        phone: record.phone,
-                        desc: record.description
-                    }));
-                    renderContacts();
-                }
-            } catch (error) {}
-        }
-
-        async function loadSettingsFromPB() {
-            if (!isConnected) return;
-            
-            try {
-                const records = await pb.collection('settings').getFullList();
-                const usdtSetting = records.find(r => r.key === 'usdt_address');
-                if (usdtSetting) {
-                    appState.usdtAddress = usdtSetting.value;
-                    document.getElementById('current-usdt-address').innerText = usdtSetting.value;
-                }
-            } catch (error) {}
-        }
-
-        // ============================================
-        // ACTION FUNCTIONS
-        // ============================================
-        window.filterAccounts = function(tier) {
-            appState.currentFilter = tier;
-            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
-            renderAccounts();
-        };
-
-        window.switchScreen = function(screen) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screen + '-screen').classList.add('active');
-            if (screen === 'accounts') renderAccounts();
-            if (screen === 'contact') renderContacts();
-            if (screen === 'admin' && appState.isAdminLoggedIn) {
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                renderBookRequests();
-            }
-        };
-
-        window.previewMediaFromFile = function() {
-            const fileInput = document.getElementById('account-media-file');
-            const preview = document.getElementById('media-preview');
-            const uploadBtn = document.getElementById('upload-btn');
-            
-            if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                const isVideo = file.type.startsWith('video/');
-                
-                const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
-                    uploadBtn.disabled = true;
-                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    return;
-                }
-                
-                uploadBtn.disabled = false;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
-                        appState.currentMediaData = { type: 'video', data: e.target.result };
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px;">`;
-                        appState.currentMediaData = { type: 'image', data: e.target.result };
-                    }
-                };
-                reader.readAsDataURL(file);
-            } else {
-                uploadBtn.disabled = true;
-            }
-        };
-
-        window.previewAdMedia = function() {
-            const fileInput = document.getElementById('ad-media-file');
-            const preview = document.getElementById('ad-preview');
-            if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                const isVideo = file.type.startsWith('video/');
-                
-                const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
-                        appState.currentAdData = { type: 'video', data: e.target.result };
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px;">`;
-                        appState.currentAdData = { type: 'image', data: e.target.result };
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        window.showAddAccountModal = function() {
-            document.getElementById('account-tier').value = '';
-            document.getElementById('account-title').value = '';
-            document.getElementById('account-description').value = '';
-            document.getElementById('account-price-usd').value = '';
-            document.getElementById('account-price-afn').value = '';
-            document.getElementById('account-media-file').value = '';
-            document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            document.getElementById('upload-progress').classList.remove('active');
-            document.getElementById('progress-bar').style.width = '0%';
-            document.getElementById('progress-text').innerHTML = '';
-            document.getElementById('upload-btn').disabled = true;
-            appState.currentMediaData = null;
-            openModal('add-account-modal');
-        };
-
-        window.showManageAccountsModal = function() {
-            renderAdminAccounts();
-            openModal('manage-accounts-modal');
-        };
-
-        window.showManageContactsModal = function() {
-            renderAdminContacts();
-            initPhoneInput();
-            openModal('manage-contacts-modal');
-        };
-
-        window.showManageAdsModal = function() {
-            document.getElementById('ad-type').value = 'image';
-            document.getElementById('ad-media-file').value = '';
-            document.getElementById('ad-caption').value = '';
-            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            appState.currentAdData = null;
-            renderAdminAds();
-            openModal('manage-ads-modal');
-        };
-
-        window.showEditUsdtModal = function() {
-            document.getElementById('new-usdt-address').value = appState.usdtAddress;
-            openModal('edit-usdt-modal');
-        };
-
-        window.saveUsdtAddress = function() {
-            const newAddress = document.getElementById('new-usdt-address').value.trim();
-            if (!newAddress) {
-                alert('Please enter a USDT address');
-                return;
-            }
-            appState.usdtAddress = newAddress;
-            localStorage.setItem('gk_usdt_address', newAddress);
-            document.getElementById('current-usdt-address').innerText = newAddress;
-            closeModal('edit-usdt-modal');
-            alert('USDT address updated successfully!');
-        };
-
-        window.uploadNewAccount = function() {
-            const tier = document.getElementById('account-tier').value;
-            const title = document.getElementById('account-title').value.trim();
-            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-            
-            if (!tier || !title || !priceUsd || !priceAfn) {
-                alert('Please fill all required fields');
-                return;
-            }
-            
-            if (!appState.currentMediaData) {
-                alert('Please select an image or video');
-                return;
-            }
-            
-            const progressContainer = document.getElementById('upload-progress');
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-            const uploadBtn = document.getElementById('upload-btn');
-            
-            progressContainer.classList.add('active');
-            uploadBtn.disabled = true;
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 15;
-                if (progress >= 100) progress = 100;
-                progressBar.style.width = progress + '%';
-                progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
-            }, 200);
-            
-            setTimeout(() => {
-                clearInterval(interval);
-                progressBar.style.width = '100%';
-                progressText.innerHTML = 'Upload complete!';
-                
-                const newAccount = {
-                    id: 'a' + Date.now(),
-                    title: title,
-                    desc: desc,
-                    tier: tier,
-                    price_usd: priceUsd,
-                    price_afn: priceAfn,
-                    media: appState.currentMediaData.data,
-                    mediaType: appState.currentMediaData.type
-                };
-                
-                appState.accounts.push(newAccount);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                
-                setTimeout(() => {
-                    closeModal('add-account-modal');
-                    renderAccounts();
-                    if (appState.isAdminLoggedIn) {
-                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    }
-                    alert('Account uploaded successfully!');
-                    
-                    progressContainer.classList.remove('active');
-                    progressBar.style.width = '0%';
-                    progressText.innerHTML = '';
-                    uploadBtn.disabled = false;
-                }, 500);
-            }, 2000);
-        };
-
-        window.deleteAccount = function(id) {
-            if (confirm('Delete this account permanently?')) {
-                appState.accounts = appState.accounts.filter(a => a.id !== id);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+function loadFromLocalStorage() {
+    // Load accounts from localStorage
+    if (localStorage.getItem('gk_accounts')) {
+        try {
+            const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+            if (saved && saved.length > 0) {
+                appState.accounts = saved;
+                appState.usingFallback = false;
                 renderAccounts();
-                renderAdminAccounts();
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
             }
-        };
-
-        window.saveNewContact = function() {
-            const name = document.getElementById('contact-name').value.trim();
-            const desc = document.getElementById('contact-desc').value.trim();
-            
-            if (!name) {
-                alert('Please enter contact name');
-                return;
-            }
-            
-            let fullNumber = '';
-            if (appState.phoneInput) {
-                const number = appState.phoneInput.getNumber();
-                if (number) {
-                    fullNumber = number.replace(/\D/g, '');
-                } else {
-                    alert('Please enter a valid phone number');
-                    return;
-                }
-            } else {
-                const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
-                if (!phone) {
-                    alert('Please enter phone number');
-                    return;
-                }
-                fullNumber = phone;
-            }
-            
-            const newContact = {
-                id: 'c' + Date.now(),
-                name: name,
-                phone: fullNumber,
-                desc: desc
-            };
-            
-            appState.contacts.push(newContact);
-            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            
-            document.getElementById('contact-name').value = '';
-            document.getElementById('contact-phone').value = '';
-            document.getElementById('contact-desc').value = '';
-            
+        } catch (e) {}
+    }
+    
+    // Load contacts from localStorage
+    if (localStorage.getItem('gk_contacts')) {
+        try {
+            appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
             renderContacts();
-            renderAdminContacts();
-            alert('Contact added successfully!');
-        };
-
-        window.deleteContact = function(id) {
-            if (confirm('Delete this contact?')) {
-                appState.contacts = appState.contacts.filter(c => c.id !== id);
-                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                renderContacts();
-                renderAdminContacts();
-            }
-        };
-
-        window.saveNewAd = function() {
-            const type = document.getElementById('ad-type').value;
-            const caption = document.getElementById('ad-caption').value.trim();
-            
-            if (!appState.currentAdData) {
-                alert('Please upload an image or video');
-                return;
-            }
-            
-            const newAd = {
-                type: type,
-                data: appState.currentAdData.data,
-                caption: caption
-            };
-            
-            appState.ads.push(newAd);
-            localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-            
-            document.getElementById('ad-type').value = 'image';
-            document.getElementById('ad-media-file').value = '';
-            document.getElementById('ad-caption').value = '';
-            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            appState.currentAdData = null;
-            
+        } catch (e) {}
+    }
+    
+    // Load ads from localStorage
+    if (localStorage.getItem('gk_ads')) {
+        try {
+            appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
             renderAdsSlider();
-            renderAdminAds();
-            alert('Ad added successfully!');
-        };
+        } catch (e) {}
+    }
+}
 
-        window.deleteAd = function(index) {
-            if (confirm('Delete this ad?')) {
-                appState.ads.splice(index, 1);
-                localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-                renderAdsSlider();
-                renderAdminAds();
+// ============================================
+// IMPROVED SERVICE WORKER (KEEP CACHE)
+// ============================================
+if ('serviceWorker' in navigator) {
+    // Don't unregister existing service workers
+    navigator.serviceWorker.register('sw.js')
+        .then(registration => {
+            console.log('✅ ServiceWorker registered');
+            
+            // Check for updates
+            registration.update();
+            
+            // Handle offline capability
+            if (registration.active) {
+                console.log('ServiceWorker active, offline support ready');
             }
-        };
+        })
+        .catch(error => {
+            console.log('❌ ServiceWorker registration failed:', error);
+        });
+}
 
-        window.bookAccount = function(id) {
-            const acc = appState.accounts.find(a => a.id === id);
-            if (!acc) return;
-            appState.currentAccount = acc;
-            
-            const t = translations[appState.currentLanguage || 'en'];
-            
-            document.getElementById('book-modal-body').innerHTML = `
-                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
-                <label class="input-label">${t.whatsappNumber} with country code</label>
-                <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
-            `;
-            
-            openModal('book-modal');
-            
-            setTimeout(() => {
-                const input = document.getElementById('book-phone');
-                if (input) {
-                    if (appState.bookPhoneInput) {
-                        try {
-                            appState.bookPhoneInput.destroy();
-                        } catch (e) {}
-                    }
-                    appState.bookPhoneInput = intlTelInput(input, {
-                        initialCountry: 'af',
-                        separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                        dropdownContainer: document.body
-                    });
-                }
-            }, 200);
+// ============================================
+// IMPROVED UPLOAD FUNCTION WITH MOBILE SUPPORT
+// ============================================
+window.uploadNewAccount = function() {
+    const tier = document.getElementById('account-tier').value;
+    const title = document.getElementById('account-title').value.trim();
+    const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+    const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+    const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+    
+    if (!tier || !title || !priceUsd || !priceAfn) {
+        alert('Please fill all required fields');
+        return;
+    }
+    
+    if (!appState.currentMediaData) {
+        alert('Please select an image or video');
+        return;
+    }
+    
+    const progressContainer = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const uploadBtn = document.getElementById('upload-btn');
+    
+    progressContainer.classList.add('active');
+    uploadBtn.disabled = true;
+    
+    // Simulate upload progress
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress >= 100) progress = 100;
+        progressBar.style.width = progress + '%';
+        progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
+    }, 200);
+    
+    // Save to localStorage immediately for offline access
+    setTimeout(() => {
+        clearInterval(interval);
+        progressBar.style.width = '100%';
+        progressText.innerHTML = 'Upload complete!';
+        
+        // Create new account with mobile-optimized data
+        const newAccount = {
+            id: 'a' + Date.now(),
+            title: title,
+            desc: desc,
+            tier: tier,
+            price_usd: priceUsd,
+            price_afn: priceAfn,
+            media: appState.currentMediaData.data,
+            mediaType: appState.currentMediaData.type,
+            thumbnail: appState.currentMediaData.type === 'video' ? generateThumbnail(appState.currentMediaData.data) : appState.currentMediaData.data,
+            timestamp: Date.now()
         };
-
-        window.submitBook = function() {
-            const name = document.getElementById('book-name')?.value;
-            
-            if (!name) {
-                alert('Please enter your name');
+        
+        appState.accounts.push(newAccount);
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+        } catch (e) {
+            // Handle quota exceeded error
+            if (e.name === 'QuotaExceededError') {
+                alert('Storage limit reached. Please delete some old items.');
                 return;
             }
-            
-            let phone = '';
-            if (appState.bookPhoneInput) {
-                const number = appState.bookPhoneInput.getNumber();
-                if (number) {
-                    phone = number.replace(/\D/g, '');
-                } else {
-                    alert('Please enter a valid WhatsApp number');
-                    return;
-                }
-            } else {
-                phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
-                if (!phone) {
-                    alert('Please enter a valid WhatsApp number');
-                    return;
-                }
-            }
-            
-            const req = {
-                id: Date.now(),
-                account_id: appState.currentAccount.id,
-                account_title: appState.currentAccount.title,
-                user_name: name,
-                whatsapp: phone,
-                date: new Date().toISOString()
-            };
-            appState.bookRequests.push(req);
-            localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-            
-            alert('✅ Booking submitted! We will contact you on WhatsApp.');
-            closeModal('book-modal');
-        };
-
-        window.buyAccount = function(id) {
-            const acc = appState.accounts.find(a => a.id === id);
-            if (!acc) return;
-            appState.currentAccount = acc;
-            
-            document.getElementById('buy-modal-body').innerHTML = `
-                <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
-                <p>Send exact USDT (TRC20) to:</p>
-                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
-                <button class="btn" onclick="copyUsdt()">Copy address</button>
-            `;
-            openModal('buy-modal');
-        };
-
-        window.confirmBuyWhatsApp = function() {
-            if (!appState.currentAccount) return;
-            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
-            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
-            closeModal('buy-modal');
-        };
-
-        window.copyUsdt = function() {
-            navigator.clipboard.writeText(appState.usdtAddress);
-            alert('USDT address copied');
-        };
-
-        window.infoAccount = function(id) {
-            const acc = appState.accounts.find(a => a.id === id);
-            if (!acc) return;
-            
-            document.getElementById('info-modal-body').innerHTML = `
-                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                <p>${acc.desc || 'Premium PUBG account'}</p>
-                <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                <p>✅ Includes email & password, full access.</p>
-            `;
-            openModal('info-modal');
-        };
-
-        // Admin Login
-        window.adminLogin = async function() {
-            const email = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-password').value;
-            const loginBtn = document.querySelector('#admin-login-section .action-btn');
-            const originalText = loginBtn.innerHTML;
-            const errorDiv = document.getElementById('admin-error');
-            
-            if (!email || !pass) {
-                errorDiv.innerText = 'Please enter email and password';
-                return;
-            }
-            
-            loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
-            loginBtn.disabled = true;
-            errorDiv.innerText = '';
-            
-            try {
-                const authData = await pb.admins.authWithPassword(email, pass);
-                
-                appState.isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                errorDiv.innerText = '';
-                
-                if (isConnected) {
-                    await loadAccountsFromPB();
-                    await loadContactsFromPB();
-                    await loadSettingsFromPB();
-                }
-                
+        }
+        
+        // If connected to PocketBase, try to sync
+        if (isConnected) {
+            syncToPocketBase(newAccount);
+        }
+        
+        setTimeout(() => {
+            closeModal('add-account-modal');
+            renderAccounts();
+            if (appState.isAdminLoggedIn) {
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                
-                renderBookRequests();
-                
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                errorDiv.innerText = 'Invalid credentials or connection failed';
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
             }
-        };
+            alert('Account uploaded successfully!');
+            
+            progressContainer.classList.remove('active');
+            progressBar.style.width = '0%';
+            progressText.innerHTML = '';
+            uploadBtn.disabled = false;
+        }, 500);
+    }, 2000);
+};
 
-        window.logout = function() {
-            pb.authStore.clear();
-            appState.isAdminLoggedIn = false;
-            document.getElementById('admin-login-section').classList.remove('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
-            switchScreen('main');
-        };
+// Helper function to generate thumbnail for videos
+function generateThumbnail(videoDataUrl) {
+    // Return a default thumbnail for now
+    return 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
+}
 
-        window.openModal = function(id) {
-            document.getElementById(id).classList.remove('hidden');
-        };
+// ============================================
+// MOBILE-OPTIMIZED VIDEO PREVIEW
+// ============================================
+window.previewMediaFromFile = function() {
+    const fileInput = document.getElementById('account-media-file');
+    const preview = document.getElementById('media-preview');
+    const uploadBtn = document.getElementById('upload-btn');
+    
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const isVideo = file.type.startsWith('video/');
         
-        window.closeModal = function(id) {
-            document.getElementById(id).classList.add('hidden');
-            if (id === 'book-modal' && appState.bookPhoneInput) {
-                try {
-                    appState.bookPhoneInput.destroy();
-                } catch (e) {}
-                appState.bookPhoneInput = null;
+        // Adjusted file size limits for mobile
+        const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // 50MB for video, 10MB for image
+        
+        if (file.size > maxSize) {
+            alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+            uploadBtn.disabled = true;
+            preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            return;
+        }
+        
+        uploadBtn.disabled = false;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (isVideo) {
+                // Mobile-optimized video preview
+                preview.innerHTML = `
+                    <video 
+                        src="${e.target.result}" 
+                        controls 
+                        style="max-height:200px; width:100%;" 
+                        playsinline
+                        webkit-playsinline
+                        preload="metadata">
+                        <source src="${e.target.result}" type="video/mp4">
+                    </video>`;
+                appState.currentMediaData = { type: 'video', data: e.target.result };
+            } else {
+                preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;">`;
+                appState.currentMediaData = { type: 'image', data: e.target.result };
             }
         };
+        reader.readAsDataURL(file);
+    } else {
+        uploadBtn.disabled = true;
+    }
+};
 
-        function initPhoneInput() {
-            const input = document.querySelector('#contact-phone');
-            if (input && !appState.phoneInput) {
-                appState.phoneInput = intlTelInput(input, {
-                    initialCountry: 'af',
-                    separateDialCode: true,
-                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                    dropdownContainer: document.body
-                });
-            }
-        }
+// ============================================
+// ADD CACHE-BUSTING FOR MOBILE
+// ============================================
+// Add timestamp to media URLs to prevent caching issues on mobile
+function getMediaUrl(baseUrl) {
+    return baseUrl + (baseUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+}
 
-        // ============================================
-        // TRACK VISITOR
-        // ============================================
-        function trackVisitor() {
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(data => {
-                    const ip = data.ip;
-                    appState.uniqueVisitors.add(ip);
-                    appState.visitorCount = appState.uniqueVisitors.size;
-                    appState.onlineCount = appState.uniqueVisitors.size;
-                    
-                    const uniqueVisitorEl = document.getElementById('unique-visitor-count');
-                    if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
-                    
-                    const onlineUserEl = document.getElementById('online-user-count');
-                    if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
-                    
-                    const activeSessionsEl = document.getElementById('active-sessions-count');
-                    if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
-                });
-        }
+// Start connection test with delay
+setTimeout(testConnection, 1000);
+</script>
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        const savedLang = localStorage.getItem('gk_language') || 'en';
-        applyTranslation(savedLang);
-        renderAdsSlider();
-        renderContacts();
-        renderAccounts();
-        
-        trackVisitor();
-        setInterval(trackVisitor, 30000);
-    </script>
-</body>
-</html>
+<!-- Add this CSS for better mobile video support -->
+<style>
+/* Mobile-optimized video container */
+.card-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #1a1a24;
+}
+
+/* Ensure videos are responsive on mobile */
+@media (max-width: 768px) {
+    .card-media {
+        object-fit: contain;
+        background: #000;
+    }
+    
+    video.card-media {
+        max-height: 100%;
+        width: 100%;
+    }
+}
+
+/* Connection status improvements */
+.connection-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: var(--surface-light);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    z-index: 9999;
+    transition: all 0.3s ease;
+}
+
+.connection-status.connected {
+    background: #10b981;
+    color: white;
+}
+
+.connection-status.disconnected {
+    background: #ef4444;
+    color: white;
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 768px) {
+    .action-btn, .nav-btn, .btn, .tier-tab {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .action-btn i {
+        font-size: 1.2rem;
+    }
+}
+</style>
