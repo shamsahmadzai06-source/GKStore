@@ -26,40 +26,25 @@ self.addEventListener('install', event => {
   );
 });
 
-// Fetch from cache first, then network
+// Fetch event - CRITICAL: NEVER cache or intercept API calls
 self.addEventListener('fetch', event => {
+  const url = event.request.url;
+  
+  // IMPORTANT: Skip ALL requests to your VPS IP - let them pass through normally
+  if (url.includes('216.126.225.4')) {
+    // Do NOT try to cache, do NOT intercept - just pass through to network
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  
+  // For static assets only, try cache first
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
-        
-        // Clone the request because it's a stream and can only be used once
-        const fetchRequest = event.request.clone();
-        
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // Clone the response because it's a stream
-            const responseToCache = response.clone();
-            
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                // Don't cache API calls to PocketBase
-                if (!event.request.url.includes('216.126.225.4')) {
-                  cache.put(event.request, responseToCache);
-                }
-              });
-            
-            return response;
-          }
-        );
+        return fetch(event.request);
       })
   );
 });
@@ -73,7 +58,6 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            // Delete old caches
             return caches.delete(cacheName);
           }
         })
