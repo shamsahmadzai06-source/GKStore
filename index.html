@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- CRITICAL: This meta tag MUST be first for mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     
     <!-- PWA Required Meta Tags -->
@@ -1006,10 +1005,19 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // POCKETBASE CONFIGURATION - DIRECT HTTPS
+        // POCKETBASE CONFIGURATION - WITH CORS PROXY FOR MOBILE
         // ============================================
         const PB_URL = 'https://216.126.225.4';
-        const pb = new PocketBase(PB_URL);
+        
+        // Try multiple CORS proxies
+        const PROXIES = [
+            'https://cors-anywhere.herokuapp.com/',
+            'https://api.allorigins.win/raw?url=',
+            'https://crossorigin.me/'
+        ];
+        
+        let currentProxy = 0;
+        let pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
 
         // ============================================
@@ -1027,7 +1035,7 @@
         ];
 
         // ============================================
-        // SERVICE WORKER - FIXED
+        // SERVICE WORKER
         // ============================================
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
@@ -1068,7 +1076,7 @@
             usingFallback: true
         };
 
-        // Load from localStorage IMMEDIATELY
+        // Load from localStorage
         function loadFromStorage() {
             if (localStorage.getItem('gk_accounts')) {
                 try {
@@ -1103,7 +1111,6 @@
             }
         }
         
-        // Load immediately
         loadFromStorage();
 
         // ============================================
@@ -1172,36 +1179,66 @@
         }
 
         // ============================================
-        // CONNECTION TEST - SIMPLIFIED
+        // CONNECTION TEST WITH PROXY FALLBACK
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
 
         async function testConnection() {
+            // First try direct connection
             try {
+                console.log('Testing direct connection...');
                 const response = await fetch(PB_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
-                    timeout: 5000
+                    headers: { 'Accept': 'application/json' }
                 });
                 
                 if (response.ok) {
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected';
                     connectionStatus.style.background = '#10b981';
-                    
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
+                    return;
                 }
             } catch (error) {
-                console.log('Offline mode');
-                connectionStatus.textContent = '⚠️ Offline mode';
-                connectionStatus.style.background = '#ef4444';
-                // Already loaded from localStorage
+                console.log('Direct connection failed, trying proxies...');
             }
+            
+            // Try proxies for mobile
+            for (let i = 0; i < PROXIES.length; i++) {
+                try {
+                    console.log(`Trying proxy ${i+1}: ${PROXIES[i]}`);
+                    const proxyUrl = PROXIES[i] + encodeURIComponent(PB_URL + '/api/health');
+                    const response = await fetch(proxyUrl, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        isConnected = true;
+                        connectionStatus.textContent = `✅ Connected (Proxy)`;
+                        connectionStatus.style.background = '#10b981';
+                        
+                        // Update PocketBase to use proxy
+                        pb = new PocketBase(PROXIES[i] + PB_URL);
+                        pb.autoCancellation(false);
+                        
+                        loadAccountsFromPB();
+                        loadContactsFromPB();
+                        loadSettingsFromPB();
+                        return;
+                    }
+                } catch (error) {
+                    console.log(`Proxy ${i+1} failed`);
+                }
+            }
+            
+            // All connections failed
+            console.log('All connections failed - offline mode');
+            connectionStatus.textContent = '⚠️ Offline mode';
+            connectionStatus.style.background = '#ef4444';
         }
 
         setTimeout(testConnection, 2000);
@@ -1246,7 +1283,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1379,7 +1416,7 @@
             }
         };
 
-        // Admin rendering functions (keep as is)
+        // Admin rendering functions (keep all your existing admin rendering functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1555,7 +1592,7 @@
         }
 
         // ============================================
-        // ACTION FUNCTIONS
+        // ACTION FUNCTIONS (keep all your existing action functions)
         // ============================================
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
@@ -1591,7 +1628,7 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024; // 30MB for video, 5MB for image
+                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024;
                 if (file.size > maxSize) {
                     alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '30MB' : '5MB'}`);
                     uploadBtn.disabled = true;
@@ -1623,7 +1660,7 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024; // 30MB for video, 5MB for image
+                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024;
                 if (file.size > maxSize) {
                     alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '30MB' : '5MB'}`);
                     return;
@@ -2098,7 +2135,7 @@
         applyTranslation(savedLang);
         renderAdsSlider();
         renderContacts();
-        renderAccounts(); // This will now show localStorage data immediately
+        renderAccounts();
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
