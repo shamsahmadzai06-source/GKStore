@@ -704,9 +704,6 @@
         <button class="retry-button" onclick="retryConnection()" style="background:var(--primary); color:white; border:none; padding:5px 10px; border-radius:20px; margin-left:10px; cursor:pointer;">Retry</button>
     </div>
 
-    <!-- CORS Notice (will show if needed) -->
-    <div id="cors-notice" class="cors-notice" style="display: none;"></div>
-
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
         <i class="fas fa-download"></i> Install GK Store
@@ -1034,13 +1031,10 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CORS PROXY - This is the key fix!
+        // OPTION B: THINGPROXY - No activation required!
         // ============================================
-        const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+        const CORS_PROXY = 'https://thingproxy.freeboard.io/fetch/';
         const PB_HTTP_URL = 'http://216.126.225.4:8090';
-        
-        // We'll use the proxy for all requests
-        const PROXIED_URL = CORS_PROXY + PB_HTTP_URL;
 
         // ============================================
         // FALLBACK DATA
@@ -1057,17 +1051,18 @@
         ];
 
         // ============================================
-        // CUSTOM FETCH WITH PROXY
+        // CUSTOM FETCH WITH THINGPROXY
         // ============================================
         async function proxiedFetch(url, options = {}) {
             // For API calls to your PocketBase, use the proxy
             if (url.includes('216.126.225.4')) {
                 const proxiedUrl = CORS_PROXY + url;
+                console.log('Fetching via proxy:', proxiedUrl);
                 return fetch(proxiedUrl, {
                     ...options,
                     headers: {
                         ...options.headers,
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'Origin': window.location.origin
                     }
                 });
             }
@@ -1092,101 +1087,6 @@
                     });
             });
         }
-
-        // ============================================
-        // TEST CONNECTION THROUGH PROXY
-        // ============================================
-        let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
-        let fallbackNotice = document.getElementById('fallback-notice');
-        let corsNotice = document.getElementById('cors-notice');
-
-        async function testConnection() {
-            try {
-                console.log('Testing connection through proxy...');
-                const response = await proxiedFetch(PB_HTTP_URL + '/api/health');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    isConnected = true;
-                    connectionStatus.textContent = '✅ Connected via proxy';
-                    connectionStatus.classList.add('connected');
-                    fallbackNotice.style.display = 'none';
-                    console.log('✅ Connected to PocketBase via proxy');
-                    
-                    // Load real data
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
-                }
-            } catch (error) {
-                console.log('⚠️ Using fallback data');
-                connectionStatus.textContent = '⚠️ Offline mode';
-                connectionStatus.classList.add('disconnected');
-                fallbackNotice.style.display = 'block';
-                
-                // Show CORS notice with instructions
-                corsNotice.innerHTML = `
-                    <strong>🔧 CORS Proxy Required</strong>
-                    <p>To connect to your PocketBase, you need to enable the CORS proxy:</p>
-                    <button onclick="window.open('https://cors-anywhere.herokuapp.com/corsdemo', '_blank')">Enable Proxy</button>
-                    <button onclick="retryConnection()">Retry</button>
-                    <button onclick="this.style.display='none'">Dismiss</button>
-                `;
-                corsNotice.style.display = 'block';
-            }
-        }
-
-        window.retryConnection = function() {
-            corsNotice.style.display = 'none';
-            connectionStatus.textContent = '📡 Connecting...';
-            connectionStatus.classList.remove('connected', 'disconnected');
-            testConnection();
-        };
-
-        // Start connection test
-        setTimeout(testConnection, 2000);
-
-        // ============================================
-        // PWA INSTALLATION
-        // ============================================
-        let deferredPrompt;
-        const installButton = document.getElementById('install-button');
-
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            installButton.style.display = 'none';
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
-                installButton.style.display = 'flex';
-            }
-        });
-
-        window.installApp = function() {
-            if (!deferredPrompt) {
-                alert('To install: Tap browser menu → "Add to Home Screen"');
-                return;
-            }
-            
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    installButton.style.display = 'none';
-                }
-                deferredPrompt = null;
-            });
-        };
-
-        setTimeout(() => {
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && !deferredPrompt) {
-                installButton.style.display = 'flex';
-            }
-        }, 2000);
 
         // ============================================
         // APP STATE
@@ -1284,8 +1184,8 @@
                 editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
             },
-            ps: { /* ... keep your ps translations */ },
-            fa: { /* ... keep your fa translations */ }
+            ps: { /* keep your ps translations */ },
+            fa: { /* keep your fa translations */ }
         };
 
         // ============================================
@@ -1316,7 +1216,336 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING VIA PROXY
+        // CONNECTION TEST
+        // ============================================
+        let isConnected = false;
+        let connectionStatus = document.getElementById('connection-status');
+        let fallbackNotice = document.getElementById('fallback-notice');
+
+        async function testConnection() {
+            try {
+                console.log('Testing connection through ThingProxy...');
+                const response = await proxiedFetch(PB_HTTP_URL + '/api/health');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    isConnected = true;
+                    connectionStatus.textContent = '✅ Connected via proxy';
+                    connectionStatus.classList.add('connected');
+                    fallbackNotice.style.display = 'none';
+                    console.log('✅ Connected to PocketBase via proxy');
+                    
+                    loadAccountsFromPB();
+                    loadContactsFromPB();
+                    loadSettingsFromPB();
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (error) {
+                console.log('⚠️ Using fallback data');
+                connectionStatus.textContent = '⚠️ Offline mode';
+                connectionStatus.classList.add('disconnected');
+                fallbackNotice.style.display = 'block';
+            }
+        }
+
+        window.retryConnection = function() {
+            connectionStatus.textContent = '📡 Connecting...';
+            connectionStatus.classList.remove('connected', 'disconnected');
+            testConnection();
+        };
+
+        setTimeout(testConnection, 2000);
+
+        // ============================================
+        // PWA INSTALLATION
+        // ============================================
+        let deferredPrompt;
+        const installButton = document.getElementById('install-button');
+
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            installButton.style.display = 'none';
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
+                installButton.style.display = 'flex';
+            }
+        });
+
+        window.installApp = function() {
+            if (!deferredPrompt) {
+                alert('To install: Tap browser menu → "Add to Home Screen"');
+                return;
+            }
+            
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    installButton.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        };
+
+        setTimeout(() => {
+            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && !deferredPrompt) {
+                installButton.style.display = 'flex';
+            }
+        }, 2000);
+
+        // ============================================
+        // RENDERING FUNCTIONS (include all your rendering functions here)
+        // ============================================
+        function renderAccounts() {
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            let filtered = appState.accounts;
+            if (appState.currentFilter !== 'all') {
+                filtered = filtered.filter(a => a.tier === appState.currentFilter);
+            }
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage || 'en'];
+            
+            grid.innerHTML = filtered.map(acc => {
+                const mediaHtml = acc.mediaType === 'video' 
+                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" loading="lazy"></video>`
+                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
+                
+                return `
+                    <div class="account-card" data-id="${acc.id}">
+                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter);">
+                            ${mediaHtml}
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">
+                                ${acc.title}
+                                <span class="tier-badge ${acc.tier}">${acc.tier}</span>
+                            </div>
+                            <div class="card-desc">${acc.desc || ''}</div>
+                            <div class="price-row">
+                                <span class="usd-price">$${acc.price_usd}</span>
+                                <span class="afn-price">${acc.price_afn} AFN</span>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
+                                <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
+                                <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderContacts() {
+            const container = document.getElementById('contacts-container');
+            if (!container) return;
+            
+            if (appState.contacts.length === 0) {
+                container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage || 'en'];
+            
+            container.innerHTML = appState.contacts.map(contact => {
+                let cleanPhone = contact.phone.replace(/\D/g, '');
+                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
+                    cleanPhone = '93' + cleanPhone;
+                }
+                return `
+                    <div class="account-card" style="padding:1.5rem;">
+                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
+                        <p>${contact.desc || ''}</p>
+                        <p><strong>+${cleanPhone}</strong></p>
+                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
+                            <i class="fab fa-whatsapp"></i> ${t.chatNow}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAdsSlider() {
+            const container = document.getElementById('ads-slider');
+            if (!container) return;
+            
+            let slides = '';
+            appState.ads.forEach((ad, idx) => {
+                slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+            });
+            
+            let dots = '';
+            appState.ads.forEach((_, idx) => {
+                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
+            });
+            
+            container.innerHTML = `
+                <div class="slider-container">
+                    <div class="slider-track" id="slider-track">${slides}</div>
+                    <div class="slider-dots">${dots}</div>
+                </div>
+            `;
+            
+            const track = document.getElementById('slider-track');
+            if (track) {
+                track.addEventListener('scroll', function() {
+                    const idx = Math.round(track.scrollLeft / track.clientWidth);
+                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+                });
+            }
+            startAutoSlide();
+        }
+
+        function startAutoSlide() {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            appState.autoSlideInterval = setInterval(() => {
+                const track = document.getElementById('slider-track');
+                if (!track || appState.ads.length === 0) return;
+                const slideWidth = track.clientWidth;
+                const currentScroll = track.scrollLeft;
+                const currentIndex = Math.round(currentScroll / slideWidth);
+                const nextIndex = (currentIndex + 1) % appState.ads.length;
+                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
+                document.querySelectorAll('.dot').forEach((dot, i) => {
+                    dot.classList.toggle('active', i === nextIndex);
+                });
+            }, 2000);
+        }
+
+        window.jumpToSlide = function(idx) {
+            const track = document.getElementById('slider-track');
+            if (track) {
+                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                startAutoSlide();
+            }
+        };
+
+        // Admin rendering functions
+        function renderAdminAccounts() {
+            const list = document.getElementById('admin-accounts-list');
+            if (!list) return;
+            
+            if (appState.accounts.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage] || translations.en;
+            
+            list.innerHTML = appState.accounts.map(acc => {
+                const mediaTag = acc.mediaType === 'video' 
+                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls></video>`
+                    : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
+                
+                return `
+                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                        ${mediaTag}
+                        <div style="flex:1;">
+                            <strong>${acc.title}</strong> 
+                            <span class="tier-badge ${acc.tier}">${acc.tier}</span>
+                            <div style="font-size:0.8rem;">$${acc.price_usd} / ${acc.price_afn} AFN</div>
+                        </div>
+                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
+                            <i class="fa fa-trash"></i> ${t.delete}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAdminContacts() {
+            const list = document.getElementById('admin-contacts-list');
+            if (!list) return;
+            
+            if (appState.contacts.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage] || translations.en;
+            
+            list.innerHTML = appState.contacts.map(contact => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <strong>${contact.name}</strong>
+                        <div style="font-size:0.8rem;">+${contact.phone}</div>
+                        <div style="font-size:0.7rem;">${contact.desc || ''}</div>
+                    </div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
+                        <i class="fa fa-trash"></i> ${t.delete}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminAds() {
+            const list = document.getElementById('admin-ads-list');
+            if (!list) return;
+            
+            if (appState.ads.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage] || translations.en;
+            
+            list.innerHTML = appState.ads.map((ad, index) => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">
+                        ${ad.type === 'video' 
+                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;"></video>`
+                            : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
+                        }
+                    </div>
+                    <div style="flex:1;">
+                        <strong>${ad.caption || 'No caption'}</strong>
+                        <div style="font-size:0.7rem;">${ad.type}</div>
+                    </div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
+                        <i class="fa fa-trash"></i> ${t.delete}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderBookRequests() {
+            const list = document.getElementById('admin-book-requests-list');
+            if (!list) return;
+            
+            if (appState.bookRequests.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
+                return;
+            }
+            
+            const t = translations[appState.currentLanguage || 'en'];
+            
+            list.innerHTML = appState.bookRequests.map(req => `
+                <div class="book-request-item">
+                    <p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p>
+                    <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
+                    <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
+                    <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')">
+                        <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // POCKETBASE DATA LOADING VIA THINGPROXY
         // ============================================
         async function loadAccountsFromPB() {
             if (!isConnected) return;
@@ -1380,7 +1609,436 @@
             } catch (error) {}
         }
 
-        // Admin Login via Proxy
+        // ============================================
+        // ACTION FUNCTIONS (include all your action functions)
+        // ============================================
+        window.filterAccounts = function(tier) {
+            appState.currentFilter = tier;
+            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
+            renderAccounts();
+        };
+
+        window.switchScreen = function(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screen + '-screen').classList.add('active');
+            if (screen === 'accounts') renderAccounts();
+            if (screen === 'contact') renderContacts();
+            if (screen === 'admin' && appState.isAdminLoggedIn) {
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('active-sessions-count').innerText = appState.onlineCount;
+                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                renderBookRequests();
+            }
+        };
+
+        window.previewMediaFromFile = function() {
+            const fileInput = document.getElementById('account-media-file');
+            const preview = document.getElementById('media-preview');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const isVideo = file.type.startsWith('video/');
+                
+                const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
+                    uploadBtn.disabled = true;
+                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+                    return;
+                }
+                
+                uploadBtn.disabled = false;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (isVideo) {
+                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                        appState.currentMediaData = { type: 'video', data: e.target.result };
+                    } else {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px;">`;
+                        appState.currentMediaData = { type: 'image', data: e.target.result };
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadBtn.disabled = true;
+            }
+        };
+
+        window.previewAdMedia = function() {
+            const fileInput = document.getElementById('ad-media-file');
+            const preview = document.getElementById('ad-preview');
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const isVideo = file.type.startsWith('video/');
+                
+                const maxSize = isVideo ? 90 * 1024 * 1024 : 20 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '90MB' : '20MB'}`);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (isVideo) {
+                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                        appState.currentAdData = { type: 'video', data: e.target.result };
+                    } else {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px;">`;
+                        appState.currentAdData = { type: 'image', data: e.target.result };
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.showAddAccountModal = function() {
+            document.getElementById('account-tier').value = '';
+            document.getElementById('account-title').value = '';
+            document.getElementById('account-description').value = '';
+            document.getElementById('account-price-usd').value = '';
+            document.getElementById('account-price-afn').value = '';
+            document.getElementById('account-media-file').value = '';
+            document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            document.getElementById('upload-progress').classList.remove('active');
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-text').innerHTML = '';
+            document.getElementById('upload-btn').disabled = true;
+            appState.currentMediaData = null;
+            openModal('add-account-modal');
+        };
+
+        window.showManageAccountsModal = function() {
+            renderAdminAccounts();
+            openModal('manage-accounts-modal');
+        };
+
+        window.showManageContactsModal = function() {
+            renderAdminContacts();
+            initPhoneInput();
+            openModal('manage-contacts-modal');
+        };
+
+        window.showManageAdsModal = function() {
+            document.getElementById('ad-type').value = 'image';
+            document.getElementById('ad-media-file').value = '';
+            document.getElementById('ad-caption').value = '';
+            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            appState.currentAdData = null;
+            renderAdminAds();
+            openModal('manage-ads-modal');
+        };
+
+        window.showEditUsdtModal = function() {
+            document.getElementById('new-usdt-address').value = appState.usdtAddress;
+            openModal('edit-usdt-modal');
+        };
+
+        window.saveUsdtAddress = function() {
+            const newAddress = document.getElementById('new-usdt-address').value.trim();
+            if (!newAddress) {
+                alert('Please enter a USDT address');
+                return;
+            }
+            appState.usdtAddress = newAddress;
+            localStorage.setItem('gk_usdt_address', newAddress);
+            document.getElementById('current-usdt-address').innerText = newAddress;
+            closeModal('edit-usdt-modal');
+            alert('USDT address updated successfully!');
+        };
+
+        window.uploadNewAccount = function() {
+            const tier = document.getElementById('account-tier').value;
+            const title = document.getElementById('account-title').value.trim();
+            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            
+            if (!tier || !title || !priceUsd || !priceAfn) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            if (!appState.currentMediaData) {
+                alert('Please select an image or video');
+                return;
+            }
+            
+            const progressContainer = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            progressContainer.classList.add('active');
+            uploadBtn.disabled = true;
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) progress = 100;
+                progressBar.style.width = progress + '%';
+                progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
+            }, 200);
+            
+            setTimeout(() => {
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressText.innerHTML = 'Upload complete!';
+                
+                const newAccount = {
+                    id: 'a' + Date.now(),
+                    title: title,
+                    desc: desc,
+                    tier: tier,
+                    price_usd: priceUsd,
+                    price_afn: priceAfn,
+                    media: appState.currentMediaData.data,
+                    mediaType: appState.currentMediaData.type
+                };
+                
+                appState.accounts.push(newAccount);
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                
+                setTimeout(() => {
+                    closeModal('add-account-modal');
+                    renderAccounts();
+                    if (appState.isAdminLoggedIn) {
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    }
+                    alert('Account uploaded successfully!');
+                    
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
+                }, 500);
+            }, 2000);
+        };
+
+        window.deleteAccount = function(id) {
+            if (confirm('Delete this account permanently?')) {
+                appState.accounts = appState.accounts.filter(a => a.id !== id);
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                renderAccounts();
+                renderAdminAccounts();
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            }
+        };
+
+        window.saveNewContact = function() {
+            const name = document.getElementById('contact-name').value.trim();
+            const desc = document.getElementById('contact-desc').value.trim();
+            
+            if (!name) {
+                alert('Please enter contact name');
+                return;
+            }
+            
+            let fullNumber = '';
+            if (appState.phoneInput) {
+                const number = appState.phoneInput.getNumber();
+                if (number) {
+                    fullNumber = number.replace(/\D/g, '');
+                } else {
+                    alert('Please enter a valid phone number');
+                    return;
+                }
+            } else {
+                const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
+                if (!phone) {
+                    alert('Please enter phone number');
+                    return;
+                }
+                fullNumber = phone;
+            }
+            
+            const newContact = {
+                id: 'c' + Date.now(),
+                name: name,
+                phone: fullNumber,
+                desc: desc
+            };
+            
+            appState.contacts.push(newContact);
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+            
+            document.getElementById('contact-name').value = '';
+            document.getElementById('contact-phone').value = '';
+            document.getElementById('contact-desc').value = '';
+            
+            renderContacts();
+            renderAdminContacts();
+            alert('Contact added successfully!');
+        };
+
+        window.deleteContact = function(id) {
+            if (confirm('Delete this contact?')) {
+                appState.contacts = appState.contacts.filter(c => c.id !== id);
+                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+                renderContacts();
+                renderAdminContacts();
+            }
+        };
+
+        window.saveNewAd = function() {
+            const type = document.getElementById('ad-type').value;
+            const caption = document.getElementById('ad-caption').value.trim();
+            
+            if (!appState.currentAdData) {
+                alert('Please upload an image or video');
+                return;
+            }
+            
+            const newAd = {
+                type: type,
+                data: appState.currentAdData.data,
+                caption: caption
+            };
+            
+            appState.ads.push(newAd);
+            localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+            
+            document.getElementById('ad-type').value = 'image';
+            document.getElementById('ad-media-file').value = '';
+            document.getElementById('ad-caption').value = '';
+            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            appState.currentAdData = null;
+            
+            renderAdsSlider();
+            renderAdminAds();
+            alert('Ad added successfully!');
+        };
+
+        window.deleteAd = function(index) {
+            if (confirm('Delete this ad?')) {
+                appState.ads.splice(index, 1);
+                localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+                renderAdsSlider();
+                renderAdminAds();
+            }
+        };
+
+        window.bookAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            
+            const t = translations[appState.currentLanguage || 'en'];
+            
+            document.getElementById('book-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
+                <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
+                <label class="input-label">${t.whatsappNumber} with country code</label>
+                <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
+            `;
+            
+            openModal('book-modal');
+            
+            setTimeout(() => {
+                const input = document.getElementById('book-phone');
+                if (input) {
+                    if (appState.bookPhoneInput) {
+                        try {
+                            appState.bookPhoneInput.destroy();
+                        } catch (e) {}
+                    }
+                    appState.bookPhoneInput = intlTelInput(input, {
+                        initialCountry: 'af',
+                        separateDialCode: true,
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        dropdownContainer: document.body
+                    });
+                }
+            }, 200);
+        };
+
+        window.submitBook = function() {
+            const name = document.getElementById('book-name')?.value;
+            
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+            
+            let phone = '';
+            if (appState.bookPhoneInput) {
+                const number = appState.bookPhoneInput.getNumber();
+                if (number) {
+                    phone = number.replace(/\D/g, '');
+                } else {
+                    alert('Please enter a valid WhatsApp number');
+                    return;
+                }
+            } else {
+                phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+                if (!phone) {
+                    alert('Please enter a valid WhatsApp number');
+                    return;
+                }
+            }
+            
+            const req = {
+                id: Date.now(),
+                account_id: appState.currentAccount.id,
+                account_title: appState.currentAccount.title,
+                user_name: name,
+                whatsapp: phone,
+                date: new Date().toISOString()
+            };
+            appState.bookRequests.push(req);
+            localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
+            
+            alert('✅ Booking submitted! We will contact you on WhatsApp.');
+            closeModal('book-modal');
+        };
+
+        window.buyAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            
+            document.getElementById('buy-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
+                <p>Send exact USDT (TRC20) to:</p>
+                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
+                <button class="btn" onclick="copyUsdt()">Copy address</button>
+            `;
+            openModal('buy-modal');
+        };
+
+        window.confirmBuyWhatsApp = function() {
+            if (!appState.currentAccount) return;
+            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
+            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
+            closeModal('buy-modal');
+        };
+
+        window.copyUsdt = function() {
+            navigator.clipboard.writeText(appState.usdtAddress);
+            alert('USDT address copied');
+        };
+
+        window.infoAccount = function(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            
+            document.getElementById('info-modal-body').innerHTML = `
+                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                <p>${acc.desc || 'Premium PUBG account'}</p>
+                <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
+                <p>✅ Includes email & password, full access.</p>
+            `;
+            openModal('info-modal');
+        };
+
+        // Admin Login via ThingProxy
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -1448,8 +2106,31 @@
             switchScreen('main');
         };
 
-        // Keep all your existing rendering functions (renderAccounts, renderContacts, renderAdsSlider, etc.)
-        // ... (include all your existing rendering functions here)
+        window.openModal = function(id) {
+            document.getElementById(id).classList.remove('hidden');
+        };
+        
+        window.closeModal = function(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'book-modal' && appState.bookPhoneInput) {
+                try {
+                    appState.bookPhoneInput.destroy();
+                } catch (e) {}
+                appState.bookPhoneInput = null;
+            }
+        };
+
+        function initPhoneInput() {
+            const input = document.querySelector('#contact-phone');
+            if (input && !appState.phoneInput) {
+                appState.phoneInput = intlTelInput(input, {
+                    initialCountry: 'af',
+                    separateDialCode: true,
+                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                    dropdownContainer: document.body
+                });
+            }
+        }
 
         // ============================================
         // TRACK VISITOR
