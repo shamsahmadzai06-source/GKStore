@@ -663,6 +663,34 @@
             font-size: 0.8rem;
             border-bottom: 1px solid var(--border);
         }
+
+        /* Mobile connection helper */
+        .mobile-helper {
+            position: fixed;
+            bottom: 80px;
+            left: 10px;
+            right: 10px;
+            background: var(--surface-light);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 10000;
+            font-size: 14px;
+            border: 2px solid var(--primary);
+            animation: slideUp 0.3s ease;
+        }
+        
+        .mobile-helper button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -678,6 +706,9 @@
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
         <i class="fas fa-download"></i> Install GK Store
     </button>
+
+    <!-- Mobile Helper (will show only if needed) -->
+    <div id="mobile-helper" class="mobile-helper" style="display: none;"></div>
 
     <!-- top nav -->
     <div class="top-nav">
@@ -1001,14 +1032,67 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // FALLBACK DATA - SHOWS ACCOUNTS IMMEDIATELY
+        // CORS PROXY - BYPASS SSL FOR MOBILE
+        // ============================================
+        const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+        const PB_URL = 'https://216.126.225.4';
+        
+        // Check if running on mobile
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Create custom fetch with CORS proxy for mobile
+        const customFetch = (url, options = {}) => {
+            // For mobile devices, use CORS proxy
+            if (isMobile && url.includes('216.126.225.4')) {
+                return fetch(CORS_PROXY + url, {
+                    ...options,
+                    mode: 'cors',
+                    headers: {
+                        ...options.headers,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+            }
+            return fetch(url, options);
+        };
+
+        // Initialize PocketBase with custom fetch for mobile
+        class CustomPocketBase extends PocketBase {
+            async send(path, options = {}) {
+                const url = this.baseURL + path;
+                const response = await customFetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+                }
+                
+                return response.json();
+            }
+        }
+
+        // Initialize
+        let pb;
+        try {
+            pb = new CustomPocketBase(PB_URL);
+            pb.autoCancellation(false);
+        } catch (e) {
+            console.error('Failed to initialize PocketBase:', e);
+        }
+
+        // ============================================
+        // FALLBACK DATA
         // ============================================
         const fallbackAccounts = [
             { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
             { id: 'a2', title: 'Competitive Player', desc: 'Conqueror tier, mythic outfits', tier: 'medium', price_usd: 499.99, price_afn: 32000, media: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a4', title: 'Tournament Winner', desc: 'Championship skins', tier: 'medium', price_usd: 799.99, price_afn: 51200, media: 'https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a5', title: 'Legendary Limited', desc: 'All collab skins', tier: 'big', price_usd: 4999.99, price_afn: 320000, media: 'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&w=400', mediaType: 'image' }
+            { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' }
         ];
 
         const fallbackContacts = [
@@ -1017,16 +1101,14 @@
         ];
 
         // ============================================
-        // SERVICE WORKER REGISTRATION - FIXED
+        // SERVICE WORKER - Unregister old and register new
         // ============================================
         if ('serviceWorker' in navigator) {
-            // Unregister any existing service workers first
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let registration of registrations) {
                     registration.unregister();
                 }
             }).then(function() {
-                // Register new service worker
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
                         console.log('✅ ServiceWorker registered');
@@ -1038,26 +1120,37 @@
         }
 
         // ============================================
-        // POCKETBASE CONFIGURATION - WITH FALLBACK
+        // MOBILE HELPER - Show if connection fails
         // ============================================
-        const PB_URL = 'https://216.126.225.4';
-        let pb = null;
+        const mobileHelper = document.getElementById('mobile-helper');
+        
+        function showMobileHelper() {
+            if (!isMobile) return;
+            
+            mobileHelper.innerHTML = `
+                <strong>📱 Mobile Connection</strong>
+                <p>To connect to your PocketBase backend:</p>
+                <button onclick="window.open('https://cors-anywhere.herokuapp.com/https://216.126.225.4/api/health', '_blank')">Test Connection</button>
+                <button onclick="this.parentElement.remove()">Dismiss</button>
+            `;
+            mobileHelper.style.display = 'block';
+            
+            setTimeout(() => {
+                mobileHelper.style.display = 'none';
+            }, 10000);
+        }
+
+        // ============================================
+        // CONNECTION TEST
+        // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
         let fallbackNotice = document.getElementById('fallback-notice');
 
-        // Initialize PocketBase
-        try {
-            pb = new PocketBase(PB_URL);
-            pb.autoCancellation(false);
-            
-            // Test connection with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            
-            pb.health.check({ signal: controller.signal })
-                .then(() => {
-                    clearTimeout(timeoutId);
+        async function testConnection() {
+            try {
+                const response = await customFetch(PB_URL + '/api/health');
+                if (response.ok) {
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected';
                     connectionStatus.classList.add('connected');
@@ -1068,32 +1161,24 @@
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
-                })
-                .catch(err => {
-                    clearTimeout(timeoutId);
-                    console.log('⚠️ PocketBase connection failed, using fallback data');
-                    connectionStatus.textContent = '⚠️ Offline mode';
-                    connectionStatus.classList.add('disconnected');
-                    fallbackNotice.style.display = 'block';
-                    
-                    // Use fallback data immediately
-                    appState.accounts = fallbackAccounts;
-                    appState.contacts = fallbackContacts;
-                    renderAccounts();
-                    renderContacts();
-                });
-        } catch (e) {
-            console.error('❌ Failed to initialize PocketBase:', e);
-            connectionStatus.textContent = '⚠️ Offline mode';
-            connectionStatus.classList.add('disconnected');
-            fallbackNotice.style.display = 'block';
-            
-            // Use fallback data
-            appState.accounts = fallbackAccounts;
-            appState.contacts = fallbackContacts;
-            renderAccounts();
-            renderContacts();
+                } else {
+                    throw new Error('Not connected');
+                }
+            } catch (error) {
+                console.log('⚠️ Using fallback data');
+                connectionStatus.textContent = '⚠️ Offline mode';
+                connectionStatus.classList.add('disconnected');
+                fallbackNotice.style.display = 'block';
+                
+                // Show mobile helper on first failure
+                if (isMobile) {
+                    showMobileHelper();
+                }
+            }
         }
+
+        // Test connection
+        setTimeout(testConnection, 1000);
 
         // ============================================
         // PWA INSTALLATION
@@ -1138,7 +1223,7 @@
         // APP STATE
         // ============================================
         const appState = {
-            accounts: fallbackAccounts, // Start with fallback data immediately
+            accounts: fallbackAccounts,
             contacts: fallbackContacts,
             ads: [
                 { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
@@ -1265,26 +1350,24 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING - WITH ERROR HANDLING
+        // POCKETBASE DATA LOADING - USING PROXY FOR MOBILE
         // ============================================
         async function loadAccountsFromPB() {
-            if (!pb || !isConnected) return;
+            if (!isConnected) return;
             
             try {
-                const records = await pb.collection('accounts').getFullList({
-                    $autoCancel: false,
-                    requestKey: null
-                });
+                const response = await customFetch(PB_URL + '/api/collections/accounts/records?page=1&perPage=500');
+                const data = await response.json();
                 
-                if (records && records.length > 0) {
-                    appState.accounts = records.map(record => ({
+                if (data && data.items && data.items.length > 0) {
+                    appState.accounts = data.items.map(record => ({
                         id: record.id,
                         title: record.title,
                         desc: record.description,
                         tier: record.tier,
                         price_usd: record.price_usd,
                         price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
+                        media: record.media ? (PB_URL + '/api/files/' + record.collectionId + '/' + record.id + '/' + record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
                         mediaType: record.mediaType || 'image'
                     }));
                     appState.usingFallback = false;
@@ -1296,12 +1379,14 @@
         }
 
         async function loadContactsFromPB() {
-            if (!pb || !isConnected) return;
+            if (!isConnected) return;
             
             try {
-                const records = await pb.collection('contacts').getFullList();
-                if (records && records.length > 0) {
-                    appState.contacts = records.map(record => ({
+                const response = await customFetch(PB_URL + '/api/collections/contacts/records?page=1&perPage=500');
+                const data = await response.json();
+                
+                if (data && data.items && data.items.length > 0) {
+                    appState.contacts = data.items.map(record => ({
                         id: record.id,
                         name: record.name,
                         phone: record.phone,
@@ -1313,14 +1398,18 @@
         }
 
         async function loadSettingsFromPB() {
-            if (!pb || !isConnected) return;
+            if (!isConnected) return;
             
             try {
-                const records = await pb.collection('settings').getFullList();
-                const usdtSetting = records.find(r => r.key === 'usdt_address');
-                if (usdtSetting) {
-                    appState.usdtAddress = usdtSetting.value;
-                    document.getElementById('current-usdt-address').innerText = usdtSetting.value;
+                const response = await customFetch(PB_URL + '/api/collections/settings/records?page=1&perPage=500');
+                const data = await response.json();
+                
+                if (data && data.items && data.items.length > 0) {
+                    const usdtSetting = data.items.find(r => r.key === 'usdt_address');
+                    if (usdtSetting) {
+                        appState.usdtAddress = usdtSetting.value;
+                        document.getElementById('current-usdt-address').innerText = usdtSetting.value;
+                    }
                 }
             } catch (error) {}
         }
@@ -2007,7 +2096,7 @@
             openModal('info-modal');
         };
 
-        // Admin Login - FIXED
+        // Admin Login - USING PROXY FOR MOBILE
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -2020,30 +2109,55 @@
                 return;
             }
             
-            // Show loading
             loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
             loginBtn.disabled = true;
             errorDiv.innerText = '';
             
             try {
-                if (!pb) {
-                    throw new Error('PocketBase not initialized');
+                let response;
+                if (isMobile) {
+                    // Use proxy for mobile
+                    response = await fetch(CORS_PROXY + PB_URL + '/api/admins/auth-with-password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            identity: email,
+                            password: pass
+                        })
+                    });
+                } else {
+                    // Direct for desktop
+                    response = await fetch(PB_URL + '/api/admins/auth-with-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            identity: email,
+                            password: pass
+                        })
+                    });
                 }
                 
-                // Try to login
-                const authData = await pb.admins.authWithPassword(email, pass);
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+                
+                const data = await response.json();
                 
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 errorDiv.innerText = '';
                 
-                // Load fresh data
-                await loadAccountsFromPB();
-                await loadContactsFromPB();
-                await loadSettingsFromPB();
+                // Try to load data
+                if (isConnected) {
+                    await loadAccountsFromPB();
+                    await loadContactsFromPB();
+                    await loadSettingsFromPB();
+                }
                 
-                // Update stats
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 document.getElementById('unique-visitor-count').innerText = appState.visitorCount;
@@ -2065,7 +2179,6 @@
         };
 
         window.logout = function() {
-            if (pb) pb.authStore.clear();
             appState.isAdminLoggedIn = false;
             document.getElementById('admin-login-section').classList.remove('hidden');
             document.getElementById('admin-dashboard').classList.add('hidden');
