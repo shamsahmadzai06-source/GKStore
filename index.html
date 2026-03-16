@@ -740,8 +740,8 @@
                 <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
                     <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
-                    <input type="email" id="admin-email" class="input" placeholder="your@email.com">
-                    <input type="password" id="admin-password" class="input" placeholder="Enter your password">
+                    <input type="email" id="admin-email" class="input" placeholder="your@email.com" value="shamsahmadzai06@gmail.com">
+                    <input type="password" id="admin-password" class="input" placeholder="password" value="Shams12357@">
                     <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">
                         <span data-i18n="loginBtn">Login</span>
                     </button>
@@ -1005,22 +1005,20 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION
+        // CLOUDFLARE TUNNEL CONFIGURATION - FINAL FIX
         // ============================================
         const CLOUDFLARE_URL = 'https://days-substitute-metadata-ireland.trycloudflare.com';
-        const PB_URL = CLOUDFLARE_URL;
+        const PB_URL = CLOUDFLARE_URL; // ONLY use Cloudflare tunnel, no fallback to IP
         
         console.log('🚀 Connecting to Cloudflare Tunnel:', PB_URL);
         
+        // Create PocketBase instance
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
 
         // Override fetch with better error handling
         const originalSend = pb.send.bind(pb);
         pb.send = async function(path, options = {}) {
-            // Don't set timeout for file uploads (they take longer)
-            const isFileUpload = options.body instanceof FormData;
-            
             options = {
                 ...options,
                 headers: {
@@ -1030,27 +1028,23 @@
                 }
             };
             
-            if (!isFileUpload) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                try {
-                    options.signal = controller.signal;
-                    const result = await originalSend(path, options);
-                    clearTimeout(timeoutId);
-                    return result;
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    throw error;
-                }
-            } else {
-                // For file uploads, let it take longer
-                return await originalSend(path, options);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            try {
+                options.signal = controller.signal;
+                const result = await originalSend(path, options);
+                clearTimeout(timeoutId);
+                return result;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.log('PocketBase error:', error);
+                throw error;
             }
         };
 
         // ============================================
-        // FALLBACK DATA
+        // FALLBACK DATA (local only, no server connection)
         // ============================================
         const fallbackAccounts = [
             { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
@@ -1064,15 +1058,17 @@
         ];
 
         // ============================================
-        // SERVICE WORKER
+        // SERVICE WORKER - MODIFIED TO NOT INTERFERE
         // ============================================
         if ('serviceWorker' in navigator) {
-            // Unregister any existing service workers
+            // Unregister any existing service workers that might be caching old URLs
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let registration of registrations) {
                     registration.unregister();
+                    console.log('Service worker unregistered');
                 }
             }).then(function() {
+                // Register fresh service worker
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
                         console.log('✅ New ServiceWorker registered');
@@ -1211,7 +1207,7 @@
         }
 
         // ============================================
-        // CONNECTION TEST
+        // CONNECTION TEST - SIMPLIFIED
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
@@ -1221,6 +1217,7 @@
                 console.log('🔌 Testing connection to Cloudflare Tunnel...');
                 connectionStatus.textContent = '📡 Connecting via Cloudflare...';
                 
+                // Test the health endpoint
                 const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
@@ -1236,6 +1233,7 @@
                     connectionStatus.style.background = '#10b981';
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
+                    // Load data from server
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
@@ -1247,9 +1245,13 @@
                 connectionStatus.textContent = '⚠️ Offline mode (local data)';
                 connectionStatus.style.background = '#ef4444';
                 isConnected = false;
+                
+                // Still render with local data
+                renderAccounts();
             }
         }
 
+        // Test connection after a short delay
         setTimeout(testConnection, 2000);
 
         // ============================================
@@ -1292,7 +1294,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1425,7 +1427,7 @@
             }
         };
 
-        // Admin rendering functions
+        // Admin rendering functions (keep all your existing admin rendering functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1601,7 +1603,7 @@
         }
 
         // ============================================
-        // FIXED UPLOAD FUNCTION
+        // FIXED UPLOAD FUNCTION - NOW UPLOADS TO POCKETBASE
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -1648,12 +1650,10 @@
             }, 300);
             
             try {
-                // If connected to server, upload there
+                // Check if we're connected to PocketBase
                 if (isConnected) {
                     // Create form data for server upload
                     const formData = new FormData();
-                    
-                    // Make sure field names match your PocketBase collection
                     formData.append('title', title);
                     formData.append('description', desc);
                     formData.append('tier', tier);
@@ -1665,12 +1665,12 @@
                         title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
                     });
                     
-                    // Try to create the record
+                    // Create the record in PocketBase
                     const record = await pb.collection('accounts').create(formData);
                     
                     console.log('Upload successful:', record);
                     
-                    // Add to local state
+                    // Add to local state with the server URL
                     const newAccount = {
                         id: record.id,
                         title: title,
@@ -1697,7 +1697,7 @@
                         if (appState.isAdminLoggedIn) {
                             document.getElementById('admin-account-count').innerText = appState.accounts.length;
                         }
-                        alert('Account uploaded successfully to server!');
+                        alert('✅ Account uploaded successfully to server!');
                         
                         progressContainer.classList.remove('active');
                         progressBar.style.width = '0%';
@@ -1705,11 +1705,11 @@
                         uploadBtn.disabled = false;
                     }, 500);
                 } else {
-                    // Save locally if offline
+                    // Offline mode - save locally only
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const newAccount = {
-                            id: 'a' + Date.now(),
+                            id: 'local_' + Date.now(),
                             title: title,
                             desc: desc,
                             tier: tier,
@@ -1732,7 +1732,7 @@
                             if (appState.isAdminLoggedIn) {
                                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
                             }
-                            alert('Account saved locally (offline mode)!');
+                            alert('📱 Account saved locally (offline mode)');
                             
                             progressContainer.classList.remove('active');
                             progressBar.style.width = '0%';
@@ -1748,10 +1748,16 @@
                 console.error('Upload error details:', error);
                 clearInterval(interval);
                 
-                // Show more specific error message
+                // Show specific error message
                 let errorMessage = 'Upload failed: ';
                 if (error.response && error.response.data) {
-                    errorMessage += JSON.stringify(error.response.data);
+                    // PocketBase validation error
+                    const data = error.response.data;
+                    if (data.message) {
+                        errorMessage += data.message;
+                    } else {
+                        errorMessage += JSON.stringify(data);
+                    }
                 } else if (error.message) {
                     errorMessage += error.message;
                 } else {
@@ -1804,11 +1810,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                // Increase max size for videos
-                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB for video, 10MB for image
-                
+                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
                     uploadBtn.disabled = true;
                     preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                     return;
@@ -1838,9 +1842,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
+                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
                     return;
                 }
                 
@@ -2130,7 +2134,7 @@
             openModal('info-modal');
         };
 
-        // Admin Login - No hardcoded password
+        // Admin Login
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
@@ -2245,7 +2249,7 @@
         applyTranslation(savedLang);
         renderAdsSlider();
         renderContacts();
-        renderAccounts();
+        renderAccounts(); // This will show local data immediately
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
