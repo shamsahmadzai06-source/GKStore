@@ -1601,6 +1601,174 @@
         }
 
         // ============================================
+        // FIXED UPLOAD FUNCTION
+        // ============================================
+        window.uploadNewAccount = async function() {
+            const tier = document.getElementById('account-tier').value;
+            const title = document.getElementById('account-title').value.trim();
+            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            
+            if (!tier || !title || !priceUsd || !priceAfn) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            const fileInput = document.getElementById('account-media-file');
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Please select an image or video');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const isVideo = file.type.startsWith('video/');
+            
+            // Check file size
+            const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
+                return;
+            }
+            
+            const progressContainer = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            progressContainer.classList.add('active');
+            uploadBtn.disabled = true;
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) progress = 100;
+                progressBar.style.width = progress + '%';
+                progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
+            }, 300);
+            
+            try {
+                // If connected to server, upload there
+                if (isConnected) {
+                    // Create form data for server upload
+                    const formData = new FormData();
+                    
+                    // Make sure field names match your PocketBase collection
+                    formData.append('title', title);
+                    formData.append('description', desc);
+                    formData.append('tier', tier);
+                    formData.append('price_usd', priceUsd.toString());
+                    formData.append('price_afn', priceAfn.toString());
+                    formData.append('media', file);
+                    formData.append('mediaType', isVideo ? 'video' : 'image');
+                    
+                    console.log('Uploading to PocketBase...', {
+                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
+                    });
+                    
+                    // Try to create the record
+                    const record = await pb.collection('accounts').create(formData);
+                    
+                    console.log('Upload successful:', record);
+                    
+                    // Add to local state
+                    const newAccount = {
+                        id: record.id,
+                        title: title,
+                        desc: desc,
+                        tier: tier,
+                        price_usd: priceUsd,
+                        price_afn: priceAfn,
+                        media: pb.files.getUrl(record, record.media),
+                        mediaType: isVideo ? 'video' : 'image'
+                    };
+                    
+                    appState.accounts.push(newAccount);
+                } else {
+                    // Save locally
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const newAccount = {
+                            id: 'a' + Date.now(),
+                            title: title,
+                            desc: desc,
+                            tier: tier,
+                            price_usd: priceUsd,
+                            price_afn: priceAfn,
+                            media: e.target.result,
+                            mediaType: isVideo ? 'video' : 'image'
+                        };
+                        
+                        appState.accounts.push(newAccount);
+                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                        
+                        clearInterval(interval);
+                        progressBar.style.width = '100%';
+                        progressText.innerHTML = 'Upload complete!';
+                        
+                        setTimeout(() => {
+                            closeModal('add-account-modal');
+                            renderAccounts();
+                            if (appState.isAdminLoggedIn) {
+                                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                            }
+                            alert('Account saved locally!');
+                            
+                            progressContainer.classList.remove('active');
+                            progressBar.style.width = '0%';
+                            progressText.innerHTML = '';
+                            uploadBtn.disabled = false;
+                        }, 500);
+                    };
+                    reader.readAsDataURL(file);
+                    return; // Exit early as we'll handle completion in reader.onload
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressText.innerHTML = 'Upload complete!';
+                
+                setTimeout(() => {
+                    closeModal('add-account-modal');
+                    renderAccounts();
+                    if (appState.isAdminLoggedIn) {
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    }
+                    alert('Account uploaded successfully!');
+                    
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
+                }, 500);
+                
+            } catch (error) {
+                console.error('Upload error details:', error);
+                clearInterval(interval);
+                
+                // Show more specific error message
+                let errorMessage = 'Upload failed: ';
+                if (error.response && error.response.data) {
+                    errorMessage += JSON.stringify(error.response.data);
+                } else if (error.message) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += 'Unknown error';
+                }
+                
+                alert(errorMessage);
+                
+                progressContainer.classList.remove('active');
+                progressBar.style.width = '0%';
+                progressText.innerHTML = '';
+                uploadBtn.disabled = false;
+            }
+        };
+
+        // ============================================
         // ACTION FUNCTIONS
         // ============================================
         window.filterAccounts = function(tier) {
@@ -1744,114 +1912,6 @@
             document.getElementById('current-usdt-address').innerText = newAddress;
             closeModal('edit-usdt-modal');
             alert('USDT address updated successfully!');
-        };
-
-        window.uploadNewAccount = async function() {
-            const tier = document.getElementById('account-tier').value;
-            const title = document.getElementById('account-title').value.trim();
-            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-            
-            if (!tier || !title || !priceUsd || !priceAfn) {
-                alert('Please fill all required fields');
-                return;
-            }
-            
-            if (!appState.currentMediaData) {
-                alert('Please select an image or video');
-                return;
-            }
-            
-            const progressContainer = document.getElementById('upload-progress');
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-            const uploadBtn = document.getElementById('upload-btn');
-            
-            progressContainer.classList.add('active');
-            uploadBtn.disabled = true;
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 10;
-                if (progress >= 100) progress = 100;
-                progressBar.style.width = progress + '%';
-                progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
-            }, 300);
-            
-            try {
-                // If connected to server, upload there
-                if (isConnected) {
-                    // Create form data for server upload
-                    const formData = new FormData();
-                    const file = document.getElementById('account-media-file').files[0];
-                    
-                    formData.append('title', title);
-                    formData.append('description', desc);
-                    formData.append('tier', tier);
-                    formData.append('price_usd', priceUsd);
-                    formData.append('price_afn', priceAfn);
-                    formData.append('media', file);
-                    
-                    const record = await pb.collection('accounts').create(formData);
-                    
-                    // Add to local state
-                    const newAccount = {
-                        id: record.id,
-                        title: title,
-                        desc: desc,
-                        tier: tier,
-                        price_usd: priceUsd,
-                        price_afn: priceAfn,
-                        media: pb.files.getUrl(record, record.media),
-                        mediaType: file.type.startsWith('video/') ? 'video' : 'image'
-                    };
-                    
-                    appState.accounts.push(newAccount);
-                } else {
-                    // Save locally
-                    const newAccount = {
-                        id: 'a' + Date.now(),
-                        title: title,
-                        desc: desc,
-                        tier: tier,
-                        price_usd: priceUsd,
-                        price_afn: priceAfn,
-                        media: appState.currentMediaData.data,
-                        mediaType: appState.currentMediaData.type
-                    };
-                    
-                    appState.accounts.push(newAccount);
-                }
-                
-                // Save to localStorage
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                
-                clearInterval(interval);
-                progressBar.style.width = '100%';
-                progressText.innerHTML = 'Upload complete!';
-                
-                setTimeout(() => {
-                    closeModal('add-account-modal');
-                    renderAccounts();
-                    if (appState.isAdminLoggedIn) {
-                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    }
-                    alert('Account uploaded successfully!');
-                    
-                    progressContainer.classList.remove('active');
-                    progressBar.style.width = '0%';
-                    progressText.innerHTML = '';
-                    uploadBtn.disabled = false;
-                }, 500);
-                
-            } catch (error) {
-                console.error('Upload error:', error);
-                clearInterval(interval);
-                alert('Upload failed: ' + error.message);
-                progressContainer.classList.remove('active');
-                uploadBtn.disabled = false;
-            }
         };
 
         window.deleteAccount = function(id) {
