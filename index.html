@@ -672,11 +672,46 @@
                 padding: 0.5rem 0.8rem;
             }
         }
+
+        /* SSL Warning Helper */
+        .ssl-helper {
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: 90%;
+            max-width: 400px;
+            background: #ff9800;
+            color: white;
+            padding: 12px;
+            border-radius: 30px;
+            text-align: center;
+            font-size: 14px;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .ssl-helper.show {
+            display: block;
+        }
+
+        .ssl-helper a {
+            color: white;
+            font-weight: bold;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body dir="ltr">
     <!-- Connection Status -->
     <div id="connection-status" class="connection-status">📡 Connecting...</div>
+
+    <!-- SSL Helper for Mobile -->
+    <div id="ssl-helper" class="ssl-helper">
+        ⚠️ First time? <a href="#" onclick="openSSLLink()">Tap here to accept SSL certificate</a>
+    </div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
@@ -1005,11 +1040,42 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // POCKETBASE CONFIGURATION - WORKING WITH YOUR VPS
+        // POCKETBASE CONFIGURATION - WITH MOBILE FIX
         // ============================================
-        const PB_URL = 'https://216.126.225.4';  // Your VPS IP with SSL via Nginx
+        const PB_URL = 'https://216.126.225.4';  // Your VPS IP
+        
+        // Create PocketBase instance with custom fetch for mobile
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
+
+        // Override fetch to handle mobile SSL issues better
+        const originalSend = pb.send.bind(pb);
+        pb.send = async function(path, options = {}) {
+            // Add cache busting and longer timeout for mobile
+            options = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            };
+            
+            // Add timeout to prevent hanging on mobile
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+            
+            try {
+                options.signal = controller.signal;
+                const result = await originalSend(path, options);
+                clearTimeout(timeoutId);
+                return result;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.log('PocketBase error:', error);
+                throw error;
+            }
+        };
 
         // ============================================
         // FALLBACK DATA
@@ -1166,38 +1232,81 @@
         }
 
         // ============================================
-        // CONNECTION TEST
+        // SSL HELPER FOR MOBILE
+        // ============================================
+        window.openSSLLink = function() {
+            window.open('https://216.126.225.4/api/health', '_blank');
+            setTimeout(() => {
+                document.getElementById('ssl-helper').classList.remove('show');
+            }, 3000);
+        };
+
+        // ============================================
+        // CONNECTION TEST WITH MOBILE FIX
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
+        let sslHelper = document.getElementById('ssl-helper');
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
 
         async function testConnection() {
             try {
-                console.log('Testing connection to VPS...');
+                connectionStatus.textContent = '📡 Connecting to VPS...';
+                connectionStatus.style.background = 'var(--surface-light)';
                 
-                // Add a small timeout and cache busting
-                const response = await fetch(PB_URL + '/api/health', { 
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
+                // Try multiple approaches
                 
-                if (response.ok) {
-                    isConnected = true;
-                    connectionStatus.textContent = '✅ Connected to VPS';
-                    connectionStatus.style.background = '#10b981';
-                    console.log('✅ Connected to PocketBase on VPS');
+                // Approach 1: Direct fetch with no-cors
+                try {
+                    const response = await fetch(PB_URL + '/api/health', { 
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
                     
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
+                    if (response.ok) {
+                        const data = await response.json();
+                        isConnected = true;
+                        connectionStatus.textContent = '✅ Connected to VPS';
+                        connectionStatus.style.background = '#10b981';
+                        sslHelper.classList.remove('show');
+                        console.log('✅ Connected to PocketBase on VPS');
+                        
+                        loadAccountsFromPB();
+                        loadContactsFromPB();
+                        loadSettingsFromPB();
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Direct fetch failed:', e);
                 }
+                
+                // Approach 2: Try with image load (bypasses CORS for SSL check)
+                const img = new Image();
+                img.onload = function() {
+                    // SSL is accepted, try PocketBase again
+                    setTimeout(() => testConnection(), 1000);
+                };
+                img.onerror = function() {
+                    // SSL is blocked, show helper
+                    sslHelper.classList.add('show');
+                    retryCount++;
+                    
+                    if (retryCount < MAX_RETRIES) {
+                        connectionStatus.textContent = `⚠️ SSL needed (${retryCount}/${MAX_RETRIES})`;
+                        setTimeout(testConnection, 3000);
+                    } else {
+                        connectionStatus.textContent = '⚠️ Offline mode';
+                        connectionStatus.style.background = '#ef4444';
+                    }
+                };
+                img.src = 'https://216.126.225.4/favicon.ico?' + Date.now();
+                
             } catch (error) {
-                console.log('⚠️ Using local data (offline mode)');
+                console.log('Connection error:', error);
                 connectionStatus.textContent = '⚠️ Offline mode';
                 connectionStatus.style.background = '#ef4444';
             }
