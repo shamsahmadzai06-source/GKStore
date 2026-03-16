@@ -1650,41 +1650,78 @@
             }, 300);
             
             try {
-                // Check if we're connected to PocketBase
-                if (isConnected) {
-                    // Create form data for server upload
-                    const formData = new FormData();
-                    formData.append('title', title);
-                    formData.append('description', desc);
-                    formData.append('tier', tier);
-                    formData.append('price_usd', priceUsd.toString());
-                    formData.append('price_afn', priceAfn.toString());
-                    formData.append('media', file);
+                // Create form data for server upload
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('description', desc);
+                formData.append('tier', tier);
+                formData.append('price_usd', priceUsd.toString());
+                formData.append('price_afn', priceAfn.toString());
+                formData.append('media', file);
+                
+                console.log('Uploading to PocketBase...', {
+                    title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
+                });
+                
+                // Always try to upload to PocketBase, regardless of isConnected flag
+                // The error will be caught if connection fails
+                const record = await pb.collection('accounts').create(formData);
+                
+                console.log('Upload successful:', record);
+                
+                // Add to local state with the server URL
+                const newAccount = {
+                    id: record.id,
+                    title: title,
+                    desc: desc,
+                    tier: tier,
+                    price_usd: priceUsd,
+                    price_afn: priceAfn,
+                    media: pb.files.getUrl(record, record.media),
+                    mediaType: isVideo ? 'video' : 'image'
+                };
+                
+                appState.accounts.push(newAccount);
+                
+                // Save to localStorage
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressText.innerHTML = 'Upload complete!';
+                
+                setTimeout(() => {
+                    closeModal('add-account-modal');
+                    renderAccounts();
+                    if (appState.isAdminLoggedIn) {
+                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    }
+                    alert('✅ Account uploaded successfully to server!');
                     
-                    console.log('Uploading to PocketBase...', {
-                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
-                    });
-                    
-                    // Create the record in PocketBase
-                    const record = await pb.collection('accounts').create(formData);
-                    
-                    console.log('Upload successful:', record);
-                    
-                    // Add to local state with the server URL
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    progressText.innerHTML = '';
+                    uploadBtn.disabled = false;
+                }, 500);
+                
+            } catch (error) {
+                console.error('Upload error details:', error);
+                
+                // If server upload fails, save locally
+                const reader = new FileReader();
+                reader.onload = function(e) {
                     const newAccount = {
-                        id: record.id,
+                        id: 'local_' + Date.now(),
                         title: title,
                         desc: desc,
                         tier: tier,
                         price_usd: priceUsd,
                         price_afn: priceAfn,
-                        media: pb.files.getUrl(record, record.media),
+                        media: e.target.result,
                         mediaType: isVideo ? 'video' : 'image'
                     };
                     
                     appState.accounts.push(newAccount);
-                    
-                    // Save to localStorage
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     
                     clearInterval(interval);
@@ -1697,79 +1734,31 @@
                         if (appState.isAdminLoggedIn) {
                             document.getElementById('admin-account-count').innerText = appState.accounts.length;
                         }
-                        alert('✅ Account uploaded successfully to server!');
+                        
+                        // Show specific error message
+                        let errorMessage = 'Server upload failed, saved locally: ';
+                        if (error.response && error.response.data) {
+                            const data = error.response.data;
+                            if (data.message) {
+                                errorMessage += data.message;
+                            } else {
+                                errorMessage += JSON.stringify(data);
+                            }
+                        } else if (error.message) {
+                            errorMessage += error.message;
+                        } else {
+                            errorMessage += 'Unknown error';
+                        }
+                        
+                        alert(errorMessage);
                         
                         progressContainer.classList.remove('active');
                         progressBar.style.width = '0%';
                         progressText.innerHTML = '';
                         uploadBtn.disabled = false;
                     }, 500);
-                } else {
-                    // Offline mode - save locally only
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const newAccount = {
-                            id: 'local_' + Date.now(),
-                            title: title,
-                            desc: desc,
-                            tier: tier,
-                            price_usd: priceUsd,
-                            price_afn: priceAfn,
-                            media: e.target.result,
-                            mediaType: isVideo ? 'video' : 'image'
-                        };
-                        
-                        appState.accounts.push(newAccount);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                        
-                        clearInterval(interval);
-                        progressBar.style.width = '100%';
-                        progressText.innerHTML = 'Upload complete!';
-                        
-                        setTimeout(() => {
-                            closeModal('add-account-modal');
-                            renderAccounts();
-                            if (appState.isAdminLoggedIn) {
-                                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                            }
-                            alert('📱 Account saved locally (offline mode)');
-                            
-                            progressContainer.classList.remove('active');
-                            progressBar.style.width = '0%';
-                            progressText.innerHTML = '';
-                            uploadBtn.disabled = false;
-                        }, 500);
-                    };
-                    reader.readAsDataURL(file);
-                    return; // Exit early as we'll handle completion in reader.onload
-                }
-                
-            } catch (error) {
-                console.error('Upload error details:', error);
-                clearInterval(interval);
-                
-                // Show specific error message
-                let errorMessage = 'Upload failed: ';
-                if (error.response && error.response.data) {
-                    // PocketBase validation error
-                    const data = error.response.data;
-                    if (data.message) {
-                        errorMessage += data.message;
-                    } else {
-                        errorMessage += JSON.stringify(data);
-                    }
-                } else if (error.message) {
-                    errorMessage += error.message;
-                } else {
-                    errorMessage += 'Unknown error';
-                }
-                
-                alert(errorMessage);
-                
-                progressContainer.classList.remove('active');
-                progressBar.style.width = '0%';
-                progressText.innerHTML = '';
-                uploadBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
             }
         };
 
