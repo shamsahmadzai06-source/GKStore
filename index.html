@@ -1005,20 +1005,40 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION
+        // CLOUDFLARE TUNNEL CONFIGURATION - WORKING!
         // ============================================
-        // IMPORTANT: Replace this URL with your actual Cloudflare tunnel URL
-        // You can find it in the terminal where you ran cloudflared
-        const TUNNEL_URL = 'https://your-tunnel-url.trycloudflare.com'; // ← CHANGE THIS!
-        
-        // Also keep your VPS IP as fallback
-        const VPS_URL = 'https://216.126.225.4';
-        
-        // Try tunnel first, fallback to VPS
+        const TUNNEL_URL = 'https://days-substitute-metadata-ireland.trycloudflare.com';
         const PB_URL = TUNNEL_URL;
         
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
+
+        // Override fetch to handle any issues
+        const originalSend = pb.send.bind(pb);
+        pb.send = async function(path, options = {}) {
+            options = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            };
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            try {
+                options.signal = controller.signal;
+                const result = await originalSend(path, options);
+                clearTimeout(timeoutId);
+                return result;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.log('PocketBase error:', error);
+                throw error;
+            }
+        };
 
         // ============================================
         // FALLBACK DATA
@@ -1183,6 +1203,7 @@
         async function testConnection() {
             try {
                 console.log('Testing connection to Cloudflare Tunnel...');
+                connectionStatus.textContent = '📡 Connecting via Cloudflare...';
                 
                 const response = await fetch(PB_URL + '/api/health', { 
                     mode: 'cors',
@@ -1193,6 +1214,7 @@
                 });
                 
                 if (response.ok) {
+                    const data = await response.json();
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected via Cloudflare';
                     connectionStatus.style.background = '#10b981';
@@ -1386,7 +1408,7 @@
             }
         };
 
-        // Admin rendering functions (keep all your existing admin rendering functions)
+        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
