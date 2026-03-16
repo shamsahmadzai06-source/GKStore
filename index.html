@@ -741,7 +741,7 @@
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
                     <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
                     <input type="email" id="admin-email" class="input" placeholder="your@email.com" value="shamsahmadzai06@gmail.com">
-                    <input type="password" id="admin-password" class="input" placeholder="password" value="Shams12357@">
+                    <input type="password" id="admin-password" class="input" placeholder="Enter your password">
                     <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">
                         <span data-i18n="loginBtn">Login</span>
                     </button>
@@ -1005,7 +1005,7 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION - UPDATED
+        // CLOUDFLARE TUNNEL CONFIGURATION - WORKING URL
         // ============================================
         const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
         const PB_URL = CLOUDFLARE_URL;
@@ -1016,7 +1016,7 @@
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
 
-        // Override fetch with better error handling
+        // Override fetch with better error handling for mobile
         const originalSend = pb.send.bind(pb);
         pb.send = async function(path, options = {}) {
             options = {
@@ -1028,8 +1028,12 @@
                 }
             };
             
+            // Longer timeout for file uploads on mobile
+            const isFileUpload = options.body instanceof FormData;
+            const timeoutMs = isFileUpload ? 30000 : 10000;
+            
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             
             try {
                 options.signal = controller.signal;
@@ -1107,6 +1111,22 @@
             autoSlideInterval: null,
             usingFallback: true
         };
+
+        // Clear any old cached data on startup
+        try {
+            // Check if we have accounts with old URLs and clear them
+            if (localStorage.getItem('gk_accounts')) {
+                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                // If any account has the old URL in media, clear localStorage
+                if (saved.some(acc => acc.media && acc.media.includes('days-substitute-metadata-ireland'))) {
+                    console.log('Found old URLs, clearing localStorage');
+                    localStorage.removeItem('gk_accounts');
+                    localStorage.removeItem('gk_contacts');
+                    localStorage.removeItem('gk_ads');
+                    localStorage.removeItem('gk_bookings');
+                }
+            }
+        } catch (e) {}
 
         // Load from localStorage
         if (localStorage.getItem('gk_accounts')) {
@@ -1234,9 +1254,9 @@
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
                     // Load data from server
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
+                    await loadAccountsFromPB();
+                    await loadContactsFromPB();
+                    await loadSettingsFromPB();
                 } else {
                     throw new Error('Connection failed');
                 }
@@ -1294,7 +1314,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS (keep all your existing rendering functions)
+        // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1427,7 +1447,7 @@
             }
         };
 
-        // Admin rendering functions (keep all your existing admin rendering functions)
+        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1550,20 +1570,26 @@
             try {
                 const records = await pb.collection('accounts').getFullList({
                     $autoCancel: false,
-                    requestKey: null
+                    requestKey: null,
+                    sort: '-created'
                 });
                 
                 if (records && records.length > 0) {
-                    appState.accounts = records.map(record => ({
-                        id: record.id,
-                        title: record.title,
-                        desc: record.description,
-                        tier: record.tier,
-                        price_usd: record.price_usd,
-                        price_afn: record.price_afn,
-                        media: record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',
-                        mediaType: record.mediaType || 'image'
-                    }));
+                    appState.accounts = records.map(record => {
+                        // Get the media URL using the current pb instance
+                        const mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
+                        
+                        return {
+                            id: record.id,
+                            title: record.title,
+                            desc: record.description,
+                            tier: record.tier,
+                            price_usd: record.price_usd,
+                            price_afn: record.price_afn,
+                            media: mediaUrl,
+                            mediaType: record.media ? (record.media.includes('video') ? 'video' : 'image') : 'image'
+                        };
+                    });
                     appState.usingFallback = false;
                     renderAccounts();
                 }
@@ -1650,78 +1676,44 @@
             }, 300);
             
             try {
-                // Create form data for server upload
-                const formData = new FormData();
-                formData.append('title', title);
-                formData.append('description', desc);
-                formData.append('tier', tier);
-                formData.append('price_usd', priceUsd.toString());
-                formData.append('price_afn', priceAfn.toString());
-                formData.append('media', file);
-                
-                console.log('Uploading to PocketBase...', {
-                    title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
-                });
-                
-                // Always try to upload to PocketBase, regardless of isConnected flag
-                // The error will be caught if connection fails
-                const record = await pb.collection('accounts').create(formData);
-                
-                console.log('Upload successful:', record);
-                
-                // Add to local state with the server URL
-                const newAccount = {
-                    id: record.id,
-                    title: title,
-                    desc: desc,
-                    tier: tier,
-                    price_usd: priceUsd,
-                    price_afn: priceAfn,
-                    media: pb.files.getUrl(record, record.media),
-                    mediaType: isVideo ? 'video' : 'image'
-                };
-                
-                appState.accounts.push(newAccount);
-                
-                // Save to localStorage
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                
-                clearInterval(interval);
-                progressBar.style.width = '100%';
-                progressText.innerHTML = 'Upload complete!';
-                
-                setTimeout(() => {
-                    closeModal('add-account-modal');
-                    renderAccounts();
-                    if (appState.isAdminLoggedIn) {
-                        document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    }
-                    alert('✅ Account uploaded successfully to server!');
+                // Check if we're connected to the server
+                if (isConnected) {
+                    // Create form data for server upload
+                    const formData = new FormData();
+                    formData.append('title', title);
+                    formData.append('description', desc);
+                    formData.append('tier', tier);
+                    formData.append('price_usd', priceUsd.toString());
+                    formData.append('price_afn', priceAfn.toString());
+                    formData.append('media', file);
                     
-                    progressContainer.classList.remove('active');
-                    progressBar.style.width = '0%';
-                    progressText.innerHTML = '';
-                    uploadBtn.disabled = false;
-                }, 500);
-                
-            } catch (error) {
-                console.error('Upload error details:', error);
-                
-                // If server upload fails, save locally
-                const reader = new FileReader();
-                reader.onload = function(e) {
+                    console.log('Uploading to PocketBase...', {
+                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
+                    });
+                    
+                    // Create the record in PocketBase
+                    const record = await pb.collection('accounts').create(formData);
+                    
+                    console.log('Upload successful:', record);
+                    
+                    // Get the correct media URL
+                    const mediaUrl = pb.files.getUrl(record, record.media);
+                    
+                    // Add to local state with the server URL
                     const newAccount = {
-                        id: 'local_' + Date.now(),
+                        id: record.id,
                         title: title,
                         desc: desc,
                         tier: tier,
                         price_usd: priceUsd,
                         price_afn: priceAfn,
-                        media: e.target.result,
+                        media: mediaUrl,
                         mediaType: isVideo ? 'video' : 'image'
                     };
                     
                     appState.accounts.push(newAccount);
+                    
+                    // Save to localStorage
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     
                     clearInterval(interval);
@@ -1734,31 +1726,78 @@
                         if (appState.isAdminLoggedIn) {
                             document.getElementById('admin-account-count').innerText = appState.accounts.length;
                         }
-                        
-                        // Show specific error message
-                        let errorMessage = 'Server upload failed, saved locally: ';
-                        if (error.response && error.response.data) {
-                            const data = error.response.data;
-                            if (data.message) {
-                                errorMessage += data.message;
-                            } else {
-                                errorMessage += JSON.stringify(data);
-                            }
-                        } else if (error.message) {
-                            errorMessage += error.message;
-                        } else {
-                            errorMessage += 'Unknown error';
-                        }
-                        
-                        alert(errorMessage);
+                        alert('✅ Account uploaded successfully to server!');
                         
                         progressContainer.classList.remove('active');
                         progressBar.style.width = '0%';
                         progressText.innerHTML = '';
                         uploadBtn.disabled = false;
                     }, 500);
-                };
-                reader.readAsDataURL(file);
+                } else {
+                    // If not connected to server, save locally
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const newAccount = {
+                            id: 'local_' + Date.now(),
+                            title: title,
+                            desc: desc,
+                            tier: tier,
+                            price_usd: priceUsd,
+                            price_afn: priceAfn,
+                            media: e.target.result,
+                            mediaType: isVideo ? 'video' : 'image'
+                        };
+                        
+                        appState.accounts.push(newAccount);
+                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                        
+                        clearInterval(interval);
+                        progressBar.style.width = '100%';
+                        progressText.innerHTML = 'Upload complete!';
+                        
+                        setTimeout(() => {
+                            closeModal('add-account-modal');
+                            renderAccounts();
+                            if (appState.isAdminLoggedIn) {
+                                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                            }
+                            alert('📱 Account saved locally (offline mode)');
+                            
+                            progressContainer.classList.remove('active');
+                            progressBar.style.width = '0%';
+                            progressText.innerHTML = '';
+                            uploadBtn.disabled = false;
+                        }, 500);
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+                
+            } catch (error) {
+                console.error('Upload error details:', error);
+                clearInterval(interval);
+                
+                // Show specific error message
+                let errorMessage = 'Upload failed: ';
+                if (error.response && error.response.data) {
+                    const data = error.response.data;
+                    if (data.message) {
+                        errorMessage += data.message;
+                    } else {
+                        errorMessage += JSON.stringify(data);
+                    }
+                } else if (error.message) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += 'Unknown error';
+                }
+                
+                alert(errorMessage);
+                
+                progressContainer.classList.remove('active');
+                progressBar.style.width = '0%';
+                progressText.innerHTML = '';
+                uploadBtn.disabled = false;
             }
         };
 
@@ -1799,9 +1838,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
                     uploadBtn.disabled = true;
                     preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                     return;
@@ -1831,9 +1870,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
+                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
                     return;
                 }
                 
@@ -2238,7 +2277,7 @@
         applyTranslation(savedLang);
         renderAdsSlider();
         renderContacts();
-        renderAccounts(); // This will show local data immediately
+        renderAccounts();
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
