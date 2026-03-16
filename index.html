@@ -672,14 +672,6 @@
                 padding: 0.5rem 0.8rem;
             }
         }
-
-        /* Video upload hint */
-        .video-hint {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: -0.5rem;
-            margin-bottom: 1rem;
-        }
     </style>
 </head>
 <body dir="ltr">
@@ -748,7 +740,7 @@
                 <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
                     <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
-                    <input type="email" id="admin-email" class="input" placeholder="your@email.com" value="shamsahmadzai06@gmail.com">
+                    <input type="email" id="admin-email" class="input" placeholder="your@email.com">
                     <input type="password" id="admin-password" class="input" placeholder="Enter your password">
                     <button class="action-btn buy" style="width:100%;" onclick="adminLogin()">
                         <span data-i18n="loginBtn">Login</span>
@@ -870,17 +862,12 @@
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     
-                    <!-- Video upload hint -->
-                    <div class="video-hint">
-                        <i class="fa fa-info-circle"></i> Max video size: 50MB (MP4, WebM, MOV)
-                    </div>
-                    
                     <div class="upload-progress" id="upload-progress">
                         <div class="progress-bar" id="progress-bar" style="width:0%"></div>
                     </div>
                     <div class="progress-text" id="progress-text"></div>
                     
-                    <input type="file" id="account-media-file" class="input" accept="image/*,video/mp4,video/webm,video/mov,video/quicktime" onchange="previewMediaFromFile()">
+                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
                     
                     <button type="button" class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>
                         <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
@@ -1028,7 +1015,7 @@
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
 
-        // Override fetch with better error handling for video uploads
+        // Override fetch with better error handling
         const originalSend = pb.send.bind(pb);
         pb.send = async function(path, options = {}) {
             // Don't set timeout for file uploads (they take longer)
@@ -1243,6 +1230,7 @@
                 });
                 
                 if (response.ok) {
+                    const data = await response.json();
                     isConnected = true;
                     connectionStatus.textContent = '✅ Connected via Cloudflare';
                     connectionStatus.style.background = '#10b981';
@@ -1803,7 +1791,6 @@
                     formData.append('tier', tier);
                     formData.append('price_usd', priceUsd);
                     formData.append('price_afn', priceAfn);
-                    formData.append('mediaType', appState.currentMediaData.type);
                     formData.append('media', file);
                     
                     const record = await pb.collection('accounts').create(formData);
@@ -1817,7 +1804,7 @@
                         price_usd: priceUsd,
                         price_afn: priceAfn,
                         media: pb.files.getUrl(record, record.media),
-                        mediaType: appState.currentMediaData.type
+                        mediaType: file.type.startsWith('video/') ? 'video' : 'image'
                     };
                     
                     appState.accounts.push(newAccount);
