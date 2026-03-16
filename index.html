@@ -1005,17 +1005,18 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION - FIXED!
+        // CLOUDFLARE TUNNEL CONFIGURATION - FINAL FIX
         // ============================================
         const CLOUDFLARE_URL = 'https://days-substitute-metadata-ireland.trycloudflare.com';
-        const PB_URL = CLOUDFLARE_URL; // Use Cloudflare tunnel instead of direct IP
+        const PB_URL = CLOUDFLARE_URL; // ONLY use Cloudflare tunnel, no fallback to IP
         
-        console.log('Connecting to Cloudflare Tunnel:', PB_URL);
+        console.log('🚀 Connecting to Cloudflare Tunnel:', PB_URL);
         
+        // Create PocketBase instance
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
 
-        // Override fetch to handle any issues
+        // Override fetch with better error handling
         const originalSend = pb.send.bind(pb);
         pb.send = async function(path, options = {}) {
             options = {
@@ -1028,7 +1029,7 @@
             };
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
             
             try {
                 options.signal = controller.signal;
@@ -1043,7 +1044,7 @@
         };
 
         // ============================================
-        // FALLBACK DATA
+        // FALLBACK DATA (local only, no server connection)
         // ============================================
         const fallbackAccounts = [
             { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
@@ -1057,16 +1058,25 @@
         ];
 
         // ============================================
-        // SERVICE WORKER
+        // SERVICE WORKER - MODIFIED TO NOT INTERFERE
         // ============================================
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(registration => {
-                    console.log('✅ ServiceWorker registered');
-                })
-                .catch(error => {
-                    console.log('❌ ServiceWorker registration failed:', error);
-                });
+            // Unregister any existing service workers that might be caching old URLs
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                    console.log('Service worker unregistered');
+                }
+            }).then(function() {
+                // Register fresh service worker
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('✅ New ServiceWorker registered');
+                    })
+                    .catch(error => {
+                        console.log('❌ ServiceWorker registration failed:', error);
+                    });
+            });
         }
 
         // ============================================
@@ -1197,17 +1207,18 @@
         }
 
         // ============================================
-        // CONNECTION TEST
+        // CONNECTION TEST - SIMPLIFIED
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
 
         async function testConnection() {
             try {
-                console.log('Testing connection to Cloudflare Tunnel...');
+                console.log('🔌 Testing connection to Cloudflare Tunnel...');
                 connectionStatus.textContent = '📡 Connecting via Cloudflare...';
                 
-                const response = await fetch(PB_URL + '/api/health', { 
+                // Test the health endpoint
+                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
                     headers: {
@@ -1222,6 +1233,7 @@
                     connectionStatus.style.background = '#10b981';
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
+                    // Load data from server
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
@@ -1229,12 +1241,17 @@
                     throw new Error('Connection failed');
                 }
             } catch (error) {
-                console.log('⚠️ Using local data (offline mode)');
-                connectionStatus.textContent = '⚠️ Offline mode';
+                console.log('⚠️ Cloudflare tunnel not reachable, using local data');
+                connectionStatus.textContent = '⚠️ Offline mode (local data)';
                 connectionStatus.style.background = '#ef4444';
+                isConnected = false;
+                
+                // Still render with local data
+                renderAccounts();
             }
         }
 
+        // Test connection after a short delay
         setTimeout(testConnection, 2000);
 
         // ============================================
@@ -1277,7 +1294,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1410,7 +1427,7 @@
             }
         };
 
-        // Admin rendering functions
+        // Admin rendering functions (keep all your existing admin rendering functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -2129,7 +2146,7 @@
         applyTranslation(savedLang);
         renderAdsSlider();
         renderContacts();
-        renderAccounts();
+        renderAccounts(); // This will show local data immediately
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
