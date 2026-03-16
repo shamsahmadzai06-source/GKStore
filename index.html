@@ -1587,7 +1587,7 @@
                             price_usd: record.price_usd,
                             price_afn: record.price_afn,
                             media: mediaUrl,
-                            mediaType: record.media ? (record.media.includes('video') ? 'video' : 'image') : 'image'
+                            mediaType: record.mediaType || 'image'
                         };
                     });
                     appState.usingFallback = false;
@@ -1629,7 +1629,7 @@
         }
 
         // ============================================
-        // FIXED UPLOAD FUNCTION - WITH AUTO-CANCEL COMPLETELY DISABLED
+        // FIXED UPLOAD FUNCTION - WITH MEDIA TYPE INCLUDED
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -1686,12 +1686,13 @@
                     formData.append('price_usd', priceUsd.toString());
                     formData.append('price_afn', priceAfn.toString());
                     formData.append('media', file);
+                    formData.append('mediaType', isVideo ? 'video' : 'image'); // FIX: Added mediaType field
                     
                     console.log('Uploading to PocketBase...', {
-                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
+                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size, mediaType: isVideo ? 'video' : 'image'
                     });
                     
-                    // FIX: Set requestKey to null to completely disable auto-cancellation for this request
+                    // Create the record with auto-cancellation disabled
                     const record = await pb.collection('accounts').create(formData, {
                         requestKey: null // This disables auto-cancellation for this specific request
                     });
