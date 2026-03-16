@@ -1314,7 +1314,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS
+        // FIXED RENDERING FUNCTION - WITH MOBILE VIDEO SUPPORT
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1333,8 +1333,26 @@
             const t = translations[appState.currentLanguage || 'en'];
             
             grid.innerHTML = filtered.map(acc => {
+                // For mobile browsers, we need additional video attributes
                 const mediaHtml = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" loading="lazy"></video>`
+                    ? `<video 
+                        src="${acc.media}" 
+                        class="card-media" 
+                        controls 
+                        playsinline 
+                        webkit-playsinline
+                        preload="metadata"
+                        muted
+                        loop
+                        poster="${acc.thumbnail || ''}"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <source src="${acc.media}" type="video/mp4">
+                        <source src="${acc.media}" type="video/webm">
+                        <source src="${acc.media}" type="video/quicktime">
+                      </video>
+                      <div class="video-fallback" style="display:none; align-items:center; justify-content:center; height:100%; background:var(--surface-lighter);">
+                        <i class="fa fa-play-circle" style="font-size:3rem; color:var(--primary);"></i>
+                      </div>`
                     : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
@@ -1461,7 +1479,7 @@
             
             list.innerHTML = appState.accounts.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls></video>`
+                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline webkit-playsinline></video>`
                     : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
                 
                 return `
@@ -1523,7 +1541,7 @@
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                     <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">
                         ${ad.type === 'video' 
-                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;"></video>`
+                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline webkit-playsinline></video>`
                             : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
                         }
                     </div>
