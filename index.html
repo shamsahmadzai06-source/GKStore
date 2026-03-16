@@ -1005,15 +1005,75 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // POCKETBASE CONFIGURATION - WITH WORKING PROXY FOR MOBILE
+        // ULTIMATE FIX - MULTIPLE PROXY FALLBACK
         // ============================================
         const PB_URL = 'https://216.126.225.4';
         
-        // Use a working public proxy that works on mobile
-        const PROXY_URL = 'https://api.codetabs.com/v1/proxy?quest=';
+        // Multiple proxy options that work on mobile
+        const PROXIES = [
+            'https://corsproxy.io/?',
+            'https://api.allorigins.win/raw?url=',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://thingproxy.freeboard.io/fetch/',
+            'https://api.codetabs.com/v1/proxy?quest='
+        ];
         
-        let pb = new PocketBase(PROXY_URL + PB_URL);
-        pb.autoCancellation(false);
+        let currentProxyIndex = 0;
+        let pb = null;
+        let isConnected = false;
+        let connectionStatus = document.getElementById('connection-status');
+
+        // Initialize PocketBase with first proxy
+        function initPocketBaseWithProxy(index) {
+            if (index >= PROXIES.length) {
+                console.log('All proxies failed - using offline mode');
+                connectionStatus.textContent = '⚠️ Offline mode (local only)';
+                connectionStatus.style.background = '#ef4444';
+                return false;
+            }
+            
+            const proxyUrl = PROXIES[index] + encodeURIComponent(PB_URL);
+            console.log(`Trying proxy ${index + 1}: ${PROXIES[index]}`);
+            connectionStatus.textContent = `📡 Trying proxy ${index + 1}...`;
+            
+            pb = new PocketBase(proxyUrl);
+            pb.autoCancellation(false);
+            return true;
+        }
+
+        // Test connection with current proxy
+        async function testConnection() {
+            if (!initPocketBaseWithProxy(0)) return;
+            
+            try {
+                // Simple health check
+                const result = await pb.health.check();
+                
+                if (result) {
+                    isConnected = true;
+                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.style.background = '#10b981';
+                    
+                    // Load data
+                    loadAccountsFromPB();
+                    loadContactsFromPB();
+                    loadSettingsFromPB();
+                    return;
+                }
+            } catch (error) {
+                console.log(`Proxy ${currentProxyIndex + 1} failed:`, error);
+                
+                // Try next proxy
+                currentProxyIndex++;
+                if (currentProxyIndex < PROXIES.length) {
+                    initPocketBaseWithProxy(currentProxyIndex);
+                    setTimeout(testConnection, 1000);
+                } else {
+                    connectionStatus.textContent = '⚠️ Offline mode';
+                    connectionStatus.style.background = '#ef4444';
+                }
+            }
+        }
 
         // ============================================
         // FALLBACK DATA
@@ -1174,43 +1234,6 @@
         }
 
         // ============================================
-        // CONNECTION TEST - USING WORKING PROXY
-        // ============================================
-        let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
-
-        async function testConnection() {
-            try {
-                console.log('Testing connection via proxy...');
-                
-                // Test with a simple request
-                const testUrl = PROXY_URL + encodeURIComponent(PB_URL + '/api/health');
-                const response = await fetch(testUrl, {
-                    headers: { 'Accept': 'application/json' }
-                });
-                
-                if (response.ok) {
-                    isConnected = true;
-                    connectionStatus.textContent = '✅ Connected';
-                    connectionStatus.style.background = '#10b981';
-                    
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                    return;
-                } else {
-                    throw new Error('Connection failed');
-                }
-            } catch (error) {
-                console.log('Connection failed:', error);
-                connectionStatus.textContent = '⚠️ Offline mode';
-                connectionStatus.style.background = '#ef4444';
-            }
-        }
-
-        setTimeout(testConnection, 2000);
-
-        // ============================================
         // PWA INSTALLATION
         // ============================================
         let deferredPrompt;
@@ -1250,7 +1273,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS (keep all your existing rendering functions)
+        // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1383,7 +1406,7 @@
             }
         };
 
-        // Admin rendering functions (keep all your existing admin rendering functions)
+        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1501,7 +1524,7 @@
         // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
-            if (!isConnected) return;
+            if (!isConnected || !pb) return;
             
             try {
                 const records = await pb.collection('accounts').getFullList({
@@ -1529,7 +1552,7 @@
         }
 
         async function loadContactsFromPB() {
-            if (!isConnected) return;
+            if (!isConnected || !pb) return;
             
             try {
                 const records = await pb.collection('contacts').getFullList();
@@ -1546,7 +1569,7 @@
         }
 
         async function loadSettingsFromPB() {
-            if (!isConnected) return;
+            if (!isConnected || !pb) return;
             
             try {
                 const records = await pb.collection('settings').getFullList();
@@ -1559,7 +1582,7 @@
         }
 
         // ============================================
-        // ACTION FUNCTIONS (keep all your existing action functions)
+        // ACTION FUNCTIONS
         // ============================================
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
@@ -2106,6 +2129,9 @@
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
+        
+        // Start connection test
+        setTimeout(testConnection, 1000);
     </script>
 </body>
 </html>
