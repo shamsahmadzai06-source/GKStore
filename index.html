@@ -1005,41 +1005,11 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // POCKETBASE CONFIGURATION - FIXED FOR MOBILE
+        // POCKETBASE CONFIGURATION - WORKING WITH YOUR VPS
         // ============================================
-        const PB_URL = 'https://216.126.225.4';
-        
-        // Create PocketBase instance with custom fetch for mobile
+        const PB_URL = 'https://216.126.225.4';  // Your VPS IP with SSL via Nginx
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
-        
-        // Override fetch to handle mobile networks better
-        const originalSend = pb.send.bind(pb);
-        pb.send = async function(path, options = {}) {
-            // Add cache busting and timeout for mobile
-            options = {
-                ...options,
-                headers: {
-                    ...options.headers,
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            };
-            
-            // Add timeout to prevent hanging on mobile
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-            
-            try {
-                options.signal = controller.signal;
-                const result = await originalSend(path, options);
-                clearTimeout(timeoutId);
-                return result;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                throw error;
-            }
-        };
 
         // ============================================
         // FALLBACK DATA
@@ -1098,41 +1068,37 @@
         };
 
         // Load from localStorage
-        function loadFromStorage() {
-            if (localStorage.getItem('gk_accounts')) {
-                try {
-                    const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                    if (saved && saved.length > 0) {
-                        appState.accounts = saved;
-                        appState.usingFallback = false;
-                    }
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_contacts')) {
-                try {
-                    appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_ads')) {
-                try {
-                    appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_bookings')) {
-                try {
-                    appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-                } catch (e) {}
-            }
-            
-            if (localStorage.getItem('gk_usdt_address')) {
-                appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-            }
+        if (localStorage.getItem('gk_accounts')) {
+            try {
+                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                if (saved && saved.length > 0) {
+                    appState.accounts = saved;
+                    appState.usingFallback = false;
+                }
+            } catch (e) {}
         }
         
-        loadFromStorage();
+        if (localStorage.getItem('gk_contacts')) {
+            try {
+                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_ads')) {
+            try {
+                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_bookings')) {
+            try {
+                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_usdt_address')) {
+            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
+        }
 
         // ============================================
         // TRANSLATIONS
@@ -1200,48 +1166,44 @@
         }
 
         // ============================================
-        // CONNECTION TEST - SIMPLIFIED
+        // CONNECTION TEST
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
 
         async function testConnection() {
             try {
-                connectionStatus.textContent = '📡 Connecting...';
-                connectionStatus.style.background = 'var(--surface-light)';
+                console.log('Testing connection to VPS...');
                 
-                // Try health check with timeout
-                const result = await pb.health.check();
+                // Add a small timeout and cache busting
+                const response = await fetch(PB_URL + '/api/health', { 
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
                 
-                if (result) {
+                if (response.ok) {
                     isConnected = true;
-                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.textContent = '✅ Connected to VPS';
                     connectionStatus.style.background = '#10b981';
+                    console.log('✅ Connected to PocketBase on VPS');
                     
-                    // Load data
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
                 } else {
-                    throw new Error('Health check failed');
+                    throw new Error('Connection failed');
                 }
             } catch (error) {
-                console.log('Connection attempt failed:', error);
-                retryCount++;
-                
-                if (retryCount < MAX_RETRIES) {
-                    connectionStatus.textContent = `🔄 Retry ${retryCount}/${MAX_RETRIES}...`;
-                    setTimeout(testConnection, 2000);
-                } else {
-                    connectionStatus.textContent = '⚠️ Offline mode';
-                    connectionStatus.style.background = '#ef4444';
-                }
+                console.log('⚠️ Using local data (offline mode)');
+                connectionStatus.textContent = '⚠️ Offline mode';
+                connectionStatus.style.background = '#ef4444';
             }
         }
 
-        setTimeout(testConnection, 1000);
+        setTimeout(testConnection, 2000);
 
         // ============================================
         // PWA INSTALLATION
@@ -1283,7 +1245,7 @@
         }, 2000);
 
         // ============================================
-        // RENDERING FUNCTIONS
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1628,9 +1590,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024;
+                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '30MB' : '5MB'}`);
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
                     uploadBtn.disabled = true;
                     preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                     return;
@@ -1660,9 +1622,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 30 * 1024 * 1024 : 5 * 1024 * 1024;
+                const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '30MB' : '5MB'}`);
+                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '50MB' : '10MB'}`);
                     return;
                 }
                 
