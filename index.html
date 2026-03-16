@@ -1005,49 +1005,21 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION
+        // CONFIGURATION
         // ============================================
-        const CLOUDFLARE_URL = 'https://days-substitute-metadata-ireland.trycloudflare.com';
-        const PB_URL = CLOUDFLARE_URL;
+        // IMPORTANT: Update this URL if your tunnel URL changes
+        const TUNNEL_URL = 'https://days-substitute-metadata-ireland.trycloudflare.com';
         
-        console.log('🚀 Connecting to Cloudflare Tunnel:', PB_URL);
+        // Also keep VPS IP as fallback
+        const VPS_URL = 'https://216.126.225.4';
+        
+        // Try tunnel first, fallback to VPS
+        const PB_URL = TUNNEL_URL;
+        
+        console.log('🚀 Connecting to:', PB_URL);
         
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
-
-        // Override fetch with better error handling
-        const originalSend = pb.send.bind(pb);
-        pb.send = async function(path, options = {}) {
-            // Don't set timeout for file uploads (they take longer)
-            const isFileUpload = options.body instanceof FormData;
-            
-            options = {
-                ...options,
-                headers: {
-                    ...options.headers,
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            };
-            
-            if (!isFileUpload) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                try {
-                    options.signal = controller.signal;
-                    const result = await originalSend(path, options);
-                    clearTimeout(timeoutId);
-                    return result;
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    throw error;
-                }
-            } else {
-                // For file uploads, let it take longer
-                return await originalSend(path, options);
-            }
-        };
 
         // ============================================
         // FALLBACK DATA
@@ -1215,13 +1187,16 @@
         // ============================================
         let isConnected = false;
         let connectionStatus = document.getElementById('connection-status');
+        let connectionRetries = 0;
+        const MAX_RETRIES = 3;
 
         async function testConnection() {
             try {
-                console.log('🔌 Testing connection to Cloudflare Tunnel...');
-                connectionStatus.textContent = '📡 Connecting via Cloudflare...';
+                console.log('🔌 Testing connection to:', PB_URL);
+                connectionStatus.textContent = '📡 Connecting...';
                 
-                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
+                // Try tunnel first
+                const response = await fetch(PB_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
                     headers: {
@@ -1232,21 +1207,53 @@
                 if (response.ok) {
                     const data = await response.json();
                     isConnected = true;
-                    connectionStatus.textContent = '✅ Connected via Cloudflare';
+                    connectionStatus.textContent = '✅ Connected';
                     connectionStatus.style.background = '#10b981';
-                    console.log('✅ Connected to PocketBase via Cloudflare');
+                    console.log('✅ Connected to PocketBase');
                     
                     loadAccountsFromPB();
                     loadContactsFromPB();
                     loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
+                    return;
                 }
             } catch (error) {
-                console.log('⚠️ Cloudflare tunnel not reachable, using local data');
-                connectionStatus.textContent = '⚠️ Offline mode (local data)';
-                connectionStatus.style.background = '#ef4444';
-                isConnected = false;
+                console.log('Tunnel connection failed:', error);
+                connectionRetries++;
+                
+                if (connectionRetries < MAX_RETRIES) {
+                    connectionStatus.textContent = `🔄 Retry ${connectionRetries}/${MAX_RETRIES}...`;
+                    setTimeout(testConnection, 2000);
+                } else {
+                    // Try VPS directly as last resort
+                    try {
+                        console.log('Trying VPS directly...');
+                        const vpsResponse = await fetch(VPS_URL + '/api/health', {
+                            mode: 'cors',
+                            cache: 'no-cache'
+                        });
+                        
+                        if (vpsResponse.ok) {
+                            isConnected = true;
+                            connectionStatus.textContent = '✅ Connected (VPS)';
+                            connectionStatus.style.background = '#10b981';
+                            
+                            // Update PocketBase to use VPS
+                            pb.baseUrl = VPS_URL;
+                            
+                            loadAccountsFromPB();
+                            loadContactsFromPB();
+                            loadSettingsFromPB();
+                            return;
+                        }
+                    } catch (vpsError) {
+                        console.log('VPS also failed');
+                    }
+                    
+                    console.log('⚠️ All connections failed, using local data');
+                    connectionStatus.textContent = '⚠️ Offline mode';
+                    connectionStatus.style.background = '#ef4444';
+                    isConnected = false;
+                }
             }
         }
 
