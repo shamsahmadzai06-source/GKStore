@@ -1005,75 +1005,41 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // ULTIMATE FIX - MULTIPLE PROXY FALLBACK
+        // POCKETBASE CONFIGURATION - FIXED FOR MOBILE
         // ============================================
         const PB_URL = 'https://216.126.225.4';
         
-        // Multiple proxy options that work on mobile
-        const PROXIES = [
-            'https://corsproxy.io/?',
-            'https://api.allorigins.win/raw?url=',
-            'https://cors-anywhere.herokuapp.com/',
-            'https://thingproxy.freeboard.io/fetch/',
-            'https://api.codetabs.com/v1/proxy?quest='
-        ];
+        // Create PocketBase instance with custom fetch for mobile
+        const pb = new PocketBase(PB_URL);
+        pb.autoCancellation(false);
         
-        let currentProxyIndex = 0;
-        let pb = null;
-        let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
-
-        // Initialize PocketBase with first proxy
-        function initPocketBaseWithProxy(index) {
-            if (index >= PROXIES.length) {
-                console.log('All proxies failed - using offline mode');
-                connectionStatus.textContent = '⚠️ Offline mode (local only)';
-                connectionStatus.style.background = '#ef4444';
-                return false;
-            }
+        // Override fetch to handle mobile networks better
+        const originalSend = pb.send.bind(pb);
+        pb.send = async function(path, options = {}) {
+            // Add cache busting and timeout for mobile
+            options = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            };
             
-            const proxyUrl = PROXIES[index] + encodeURIComponent(PB_URL);
-            console.log(`Trying proxy ${index + 1}: ${PROXIES[index]}`);
-            connectionStatus.textContent = `📡 Trying proxy ${index + 1}...`;
-            
-            pb = new PocketBase(proxyUrl);
-            pb.autoCancellation(false);
-            return true;
-        }
-
-        // Test connection with current proxy
-        async function testConnection() {
-            if (!initPocketBaseWithProxy(0)) return;
+            // Add timeout to prevent hanging on mobile
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
             
             try {
-                // Simple health check
-                const result = await pb.health.check();
-                
-                if (result) {
-                    isConnected = true;
-                    connectionStatus.textContent = '✅ Connected';
-                    connectionStatus.style.background = '#10b981';
-                    
-                    // Load data
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                    return;
-                }
+                options.signal = controller.signal;
+                const result = await originalSend(path, options);
+                clearTimeout(timeoutId);
+                return result;
             } catch (error) {
-                console.log(`Proxy ${currentProxyIndex + 1} failed:`, error);
-                
-                // Try next proxy
-                currentProxyIndex++;
-                if (currentProxyIndex < PROXIES.length) {
-                    initPocketBaseWithProxy(currentProxyIndex);
-                    setTimeout(testConnection, 1000);
-                } else {
-                    connectionStatus.textContent = '⚠️ Offline mode';
-                    connectionStatus.style.background = '#ef4444';
-                }
+                clearTimeout(timeoutId);
+                throw error;
             }
-        }
+        };
 
         // ============================================
         // FALLBACK DATA
@@ -1232,6 +1198,50 @@
         function openLanguageModal() {
             document.getElementById('language-modal').classList.remove('hidden');
         }
+
+        // ============================================
+        // CONNECTION TEST - SIMPLIFIED
+        // ============================================
+        let isConnected = false;
+        let connectionStatus = document.getElementById('connection-status');
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
+
+        async function testConnection() {
+            try {
+                connectionStatus.textContent = '📡 Connecting...';
+                connectionStatus.style.background = 'var(--surface-light)';
+                
+                // Try health check with timeout
+                const result = await pb.health.check();
+                
+                if (result) {
+                    isConnected = true;
+                    connectionStatus.textContent = '✅ Connected';
+                    connectionStatus.style.background = '#10b981';
+                    
+                    // Load data
+                    loadAccountsFromPB();
+                    loadContactsFromPB();
+                    loadSettingsFromPB();
+                } else {
+                    throw new Error('Health check failed');
+                }
+            } catch (error) {
+                console.log('Connection attempt failed:', error);
+                retryCount++;
+                
+                if (retryCount < MAX_RETRIES) {
+                    connectionStatus.textContent = `🔄 Retry ${retryCount}/${MAX_RETRIES}...`;
+                    setTimeout(testConnection, 2000);
+                } else {
+                    connectionStatus.textContent = '⚠️ Offline mode';
+                    connectionStatus.style.background = '#ef4444';
+                }
+            }
+        }
+
+        setTimeout(testConnection, 1000);
 
         // ============================================
         // PWA INSTALLATION
@@ -1524,7 +1534,7 @@
         // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
-            if (!isConnected || !pb) return;
+            if (!isConnected) return;
             
             try {
                 const records = await pb.collection('accounts').getFullList({
@@ -1552,7 +1562,7 @@
         }
 
         async function loadContactsFromPB() {
-            if (!isConnected || !pb) return;
+            if (!isConnected) return;
             
             try {
                 const records = await pb.collection('contacts').getFullList();
@@ -1569,7 +1579,7 @@
         }
 
         async function loadSettingsFromPB() {
-            if (!isConnected || !pb) return;
+            if (!isConnected) return;
             
             try {
                 const records = await pb.collection('settings').getFullList();
@@ -2129,9 +2139,6 @@
         
         trackVisitor();
         setInterval(trackVisitor, 30000);
-        
-        // Start connection test
-        setTimeout(testConnection, 1000);
     </script>
 </body>
 </html>
