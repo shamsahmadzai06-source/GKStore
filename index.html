@@ -1629,7 +1629,7 @@
         }
 
         // ============================================
-        // FIXED UPLOAD FUNCTION - NOW WITH AUTO-CANCEL DISABLED
+        // FIXED UPLOAD FUNCTION - WITH AUTO-CANCEL COMPLETELY DISABLED
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -1691,10 +1691,9 @@
                         title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
                     });
                     
-                    // Create the record in PocketBase with auto-cancel disabled
+                    // FIX: Set requestKey to null to completely disable auto-cancellation for this request
                     const record = await pb.collection('accounts').create(formData, {
-                        $autoCancel: false,
-                        requestKey: 'upload_' + Date.now() // Unique key prevents cancellation
+                        requestKey: null // This is the key fix - prevents auto-cancellation
                     });
                     
                     console.log('Upload successful:', record);
