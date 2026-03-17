@@ -2106,7 +2106,7 @@
         };
 
         // ============================================
-        // FIXED DELETE ACCOUNT FUNCTION - Deletes from server too
+        // FIXED DELETE ACCOUNT FUNCTION - Deletes from server too (SINGLE VERSION)
         // ============================================
         window.deleteAccount = async function(id) {
             if (confirm('Delete this account permanently?')) {
@@ -2130,15 +2130,12 @@
                 } catch (error) {
                     console.error('Delete error:', error);
                     
-                    // If server delete fails but we still want to remove locally
-                    appState.accounts = appState.accounts.filter(a => a.id !== id);
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    
-                    renderAccounts();
-                    renderAdminAccounts();
-                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                    
-                    alert('Account removed from local view, but server deletion failed. It may reappear on refresh.');
+                    // Show specific error
+                    let errorMsg = 'Failed to delete from server';
+                    if (error.response?.data?.message) {
+                        errorMsg += ': ' + error.response.data.message;
+                    }
+                    alert(errorMsg);
                 }
             }
         };
@@ -2288,16 +2285,6 @@
             document.getElementById('current-usdt-address').innerText = newAddress;
             closeModal('edit-usdt-modal');
             alert('USDT address updated successfully!');
-        };
-
-        window.deleteAccount = function(id) {
-            if (confirm('Delete this account permanently?')) {
-                appState.accounts = appState.accounts.filter(a => a.id !== id);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                renderAccounts();
-                renderAdminAccounts();
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-            }
         };
 
         window.saveNewContact = function() {
