@@ -1545,16 +1545,13 @@
         setTimeout(testConnection, 2000);
 
         // ============================================
-        // PWA INSTALLATION - SHOWS ON ALL DEVICES
+        // PWA INSTALLATION - RESTORED FOR ANDROID
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
 
         // Check if running in standalone mode (already installed)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        
-        // Check if iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         
         if (isStandalone) {
             installButton.style.display = 'none';
@@ -1570,17 +1567,16 @@
 
         window.installApp = function() {
             if (!deferredPrompt) {
+                // Check if iOS
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 if (isIOS) {
-                    // iOS doesn't support beforeinstallprompt, show instructions
-                    alert('📱 To install GK Store on iOS:\n\n1. Tap the Share button (square with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right corner');
+                    alert('To install on iOS: Tap Share button → "Add to Home Screen"');
                 } else {
-                    // Android/Desktop with no prompt
                     alert('To install: Tap browser menu → "Install App" or "Add to Home Screen"');
                 }
                 return;
             }
             
-            // Android/Chrome native install prompt
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
@@ -1592,7 +1588,7 @@
 
         // Fallback: show install button after 2 seconds if not installed
         setTimeout(() => {
-            if (!isStandalone) {
+            if (!isStandalone && !deferredPrompt) {
                 installButton.classList.add('visible');
             }
         }, 2000);
