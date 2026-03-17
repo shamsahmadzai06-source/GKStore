@@ -2253,7 +2253,7 @@
         };
 
         // ============================================
-        // FIXED DELETE ACCOUNT FUNCTION - NOW DELETES FROM POCKETBASE
+        // MOBILE-OPTIMIZED DELETE ACCOUNT FUNCTION
         // ============================================
         window.deleteAccount = async function(id) {
             if (!confirm('Delete this account permanently?')) return;
@@ -2270,6 +2270,9 @@
                 console.log('Connection status:', isConnected ? '✅ ONLINE' : '❌ OFFLINE');
                 console.log('Admin logged in:', appState.isAdminLoggedIn ? '✅ YES' : '❌ NO');
                 
+                // Track if server deletion was successful
+                let serverDeleted = false;
+                
                 // Try to delete from PocketBase if connected and admin is logged in
                 if (isConnected && appState.isAdminLoggedIn) {
                     try {
@@ -2279,39 +2282,41 @@
                         if (isPocketBaseId) {
                             console.log('Attempting to delete from PocketBase with ID:', id);
                             
-                            // Try to get the record first to see if it exists
-                            try {
-                                const record = await pb.collection('accounts').getOne(id);
-                                console.log('Found record in PocketBase:', record);
-                            } catch (getError) {
-                                console.log('Could not find record in PocketBase, might already be deleted:', getError);
-                                // Continue anyway
-                            }
+                            // Use fetch directly for better mobile compatibility
+                            const token = pb.authStore.token;
+                            const url = `${PB_URL}/api/collections/accounts/records/${id}`;
                             
-                            // Now try to delete
-                            const result = await pb.collection('accounts').delete(id);
-                            console.log('✅ Successfully deleted from PocketBase:', result);
-                            alert('✅ Account deleted from server!');
+                            const response = await fetch(url, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': token ? `Bearer ${token}` : '',
+                                    'Content-Type': 'application/json'
+                                },
+                                cache: 'no-cache'
+                            });
+                            
+                            if (response.ok) {
+                                console.log('✅ Successfully deleted from PocketBase');
+                                serverDeleted = true;
+                            } else {
+                                const errorData = await response.text();
+                                console.error('❌ PocketBase deletion failed:', response.status, errorData);
+                                
+                                if (response.status === 404) {
+                                    console.log('📝 Record not found in server, continuing with local deletion');
+                                } else if (response.status === 403) {
+                                    alert('⚠️ Permission denied. Please check your admin login.');
+                                } else {
+                                    alert(`⚠️ Server error (${response.status}). Account will be deleted locally only.`);
+                                }
+                            }
                         } else {
                             console.log('📱 This is a local account, skipping PocketBase deletion');
                         }
                     } catch (pbError) {
-                        console.error('❌ PocketBase deletion error:', pbError);
-                        
-                        // Handle specific error codes
-                        if (pbError.status === 403) {
-                            alert('❌ Permission denied! Please check PocketBase collection rules.');
-                            if (deleteBtn) {
-                                deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
-                                deleteBtn.disabled = false;
-                            }
-                            return;
-                        } else if (pbError.status === 404) {
-                            console.log('📝 Record not found in server, continuing with local deletion');
-                        } else {
-                            alert('⚠️ Could not delete from server: ' + (pbError.message || 'Unknown error'));
-                            // Continue with local deletion anyway
-                        }
+                        console.error('❌ PocketBase network error:', pbError);
+                        // Don't show alert for network errors, just log and continue
+                        console.log('Network error, continuing with local deletion');
                     }
                 } else {
                     console.log('📱 Not connected to server or not logged in as admin, deleting locally only');
@@ -2334,7 +2339,11 @@
                 }
                 
                 // Show success message
-                alert('✅ Account deleted successfully');
+                if (serverDeleted) {
+                    alert('✅ Account deleted from server successfully');
+                } else {
+                    alert('✅ Account deleted locally');
+                }
                 
             } catch (error) {
                 console.error('Delete error:', error);
