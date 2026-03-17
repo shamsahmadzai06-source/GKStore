@@ -308,6 +308,12 @@
             aspect-ratio: 16/9;
             object-fit: cover;
             background: #1a1a24;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .card-media:hover {
+            transform: scale(1.02);
         }
 
         .card-content {
@@ -435,7 +441,7 @@
         }
 
         .modal-overlay {
-            position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
+            position: fixed; inset:0; background:rgba(0,0,0,0.95); backdrop-filter:blur(5px);
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
         }
 
@@ -684,6 +690,62 @@
             color: var(--primary);
             font-size: 3rem;
         }
+        
+        /* Fullscreen image modal */
+        .fullscreen-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .fullscreen-modal img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+        
+        .fullscreen-modal .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10001;
+        }
+        
+        .fullscreen-modal .close-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Video upload hint */
+        .video-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: rgba(236,72,153,0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -874,6 +936,10 @@
                         <i class="fa fa-cloud-upload-alt"></i>
                     </div>
                     
+                    <div class="video-hint">
+                        <i class="fa fa-info-circle"></i> Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.
+                    </div>
+                    
                     <div class="upload-progress" id="upload-progress">
                         <div class="progress-bar" id="progress-bar" style="width:0%"></div>
                     </div>
@@ -1014,6 +1080,12 @@
         </div>
     </div>
 
+    <!-- FULLSCREEN IMAGE MODAL -->
+    <div id="fullscreen-image-modal" class="fullscreen-modal" style="display: none;" onclick="closeFullscreenImage()">
+        <span class="close-btn" onclick="closeFullscreenImage()">&times;</span>
+        <img id="fullscreen-image" src="" alt="Fullscreen">
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
@@ -1024,11 +1096,13 @@
         
         console.log('🚀 Connecting to Cloudflare Tunnel:', PB_URL);
         
-        // Create PocketBase instance with auto-cancellation disabled globally
+        // Create PocketBase instance
         const pb = new PocketBase(PB_URL);
-        pb.autoCancellation(false); // Disable auto-cancellation globally
+        
+        // CRITICAL: Globally disable auto-cancellation at the client level
+        pb.autoCancellation(false);
 
-        // Override fetch with better error handling for mobile
+        // Override fetch with better error handling for mobile and large files
         const originalSend = pb.send.bind(pb);
         pb.send = async function(path, options = {}) {
             options = {
@@ -1040,9 +1114,9 @@
                 }
             };
             
-            // Longer timeout for file uploads on mobile
+            // Much longer timeout for file uploads (5 minutes for large videos)
             const isFileUpload = options.body instanceof FormData;
-            const timeoutMs = isFileUpload ? 60000 : 10000; // 60 seconds for uploads
+            const timeoutMs = isFileUpload ? 300000 : 10000; // 5 minutes for uploads
             
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1326,7 +1400,22 @@
         }, 2000);
 
         // ============================================
-        // FIXED RENDERING FUNCTION - WITH PROPER VIDEO DISPLAY ON MOBILE
+        // FULLSCREEN IMAGE FUNCTION
+        // ============================================
+        window.openFullscreenImage = function(imageSrc) {
+            const modal = document.getElementById('fullscreen-image-modal');
+            const img = document.getElementById('fullscreen-image');
+            img.src = imageSrc;
+            modal.style.display = 'flex';
+        }
+
+        window.closeFullscreenImage = function() {
+            const modal = document.getElementById('fullscreen-image-modal');
+            modal.style.display = 'none';
+        }
+
+        // ============================================
+        // FIXED RENDERING FUNCTION - WITH FULLSCREEN IMAGE SUPPORT
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1348,31 +1437,23 @@
                 // Check if it's a video (by mediaType or file extension)
                 const isVideo = acc.mediaType === 'video' || (acc.media && acc.media.match(/\.(mp4|webm|mov|avi|mkv|3gp)$/i));
                 
-                // Generate a unique ID for the video element
-                const videoId = 'video_' + acc.id.replace(/[^a-zA-Z0-9]/g, '_');
-                
-                // For mobile browsers, we need a simplified approach
-                // Many mobile browsers have issues with video elements inside cards
                 const mediaHtml = isVideo 
-                    ? `<div style="position:relative; width:100%; height:100%; background:#000; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="this.querySelector('video').play()">
+                    ? `<div style="position:relative; width:100%; height:100%; background:#000;">
                         <video 
                             src="${acc.media}" 
-                            style="width:100%; height:100%; object-fit:contain; background:#000;"
+                            class="card-media" 
                             preload="metadata"
                             playsinline
                             webkit-playsinline
-                            x-webkit-airplay="allow"
-                            controlsList="nodownload"
-                            disablePictureInPicture="false"
                             controls
-                            poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232a2a36'/%3E%3Ctext x='50' y='55' font-size='14' text-anchor='middle' fill='%23ec4899' font-family='Arial'%3E▶%3C/text%3E%3C/svg%3E"
-                            onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, %232a2a36, %231a1a24); color:%23ec4899; font-size:2rem;\'><i class=\'fas fa-play-circle\'></i></div>';">
+                            style="width:100%; height:100%; object-fit:contain; background:#000;">
                             <source src="${acc.media}" type="video/mp4">
                             <source src="${acc.media}" type="video/webm">
                             <source src="${acc.media}" type="video/quicktime">
+                            Your browser does not support the video tag.
                         </video>
                       </div>`
-                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
+                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
                     <div class="account-card" data-id="${acc.id}">
@@ -1499,7 +1580,7 @@
             list.innerHTML = appState.accounts.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
                     ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline webkit-playsinline></video>`
-                    : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
+                    : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
                 
                 return `
                     <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
@@ -1666,7 +1747,7 @@
         }
 
         // ============================================
-        // FIXED UPLOAD FUNCTION - WITH MEDIA TYPE INCLUDED
+        // ULTIMATE FIXED UPLOAD FUNCTION - WILL NOT CANCEL
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -1689,10 +1770,10 @@
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
             
-            // Check file size
-            const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+            // Check file size - increased to 200MB for videos
+            const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
             if (file.size > maxSize) {
-                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
+                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
                 return;
             }
             
@@ -1706,15 +1787,18 @@
             
             let progress = 0;
             const interval = setInterval(() => {
-                progress += Math.random() * 10;
+                progress += Math.random() * 2; // Slow steady progress for large files
                 if (progress >= 100) progress = 100;
                 progressBar.style.width = progress + '%';
-                progressText.innerHTML = `Uploading... ${Math.round(progress)}%`;
-            }, 300);
+                progressText.innerHTML = `Uploading... ${Math.round(progress)}% (${(file.size / (1024 * 1024)).toFixed(1)}MB)`;
+            }, 500);
             
             try {
                 // Check if we're connected to the server
                 if (isConnected) {
+                    // CRITICAL FIX: Generate a completely unique request key
+                    const uniqueKey = 'upload_' + Date.now() + '_' + Math.random().toString(36).substring(2) + '_' + file.size;
+                    
                     // Create form data for server upload
                     const formData = new FormData();
                     formData.append('title', title);
@@ -1723,15 +1807,18 @@
                     formData.append('price_usd', priceUsd.toString());
                     formData.append('price_afn', priceAfn.toString());
                     formData.append('media', file);
-                    formData.append('mediaType', isVideo ? 'video' : 'image'); // FIX: Added mediaType field
+                    formData.append('mediaType', isVideo ? 'video' : 'image');
                     
                     console.log('Uploading to PocketBase...', {
-                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size, mediaType: isVideo ? 'video' : 'image'
+                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
                     });
                     
-                    // Create the record with auto-cancellation disabled
+                    // IMPORTANT: Disable auto-cancellation globally before upload (already done at top)
+                    
+                    // Use a completely unique request key and disable auto-cancellation
                     const record = await pb.collection('accounts').create(formData, {
-                        requestKey: null // This disables auto-cancellation for this specific request
+                        requestKey: uniqueKey, // Unique key prevents cancellation
+                        $autoCancel: false     // Extra insurance
                     });
                     
                     console.log('Upload successful:', record);
@@ -1878,9 +1965,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+                const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
+                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
                     uploadBtn.disabled = true;
                     preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
                     return;
@@ -1910,9 +1997,9 @@
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 
-                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+                const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '100MB' : '10MB'}`);
+                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
                     return;
                 }
                 
