@@ -1180,7 +1180,7 @@
                 save: 'Save'
             },
             ps: {
-                brand: 'جي کې پلورنځیج',
+                brand: 'جي کې پلورنځی',
                 lang: 'ژبه',
                 contact: 'اړیکه',
                 admin: 'مدیر',
@@ -1191,7 +1191,7 @@
                 all: 'ټول',
                 small: 'وړوکی PUBG',
                 medium: 'منځنی PUBG',
-                big: ' غټPUBG',
+                big: 'لوی PUBG',
                 accountsTitle: 'PUBG اکونټونه',
                 contactTitle: 'اړیکه او ملاتړ',
                 adminTitle: 'مدیر پینل',
@@ -1216,7 +1216,7 @@
                 mediaLabel: 'د اکونټ رسنیز فایل (انځور یا ویډیو) *',
                 uploadBtn: 'پورته کول',
                 manageModalTitle: 'اکونټونه مدیریت کړئ',
-                existingAccounts: '📋 شته اکونټونو (د ړنګولو لپاره کلیک وکړئ)',
+                existingAccounts: '📋 شته اکونټونه (د ړنګولو لپاره کلیک وکړئ)',
                 manageContactsTitle: 'اړیکې مدیریت کړئ',
                 addContact: '➕ نوې اړیکه اضافه کړئ',
                 whatsappNumberLabel: 'د هیواد کوډ سره WhatsApp شمېره',
@@ -1234,7 +1234,7 @@
                 confirm: 'بوک تایید کړئ',
                 buyTitle: 'د USDT سره واخلئ',
                 confirmWA: 'د WhatsApp له لارې تایید کړئ',
-                infoTitle: 'داکونټ معلومات',
+                infoTitle: 'د اکونټ معلومات',
                 selectLang: 'ژبه وټاکئ',
                 yourName: 'ستاسو نوم',
                 whatsappNumber: 'WhatsApp شمېره',
@@ -1296,7 +1296,7 @@
                 adMediaLabel: 'رسانه تبلیغ *',
                 addAdBtn: 'افزودن تبلیغ',
                 currentAds: '📋 تبلیغات فعلی',
-                bookTitle: 'بوک کردن اکونت ',
+                bookTitle: 'بوک کردن اکونت',
                 cancel: 'لغو',
                 confirm: 'تایید رزرو',
                 buyTitle: 'خرید با USDT',
@@ -2102,6 +2102,44 @@
                 progressBar.style.width = '0%';
                 progressText.innerHTML = '';
                 uploadBtn.disabled = false;
+            }
+        };
+
+        // ============================================
+        // FIXED DELETE ACCOUNT FUNCTION - Deletes from server too
+        // ============================================
+        window.deleteAccount = async function(id) {
+            if (confirm('Delete this account permanently?')) {
+                try {
+                    // If connected to server, delete from PocketBase
+                    if (isConnected) {
+                        await pb.collection('accounts').delete(id);
+                        console.log('✅ Account deleted from server:', id);
+                    }
+                    
+                    // Remove from local state regardless
+                    appState.accounts = appState.accounts.filter(a => a.id !== id);
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                    
+                    // Update UI
+                    renderAccounts();
+                    renderAdminAccounts();
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    
+                    alert('Account deleted successfully!');
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    
+                    // If server delete fails but we still want to remove locally
+                    appState.accounts = appState.accounts.filter(a => a.id !== id);
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                    
+                    renderAccounts();
+                    renderAdminAccounts();
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                    
+                    alert('Account removed from local view, but server deletion failed. It may reappear on refresh.');
+                }
             }
         };
 
