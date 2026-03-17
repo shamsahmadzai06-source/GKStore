@@ -1361,14 +1361,9 @@
         };
 
         // ============================================
-        // FALLBACK DATA (local only, no server connection)
+        // FALLBACK DATA - EMPTY ARRAYS (NO DEMO DATA)
         // ============================================
-        const fallbackAccounts = [
-            { id: 'a1', title: 'Pro Level 500', desc: '20+ rare skins, max weapons', tier: 'small', price_usd: 199.99, price_afn: 12800, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a2', title: 'Competitive Player', desc: 'Conqueror tier, mythic outfits', tier: 'medium', price_usd: 499.99, price_afn: 32000, media: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=400', mediaType: 'image' },
-            { id: 'a3', title: 'Ultimate Collector', desc: 'All limited skins, rare items', tier: 'big', price_usd: 999.99, price_afn: 64000, media: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=400', mediaType: 'image' }
-        ];
-
+        const fallbackAccounts = [];
         const fallbackContacts = [
             { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
             { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
@@ -1397,16 +1392,12 @@
         }
 
         // ============================================
-        // APP STATE
+        // APP STATE - EMPTY ACCOUNTS AND ADS
         // ============================================
         const appState = {
-            accounts: fallbackAccounts,
+            accounts: fallbackAccounts, // Empty array - no demo accounts
             contacts: fallbackContacts,
-            ads: [
-                { type: 'image', data: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=600', caption: '🔥 Level 500 rare skins' },
-                { type: 'image', data: 'https://images.pexels.com/photos/699459/pexels-photo-699459.jpeg?auto=compress&w=600', caption: '🏆 Conqueror accounts' },
-                { type: 'image', data: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&w=600', caption: '✨ Ultimate collector' }
-            ],
+            ads: [], // Empty array - no demo ads
             bookRequests: [],
             uniqueVisitors: new Set(),
             activeSessions: new Map(),
@@ -1442,7 +1433,7 @@
             }
         } catch (e) {}
 
-        // Load from localStorage
+        // Load from localStorage (but don't use fallback if empty)
         if (localStorage.getItem('gk_accounts')) {
             try {
                 const saved = JSON.parse(localStorage.getItem('gk_accounts'));
@@ -1685,9 +1676,18 @@
             const container = document.getElementById('ads-slider');
             if (!container) return;
             
+            if (appState.ads.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-secondary);">No ads available</div>';
+                return;
+            }
+            
             let slides = '';
             appState.ads.forEach((ad, idx) => {
-                slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+                if (ad.type === 'video') {
+                    slides += `<div class="slide"><video src="${ad.data}" autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover;"></video><div class="slide-caption">${ad.caption}</div></div>`;
+                } else {
+                    slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+                }
             });
             
             let dots = '';
@@ -1880,9 +1880,14 @@
                     });
                     appState.usingFallback = false;
                     renderAccounts();
+                } else {
+                    appState.accounts = [];
+                    renderAccounts();
                 }
             } catch (error) {
-                console.log('Using fallback accounts');
+                console.log('Using local accounts only');
+                appState.accounts = appState.accounts.length ? appState.accounts : [];
+                renderAccounts();
             }
         }
 
