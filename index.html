@@ -746,6 +746,18 @@
             border-radius: 8px;
             border-left: 3px solid var(--primary);
         }
+        
+        /* Retry button */
+        .retry-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -950,6 +962,9 @@
                     <button type="button" class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>
                         <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
                     </button>
+                    <button type="button" class="retry-btn" id="retry-btn" style="display:none;" onclick="uploadNewAccount()">
+                        <i class="fa fa-refresh"></i> Retry Upload
+                    </button>
                 </form>
             </div>
         </div>
@@ -1114,9 +1129,9 @@
                 }
             };
             
-            // Much longer timeout for file uploads (5 minutes for large videos)
+            // Much longer timeout for file uploads (10 minutes for large videos)
             const isFileUpload = options.body instanceof FormData;
-            const timeoutMs = isFileUpload ? 300000 : 10000; // 5 minutes for uploads
+            const timeoutMs = isFileUpload ? 600000 : 10000; // 10 minutes for uploads
             
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1195,7 +1210,8 @@
             usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
             currentLanguage: 'en',
             autoSlideInterval: null,
-            usingFallback: true
+            usingFallback: true,
+            uploadRetryCount: 0
         };
 
         // Clear any old cached data on startup
@@ -1747,7 +1763,7 @@
         }
 
         // ============================================
-        // ULTIMATE FIXED UPLOAD FUNCTION - WILL NOT CANCEL
+        // ULTIMATE FIXED UPLOAD FUNCTION - WITH HTTP/2 PROTOCOL FIX
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -1781,9 +1797,11 @@
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
             const uploadBtn = document.getElementById('upload-btn');
+            const retryBtn = document.getElementById('retry-btn');
             
             progressContainer.classList.add('active');
             uploadBtn.disabled = true;
+            if (retryBtn) retryBtn.style.display = 'none';
             
             let progress = 0;
             const interval = setInterval(() => {
@@ -1812,8 +1830,6 @@
                     console.log('Uploading to PocketBase...', {
                         title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
                     });
-                    
-                    // IMPORTANT: Disable auto-cancellation globally before upload (already done at top)
                     
                     // Use a completely unique request key and disable auto-cancellation
                     const record = await pb.collection('accounts').create(formData, {
@@ -1859,6 +1875,7 @@
                         progressBar.style.width = '0%';
                         progressText.innerHTML = '';
                         uploadBtn.disabled = false;
+                        appState.uploadRetryCount = 0;
                     }, 500);
                 } else {
                     // If not connected to server, save locally
@@ -1894,6 +1911,7 @@
                             progressBar.style.width = '0%';
                             progressText.innerHTML = '';
                             uploadBtn.disabled = false;
+                            appState.uploadRetryCount = 0;
                         }, 500);
                     };
                     reader.readAsDataURL(file);
@@ -1906,7 +1924,27 @@
                 
                 // Show specific error message
                 let errorMessage = 'Upload failed: ';
-                if (error.response && error.response.data) {
+                
+                // Check for HTTP/2 protocol error
+                if (error.message && error.message.includes('ERR_HTTP2_PROTOCOL_ERROR')) {
+                    errorMessage += 'HTTP/2 protocol error. This is usually caused by the server timing out. ';
+                    
+                    // Suggest retry
+                    appState.uploadRetryCount++;
+                    if (appState.uploadRetryCount < 3) {
+                        errorMessage += `Retrying... (Attempt ${appState.uploadRetryCount + 1}/3)`;
+                        
+                        // Show retry button
+                        if (retryBtn) retryBtn.style.display = 'block';
+                        
+                        // Auto retry after 2 seconds
+                        setTimeout(() => {
+                            uploadNewAccount();
+                        }, 2000);
+                    } else {
+                        errorMessage += 'Please try again later or use a smaller video.';
+                    }
+                } else if (error.response && error.response.data) {
                     const data = error.response.data;
                     if (data.message) {
                         errorMessage += data.message;
@@ -2029,6 +2067,9 @@
             document.getElementById('progress-bar').style.width = '0%';
             document.getElementById('progress-text').innerHTML = '';
             document.getElementById('upload-btn').disabled = true;
+            const retryBtn = document.getElementById('retry-btn');
+            if (retryBtn) retryBtn.style.display = 'none';
+            appState.uploadRetryCount = 0;
             appState.currentMediaData = null;
             openModal('add-account-modal');
         };
