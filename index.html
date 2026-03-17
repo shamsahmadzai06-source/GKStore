@@ -1425,8 +1425,58 @@
             autoSlideInterval: null,
             usingFallback: true,
             uploadRetryCount: 0,
-            sessionId: 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+            deviceId: null
         };
+
+        // Generate a truly unique device ID
+        function generateDeviceId() {
+            const navigator = window.navigator;
+            const screen = window.screen;
+            
+            // Collect many unique identifiers
+            const components = [
+                navigator.userAgent,
+                navigator.language,
+                navigator.platform,
+                screen.width,
+                screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                navigator.hardwareConcurrency || 'unknown',
+                navigator.deviceMemory || 'unknown',
+                !!navigator.maxTouchPoints,
+                !!window.indexedDB,
+                !!window.localStorage,
+                !!window.sessionStorage,
+                Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'
+            ];
+            
+            // Create a hash from all components
+            const deviceString = components.join('||');
+            let hash = 0;
+            for (let i = 0; i < deviceString.length; i++) {
+                const char = deviceString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            
+            // Add random component to ensure uniqueness
+            const randomPart = Math.random().toString(36).substring(2, 15);
+            
+            return `device_${Math.abs(hash).toString(36)}_${randomPart}`;
+        }
+
+        // Get or create device ID
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('gk_device_id');
+            if (!deviceId) {
+                deviceId = generateDeviceId();
+                localStorage.setItem('gk_device_id', deviceId);
+            }
+            return deviceId;
+        }
+
+        appState.deviceId = getDeviceId();
 
         // Clear any old cached data on startup
         try {
@@ -1555,7 +1605,7 @@
         setTimeout(testConnection, 2000);
 
         // ============================================
-        // PWA INSTALLATION - SIMPLE MESSAGE FOR IOS
+        // PWA INSTALLATION - ONE TAP FOR IOS
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
@@ -1592,10 +1642,10 @@
         window.installApp = function() {
             if (!deferredPrompt) {
                 if (isIOS) {
-                    // Simple message for iOS
-                    alert('Tap Share button → Add to Home Screen');
+                    // For iOS, show a simple instruction
+                    alert('To install:\n1. Tap Share button\n2. Tap "Add to Home Screen"');
                 } else {
-                    alert('Tap browser menu → Install');
+                    alert('To install:\nTap browser menu → "Install App"');
                 }
                 return;
             }
@@ -2696,30 +2746,17 @@
         }
 
         // ============================================
-        // FIXED TRACK VISITOR - INSTANT ONLINE COUNTER
+        // ACCURATE TRACK VISITOR - Counts each device/browser uniquely
         // ============================================
         function trackVisitor() {
-            // Generate a unique visitor ID that persists for this session
-            const getVisitorId = () => {
-                // Try to get from session storage first
-                let visitorId = sessionStorage.getItem('gk_visitor_id');
-                if (!visitorId) {
-                    // Create a new visitor ID
-                    visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    sessionStorage.setItem('gk_visitor_id', visitorId);
-                }
-                return visitorId;
-            };
-            
-            const visitorId = getVisitorId();
             const now = Date.now();
             
-            // Add to unique visitors set (total users ever)
-            appState.uniqueVisitors.add(visitorId);
+            // Add to unique visitors set (total users ever) using device ID
+            appState.uniqueVisitors.add(appState.deviceId);
             appState.visitorCount = appState.uniqueVisitors.size;
             
-            // Track online users (active in last 30 seconds for instant updates)
-            appState.activeSessions.set(visitorId, now);
+            // Track online users (active in last 30 seconds)
+            appState.activeSessions.set(appState.deviceId, now);
             
             // Clean up old sessions (older than 30 seconds)
             const thirtySecondsAgo = now - (30 * 1000);
@@ -2731,7 +2768,7 @@
             
             appState.onlineCount = appState.activeSessions.size;
             
-            // Update UI immediately
+            // Update UI
             const uniqueVisitorEl = document.getElementById('unique-visitor-count');
             if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
             
@@ -2741,7 +2778,7 @@
             const activeSessionsEl = document.getElementById('active-sessions-count');
             if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
             
-            console.log('👥 Total users:', appState.visitorCount, 'Online now:', appState.onlineCount);
+            console.log('👥 Device ID:', appState.deviceId, 'Total users:', appState.visitorCount, 'Online now:', appState.onlineCount);
         }
 
         // ============================================
@@ -2756,7 +2793,7 @@
         // Track visitor immediately
         trackVisitor();
         
-        // Track every 10 seconds for more accurate online count
+        // Track every 10 seconds for accurate online count
         setInterval(trackVisitor, 10000);
         
         // Also track on page visibility change
@@ -2765,6 +2802,9 @@
                 trackVisitor();
             }
         });
+        
+        // Track on page load/reload
+        window.addEventListener('load', trackVisitor);
     </script>
 </body>
 </html>
