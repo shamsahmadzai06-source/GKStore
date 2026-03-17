@@ -2256,81 +2256,94 @@
         // FIXED DELETE ACCOUNT FUNCTION - NOW DELETES FROM POCKETBASE
         // ============================================
         window.deleteAccount = async function(id) {
-            if (confirm('Delete this account permanently?')) {
-                // Find the delete button and show loading state
-                const deleteBtn = event?.target?.closest('button');
-                if (deleteBtn) {
-                    const originalText = deleteBtn.innerHTML;
-                    deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Deleting...';
-                    deleteBtn.disabled = true;
-                }
+            if (!confirm('Delete this account permanently?')) return;
+            
+            // Find the delete button and show loading state
+            const deleteBtn = event?.target?.closest('button');
+            if (deleteBtn) {
+                deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Deleting...';
+                deleteBtn.disabled = true;
+            }
+            
+            try {
+                console.log('🗑️ Attempting to delete account:', id);
+                console.log('Connection status:', isConnected ? '✅ ONLINE' : '❌ OFFLINE');
+                console.log('Admin logged in:', appState.isAdminLoggedIn ? '✅ YES' : '❌ NO');
                 
-                try {
-                    console.log('🗑️ Attempting to delete account:', id);
-                    
-                    // Try to delete from PocketBase first if connected
-                    if (isConnected) {
-                        try {
-                            // Check if it's a PocketBase ID (not a local ID with 'local_' prefix)
-                            const isPocketBaseId = !id.startsWith('local_') && id.length > 10;
+                // Try to delete from PocketBase if connected and admin is logged in
+                if (isConnected && appState.isAdminLoggedIn) {
+                    try {
+                        // Check if it's a PocketBase ID (not a local ID with 'local_' prefix)
+                        const isPocketBaseId = !id.startsWith('local_') && id.length > 10;
+                        
+                        if (isPocketBaseId) {
+                            console.log('Attempting to delete from PocketBase with ID:', id);
                             
-                            if (isPocketBaseId) {
-                                await pb.collection('accounts').delete(id);
-                                console.log('✅ Successfully deleted from PocketBase');
-                            } else {
-                                console.log('📱 This is a local account, skipping PocketBase deletion');
+                            // Try to get the record first to see if it exists
+                            try {
+                                const record = await pb.collection('accounts').getOne(id);
+                                console.log('Found record in PocketBase:', record);
+                            } catch (getError) {
+                                console.log('Could not find record in PocketBase, might already be deleted:', getError);
+                                // Continue anyway
                             }
-                        } catch (pbError) {
-                            console.error('❌ PocketBase deletion error:', pbError);
                             
-                            // If it's a 404, the record might already be deleted - continue
-                            if (pbError.status === 404) {
-                                console.log('📝 Record already deleted from server');
-                            } 
-                            // If it's a 403/401, permission issue
-                            else if (pbError.status === 403 || pbError.status === 401) {
-                                alert('Permission denied. Please make sure you are logged in as admin and have delete permissions in PocketBase.');
-                                if (deleteBtn) {
-                                    deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
-                                    deleteBtn.disabled = false;
-                                }
-                                return;
+                            // Now try to delete
+                            const result = await pb.collection('accounts').delete(id);
+                            console.log('✅ Successfully deleted from PocketBase:', result);
+                            alert('✅ Account deleted from server!');
+                        } else {
+                            console.log('📱 This is a local account, skipping PocketBase deletion');
+                        }
+                    } catch (pbError) {
+                        console.error('❌ PocketBase deletion error:', pbError);
+                        
+                        // Handle specific error codes
+                        if (pbError.status === 403) {
+                            alert('❌ Permission denied! Please check PocketBase collection rules.');
+                            if (deleteBtn) {
+                                deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
+                                deleteBtn.disabled = false;
                             }
-                            // For other errors, show warning but continue with local deletion
-                            else {
-                                console.warn('⚠️ Could not delete from server, but will remove locally');
-                            }
+                            return;
+                        } else if (pbError.status === 404) {
+                            console.log('📝 Record not found in server, continuing with local deletion');
+                        } else {
+                            alert('⚠️ Could not delete from server: ' + (pbError.message || 'Unknown error'));
+                            // Continue with local deletion anyway
                         }
                     }
-                    
-                    // Remove from local state (always do this)
-                    appState.accounts = appState.accounts.filter(a => a.id !== id);
-                    
-                    // Save to localStorage
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    
-                    // Update all UI
-                    renderAccounts();
-                    renderAdminAccounts();
-                    
-                    // Update admin counter
-                    const accountCountEl = document.getElementById('admin-account-count');
-                    if (accountCountEl) {
-                        accountCountEl.innerText = appState.accounts.length;
-                    }
-                    
-                    // Show success message
-                    alert('✅ Account deleted successfully');
-                    
-                } catch (error) {
-                    console.error('Delete error:', error);
-                    alert('Error deleting account: ' + error.message);
-                } finally {
-                    // Restore button
-                    if (deleteBtn) {
-                        deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
-                        deleteBtn.disabled = false;
-                    }
+                } else {
+                    console.log('📱 Not connected to server or not logged in as admin, deleting locally only');
+                }
+                
+                // Remove from local state (always do this)
+                appState.accounts = appState.accounts.filter(a => a.id !== id);
+                
+                // Save to localStorage
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                
+                // Update all UI
+                renderAccounts();
+                renderAdminAccounts();
+                
+                // Update admin counter
+                const accountCountEl = document.getElementById('admin-account-count');
+                if (accountCountEl) {
+                    accountCountEl.innerText = appState.accounts.length;
+                }
+                
+                // Show success message
+                alert('✅ Account deleted successfully');
+                
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('Error deleting account: ' + error.message);
+            } finally {
+                // Restore button
+                if (deleteBtn) {
+                    deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
+                    deleteBtn.disabled = false;
                 }
             }
         };
