@@ -1405,9 +1405,9 @@
         // APP STATE - EMPTY ACCOUNTS AND ADS
         // ============================================
         const appState = {
-            accounts: fallbackAccounts,
+            accounts: fallbackAccounts, // Empty array - no demo accounts
             contacts: fallbackContacts,
-            ads: [],
+            ads: [], // Empty array - no demo ads
             bookRequests: [],
             uniqueVisitors: new Set(),
             activeSessions: new Map(),
@@ -1425,85 +1425,15 @@
             autoSlideInterval: null,
             usingFallback: true,
             uploadRetryCount: 0,
-            deviceId: null,
-            sessionTimer: null,
-            onlineTrackingInterval: null
+            sessionId: 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
         };
-
-        // Generate a truly unique device ID
-        function generateDeviceId() {
-            const navigator = window.navigator;
-            const screen = window.screen;
-            
-            const components = [
-                navigator.userAgent,
-                navigator.language,
-                navigator.platform,
-                screen.width,
-                screen.height,
-                screen.colorDepth,
-                new Date().getTimezoneOffset(),
-                navigator.hardwareConcurrency || 'unknown',
-                navigator.deviceMemory || 'unknown',
-                !!navigator.maxTouchPoints,
-                !!window.indexedDB,
-                !!window.localStorage,
-                !!window.sessionStorage,
-                navigator.cookieEnabled,
-                Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'
-            ];
-            
-            const deviceString = components.join('||');
-            let hash = 0;
-            for (let i = 0; i < deviceString.length; i++) {
-                const char = deviceString.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 15);
-            
-            return `device_${Math.abs(hash).toString(36)}_${timestamp}_${random}`;
-        }
-
-        // Get or create device ID
-        function getDeviceId() {
-            let deviceId = localStorage.getItem('gk_device_id');
-            if (!deviceId) {
-                deviceId = generateDeviceId();
-                localStorage.setItem('gk_device_id', deviceId);
-            }
-            return deviceId;
-        }
-
-        appState.deviceId = getDeviceId();
-
-        // Check for existing admin session on load
-        (function checkExistingAdminSession() {
-            if (pb.authStore.isValid) {
-                appState.isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                
-                // Load data
-                if (isConnected) {
-                    loadAccountsFromPB();
-                    loadContactsFromPB();
-                    loadSettingsFromPB();
-                }
-                
-                // Update counters
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-            }
-        })();
 
         // Clear any old cached data on startup
         try {
+            // Check if we have accounts with old URLs and clear them
             if (localStorage.getItem('gk_accounts')) {
                 const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                // If any account has the old URL in media, clear localStorage
                 if (saved.some(acc => acc.media && acc.media.includes('days-substitute-metadata-ireland'))) {
                     console.log('Found old URLs, clearing localStorage');
                     localStorage.removeItem('gk_accounts');
@@ -1514,7 +1444,7 @@
             }
         } catch (e) {}
 
-        // Load from localStorage
+        // Load from localStorage (but don't use fallback if empty)
         if (localStorage.getItem('gk_accounts')) {
             try {
                 const saved = JSON.parse(localStorage.getItem('gk_accounts'));
@@ -1557,6 +1487,7 @@
                 if (t[key]) el.textContent = t[key];
             });
             
+            // Update install button text based on platform
             updateInstallButtonText();
             
             document.documentElement.lang = lang;
@@ -1578,7 +1509,7 @@
         }
 
         // ============================================
-        // CONNECTION TEST
+        // CONNECTION TEST - SIMPLIFIED (Messenger style dot)
         // ============================================
         let isConnected = false;
         const connectionStatus = document.getElementById('connection-status');
@@ -1586,8 +1517,9 @@
         async function testConnection() {
             try {
                 console.log('🔌 Testing connection to Cloudflare Tunnel...');
-                connectionStatus.className = 'connection-status';
+                connectionStatus.className = 'connection-status'; // orange by default
                 
+                // Test the health endpoint
                 const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
@@ -1599,9 +1531,10 @@
                 if (response.ok) {
                     const data = await response.json();
                     isConnected = true;
-                    connectionStatus.className = 'connection-status connected';
+                    connectionStatus.className = 'connection-status connected'; // green dot
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
+                    // Load data from server
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
@@ -1610,22 +1543,28 @@
                 }
             } catch (error) {
                 console.log('⚠️ Cloudflare tunnel not reachable, using local data');
-                connectionStatus.className = 'connection-status offline';
+                connectionStatus.className = 'connection-status offline'; // red dot
                 isConnected = false;
+                
+                // Still render with local data
                 renderAccounts();
             }
         }
 
+        // Test connection after a short delay
         setTimeout(testConnection, 2000);
 
         // ============================================
-        // PWA INSTALLATION
+        // PWA INSTALLATION - SIMPLE MESSAGE FOR IOS
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
         const installButtonText = document.getElementById('install-button-text');
 
+        // Check if running in standalone mode (already installed)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        
+        // Check if iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         
         function updateInstallButtonText() {
@@ -1653,13 +1592,15 @@
         window.installApp = function() {
             if (!deferredPrompt) {
                 if (isIOS) {
-                    alert('On iOS, tap Share button → Add to Home Screen');
+                    // Simple message for iOS
+                    alert('Tap Share button → Add to Home Screen');
                 } else {
-                    alert('Tap browser menu → Install App');
+                    alert('Tap browser menu → Install');
                 }
                 return;
             }
             
+            // Android/Chrome native install prompt
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
@@ -1669,6 +1610,7 @@
             });
         };
 
+        // Fallback: show install button after 2 seconds if not installed
         setTimeout(() => {
             if (!isStandalone) {
                 installButton.classList.add('visible');
@@ -1692,7 +1634,7 @@
         }
 
         // ============================================
-        // RENDERING FUNCTIONS
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1834,6 +1776,7 @@
             }
         };
 
+        // Admin rendering functions (keep all your existing admin rendering functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -2019,7 +1962,7 @@
         }
 
         // ============================================
-        // UPLOAD FUNCTION
+        // ULTIMATE FIXED UPLOAD FUNCTION - WITH HTTP/2 PROTOCOL FIX
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -2355,11 +2298,12 @@
         };
 
         // ============================================
-        // DELETE ACCOUNT FUNCTION
+        // MOBILE-OPTIMIZED DELETE ACCOUNT FUNCTION
         // ============================================
         window.deleteAccount = async function(id) {
             if (!confirm('Delete this account permanently?')) return;
             
+            // Find the delete button and show loading state
             const deleteBtn = event?.target?.closest('button');
             if (deleteBtn) {
                 deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Deleting...';
@@ -2368,16 +2312,22 @@
             
             try {
                 console.log('🗑️ Attempting to delete account:', id);
+                console.log('Connection status:', isConnected ? '✅ ONLINE' : '❌ OFFLINE');
+                console.log('Admin logged in:', appState.isAdminLoggedIn ? '✅ YES' : '❌ NO');
                 
+                // Track if server deletion was successful
                 let serverDeleted = false;
                 
+                // Try to delete from PocketBase if connected and admin is logged in
                 if (isConnected && appState.isAdminLoggedIn) {
                     try {
+                        // Check if it's a PocketBase ID (not a local ID with 'local_' prefix)
                         const isPocketBaseId = !id.startsWith('local_') && id.length > 10;
                         
                         if (isPocketBaseId) {
                             console.log('Attempting to delete from PocketBase with ID:', id);
                             
+                            // Use fetch directly for better mobile compatibility
                             const token = pb.authStore.token;
                             const url = `${PB_URL}/api/collections/accounts/records/${id}`;
                             
@@ -2394,31 +2344,58 @@
                                 console.log('✅ Successfully deleted from PocketBase');
                                 serverDeleted = true;
                             } else {
-                                console.log('Server error, continuing with local deletion');
+                                const errorData = await response.text();
+                                console.error('❌ PocketBase deletion failed:', response.status, errorData);
+                                
+                                if (response.status === 404) {
+                                    console.log('📝 Record not found in server, continuing with local deletion');
+                                } else if (response.status === 403) {
+                                    alert('⚠️ Permission denied. Please check your admin login.');
+                                } else {
+                                    // Don't alert for other errors, just continue with local deletion
+                                    console.log('Server error, continuing with local deletion');
+                                }
                             }
+                        } else {
+                            console.log('📱 This is a local account, skipping PocketBase deletion');
                         }
                     } catch (pbError) {
+                        console.error('❌ PocketBase network error:', pbError);
+                        // Don't show alert for network errors, just log and continue
                         console.log('Network error, continuing with local deletion');
                     }
+                } else {
+                    console.log('📱 Not connected to server or not logged in as admin, deleting locally only');
                 }
                 
+                // Remove from local state (always do this)
                 appState.accounts = appState.accounts.filter(a => a.id !== id);
+                
+                // Save to localStorage
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 
+                // Update all UI
                 renderAccounts();
                 renderAdminAccounts();
                 
+                // Update admin counter
                 const accountCountEl = document.getElementById('admin-account-count');
                 if (accountCountEl) {
                     accountCountEl.innerText = appState.accounts.length;
                 }
                 
-                alert('✅ Account deleted successfully');
+                // Show success message
+                if (serverDeleted) {
+                    alert('✅ Account deleted from server successfully');
+                } else {
+                    alert('✅ Account deleted locally');
+                }
                 
             } catch (error) {
                 console.error('Delete error:', error);
                 alert('Error deleting account: ' + error.message);
             } finally {
+                // Restore button
                 if (deleteBtn) {
                     deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
                     deleteBtn.disabled = false;
@@ -2719,15 +2696,32 @@
         }
 
         // ============================================
-        // ACCURATE ONLINE TRACKING
+        // FIXED TRACK VISITOR - INSTANT ONLINE COUNTER
         // ============================================
-        function updateOnlineStatus() {
+        function trackVisitor() {
+            // Generate a unique visitor ID that persists for this session
+            const getVisitorId = () => {
+                // Try to get from session storage first
+                let visitorId = sessionStorage.getItem('gk_visitor_id');
+                if (!visitorId) {
+                    // Create a new visitor ID
+                    visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    sessionStorage.setItem('gk_visitor_id', visitorId);
+                }
+                return visitorId;
+            };
+            
+            const visitorId = getVisitorId();
             const now = Date.now();
             
-            // Add current device to active sessions
-            appState.activeSessions.set(appState.deviceId, now);
+            // Add to unique visitors set (total users ever)
+            appState.uniqueVisitors.add(visitorId);
+            appState.visitorCount = appState.uniqueVisitors.size;
             
-            // Remove sessions older than 30 seconds
+            // Track online users (active in last 30 seconds for instant updates)
+            appState.activeSessions.set(visitorId, now);
+            
+            // Clean up old sessions (older than 30 seconds)
             const thirtySecondsAgo = now - (30 * 1000);
             for (let [id, timestamp] of appState.activeSessions.entries()) {
                 if (timestamp < thirtySecondsAgo) {
@@ -2735,29 +2729,19 @@
                 }
             }
             
-            // Update online count
             appState.onlineCount = appState.activeSessions.size;
             
-            // Update UI
+            // Update UI immediately
+            const uniqueVisitorEl = document.getElementById('unique-visitor-count');
+            if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
+            
             const onlineUserEl = document.getElementById('online-user-count');
             if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
             
             const activeSessionsEl = document.getElementById('active-sessions-count');
             if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
             
-            console.log('🟢 Online users:', appState.onlineCount, 'Active sessions:', appState.activeSessions.size);
-        }
-
-        // Start online tracking
-        function startOnlineTracking() {
-            // Update immediately
-            updateOnlineStatus();
-            
-            // Update every 5 seconds
-            if (appState.onlineTrackingInterval) {
-                clearInterval(appState.onlineTrackingInterval);
-            }
-            appState.onlineTrackingInterval = setInterval(updateOnlineStatus, 5000);
+            console.log('👥 Total users:', appState.visitorCount, 'Online now:', appState.onlineCount);
         }
 
         // ============================================
@@ -2769,26 +2753,18 @@
         renderContacts();
         renderAccounts();
         
-        // Start online tracking
-        startOnlineTracking();
+        // Track visitor immediately
+        trackVisitor();
         
-        // Update on visibility change
+        // Track every 10 seconds for more accurate online count
+        setInterval(trackVisitor, 10000);
+        
+        // Also track on page visibility change
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
-                updateOnlineStatus();
+                trackVisitor();
             }
         });
-        
-        // Update on user interaction
-        ['click', 'touchstart', 'mousemove', 'keydown'].forEach(eventType => {
-            document.addEventListener(eventType, () => {
-                updateOnlineStatus();
-            }, { passive: true });
-        });
-        
-        // Update on page load
-        window.addEventListener('load', updateOnlineStatus);
-        window.addEventListener('pageshow', updateOnlineStatus);
     </script>
 </body>
 </html>
