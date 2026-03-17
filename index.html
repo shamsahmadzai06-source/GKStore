@@ -641,18 +641,35 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Connection status */
+        /* Connection status - Messenger style */
         .connection-status {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            background: var(--surface-light);
-            color: var(--text);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            border: 1px solid var(--border);
+            top: 12px;
+            right: 12px;
             z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.connecting {
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+        
+        .status-dot.offline {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
         
         /* Mobile-specific fixes */
@@ -758,11 +775,36 @@
             cursor: pointer;
             margin-top: 0.5rem;
         }
+        
+        /* Language selector */
+        .language-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        .lang-option {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .lang-option.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- Connection Status -->
-    <div id="connection-status" class="connection-status">📡 Connecting...</div>
+    <!-- Connection Status - Messenger Style (just a dot) -->
+    <div id="connection-status" class="connection-status">
+        <div id="status-dot" class="status-dot"></div>
+    </div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
@@ -949,7 +991,7 @@
                     </div>
                     
                     <div class="video-hint">
-                        <i class="fa fa-info-circle"></i> Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.
+                        <i class="fa fa-info-circle"></i> <span data-i18n="videoHint">Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.</span>
                     </div>
                     
                     <div class="upload-progress" id="upload-progress">
@@ -963,7 +1005,7 @@
                         <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
                     </button>
                     <button type="button" class="retry-btn" id="retry-btn" style="display:none;" onclick="uploadNewAccount()">
-                        <i class="fa fa-refresh"></i> Retry Upload
+                        <i class="fa fa-refresh"></i> <span data-i18n="retryBtn">Retry Upload</span>
                     </button>
                 </form>
             </div>
@@ -1088,9 +1130,11 @@
                 <button class="modal-close" onclick="closeModal('language-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('en')">🇺🇸 English</button>
-                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
-                <button class="btn" style="width:100%;" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
+                <div class="language-selector" style="flex-direction: column; gap: 0.5rem;">
+                    <button class="btn lang-option" data-lang="en" onclick="setLanguage('en')">🇺🇸 English</button>
+                    <button class="btn lang-option" data-lang="ps" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
+                    <button class="btn lang-option" data-lang="fa" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1103,6 +1147,231 @@
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
+        // ============================================
+        // COMPLETE TRANSLATIONS - English, Pashto, Dari
+        // ============================================
+        const translations = {
+            en: {
+                brand: 'GK Store',
+                lang: 'Lang',
+                contact: 'Contact',
+                admin: 'Admin',
+                mainTitle: 'PUBG Marketplace',
+                mainSubtitle: 'Secure · Instant delivery',
+                cta: 'Click to see PUBG account',
+                sliderHint: '— swipe ads (auto change 2s) —',
+                all: 'All',
+                small: 'Small PUBG',
+                medium: 'Medium PUBG',
+                big: 'Big PUBG',
+                accountsTitle: 'PUBG Accounts',
+                contactTitle: 'Contact & Support',
+                adminTitle: 'Admin Panel',
+                loginTitle: 'Admin Login',
+                loginBtn: 'Login',
+                totalUsers: 'TOTAL USERS',
+                onlineUsers: 'ONLINE NOW',
+                accountsStat: 'accounts',
+                bookingsStat: 'book requests',
+                activeSessions: 'active sessions',
+                bookRequestsTitle: '📋 Book Requests',
+                addAccountBtn: 'Add New Account',
+                manageAccountsBtn: 'Manage Accounts (Delete)',
+                manageContactsBtn: 'Manage Contacts',
+                manageAdsBtn: 'Manage Swipe Ads',
+                logoutBtn: 'Logout',
+                addModalTitle: 'Add New Account',
+                selectTier: '-- Select Tier --',
+                smallTier: 'Small PUBG ($10-$500)',
+                mediumTier: 'Medium PUBG ($500-$1000)',
+                bigTier: 'Big PUBG ($1000-$100000)',
+                mediaLabel: 'Account Media (Image or Video) *',
+                uploadBtn: 'UPLOAD',
+                manageModalTitle: 'Manage Accounts',
+                existingAccounts: '📋 Existing Accounts (click delete to remove)',
+                manageContactsTitle: 'Manage Contacts',
+                addContact: '➕ Add New Contact',
+                whatsappNumberLabel: 'WhatsApp Number with Country Code',
+                saveContactBtn: 'Save Contact',
+                existingContacts: '📋 Existing Contacts',
+                manageAdsTitle: 'Manage Swipe Ads',
+                addAd: '➕ Add New Ad (Image/Video)',
+                imageOption: 'Image',
+                videoOption: 'Video',
+                adMediaLabel: 'Ad Media *',
+                addAdBtn: 'Add Ad',
+                currentAds: '📋 Current Ads',
+                bookTitle: 'Book account',
+                cancel: 'Cancel',
+                confirm: 'Confirm booking',
+                buyTitle: 'Buy with USDT',
+                confirmWA: 'Confirm via WhatsApp',
+                infoTitle: 'Account details',
+                selectLang: 'Select language',
+                yourName: 'Your name',
+                whatsappNumber: 'WhatsApp number',
+                chatNow: 'Chat Now',
+                delete: 'Delete',
+                edit: 'Edit',
+                editUsdtTitle: 'Edit USDT Address',
+                newUsdtAddress: 'New USDT Address',
+                usdtWarning: 'Make sure it\'s a valid TRC20 address',
+                save: 'Save',
+                videoHint: 'Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.',
+                retryBtn: 'Retry Upload',
+                uploading: 'Uploading...',
+                complete: 'Upload complete!',
+                success: '✅ Account uploaded successfully to server!',
+                offline: '📱 Account saved locally (offline mode)'
+            },
+            ps: {
+                brand: 'جي کې پلورنځی',
+                lang: 'ژبه',
+                contact: 'اړیکه',
+                admin: 'مدیر',
+                mainTitle: 'PUBG بازار',
+                mainSubtitle: 'خوندي · سمدستي سپارل',
+                cta: 'د PUBG حساب لیدو لپاره کلیک وکړئ',
+                sliderHint: '— اعلاناتو ته سوپ ورکړئ (په هر ۲ ثانیو کې بدلون) —',
+                all: 'ټول',
+                small: 'وړوکی PUBG',
+                medium: 'منځنی PUBG',
+                big: 'لوی PUBG',
+                accountsTitle: 'PUBG حسابونه',
+                contactTitle: 'اړیکه او ملاتړ',
+                adminTitle: 'مدیر پینل',
+                loginTitle: 'مدیر ننوتل',
+                loginBtn: 'ننوتل',
+                totalUsers: 'ټول کارونکي',
+                onlineUsers: 'آنلاین اوس',
+                accountsStat: 'حسابونه',
+                bookingsStat: 'بک غوښتنې',
+                activeSessions: 'فعال ناستې',
+                bookRequestsTitle: '📋 د بک غوښتنې',
+                addAccountBtn: 'نوی حساب اضافه کړئ',
+                manageAccountsBtn: 'حسابونه مدیریت کړئ (ړنګول)',
+                manageContactsBtn: 'اړیکې مدیریت کړئ',
+                manageAdsBtn: 'اعلانونه مدیریت کړئ',
+                logoutBtn: 'وتل',
+                addModalTitle: 'نوی حساب اضافه کړئ',
+                selectTier: '-- کچه وټاکئ --',
+                smallTier: 'وړوکی PUBG ($10-$500)',
+                mediumTier: 'منځنی PUBG ($500-$1000)',
+                bigTier: 'لوی PUBG ($1000-$100000)',
+                mediaLabel: 'د حساب رسنیز فایل (انځور یا ویډیو) *',
+                uploadBtn: 'پورته کول',
+                manageModalTitle: 'حسابونه مدیریت کړئ',
+                existingAccounts: '📋 شته حسابونه (د ړنګولو لپاره کلیک وکړئ)',
+                manageContactsTitle: 'اړیکې مدیریت کړئ',
+                addContact: '➕ نوې اړیکه اضافه کړئ',
+                whatsappNumberLabel: 'د هیواد کوډ سره WhatsApp شمېره',
+                saveContactBtn: 'اړیکه خوندي کړئ',
+                existingContacts: '📋 شته اړیکې',
+                manageAdsTitle: 'اعلانونه مدیریت کړئ',
+                addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)',
+                imageOption: 'انځور',
+                videoOption: 'ویډیو',
+                adMediaLabel: 'د اعلان رسنیز فایل *',
+                addAdBtn: 'اعلان اضافه کړئ',
+                currentAds: '📋 اوسني اعلانونه',
+                bookTitle: 'حساب بک کړئ',
+                cancel: 'لغوه',
+                confirm: 'بک تایید کړئ',
+                buyTitle: 'د USDT سره واخلئ',
+                confirmWA: 'د WhatsApp له لارې تایید کړئ',
+                infoTitle: 'د حساب تفصیلات',
+                selectLang: 'ژبه وټاکئ',
+                yourName: 'ستاسو نوم',
+                whatsappNumber: 'WhatsApp شمېره',
+                chatNow: 'اوس خبرې وکړئ',
+                delete: 'ړنګول',
+                edit: 'سمول',
+                editUsdtTitle: 'USDT پته سمول',
+                newUsdtAddress: 'نوې USDT پته',
+                usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
+                save: 'خوندي کړئ',
+                videoHint: 'د ویډیو اعظمي اندازه: ۲۰۰MB (MP4، WebM، MOV). لوی ویډیوګانې څو دقیقې وخت نیسي.',
+                retryBtn: 'بیا هڅه وکړئ',
+                uploading: 'پورته کېږي...',
+                complete: 'پورته کېدل بشپړ شول!',
+                success: '✅ حساب په بریالیتوب سره سرور ته پورته شو!',
+                offline: '📱 حساب په محلي ډول خوندي شو (آفلاین حالت)'
+            },
+            fa: {
+                brand: 'جی کی فروشگاه',
+                lang: 'زبان',
+                contact: 'تماس',
+                admin: 'مدیر',
+                mainTitle: 'بازار PUBG',
+                mainSubtitle: 'ایمن · تحویل فوری',
+                cta: 'برای دیدن حساب PUBG کلیک کنید',
+                sliderHint: '— تبلیغات را بکشید (تغییر هر ۲ ثانیه) —',
+                all: 'همه',
+                small: 'کوچک PUBG',
+                medium: 'متوسط PUBG',
+                big: 'بزرگ PUBG',
+                accountsTitle: 'حساب‌های PUBG',
+                contactTitle: 'تماس و پشتیبانی',
+                adminTitle: 'پنل مدیریت',
+                loginTitle: 'ورود مدیر',
+                loginBtn: 'ورود',
+                totalUsers: 'کل کاربران',
+                onlineUsers: 'آنلاین الآن',
+                accountsStat: 'حساب‌ها',
+                bookingsStat: 'درخواست‌های رزرو',
+                activeSessions: 'جلسات فعال',
+                bookRequestsTitle: '📋 درخواست‌های رزرو',
+                addAccountBtn: 'افزودن حساب جدید',
+                manageAccountsBtn: 'مدیریت حساب‌ها (حذف)',
+                manageContactsBtn: 'مدیریت مخاطبان',
+                manageAdsBtn: 'مدیریت تبلیغات',
+                logoutBtn: 'خروج',
+                addModalTitle: 'افزودن حساب جدید',
+                selectTier: '-- سطح را انتخاب کنید --',
+                smallTier: 'کوچک PUBG ($10-$500)',
+                mediumTier: 'متوسط PUBG ($500-$1000)',
+                bigTier: 'بزرگ PUBG ($1000-$100000)',
+                mediaLabel: 'رسانه حساب (تصویر یا ویدیو) *',
+                uploadBtn: 'آپلود',
+                manageModalTitle: 'مدیریت حساب‌ها',
+                existingAccounts: '📋 حساب‌های موجود (برای حذف کلیک کنید)',
+                manageContactsTitle: 'مدیریت مخاطبان',
+                addContact: '➕ افزودن مخاطب جدید',
+                whatsappNumberLabel: 'شماره WhatsApp با کد کشور',
+                saveContactBtn: 'ذخیره مخاطب',
+                existingContacts: '📋 مخاطبان موجود',
+                manageAdsTitle: 'مدیریت تبلیغات',
+                addAd: '➕ افزودن تبلیغ جدید (تصویر/ویدیو)',
+                imageOption: 'تصویر',
+                videoOption: 'ویدیو',
+                adMediaLabel: 'رسانه تبلیغ *',
+                addAdBtn: 'افزودن تبلیغ',
+                currentAds: '📋 تبلیغات فعلی',
+                bookTitle: 'رزرو حساب',
+                cancel: 'لغو',
+                confirm: 'تایید رزرو',
+                buyTitle: 'خرید با USDT',
+                confirmWA: 'تایید از طریق WhatsApp',
+                infoTitle: 'جزئیات حساب',
+                selectLang: 'انتخاب زبان',
+                yourName: 'نام شما',
+                whatsappNumber: 'شماره WhatsApp',
+                chatNow: 'اکنون گفتگو',
+                delete: 'حذف',
+                edit: 'ویرایش',
+                editUsdtTitle: 'ویرایش آدرس USDT',
+                newUsdtAddress: 'آدرس جدید USDT',
+                usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
+                save: 'ذخیره',
+                videoHint: 'حداکثر اندازه ویدیو: ۲۰۰MB (MP4، WebM، MOV). ویدیوهای بزرگ چند دقیقه زمان می‌برند.',
+                retryBtn: 'تلاش مجدد',
+                uploading: 'در حال آپلود...',
+                complete: 'آپلود کامل شد!',
+                success: '✅ حساب با موفقیت به سرور آپلود شد!',
+                offline: '📱 حساب به صورت محلی ذخیره شد (حالت آفلاین)'
+            }
+        };
+
         // ============================================
         // CLOUDFLARE TUNNEL CONFIGURATION - WORKING URL
         // ============================================
@@ -1264,44 +1533,6 @@
         }
 
         // ============================================
-        // TRANSLATIONS
-        // ============================================
-        const translations = {
-            en: {
-                brand: 'GK Store', lang: 'Lang', contact: 'Contact', admin: 'Admin',
-                mainTitle: 'PUBG Marketplace', mainSubtitle: 'Secure · Instant delivery',
-                cta: 'Click to see PUBG account', sliderHint: '— swipe ads (auto change 2s) —',
-                all: 'All', small: 'Small PUBG', medium: 'Medium PUBG', big: 'Big PUBG',
-                accountsTitle: 'PUBG Accounts', contactTitle: 'Contact & Support',
-                adminTitle: 'Admin Panel', loginTitle: 'Admin Login', loginBtn: 'Login',
-                totalUsers: 'TOTAL USERS', onlineUsers: 'ONLINE NOW', onlineInfo: 'Last 5 minutes',
-                visitorInfo: 'Unique IPs', accountsStat: 'accounts', bookingsStat: 'book requests',
-                activeSessions: 'active sessions', bookRequestsTitle: '📋 Book Requests',
-                addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
-                manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads',
-                logoutBtn: 'Logout', addModalTitle: 'Add New Account', selectTier: '-- Select Tier --',
-                smallTier: 'Small PUBG ($10-$500)', mediumTier: 'Medium PUBG ($500-$1000)',
-                bigTier: 'Big PUBG ($1000-$100000)', mediaLabel: 'Account Media (Image or Video) *',
-                uploadBtn: 'UPLOAD', manageModalTitle: 'Manage Accounts',
-                existingAccounts: '📋 Existing Accounts (click delete to remove)',
-                manageContactsTitle: 'Manage Contacts', addContact: '➕ Add New Contact',
-                whatsappNumberLabel: 'WhatsApp Number with Country Code', saveContactBtn: 'Save Contact',
-                existingContacts: '📋 Existing Contacts', manageAdsTitle: 'Manage Swipe Ads',
-                addAd: '➕ Add New Ad (Image/Video)', imageOption: 'Image', videoOption: 'Video',
-                adMediaLabel: 'Ad Media *', addAdBtn: 'Add Ad', currentAds: '📋 Current Ads',
-                bookTitle: 'Book account', cancel: 'Cancel', confirm: 'Confirm booking',
-                buyTitle: 'Buy with USDT', confirmWA: 'Confirm via WhatsApp',
-                infoTitle: 'Account details', selectLang: 'Select language',
-                yourName: 'Your name', whatsappNumber: 'WhatsApp number', chatNow: 'Chat Now',
-                delete: 'Delete', cancelRequest: 'Cancel', contactViaWA: 'Contact', edit: 'Edit',
-                editUsdtTitle: 'Edit USDT Address', newUsdtAddress: 'New USDT Address',
-                usdtWarning: 'Make sure it\'s a valid TRC20 address', save: 'Save'
-            },
-            ps: { /* keep your ps translations */ },
-            fa: { /* keep your fa translations */ }
-        };
-
-        // ============================================
         // CORE FUNCTIONS
         // ============================================
         function applyTranslation(lang) {
@@ -1310,6 +1541,15 @@
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
+            
+            // Update language selector active state
+            document.querySelectorAll('.lang-option').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-lang') === lang) {
+                    btn.classList.add('active');
+                }
+            });
+            
             document.documentElement.lang = lang;
             document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
             appState.currentLanguage = lang;
@@ -1325,19 +1565,26 @@
         }
 
         function openLanguageModal() {
+            // Update active language in modal
+            document.querySelectorAll('.lang-option').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-lang') === appState.currentLanguage) {
+                    btn.classList.add('active');
+                }
+            });
             document.getElementById('language-modal').classList.remove('hidden');
         }
 
         // ============================================
-        // CONNECTION TEST - SIMPLIFIED
+        // CONNECTION TEST - SIMPLIFIED (Messenger style dot)
         // ============================================
         let isConnected = false;
-        let connectionStatus = document.getElementById('connection-status');
+        const statusDot = document.getElementById('status-dot');
 
         async function testConnection() {
             try {
                 console.log('🔌 Testing connection to Cloudflare Tunnel...');
-                connectionStatus.textContent = '📡 Connecting via Cloudflare...';
+                statusDot.className = 'status-dot connecting';
                 
                 // Test the health endpoint
                 const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
@@ -1351,8 +1598,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     isConnected = true;
-                    connectionStatus.textContent = '✅ Connected via Cloudflare';
-                    connectionStatus.style.background = '#10b981';
+                    statusDot.className = 'status-dot'; // Just the dot (green by default)
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
                     // Load data from server
@@ -1364,8 +1610,7 @@
                 }
             } catch (error) {
                 console.log('⚠️ Cloudflare tunnel not reachable, using local data');
-                connectionStatus.textContent = '⚠️ Offline mode (local data)';
-                connectionStatus.style.background = '#ef4444';
+                statusDot.className = 'status-dot offline';
                 isConnected = false;
                 
                 // Still render with local data
