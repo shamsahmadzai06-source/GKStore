@@ -1425,15 +1425,16 @@
             autoSlideInterval: null,
             usingFallback: true,
             uploadRetryCount: 0,
-            deviceId: null
+            deviceId: null,
+            sessionTimer: null
         };
 
-        // Generate a truly unique device ID
+        // Generate a truly unique device ID using multiple factors
         function generateDeviceId() {
             const navigator = window.navigator;
             const screen = window.screen;
             
-            // Collect many unique identifiers
+            // Collect as many unique identifiers as possible
             const components = [
                 navigator.userAgent,
                 navigator.language,
@@ -1448,6 +1449,7 @@
                 !!window.indexedDB,
                 !!window.localStorage,
                 !!window.sessionStorage,
+                navigator.cookieEnabled,
                 Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'
             ];
             
@@ -1457,13 +1459,14 @@
             for (let i = 0; i < deviceString.length; i++) {
                 const char = deviceString.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32-bit integer
+                hash = hash & hash;
             }
             
-            // Add random component to ensure uniqueness
-            const randomPart = Math.random().toString(36).substring(2, 15);
+            // Add timestamp and random to ensure uniqueness
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 15);
             
-            return `device_${Math.abs(hash).toString(36)}_${randomPart}`;
+            return `device_${Math.abs(hash).toString(36)}_${timestamp}_${random}`;
         }
 
         // Get or create device ID
@@ -1605,7 +1608,7 @@
         setTimeout(testConnection, 2000);
 
         // ============================================
-        // PWA INSTALLATION - ONE TAP FOR IOS
+        // PWA INSTALLATION - HONEST IOS MESSAGE
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
@@ -1642,10 +1645,10 @@
         window.installApp = function() {
             if (!deferredPrompt) {
                 if (isIOS) {
-                    // For iOS, show a simple instruction
-                    alert('To install:\n1. Tap Share button\n2. Tap "Add to Home Screen"');
+                    // Honest message about iOS limitation
+                    alert('On iOS, you need to:\n1. Tap the Share button (square with arrow)\n2. Scroll down and tap "Add to Home Screen"\n\nThis is required by Apple - no website can do it automatically.');
                 } else {
-                    alert('To install:\nTap browser menu → "Install App"');
+                    alert('To install:\n1. Tap browser menu (three dots)\n2. Tap "Install App" or "Add to Home Screen"');
                 }
                 return;
             }
@@ -2746,19 +2749,19 @@
         }
 
         // ============================================
-        // ACCURATE TRACK VISITOR - Counts each device/browser uniquely
+        // ULTRA ACCURATE TRACK VISITOR - Uses multiple methods
         // ============================================
         function trackVisitor() {
             const now = Date.now();
             
-            // Add to unique visitors set (total users ever) using device ID
+            // Use device ID for unique identification
             appState.uniqueVisitors.add(appState.deviceId);
             appState.visitorCount = appState.uniqueVisitors.size;
             
-            // Track online users (active in last 30 seconds)
+            // Track this session as active
             appState.activeSessions.set(appState.deviceId, now);
             
-            // Clean up old sessions (older than 30 seconds)
+            // Remove sessions older than 30 seconds
             const thirtySecondsAgo = now - (30 * 1000);
             for (let [id, timestamp] of appState.activeSessions.entries()) {
                 if (timestamp < thirtySecondsAgo) {
@@ -2778,7 +2781,9 @@
             const activeSessionsEl = document.getElementById('active-sessions-count');
             if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
             
-            console.log('👥 Device ID:', appState.deviceId, 'Total users:', appState.visitorCount, 'Online now:', appState.onlineCount);
+            console.log('👤 Device ID:', appState.deviceId.substring(0, 20) + '...');
+            console.log('📊 Total unique users:', appState.visitorCount);
+            console.log('🟢 Online now:', appState.onlineCount);
         }
 
         // ============================================
@@ -2790,13 +2795,13 @@
         renderContacts();
         renderAccounts();
         
-        // Track visitor immediately
+        // Track visitor immediately and very frequently
         trackVisitor();
         
-        // Track every 10 seconds for accurate online count
-        setInterval(trackVisitor, 10000);
+        // Track every 5 seconds for super accurate online count
+        setInterval(trackVisitor, 5000);
         
-        // Also track on page visibility change
+        // Track on visibility change
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 trackVisitor();
@@ -2805,6 +2810,33 @@
         
         // Track on page load/reload
         window.addEventListener('load', trackVisitor);
+        window.addEventListener('pageshow', trackVisitor);
+        
+        // Track on user interaction (proves they're active)
+        ['click', 'touchstart', 'mousemove', 'keydown'].forEach(eventType => {
+            document.addEventListener(eventType, () => {
+                // Update their session immediately on interaction
+                const now = Date.now();
+                appState.activeSessions.set(appState.deviceId, now);
+                
+                // Clean up old sessions
+                const thirtySecondsAgo = now - (30 * 1000);
+                for (let [id, timestamp] of appState.activeSessions.entries()) {
+                    if (timestamp < thirtySecondsAgo) {
+                        appState.activeSessions.delete(id);
+                    }
+                }
+                
+                appState.onlineCount = appState.activeSessions.size;
+                
+                // Update UI
+                const onlineUserEl = document.getElementById('online-user-count');
+                if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
+                
+                const activeSessionsEl = document.getElementById('active-sessions-count');
+                if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
+            }, { passive: true });
+        });
     </script>
 </body>
 </html>
