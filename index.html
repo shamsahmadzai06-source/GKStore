@@ -775,7 +775,7 @@
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()">
-        <i class="fas fa-download"></i> <span id="install-button-text">Install GK Store</span>
+        <i class="fas fa-download"></i> Install GK Store
     </button>
 
     <!-- top nav -->
@@ -1181,9 +1181,7 @@
                 editUsdtTitle: 'Edit USDT Address',
                 newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address',
-                save: 'Save',
-                install: 'Install GK Store',
-                addToHomeScreen: 'Add to Home Screen'
+                save: 'Save'
             },
             ps: {
                 brand: 'جي کې پلورنځیج',
@@ -1250,9 +1248,7 @@
                 editUsdtTitle: 'USDT پته سمول',
                 newUsdtAddress: 'نوې USDT پته',
                 usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
-                save: 'خوندي کړئ',
-                install: 'جي کې پلورنځی نصب کړئ',
-                addToHomeScreen: 'کور سکرین ته یې اضافه کړئ'
+                save: 'خوندي کړئ'
             },
             fa: {
                 brand: 'جی کی فروشگاه',
@@ -1319,9 +1315,7 @@
                 editUsdtTitle: 'ویرایش آدرس USDT',
                 newUsdtAddress: 'آدرس جدید USDT',
                 usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
-                save: 'ذخیره',
-                install: 'نصب فروشگاه جی کی',
-                addToHomeScreen: 'افزودن به صفحه اصلی'
+                save: 'ذخیره'
             }
         };
 
@@ -1486,10 +1480,6 @@
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
-            
-            // Update install button text based on platform
-            updateInstallButtonText();
-            
             document.documentElement.lang = lang;
             document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
             appState.currentLanguage = lang;
@@ -1555,11 +1545,10 @@
         setTimeout(testConnection, 2000);
 
         // ============================================
-        // PWA INSTALLATION - SIMPLE MESSAGE FOR IOS
+        // PWA INSTALLATION - SHOWS ON ALL DEVICES
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
-        const installButtonText = document.getElementById('install-button-text');
 
         // Check if running in standalone mode (already installed)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -1567,15 +1556,6 @@
         // Check if iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         
-        function updateInstallButtonText() {
-            const t = translations[appState.currentLanguage || 'en'];
-            if (isIOS) {
-                installButtonText.textContent = t.addToHomeScreen || 'Add to Home Screen';
-            } else {
-                installButtonText.textContent = t.install || 'Install GK Store';
-            }
-        }
-
         if (isStandalone) {
             installButton.style.display = 'none';
         }
@@ -1585,17 +1565,17 @@
             deferredPrompt = e;
             if (!isStandalone) {
                 installButton.classList.add('visible');
-                updateInstallButtonText();
             }
         });
 
         window.installApp = function() {
             if (!deferredPrompt) {
                 if (isIOS) {
-                    // Simple message for iOS
-                    alert('Tap Share button → Add to Home Screen');
+                    // iOS doesn't support beforeinstallprompt, show instructions
+                    alert('📱 To install GK Store on iOS:\n\n1. Tap the Share button (square with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right corner');
                 } else {
-                    alert('Tap browser menu → Install');
+                    // Android/Desktop with no prompt
+                    alert('To install: Tap browser menu → "Install App" or "Add to Home Screen"');
                 }
                 return;
             }
@@ -1614,7 +1594,6 @@
         setTimeout(() => {
             if (!isStandalone) {
                 installButton.classList.add('visible');
-                updateInstallButtonText();
             }
         }, 2000);
 
@@ -2696,52 +2675,61 @@
         }
 
         // ============================================
-        // FIXED TRACK VISITOR - INSTANT ONLINE COUNTER
+        // FIXED TRACK VISITOR - Shows correct online users
         // ============================================
         function trackVisitor() {
-            // Generate a unique visitor ID that persists for this session
-            const getVisitorId = () => {
-                // Try to get from session storage first
-                let visitorId = sessionStorage.getItem('gk_visitor_id');
-                if (!visitorId) {
-                    // Create a new visitor ID
-                    visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    sessionStorage.setItem('gk_visitor_id', visitorId);
+            // Generate a visitor ID from multiple factors for better uniqueness
+            const getVisitorId = async () => {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    const ip = data.ip;
+                    
+                    // Create a unique fingerprint
+                    const userAgent = navigator.userAgent;
+                    const screenRes = `${screen.width}x${screen.height}`;
+                    const timestamp = Math.floor(Date.now() / 60000); // Minute precision
+                    
+                    // Combine multiple factors for uniqueness
+                    const fingerprint = `${ip}_${userAgent.substring(0, 30)}_${screenRes}`;
+                    return fingerprint;
+                } catch (error) {
+                    // Fallback to session ID + timestamp if IP fetch fails
+                    return `${appState.sessionId}_${Math.floor(Date.now() / 60000)}`;
                 }
-                return visitorId;
             };
             
-            const visitorId = getVisitorId();
-            const now = Date.now();
-            
-            // Add to unique visitors set (total users ever)
-            appState.uniqueVisitors.add(visitorId);
-            appState.visitorCount = appState.uniqueVisitors.size;
-            
-            // Track online users (active in last 30 seconds for instant updates)
-            appState.activeSessions.set(visitorId, now);
-            
-            // Clean up old sessions (older than 30 seconds)
-            const thirtySecondsAgo = now - (30 * 1000);
-            for (let [id, timestamp] of appState.activeSessions.entries()) {
-                if (timestamp < thirtySecondsAgo) {
-                    appState.activeSessions.delete(id);
+            getVisitorId().then(visitorId => {
+                // Add to unique visitors set (total users ever)
+                appState.uniqueVisitors.add(visitorId);
+                appState.visitorCount = appState.uniqueVisitors.size;
+                
+                // Track online users (active in last 5 minutes)
+                const now = Date.now();
+                appState.activeSessions.set(visitorId, now);
+                
+                // Clean up old sessions (older than 5 minutes)
+                const fiveMinutesAgo = now - (5 * 60 * 1000);
+                for (let [id, timestamp] of appState.activeSessions.entries()) {
+                    if (timestamp < fiveMinutesAgo) {
+                        appState.activeSessions.delete(id);
+                    }
                 }
-            }
-            
-            appState.onlineCount = appState.activeSessions.size;
-            
-            // Update UI immediately
-            const uniqueVisitorEl = document.getElementById('unique-visitor-count');
-            if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
-            
-            const onlineUserEl = document.getElementById('online-user-count');
-            if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
-            
-            const activeSessionsEl = document.getElementById('active-sessions-count');
-            if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
-            
-            console.log('👥 Total users:', appState.visitorCount, 'Online now:', appState.onlineCount);
+                
+                appState.onlineCount = appState.activeSessions.size;
+                
+                // Update UI
+                const uniqueVisitorEl = document.getElementById('unique-visitor-count');
+                if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
+                
+                const onlineUserEl = document.getElementById('online-user-count');
+                if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
+                
+                const activeSessionsEl = document.getElementById('active-sessions-count');
+                if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
+                
+                console.log('👥 Total users:', appState.visitorCount, 'Online now:', appState.onlineCount);
+            });
         }
 
         // ============================================
@@ -2753,18 +2741,9 @@
         renderContacts();
         renderAccounts();
         
-        // Track visitor immediately
+        // Track visitor immediately and every 30 seconds
         trackVisitor();
-        
-        // Track every 10 seconds for more accurate online count
-        setInterval(trackVisitor, 10000);
-        
-        // Also track on page visibility change
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                trackVisitor();
-            }
-        });
+        setInterval(trackVisitor, 30000);
     </script>
 </body>
 </html>
