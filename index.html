@@ -308,12 +308,6 @@
             aspect-ratio: 16/9;
             object-fit: cover;
             background: #1a1a24;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .card-media:hover {
-            transform: scale(1.02);
         }
 
         .card-content {
@@ -441,7 +435,7 @@
         }
 
         .modal-overlay {
-            position: fixed; inset:0; background:rgba(0,0,0,0.95); backdrop-filter:blur(5px);
+            position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
             z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
         }
 
@@ -641,33 +635,27 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Connection status - Messenger style */
+        /* Connection status - Messenger style dot (no text) */
         .connection-status {
             position: fixed;
             top: 12px;
             right: 12px;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            z-index: 9999;
             transition: all 0.3s ease;
             animation: pulse 2s infinite;
         }
         
-        .status-dot.connecting {
-            background: #f59e0b;
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        .connection-status.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
         
-        .status-dot.offline {
+        .connection-status.offline {
             background: #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
@@ -775,36 +763,11 @@
             cursor: pointer;
             margin-top: 0.5rem;
         }
-        
-        /* Language selector */
-        .language-selector {
-            display: flex;
-            gap: 0.5rem;
-            margin: 0.5rem 0;
-        }
-        
-        .lang-option {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            background: var(--surface-light);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        
-        .lang-option.active {
-            background: var(--gradient-primary);
-            color: white;
-            border-color: transparent;
-        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- Connection Status - Messenger Style (just a dot) -->
-    <div id="connection-status" class="connection-status">
-        <div id="status-dot" class="status-dot"></div>
-    </div>
+    <!-- Connection Status - Just a dot (no text) -->
+    <div id="connection-status" class="connection-status"></div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
@@ -991,7 +954,7 @@
                     </div>
                     
                     <div class="video-hint">
-                        <i class="fa fa-info-circle"></i> <span data-i18n="videoHint">Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.</span>
+                        <i class="fa fa-info-circle"></i> Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.
                     </div>
                     
                     <div class="upload-progress" id="upload-progress">
@@ -1005,7 +968,7 @@
                         <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
                     </button>
                     <button type="button" class="retry-btn" id="retry-btn" style="display:none;" onclick="uploadNewAccount()">
-                        <i class="fa fa-refresh"></i> <span data-i18n="retryBtn">Retry Upload</span>
+                        <i class="fa fa-refresh"></i> Retry Upload
                     </button>
                 </form>
             </div>
@@ -1130,11 +1093,9 @@
                 <button class="modal-close" onclick="closeModal('language-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="language-selector" style="flex-direction: column; gap: 0.5rem;">
-                    <button class="btn lang-option" data-lang="en" onclick="setLanguage('en')">🇺🇸 English</button>
-                    <button class="btn lang-option" data-lang="ps" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
-                    <button class="btn lang-option" data-lang="fa" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
-                </div>
+                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('en')">🇺🇸 English</button>
+                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
+                <button class="btn" style="width:100%;" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
             </div>
         </div>
     </div>
@@ -1216,13 +1177,7 @@
                 editUsdtTitle: 'Edit USDT Address',
                 newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address',
-                save: 'Save',
-                videoHint: 'Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.',
-                retryBtn: 'Retry Upload',
-                uploading: 'Uploading...',
-                complete: 'Upload complete!',
-                success: '✅ Account uploaded successfully to server!',
-                offline: '📱 Account saved locally (offline mode)'
+                save: 'Save'
             },
             ps: {
                 brand: 'جي کې پلورنځی',
@@ -1289,13 +1244,7 @@
                 editUsdtTitle: 'USDT پته سمول',
                 newUsdtAddress: 'نوې USDT پته',
                 usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
-                save: 'خوندي کړئ',
-                videoHint: 'د ویډیو اعظمي اندازه: ۲۰۰MB (MP4، WebM، MOV). لوی ویډیوګانې څو دقیقې وخت نیسي.',
-                retryBtn: 'بیا هڅه وکړئ',
-                uploading: 'پورته کېږي...',
-                complete: 'پورته کېدل بشپړ شول!',
-                success: '✅ حساب په بریالیتوب سره سرور ته پورته شو!',
-                offline: '📱 حساب په محلي ډول خوندي شو (آفلاین حالت)'
+                save: 'خوندي کړئ'
             },
             fa: {
                 brand: 'جی کی فروشگاه',
@@ -1362,13 +1311,7 @@
                 editUsdtTitle: 'ویرایش آدرس USDT',
                 newUsdtAddress: 'آدرس جدید USDT',
                 usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
-                save: 'ذخیره',
-                videoHint: 'حداکثر اندازه ویدیو: ۲۰۰MB (MP4، WebM، MOV). ویدیوهای بزرگ چند دقیقه زمان می‌برند.',
-                retryBtn: 'تلاش مجدد',
-                uploading: 'در حال آپلود...',
-                complete: 'آپلود کامل شد!',
-                success: '✅ حساب با موفقیت به سرور آپلود شد!',
-                offline: '📱 حساب به صورت محلی ذخیره شد (حالت آفلاین)'
+                save: 'ذخیره'
             }
         };
 
@@ -1541,15 +1484,6 @@
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
-            
-            // Update language selector active state
-            document.querySelectorAll('.lang-option').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-lang') === lang) {
-                    btn.classList.add('active');
-                }
-            });
-            
             document.documentElement.lang = lang;
             document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
             appState.currentLanguage = lang;
@@ -1565,13 +1499,6 @@
         }
 
         function openLanguageModal() {
-            // Update active language in modal
-            document.querySelectorAll('.lang-option').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-lang') === appState.currentLanguage) {
-                    btn.classList.add('active');
-                }
-            });
             document.getElementById('language-modal').classList.remove('hidden');
         }
 
@@ -1579,12 +1506,12 @@
         // CONNECTION TEST - SIMPLIFIED (Messenger style dot)
         // ============================================
         let isConnected = false;
-        const statusDot = document.getElementById('status-dot');
+        const connectionStatus = document.getElementById('connection-status');
 
         async function testConnection() {
             try {
                 console.log('🔌 Testing connection to Cloudflare Tunnel...');
-                statusDot.className = 'status-dot connecting';
+                connectionStatus.className = 'connection-status'; // orange by default
                 
                 // Test the health endpoint
                 const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
@@ -1598,7 +1525,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     isConnected = true;
-                    statusDot.className = 'status-dot'; // Just the dot (green by default)
+                    connectionStatus.className = 'connection-status connected'; // green dot
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
                     // Load data from server
@@ -1610,7 +1537,7 @@
                 }
             } catch (error) {
                 console.log('⚠️ Cloudflare tunnel not reachable, using local data');
-                statusDot.className = 'status-dot offline';
+                connectionStatus.className = 'connection-status offline'; // red dot
                 isConnected = false;
                 
                 // Still render with local data
@@ -1676,7 +1603,7 @@
         }
 
         // ============================================
-        // FIXED RENDERING FUNCTION - WITH FULLSCREEN IMAGE SUPPORT
+        // RENDERING FUNCTIONS (keep all your existing rendering functions)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1695,30 +1622,13 @@
             const t = translations[appState.currentLanguage || 'en'];
             
             grid.innerHTML = filtered.map(acc => {
-                // Check if it's a video (by mediaType or file extension)
-                const isVideo = acc.mediaType === 'video' || (acc.media && acc.media.match(/\.(mp4|webm|mov|avi|mkv|3gp)$/i));
-                
-                const mediaHtml = isVideo 
-                    ? `<div style="position:relative; width:100%; height:100%; background:#000;">
-                        <video 
-                            src="${acc.media}" 
-                            class="card-media" 
-                            preload="metadata"
-                            playsinline
-                            webkit-playsinline
-                            controls
-                            style="width:100%; height:100%; object-fit:contain; background:#000;">
-                            <source src="${acc.media}" type="video/mp4">
-                            <source src="${acc.media}" type="video/webm">
-                            <source src="${acc.media}" type="video/quicktime">
-                            Your browser does not support the video tag.
-                        </video>
-                      </div>`
+                const mediaHtml = acc.mediaType === 'video' 
+                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" loading="lazy"></video>`
                     : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
                     <div class="account-card" data-id="${acc.id}">
-                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter); overflow:hidden;">
+                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter);">
                             ${mediaHtml}
                         </div>
                         <div class="card-content">
@@ -1826,7 +1736,7 @@
             }
         };
 
-        // Admin rendering functions
+        // Admin rendering functions (keep all your existing admin rendering functions)
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1955,7 +1865,6 @@
                 
                 if (records && records.length > 0) {
                     appState.accounts = records.map(record => {
-                        // Get the media URL using the current pb instance
                         const mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
                         
                         return {
@@ -1966,7 +1875,7 @@
                             price_usd: record.price_usd,
                             price_afn: record.price_afn,
                             media: mediaUrl,
-                            mediaType: record.mediaType || (record.media ? (record.media.includes('video') ? 'video' : 'image') : 'image')
+                            mediaType: record.mediaType || 'image'
                         };
                     });
                     appState.usingFallback = false;
@@ -2031,7 +1940,6 @@
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
             
-            // Check file size - increased to 200MB for videos
             const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
@@ -2050,19 +1958,16 @@
             
             let progress = 0;
             const interval = setInterval(() => {
-                progress += Math.random() * 2; // Slow steady progress for large files
+                progress += Math.random() * 2;
                 if (progress >= 100) progress = 100;
                 progressBar.style.width = progress + '%';
                 progressText.innerHTML = `Uploading... ${Math.round(progress)}% (${(file.size / (1024 * 1024)).toFixed(1)}MB)`;
             }, 500);
             
             try {
-                // Check if we're connected to the server
                 if (isConnected) {
-                    // CRITICAL FIX: Generate a completely unique request key
                     const uniqueKey = 'upload_' + Date.now() + '_' + Math.random().toString(36).substring(2) + '_' + file.size;
                     
-                    // Create form data for server upload
                     const formData = new FormData();
                     formData.append('title', title);
                     formData.append('description', desc);
@@ -2076,18 +1981,15 @@
                         title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
                     });
                     
-                    // Use a completely unique request key and disable auto-cancellation
                     const record = await pb.collection('accounts').create(formData, {
-                        requestKey: uniqueKey, // Unique key prevents cancellation
-                        $autoCancel: false     // Extra insurance
+                        requestKey: uniqueKey,
+                        $autoCancel: false
                     });
                     
                     console.log('Upload successful:', record);
                     
-                    // Get the correct media URL
                     const mediaUrl = pb.files.getUrl(record, record.media);
                     
-                    // Add to local state with the server URL
                     const newAccount = {
                         id: record.id,
                         title: title,
@@ -2100,8 +2002,6 @@
                     };
                     
                     appState.accounts.push(newAccount);
-                    
-                    // Save to localStorage
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     
                     clearInterval(interval);
@@ -2123,7 +2023,6 @@
                         appState.uploadRetryCount = 0;
                     }, 500);
                 } else {
-                    // If not connected to server, save locally
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const newAccount = {
@@ -2167,22 +2066,17 @@
                 console.error('Upload error details:', error);
                 clearInterval(interval);
                 
-                // Show specific error message
                 let errorMessage = 'Upload failed: ';
                 
-                // Check for HTTP/2 protocol error
                 if (error.message && error.message.includes('ERR_HTTP2_PROTOCOL_ERROR')) {
-                    errorMessage += 'HTTP/2 protocol error. This is usually caused by the server timing out. ';
+                    errorMessage += 'HTTP/2 protocol error. ';
                     
-                    // Suggest retry
                     appState.uploadRetryCount++;
                     if (appState.uploadRetryCount < 3) {
                         errorMessage += `Retrying... (Attempt ${appState.uploadRetryCount + 1}/3)`;
                         
-                        // Show retry button
                         if (retryBtn) retryBtn.style.display = 'block';
                         
-                        // Auto retry after 2 seconds
                         setTimeout(() => {
                             uploadNewAccount();
                         }, 2000);
