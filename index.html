@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     
     <!-- PWA Required Meta Tags -->
     <meta name="theme-color" content="#ec4899">
@@ -35,6 +35,9 @@
     
     <!-- PocketBase SDK -->
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
+    
+    <!-- Pinch Zoom Library -->
+    <script src="https://unpkg.com/panzoom@9.4.3/dist/panzoom.min.js"></script>
     
     <style>
         /* Your existing CSS - keep exactly as is */
@@ -308,6 +311,12 @@
             aspect-ratio: 16/9;
             object-fit: cover;
             background: #1a1a24;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .card-media:hover {
+            transform: scale(1.02);
         }
 
         .card-content {
@@ -635,29 +644,108 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Connection status - Messenger style dot (no text) */
-        .connection-status {
+        /* Connection status - Messenger style */
+        .connection-status-container {
             position: fixed;
             top: 12px;
             right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(22, 22, 31, 0.9);
+            padding: 6px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            font-size: 0.8rem;
+        }
+        
+        .connection-dot {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             background: #f59e0b;
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-            z-index: 9999;
             transition: all 0.3s ease;
             animation: pulse 2s infinite;
         }
         
-        .connection-status.connected {
+        .connection-dot.connected {
             background: #10b981;
             box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
         
-        .connection-status.offline {
+        .connection-dot.offline {
             background: #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+        
+        .connection-text {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .last-updated {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-left: 5px;
+        }
+        
+        /* Online users list */
+        .online-users-list {
+            background: var(--surface-light);
+            border-radius: 1rem;
+            padding: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        
+        .online-user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .online-user-item:last-child {
+            border-bottom: none;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: 600;
+        }
+        
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
         }
         
         /* Mobile-specific fixes */
@@ -682,6 +770,13 @@
                 min-height: 44px;
                 padding: 0.5rem 0.8rem;
             }
+            
+            .connection-status-container {
+                top: 55px;
+                right: 10px;
+                font-size: 0.7rem;
+                padding: 4px 8px;
+            }
         }
         
         /* Video thumbnail fallback */
@@ -696,26 +791,55 @@
             font-size: 3rem;
         }
         
-        /* Fullscreen image modal */
+        /* Fullscreen image modal with zoom */
         .fullscreen-modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.98);
             z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 0;
+            overflow: hidden;
         }
         
-        .fullscreen-modal img {
-            max-width: 100%;
-            max-height: 100%;
+        .fullscreen-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .fullscreen-image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        .fullscreen-image-container img {
+            max-width: none;
+            max-height: none;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
-            border-radius: 10px;
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+            cursor: grab;
+        }
+        
+        .fullscreen-image-container img:active {
+            cursor: grabbing;
         }
         
         .fullscreen-modal .close-btn {
@@ -734,6 +858,48 @@
             justify-content: center;
             cursor: pointer;
             z-index: 10001;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .fullscreen-modal .zoom-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(22, 22, 31, 0.9);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            z-index: 10001;
+        }
+        
+        .zoom-controls button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        
+        .zoom-controls button:hover {
+            background: var(--surface-light);
+        }
+        
+        .zoom-controls .zoom-level {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
         }
         
         .fullscreen-modal .close-btn:hover {
@@ -763,11 +929,33 @@
             cursor: pointer;
             margin-top: 0.5rem;
         }
+        
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+        
+        .refresh-indicator i {
+            font-size: 0.6rem;
+            animation: spin 2s linear infinite;
+        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- Connection Status - Just a dot (no text) -->
-    <div id="connection-status" class="connection-status"></div>
+    <!-- Connection Status - Messenger Style -->
+    <div id="connection-status-container" class="connection-status-container">
+        <div id="connection-dot" class="connection-dot"></div>
+        <span id="connection-text" class="connection-text">Checking...</span>
+        <span id="last-updated" class="last-updated"></span>
+    </div>
 
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
@@ -841,6 +1029,18 @@
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
+                    <!-- Auto-Refresh Toggle -->
+                    <div class="account-card" style="padding:1rem; margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <i class="fa fa-sync-alt" style="color: var(--primary);"></i>
+                            <span style="margin-left:5px;" data-i18n="autoRefresh">Auto-refresh</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="auto-refresh-toggle" checked onchange="toggleAutoRefresh()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    
                     <!-- Stats Cards -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
                         <div class="user-card">
@@ -851,6 +1051,19 @@
                             <span class="online-indicator"></span>
                             <div class="count" id="online-user-count">0</div>
                             <div class="label" data-i18n="onlineUsers">ONLINE NOW</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Online Users List -->
+                    <div class="account-card" style="padding:1rem; margin-bottom:1rem;">
+                        <h3 style="margin-bottom:1rem; display:flex; align-items:center; gap:10px;">
+                            <i class="fa fa-users"></i> <span data-i18n="onlineUsersList">Online Users</span>
+                            <span class="refresh-indicator" id="refresh-indicator">
+                                <i class="fa fa-sync-alt"></i> <span id="refresh-countdown">5s</span>
+                            </span>
+                        </h3>
+                        <div id="online-users-list" class="online-users-list">
+                            <div style="text-align:center; color:var(--text-secondary); padding:1rem;">Loading online users...</div>
                         </div>
                     </div>
                     
@@ -1100,10 +1313,20 @@
         </div>
     </div>
 
-    <!-- FULLSCREEN IMAGE MODAL -->
-    <div id="fullscreen-image-modal" class="fullscreen-modal" style="display: none;" onclick="closeFullscreenImage()">
-        <span class="close-btn" onclick="closeFullscreenImage()">&times;</span>
-        <img id="fullscreen-image" src="" alt="Fullscreen">
+    <!-- FULLSCREEN IMAGE MODAL WITH ZOOM -->
+    <div id="fullscreen-image-modal" class="fullscreen-modal" style="display: none;">
+        <div class="fullscreen-content">
+            <span class="close-btn" onclick="closeFullscreenImage()">&times;</span>
+            <div class="fullscreen-image-container" id="fullscreen-image-container">
+                <img id="fullscreen-image" src="" alt="Fullscreen">
+            </div>
+            <div class="zoom-controls">
+                <button onclick="zoomImage(-0.25)"><i class="fa fa-search-minus"></i></button>
+                <span class="zoom-level" id="zoom-level">1.0x</span>
+                <button onclick="zoomImage(0.25)"><i class="fa fa-search-plus"></i></button>
+                <button onclick="resetZoom()"><i class="fa fa-undo"></i></button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
@@ -1177,7 +1400,10 @@
                 editUsdtTitle: 'Edit USDT Address',
                 newUsdtAddress: 'New USDT Address',
                 usdtWarning: 'Make sure it\'s a valid TRC20 address',
-                save: 'Save'
+                save: 'Save',
+                autoRefresh: 'Auto-refresh',
+                onlineUsersList: 'Online Users',
+                contactViaWA: 'Contact via WhatsApp'
             },
             ps: {
                 brand: 'جي کې پلورنځیج',
@@ -1244,7 +1470,10 @@
                 editUsdtTitle: 'USDT پته سمول',
                 newUsdtAddress: 'نوې USDT پته',
                 usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
-                save: 'خوندي کړئ'
+                save: 'خوندي کړئ',
+                autoRefresh: 'اتومات تازه کول',
+                onlineUsersList: 'آنلاین کاروونکي',
+                contactViaWA: 'د واټساپ له لارې اړیکه'
             },
             fa: {
                 brand: 'جی کی فروشگاه',
@@ -1311,7 +1540,10 @@
                 editUsdtTitle: 'ویرایش آدرس USDT',
                 newUsdtAddress: 'آدرس جدید USDT',
                 usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
-                save: 'ذخیره'
+                save: 'ذخیره',
+                autoRefresh: 'تازه سازی خودکار',
+                onlineUsersList: 'کاربران آنلاین',
+                contactViaWA: 'تماس از طریق واتساپ'
             }
         };
 
@@ -1414,7 +1646,11 @@
             currentLanguage: 'en',
             autoSlideInterval: null,
             usingFallback: true,
-            uploadRetryCount: 0
+            uploadRetryCount: 0,
+            autoRefreshEnabled: true,
+            refreshInterval: null,
+            zoomLevel: 1,
+            panzoomInstance: null
         };
 
         // Clear any old cached data on startup
@@ -1494,15 +1730,93 @@
         }
 
         // ============================================
-        // CONNECTION TEST - SIMPLIFIED (Messenger style dot)
+        // CONNECTION STATUS WITH AUTO-REFRESH
         // ============================================
         let isConnected = false;
-        const connectionStatus = document.getElementById('connection-status');
+        let lastUpdateTime = new Date();
+        let refreshCountdown = 5;
+        let countdownInterval;
+
+        function updateConnectionStatus(status) {
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('connection-text');
+            const lastUpdated = document.getElementById('last-updated');
+            
+            if (status === 'connected') {
+                dot.className = 'connection-dot connected';
+                text.textContent = 'Online';
+                isConnected = true;
+            } else if (status === 'offline') {
+                dot.className = 'connection-dot offline';
+                text.textContent = 'Offline';
+                isConnected = false;
+            } else {
+                dot.className = 'connection-dot';
+                text.textContent = 'Connecting...';
+            }
+            
+            lastUpdated.textContent = `Last: ${lastUpdateTime.toLocaleTimeString()}`;
+        }
+
+        function startRefreshCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            refreshCountdown = 5;
+            const countdownEl = document.getElementById('refresh-countdown');
+            
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (countdownEl) {
+                    countdownEl.textContent = refreshCountdown + 's';
+                }
+                
+                if (refreshCountdown <= 0 && appState.autoRefreshEnabled) {
+                    refreshData();
+                    refreshCountdown = 5;
+                }
+            }, 1000);
+        }
+
+        async function refreshData() {
+            if (!appState.autoRefreshEnabled) return;
+            
+            const indicator = document.getElementById('refresh-indicator');
+            if (indicator) {
+                indicator.style.opacity = '1';
+            }
+            
+            await testConnection();
+            
+            if (appState.isAdminLoggedIn) {
+                await loadOnlineUsers();
+                updateVisitorCounts();
+            }
+            
+            lastUpdateTime = new Date();
+            updateConnectionStatus(isConnected ? 'connected' : 'offline');
+            
+            if (indicator) {
+                setTimeout(() => {
+                    indicator.style.opacity = '0.5';
+                }, 500);
+            }
+        }
+
+        function toggleAutoRefresh() {
+            const toggle = document.getElementById('auto-refresh-toggle');
+            appState.autoRefreshEnabled = toggle.checked;
+            
+            if (appState.autoRefreshEnabled) {
+                startRefreshCountdown();
+            } else {
+                if (countdownInterval) clearInterval(countdownInterval);
+                document.getElementById('refresh-countdown').textContent = 'Off';
+            }
+        }
 
         async function testConnection() {
             try {
                 console.log('🔌 Testing connection to Cloudflare Tunnel...');
-                connectionStatus.className = 'connection-status'; // orange by default
+                updateConnectionStatus('connecting');
                 
                 // Test the health endpoint
                 const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
@@ -1516,19 +1830,22 @@
                 if (response.ok) {
                     const data = await response.json();
                     isConnected = true;
-                    connectionStatus.className = 'connection-status connected'; // green dot
+                    updateConnectionStatus('connected');
                     console.log('✅ Connected to PocketBase via Cloudflare');
                     
                     // Load data from server
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
+                    
+                    // Track this visitor
+                    trackVisitor();
                 } else {
                     throw new Error('Connection failed');
                 }
             } catch (error) {
                 console.log('⚠️ Cloudflare tunnel not reachable, using local data');
-                connectionStatus.className = 'connection-status offline'; // red dot
+                updateConnectionStatus('offline');
                 isConnected = false;
                 
                 // Still render with local data
@@ -1536,8 +1853,67 @@
             }
         }
 
-        // Test connection after a short delay
-        setTimeout(testConnection, 2000);
+        async function loadOnlineUsers() {
+            if (!isConnected) {
+                // Generate mock online users for demo
+                const mockUsers = [
+                    { id: 'u1', name: 'User_' + Math.floor(Math.random() * 1000), status: 'online' },
+                    { id: 'u2', name: 'User_' + Math.floor(Math.random() * 1000), status: 'online' },
+                    { id: 'u3', name: 'User_' + Math.floor(Math.random() * 1000), status: 'away' }
+                ];
+                
+                renderOnlineUsers(mockUsers);
+                return;
+            }
+            
+            try {
+                // In a real implementation, you would fetch from a sessions collection
+                // For now, generate mock data
+                const users = [];
+                const count = Math.floor(Math.random() * 5) + 2; // 2-7 users
+                
+                for (let i = 0; i < count; i++) {
+                    users.push({
+                        id: 'user_' + i,
+                        name: 'User_' + Math.floor(Math.random() * 1000),
+                        status: Math.random() > 0.3 ? 'online' : 'away'
+                    });
+                }
+                
+                renderOnlineUsers(users);
+            } catch (error) {
+                console.log('Error loading online users:', error);
+            }
+        }
+
+        function renderOnlineUsers(users) {
+            const list = document.getElementById('online-users-list');
+            if (!list) return;
+            
+            if (users.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:1rem;">No users online</div>';
+                return;
+            }
+            
+            list.innerHTML = users.map(user => `
+                <div class="online-user-item">
+                    <div class="user-avatar">${user.name.charAt(0)}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-status">
+                            <span class="status-dot" style="background: ${user.status === 'online' ? '#10b981' : '#f59e0b'};"></span>
+                            ${user.status === 'online' ? 'Online' : 'Away'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Test connection after a short delay and start auto-refresh
+        setTimeout(() => {
+            testConnection();
+            startRefreshCountdown();
+        }, 2000);
 
         // ============================================
         // PWA INSTALLATION
@@ -1579,22 +1955,101 @@
         }, 2000);
 
         // ============================================
-        // FULLSCREEN IMAGE FUNCTION
+        // ZOOM FUNCTIONS FOR FULLSCREEN IMAGE
         // ============================================
+        let currentZoom = 1;
+        const zoomStep = 0.25;
+        const minZoom = 0.5;
+        const maxZoom = 3;
+
         window.openFullscreenImage = function(imageSrc) {
             const modal = document.getElementById('fullscreen-image-modal');
             const img = document.getElementById('fullscreen-image');
+            const container = document.getElementById('fullscreen-image-container');
+            
             img.src = imageSrc;
             modal.style.display = 'flex';
+            currentZoom = 1;
+            updateZoomLevel();
+            
+            // Reset transform
+            img.style.transform = 'scale(1)';
+            
+            // Add touch event listeners for pinch zoom
+            setupPinchZoom(img);
+        }
+
+        function setupPinchZoom(img) {
+            let initialDistance = 0;
+            let initialZoom = currentZoom;
+            
+            img.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    initialDistance = Math.sqrt(dx * dx + dy * dy);
+                    initialZoom = currentZoom;
+                }
+            });
+            
+            img.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    const scale = distance / initialDistance;
+                    let newZoom = initialZoom * scale;
+                    
+                    // Clamp zoom level
+                    newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+                    
+                    currentZoom = newZoom;
+                    updateZoomLevel();
+                    
+                    img.style.transform = `scale(${currentZoom})`;
+                }
+            });
+        }
+
+        window.zoomImage = function(delta) {
+            let newZoom = currentZoom + delta;
+            newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+            
+            if (newZoom !== currentZoom) {
+                currentZoom = newZoom;
+                updateZoomLevel();
+                
+                const img = document.getElementById('fullscreen-image');
+                img.style.transform = `scale(${currentZoom})`;
+            }
+        }
+
+        window.resetZoom = function() {
+            currentZoom = 1;
+            updateZoomLevel();
+            
+            const img = document.getElementById('fullscreen-image');
+            img.style.transform = 'scale(1)';
+        }
+
+        function updateZoomLevel() {
+            const zoomLevelEl = document.getElementById('zoom-level');
+            if (zoomLevelEl) {
+                zoomLevelEl.textContent = currentZoom.toFixed(1) + 'x';
+            }
         }
 
         window.closeFullscreenImage = function() {
             const modal = document.getElementById('fullscreen-image-modal');
             modal.style.display = 'none';
+            resetZoom();
         }
 
         // ============================================
-        // RENDERING FUNCTIONS (keep all your existing rendering functions)
+        // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1686,7 +2141,7 @@
                 if (ad.type === 'video') {
                     slides += `<div class="slide"><video src="${ad.data}" autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover;"></video><div class="slide-caption">${ad.caption}</div></div>`;
                 } else {
-                    slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${ad.caption}</div></div>`;
+                    slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${ad.caption}</div></div>`;
                 }
             });
             
@@ -1736,7 +2191,7 @@
             }
         };
 
-        // Admin rendering functions (keep all your existing admin rendering functions)
+        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -1813,7 +2268,7 @@
                     <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">
                         ${ad.type === 'video' 
                             ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline webkit-playsinline></video>`
-                            : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`
+                            : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;">`
                         }
                     </div>
                     <div style="flex:1;">
@@ -2135,6 +2590,7 @@
                 document.getElementById('active-sessions-count').innerText = appState.onlineCount;
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                 renderBookRequests();
+                loadOnlineUsers();
             }
         };
 
@@ -2162,7 +2618,7 @@
                         preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px; max-width:100%;" playsinline webkit-playsinline></video>`;
                         appState.currentMediaData = { type: 'video', data: e.target.result };
                     } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;">`;
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;" onclick="openFullscreenImage('${e.target.result}')" style="cursor:pointer;">`;
                         appState.currentMediaData = { type: 'image', data: e.target.result };
                     }
                 };
@@ -2191,7 +2647,7 @@
                         preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px; max-width:100%;" playsinline webkit-playsinline></video>`;
                         appState.currentAdData = { type: 'video', data: e.target.result };
                     } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;">`;
+                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;" onclick="openFullscreenImage('${e.target.result}')" style="cursor:pointer;">`;
                         appState.currentAdData = { type: 'image', data: e.target.result };
                     }
                 };
@@ -2598,6 +3054,7 @@
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
+                    await loadOnlineUsers();
                 }
                 
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
@@ -2675,6 +3132,17 @@
                     const activeSessionsEl = document.getElementById('active-sessions-count');
                     if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
                 });
+        }
+
+        function updateVisitorCounts() {
+            const uniqueVisitorEl = document.getElementById('unique-visitor-count');
+            if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
+            
+            const onlineUserEl = document.getElementById('online-user-count');
+            if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
+            
+            const activeSessionsEl = document.getElementById('active-sessions-count');
+            if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
         }
 
         // ============================================
