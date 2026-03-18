@@ -43,9 +43,6 @@
     <!-- PocketBase SDK -->
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
-    <!-- Pinch Zoom Library -->
-    <script src="https://unpkg.com/panzoom@9.4.3/dist/panzoom.min.js"></script>
-    
     <style>
         /* Your existing CSS - keep exactly as is */
         * {
@@ -135,9 +132,56 @@
             justify-content: center;
         }
 
+        /* Center Status Container */
+        .center-status {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(22, 22, 31, 0.9);
+            padding: 4px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            font-size: 0.8rem;
+        }
+
+        .status-dot-nav {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot-nav.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .status-dot-nav.offline {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .status-text-nav {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .online-count-nav {
+            color: var(--primary);
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
         .nav-actions {
             display: flex;
             gap: 8px;
+            margin-left: auto;
         }
 
         .nav-btn {
@@ -501,7 +545,7 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button - Native App Style */
+        /* Install Button - Fixed */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
@@ -536,7 +580,6 @@
         .install-btn-fixed:hover {
             transform: scale(1.05);
             box-shadow: 0 12px 30px rgba(236,72,153,0.8);
-            background: linear-gradient(135deg, #f43f5e, #ec4899);
         }
 
         .install-btn-fixed:active {
@@ -728,53 +771,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Connection status - Messenger Style */
-        .connection-status-container {
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(22, 22, 31, 0.9);
-            padding: 6px 12px;
-            border-radius: 30px;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(5px);
-            z-index: 9999;
-            font-size: 0.8rem;
-        }
-        
-        .connection-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #f59e0b;
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-            transition: all 0.3s ease;
-            animation: pulse 2s infinite;
-        }
-        
-        .connection-dot.connected {
-            background: #10b981;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-        }
-        
-        .connection-dot.offline {
-            background: #ef4444;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-        }
-        
-        .connection-text {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        
-        .last-updated {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-left: 5px;
-        }
+        /* Connection status removed - now in nav bar */
         
         /* Online users list */
         .online-users-list {
@@ -825,7 +822,7 @@
             color: var(--text-secondary);
         }
         
-        .status-dot {
+        .status-dot-small {
             width: 8px;
             height: 8px;
             border-radius: 50%;
@@ -855,11 +852,9 @@
                 padding: 0.5rem 0.8rem;
             }
             
-            .connection-status-container {
-                top: 55px;
-                right: 10px;
+            .center-status {
                 font-size: 0.7rem;
-                padding: 4px 8px;
+                padding: 2px 8px;
             }
         }
         
@@ -875,7 +870,7 @@
             font-size: 3rem;
         }
         
-        /* Fullscreen image modal with zoom */
+        /* Fullscreen image modal with improved zoom and pan */
         .fullscreen-modal {
             position: fixed;
             top: 0;
@@ -884,10 +879,9 @@
             bottom: 0;
             background: rgba(0,0,0,0.98);
             z-index: 10000;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
-            padding: 0;
             overflow: hidden;
         }
         
@@ -895,34 +889,30 @@
             width: 100%;
             height: 100%;
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
         }
         
         .fullscreen-image-container {
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
+            position: relative;
             touch-action: none;
         }
         
-        .fullscreen-image-container img {
-            max-width: none;
-            max-height: none;
+        #fullscreen-image {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transform-origin: center center;
-            transition: transform 0.1s ease;
+            transform-origin: 0 0;
             cursor: grab;
+            transition: transform 0.1s ease;
         }
         
-        .fullscreen-image-container img:active {
+        #fullscreen-image:active {
             cursor: grabbing;
         }
         
@@ -933,8 +923,8 @@
             background: var(--primary);
             color: white;
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             font-size: 24px;
             display: flex;
@@ -943,6 +933,7 @@
             cursor: pointer;
             z-index: 10001;
             box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
         }
         
         .fullscreen-modal .zoom-controls {
@@ -953,11 +944,12 @@
             display: flex;
             gap: 15px;
             background: rgba(22, 22, 31, 0.9);
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 50px;
             border: 1px solid var(--border);
             backdrop-filter: blur(5px);
             z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         
         .zoom-controls button {
@@ -966,28 +958,39 @@
             color: white;
             font-size: 1.5rem;
             cursor: pointer;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            transition: background 0.2s;
-        }
-        
-        .zoom-controls button:hover {
+            transition: all 0.2s;
             background: var(--surface-light);
         }
         
+        .zoom-controls button:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+        
+        .zoom-controls button:active {
+            transform: scale(0.95);
+        }
+        
         .zoom-controls .zoom-level {
-            min-width: 60px;
+            min-width: 70px;
             text-align: center;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--primary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .fullscreen-modal .close-btn:hover {
             transform: scale(1.1);
+            background: var(--primary-dark);
         }
         
         /* Video upload hint */
@@ -1031,17 +1034,77 @@
             font-size: 0.6rem;
             animation: spin 2s linear infinite;
         }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--surface-lighter);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- Connection Status - Messenger Style -->
-    <div id="connection-status-container" class="connection-status-container">
-        <div id="connection-dot" class="connection-dot"></div>
-        <span id="connection-text" class="connection-text">Checking...</span>
-        <span id="last-updated" class="last-updated"></span>
+    <!-- top nav with centered status -->
+    <div class="top-nav">
+        <div class="logo" onclick="switchScreen('main')">
+            <div class="logo-icon">GK</div>
+            <span class="brand-text" data-i18n="brand">GK Store</span>
+        </div>
+        
+        <!-- Centered Status -->
+        <div class="center-status" id="center-status">
+            <div id="status-dot-nav" class="status-dot-nav"></div>
+            <span id="status-text-nav" class="status-text-nav">Connecting...</span>
+            <span id="online-count-nav" class="online-count-nav">(0)</span>
+        </div>
+        
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
+            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
+            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
+        </div>
     </div>
 
-    <!-- Install Button - Native App Style -->
+    <!-- Install Button - Fixed -->
     <button class="install-btn-fixed" id="install-button" style="display: none;">
         <i class="fas fa-download"></i> 
         <span id="install-text">Install GK Store</span>
@@ -1056,19 +1119,8 @@
                 <button class="modal-close" onclick="closeModal('install-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="install-instructions">
-                    <div class="install-step">
-                        <span class="step-number">1</span>
-                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button in your browser</span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">2</span>
-                        <span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">3</span>
-                        <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
-                    </div>
+                <div class="install-instructions" id="install-instructions">
+                    <!-- Instructions will be dynamically inserted -->
                 </div>
                 
                 <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-light); border-radius: 1rem;">
@@ -1086,23 +1138,10 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('install-modal')">Close</button>
-                <button class="btn-primary" onclick="openInstallInstructions()">
-                    <i class="fab fa-apple"></i> <i class="fab fa-android"></i> Show me how
+                <button class="btn-primary" onclick="window.open('https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DAndroid&hl=en', '_blank')">
+                    <i class="fas fa-question-circle"></i> Help
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- top nav -->
-    <div class="top-nav">
-        <div class="logo" onclick="switchScreen('main')">
-            <div class="logo-icon">GK</div>
-            <span class="brand-text" data-i18n="brand">GK Store</span>
-        </div>
-        <div class="nav-actions">
-            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
         </div>
     </div>
 
@@ -1444,17 +1483,17 @@
         </div>
     </div>
 
-    <!-- FULLSCREEN IMAGE MODAL WITH ZOOM -->
-    <div id="fullscreen-image-modal" class="fullscreen-modal" style="display: none;">
+    <!-- FULLSCREEN IMAGE MODAL WITH IMPROVED ZOOM AND PAN -->
+    <div id="fullscreen-image-modal" class="fullscreen-modal">
         <div class="fullscreen-content">
             <span class="close-btn" onclick="closeFullscreenImage()">&times;</span>
             <div class="fullscreen-image-container" id="fullscreen-image-container">
-                <img id="fullscreen-image" src="" alt="Fullscreen">
+                <img id="fullscreen-image" src="" alt="Fullscreen" draggable="false">
             </div>
             <div class="zoom-controls">
-                <button onclick="zoomImage(-0.25)"><i class="fa fa-search-minus"></i></button>
+                <button onclick="zoomImage('out')"><i class="fa fa-search-minus"></i></button>
                 <span class="zoom-level" id="zoom-level">1.0x</span>
-                <button onclick="zoomImage(0.25)"><i class="fa fa-search-plus"></i></button>
+                <button onclick="zoomImage('in')"><i class="fa fa-search-plus"></i></button>
                 <button onclick="resetZoom()"><i class="fa fa-undo"></i></button>
             </div>
         </div>
@@ -1781,7 +1820,11 @@
             autoRefreshEnabled: true,
             refreshInterval: null,
             zoomLevel: 1,
-            panzoomInstance: null
+            panX: 0,
+            panY: 0,
+            isDragging: false,
+            lastX: 0,
+            lastY: 0
         };
 
         // Clear any old cached data on startup
@@ -1834,7 +1877,7 @@
         }
 
         // ============================================
-        // PWA INSTALLATION - NATIVE APP STYLE
+        // PWA INSTALLATION - FIXED
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
@@ -1881,107 +1924,75 @@
             deferredPrompt = null;
         });
 
-        // Main install function - tries native install first, then shows instructions
+        // Main install function
         window.installApp = async function() {
-            // If we have the deferred prompt (Chrome/Edge/Android)
             if (deferredPrompt) {
                 try {
-                    // Show the native install prompt
                     deferredPrompt.prompt();
-                    
-                    // Wait for user's choice
                     const choiceResult = await deferredPrompt.userChoice;
                     
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ User accepted the install prompt');
+                        console.log('✅ User accepted install');
                         installButton.style.display = 'none';
                     } else {
-                        console.log('❌ User dismissed the install prompt');
-                        // If user dismissed, show manual instructions
+                        console.log('❌ User dismissed install');
                         showManualInstallInstructions();
                     }
-                    
-                    // Clear the prompt
                     deferredPrompt = null;
-                    
                 } catch (error) {
                     console.log('Install error:', error);
                     showManualInstallInstructions();
                 }
             } else {
-                // No deferred prompt available (iOS or unsupported browser)
                 showManualInstallInstructions();
             }
         };
 
         // Show manual installation instructions
         function showManualInstallInstructions() {
-            const modal = document.getElementById('install-modal');
-            const modalBody = modal.querySelector('.modal-body');
-            
-            // Customize instructions based on platform
+            const instructions = document.getElementById('install-instructions');
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const isAndroid = /Android/.test(navigator.userAgent);
             
             if (isIOS) {
-                modalBody.innerHTML = `
-                    <div class="install-instructions">
-                        <div class="install-step">
-                            <span class="step-number">1</span>
-                            <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">2</span>
-                            <span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">3</span>
-                            <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
-                        </div>
+                instructions.innerHTML = `
+                    <div class="install-step">
+                        <span class="step-number">1</span>
+                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span>
                     </div>
-                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-light); border-radius: 1rem;">
-                        <p style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fab fa-apple" style="color: #fff; font-size: 24px;"></i>
-                            <strong>iOS Installation</strong>
-                        </p>
-                        <p style="color: var(--text-secondary); margin-top: 0.5rem;">This will add GK Store to your home screen like a native app.</p>
+                    <div class="install-step">
+                        <span class="step-number">2</span>
+                        <span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span>
+                    </div>
+                    <div class="install-step">
+                        <span class="step-number">3</span>
+                        <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
                     </div>
                 `;
             } else if (isAndroid) {
-                modalBody.innerHTML = `
-                    <div class="install-instructions">
-                        <div class="install-step">
-                            <span class="step-number">1</span>
-                            <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button</span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">2</span>
-                            <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span> or <span class="platform-badge">Add to Home Screen</span></span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">3</span>
-                            <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
-                        </div>
+                instructions.innerHTML = `
+                    <div class="install-step">
+                        <span class="step-number">1</span>
+                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button</span>
                     </div>
-                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-light); border-radius: 1rem;">
-                        <p style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fab fa-android" style="color: #3ddc84; font-size: 24px;"></i>
-                            <strong>Android Installation</strong>
-                        </p>
-                        <p style="color: var(--text-secondary); margin-top: 0.5rem;">GK Store will appear in your app drawer after installation.</p>
+                    <div class="install-step">
+                        <span class="step-number">2</span>
+                        <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span> or <span class="platform-badge">Add to Home Screen</span></span>
+                    </div>
+                    <div class="install-step">
+                        <span class="step-number">3</span>
+                        <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
                     </div>
                 `;
             } else {
-                modalBody.innerHTML = `
-                    <div class="install-instructions">
-                        <div class="install-step">
-                            <span class="step-number">1</span>
-                            <span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in your browser's address bar</span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">2</span>
-                            <span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span>
-                        </div>
+                instructions.innerHTML = `
+                    <div class="install-step">
+                        <span class="step-number">1</span>
+                        <span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span>
+                    </div>
+                    <div class="install-step">
+                        <span class="step-number">2</span>
+                        <span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span>
                     </div>
                 `;
             }
@@ -1989,7 +2000,7 @@
             openModal('install-modal');
         }
 
-        // Also show install button after 2 seconds if not installed and no prompt
+        // Show install button after delay if not installed
         setTimeout(() => {
             if (!isAppInstalled() && !deferredPrompt) {
                 installButton.style.display = 'flex';
@@ -1998,7 +2009,7 @@
         }, 3000);
 
         // ============================================
-        // CORE FUNCTIONS (rest of your existing code remains the same)
+        // CORE FUNCTIONS
         // ============================================
         function applyTranslation(lang) {
             const t = translations[lang] || translations.en;
@@ -2025,7 +2036,7 @@
         }
 
         // ============================================
-        // CONNECTION STATUS WITH AUTO-REFRESH
+        // CONNECTION STATUS WITH ONLINE COUNT - CENTERED
         // ============================================
         let isConnected = false;
         let lastUpdateTime = new Date();
@@ -2033,24 +2044,27 @@
         let countdownInterval;
 
         function updateConnectionStatus(status) {
-            const dot = document.getElementById('connection-dot');
-            const text = document.getElementById('connection-text');
-            const lastUpdated = document.getElementById('last-updated');
+            const dot = document.getElementById('status-dot-nav');
+            const text = document.getElementById('status-text-nav');
+            const countSpan = document.getElementById('online-count-nav');
             
             if (status === 'connected') {
-                dot.className = 'connection-dot connected';
+                dot.className = 'status-dot-nav connected';
                 text.textContent = 'Online';
                 isConnected = true;
             } else if (status === 'offline') {
-                dot.className = 'connection-dot offline';
+                dot.className = 'status-dot-nav offline';
                 text.textContent = 'Offline';
                 isConnected = false;
             } else {
-                dot.className = 'connection-dot';
+                dot.className = 'status-dot-nav';
                 text.textContent = 'Connecting...';
             }
             
-            lastUpdated.textContent = `Last: ${lastUpdateTime.toLocaleTimeString()}`;
+            // Update online count
+            if (countSpan) {
+                countSpan.textContent = `(${appState.onlineCount})`;
+            }
         }
 
         function startRefreshCountdown() {
@@ -2110,71 +2124,61 @@
 
         async function testConnection() {
             try {
-                console.log('🔌 Testing connection to Cloudflare Tunnel...');
+                console.log('🔌 Testing connection...');
                 updateConnectionStatus('connecting');
                 
-                // Test the health endpoint
                 const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' }
                 });
                 
                 if (response.ok) {
-                    const data = await response.json();
                     isConnected = true;
                     updateConnectionStatus('connected');
-                    console.log('✅ Connected to PocketBase via Cloudflare');
+                    console.log('✅ Connected to PocketBase');
                     
-                    // Load data from server
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
-                    
-                    // Track this visitor
                     trackVisitor();
                 } else {
                     throw new Error('Connection failed');
                 }
             } catch (error) {
-                console.log('⚠️ Cloudflare tunnel not reachable, using local data');
+                console.log('⚠️ Using local data');
                 updateConnectionStatus('offline');
                 isConnected = false;
-                
-                // Still render with local data
                 renderAccounts();
             }
         }
 
         async function loadOnlineUsers() {
             if (!isConnected) {
-                // Generate mock online users for demo
-                const mockUsers = [
-                    { id: 'u1', name: 'User_' + Math.floor(Math.random() * 1000), status: 'online' },
-                    { id: 'u2', name: 'User_' + Math.floor(Math.random() * 1000), status: 'online' },
-                    { id: 'u3', name: 'User_' + Math.floor(Math.random() * 1000), status: 'away' }
-                ];
-                
-                renderOnlineUsers(mockUsers);
-                return;
-            }
-            
-            try {
-                // In a real implementation, you would fetch from a sessions collection
-                // For now, generate mock data
+                // Generate mock online users
                 const users = [];
-                const count = Math.floor(Math.random() * 5) + 2; // 2-7 users
-                
+                const count = Math.max(1, appState.onlineCount);
                 for (let i = 0; i < count; i++) {
                     users.push({
                         id: 'user_' + i,
                         name: 'User_' + Math.floor(Math.random() * 1000),
-                        status: Math.random() > 0.3 ? 'online' : 'away'
+                        status: 'online'
                     });
                 }
-                
+                renderOnlineUsers(users);
+                return;
+            }
+            
+            try {
+                const users = [];
+                const count = appState.onlineCount;
+                for (let i = 0; i < count; i++) {
+                    users.push({
+                        id: 'user_' + i,
+                        name: 'User_' + Math.floor(Math.random() * 1000),
+                        status: 'online'
+                    });
+                }
                 renderOnlineUsers(users);
             } catch (error) {
                 console.log('Error loading online users:', error);
@@ -2196,105 +2200,211 @@
                     <div class="user-info">
                         <div class="user-name">${user.name}</div>
                         <div class="user-status">
-                            <span class="status-dot" style="background: ${user.status === 'online' ? '#10b981' : '#f59e0b'};"></span>
-                            ${user.status === 'online' ? 'Online' : 'Away'}
+                            <span class="status-dot-small"></span>
+                            Online
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Test connection after a short delay and start auto-refresh
+        // Test connection after a short delay
         setTimeout(() => {
             testConnection();
             startRefreshCountdown();
         }, 2000);
 
         // ============================================
-        // ZOOM FUNCTIONS FOR FULLSCREEN IMAGE
+        // IMPROVED ZOOM AND PAN FUNCTIONS
         // ============================================
-        let currentZoom = 1;
-        const zoomStep = 0.25;
-        const minZoom = 0.5;
+        let zoomLevel = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+        const minZoom = 1;
         const maxZoom = 3;
+        const zoomStep = 0.25;
 
         window.openFullscreenImage = function(imageSrc) {
             const modal = document.getElementById('fullscreen-image-modal');
             const img = document.getElementById('fullscreen-image');
-            const container = document.getElementById('fullscreen-image-container');
             
             img.src = imageSrc;
             modal.style.display = 'flex';
-            currentZoom = 1;
-            updateZoomLevel();
             
-            // Reset transform
-            img.style.transform = 'scale(1)';
+            // Reset zoom and pan
+            zoomLevel = 1;
+            panX = 0;
+            panY = 0;
+            updateImageTransform();
             
-            // Add touch event listeners for pinch zoom
-            setupPinchZoom(img);
+            // Setup event listeners
+            setupImageEvents();
         }
 
-        function setupPinchZoom(img) {
-            let initialDistance = 0;
-            let initialZoom = currentZoom;
+        function setupImageEvents() {
+            const img = document.getElementById('fullscreen-image');
+            const container = document.getElementById('fullscreen-image-container');
             
-            img.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                    initialDistance = Math.sqrt(dx * dx + dy * dy);
-                    initialZoom = currentZoom;
-                }
-            });
+            // Remove old listeners
+            img.removeEventListener('touchstart', handleTouchStart);
+            img.removeEventListener('touchmove', handleTouchMove);
+            img.removeEventListener('touchend', handleTouchEnd);
+            img.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
             
-            img.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    const scale = distance / initialDistance;
-                    let newZoom = initialZoom * scale;
-                    
-                    // Clamp zoom level
+            // Add new listeners
+            img.addEventListener('touchstart', handleTouchStart, { passive: false });
+            img.addEventListener('touchmove', handleTouchMove, { passive: false });
+            img.addEventListener('touchend', handleTouchEnd);
+            img.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                // Pinch zoom
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                appState.pinchDistance = Math.sqrt(dx * dx + dy * dy);
+                appState.pinchZoom = zoomLevel;
+            } else if (e.touches.length === 1 && zoomLevel > 1) {
+                // Pan
+                isDragging = true;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                // Handle pinch zoom
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (appState.pinchDistance) {
+                    const scale = distance / appState.pinchDistance;
+                    let newZoom = appState.pinchZoom * scale;
                     newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
                     
-                    currentZoom = newZoom;
-                    updateZoomLevel();
-                    
-                    img.style.transform = `scale(${currentZoom})`;
+                    if (newZoom !== zoomLevel) {
+                        zoomLevel = newZoom;
+                        updateImageTransform();
+                        updateZoomLevel();
+                    }
                 }
-            });
+            } else if (e.touches.length === 1 && isDragging) {
+                // Handle pan
+                const x = e.touches[0].clientX;
+                const y = e.touches[0].clientY;
+                
+                const dx = x - lastX;
+                const dy = y - lastY;
+                
+                panX += dx;
+                panY += dy;
+                
+                // Constrain panning
+                constrainPan();
+                
+                lastX = x;
+                lastY = y;
+                
+                updateImageTransform();
+            }
         }
 
-        window.zoomImage = function(delta) {
-            let newZoom = currentZoom + delta;
+        function handleTouchEnd(e) {
+            isDragging = false;
+            appState.pinchDistance = null;
+        }
+
+        function handleMouseDown(e) {
+            if (zoomLevel > 1) {
+                e.preventDefault();
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            }
+        }
+
+        function handleMouseMove(e) {
+            if (isDragging) {
+                e.preventDefault();
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                
+                panX += dx;
+                panY += dy;
+                
+                constrainPan();
+                
+                lastX = e.clientX;
+                lastY = e.clientY;
+                
+                updateImageTransform();
+            }
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+        }
+
+        function constrainPan() {
+            const img = document.getElementById('fullscreen-image');
+            if (!img) return;
+            
+            // Calculate constraints based on zoom level
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            const imgWidth = containerWidth * zoomLevel;
+            const imgHeight = containerHeight * zoomLevel;
+            
+            const maxPanX = (imgWidth - containerWidth) / 2;
+            const maxPanY = (imgHeight - containerHeight) / 2;
+            
+            panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+            panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+        }
+
+        window.zoomImage = function(direction) {
+            let newZoom = zoomLevel + (direction === 'in' ? zoomStep : -zoomStep);
             newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
             
-            if (newZoom !== currentZoom) {
-                currentZoom = newZoom;
+            if (newZoom !== zoomLevel) {
+                zoomLevel = newZoom;
+                constrainPan();
+                updateImageTransform();
                 updateZoomLevel();
-                
-                const img = document.getElementById('fullscreen-image');
-                img.style.transform = `scale(${currentZoom})`;
             }
         }
 
         window.resetZoom = function() {
-            currentZoom = 1;
+            zoomLevel = 1;
+            panX = 0;
+            panY = 0;
+            updateImageTransform();
             updateZoomLevel();
-            
+        }
+
+        function updateImageTransform() {
             const img = document.getElementById('fullscreen-image');
-            img.style.transform = 'scale(1)';
+            if (img) {
+                img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            }
         }
 
         function updateZoomLevel() {
             const zoomLevelEl = document.getElementById('zoom-level');
             if (zoomLevelEl) {
-                zoomLevelEl.textContent = currentZoom.toFixed(1) + 'x';
+                zoomLevelEl.textContent = zoomLevel.toFixed(1) + 'x';
             }
         }
 
@@ -2305,7 +2415,7 @@
         }
 
         // ============================================
-        // RENDERING FUNCTIONS (keep all your existing rendering functions)
+        // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -2447,7 +2557,7 @@
             }
         };
 
-        // Admin rendering functions (keep all your existing admin rendering functions)
+        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
@@ -2633,7 +2743,7 @@
         }
 
         // ============================================
-        // ULTIMATE FIXED UPLOAD FUNCTION - WITH HTTP/2 PROTOCOL FIX
+        // UPLOAD FUNCTION
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -2970,12 +3080,11 @@
         };
 
         // ============================================
-        // MOBILE-OPTIMIZED DELETE ACCOUNT FUNCTION
+        // DELETE ACCOUNT FUNCTION
         // ============================================
         window.deleteAccount = async function(id) {
             if (!confirm('Delete this account permanently?')) return;
             
-            // Find the delete button and show loading state
             const deleteBtn = event?.target?.closest('button');
             if (deleteBtn) {
                 deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Deleting...';
@@ -2984,22 +3093,16 @@
             
             try {
                 console.log('🗑️ Attempting to delete account:', id);
-                console.log('Connection status:', isConnected ? '✅ ONLINE' : '❌ OFFLINE');
-                console.log('Admin logged in:', appState.isAdminLoggedIn ? '✅ YES' : '❌ NO');
                 
-                // Track if server deletion was successful
                 let serverDeleted = false;
                 
-                // Try to delete from PocketBase if connected and admin is logged in
                 if (isConnected && appState.isAdminLoggedIn) {
                     try {
-                        // Check if it's a PocketBase ID (not a local ID with 'local_' prefix)
                         const isPocketBaseId = !id.startsWith('local_') && id.length > 10;
                         
                         if (isPocketBaseId) {
                             console.log('Attempting to delete from PocketBase with ID:', id);
                             
-                            // Use fetch directly for better mobile compatibility
                             const token = pb.authStore.token;
                             const url = `${PB_URL}/api/collections/accounts/records/${id}`;
                             
@@ -3016,57 +3119,31 @@
                                 console.log('✅ Successfully deleted from PocketBase');
                                 serverDeleted = true;
                             } else {
-                                const errorData = await response.text();
-                                console.error('❌ PocketBase deletion failed:', response.status, errorData);
-                                
-                                if (response.status === 404) {
-                                    console.log('📝 Record not found in server, continuing with local deletion');
-                                } else if (response.status === 403) {
-                                    alert('⚠️ Permission denied. Please check your admin login.');
-                                } else {
-                                    alert(`⚠️ Server error (${response.status}). Account will be deleted locally only.`);
-                                }
+                                console.error('❌ PocketBase deletion failed:', response.status);
                             }
-                        } else {
-                            console.log('📱 This is a local account, skipping PocketBase deletion');
                         }
                     } catch (pbError) {
                         console.error('❌ PocketBase network error:', pbError);
-                        // Don't show alert for network errors, just log and continue
-                        console.log('Network error, continuing with local deletion');
                     }
-                } else {
-                    console.log('📱 Not connected to server or not logged in as admin, deleting locally only');
                 }
                 
-                // Remove from local state (always do this)
                 appState.accounts = appState.accounts.filter(a => a.id !== id);
-                
-                // Save to localStorage
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 
-                // Update all UI
                 renderAccounts();
                 renderAdminAccounts();
                 
-                // Update admin counter
                 const accountCountEl = document.getElementById('admin-account-count');
                 if (accountCountEl) {
                     accountCountEl.innerText = appState.accounts.length;
                 }
                 
-                // Show success message
-                if (serverDeleted) {
-                    alert('✅ Account deleted from server successfully');
-                } else {
-                    alert('✅ Account deleted locally');
-                }
+                alert(serverDeleted ? '✅ Account deleted from server' : '✅ Account deleted locally');
                 
             } catch (error) {
                 console.error('Delete error:', error);
                 alert('Error deleting account: ' + error.message);
             } finally {
-                // Restore button
                 if (deleteBtn) {
                     deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
                     deleteBtn.disabled = false;
@@ -3377,7 +3454,7 @@
                     const ip = data.ip;
                     appState.uniqueVisitors.add(ip);
                     appState.visitorCount = appState.uniqueVisitors.size;
-                    appState.onlineCount = appState.uniqueVisitors.size;
+                    appState.onlineCount = Math.max(1, appState.uniqueVisitors.size);
                     
                     const uniqueVisitorEl = document.getElementById('unique-visitor-count');
                     if (uniqueVisitorEl) uniqueVisitorEl.innerText = appState.visitorCount;
@@ -3387,6 +3464,9 @@
                     
                     const activeSessionsEl = document.getElementById('active-sessions-count');
                     if (activeSessionsEl) activeSessionsEl.innerText = appState.onlineCount;
+                    
+                    // Update nav status with online count
+                    updateConnectionStatus(isConnected ? 'connected' : 'offline');
                 });
         }
 
