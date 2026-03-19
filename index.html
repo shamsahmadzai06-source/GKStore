@@ -1654,7 +1654,7 @@
         });
 
         // ============================================
-        // IP TRACKING SYSTEM
+        // FIXED IP TRACKING SYSTEM - Now tracks all users
         // ============================================
         const ipTracker = {
             ips: new Map(),
@@ -1664,6 +1664,7 @@
                 if (this.ips.has(ip)) {
                     const data = this.ips.get(ip);
                     data.lastSeen = now;
+                    data.online = true;
                     this.ips.set(ip, data);
                 } else {
                     this.ips.set(ip, {
@@ -1676,20 +1677,27 @@
                 }
                 this.saveToStorage();
                 this.cleanOldIPs();
+                this.broadcastToOtherTabs();
                 return this.getOnlineCount();
             },
             
             cleanOldIPs() {
                 const now = Date.now();
                 const fiveMinutes = 5 * 60 * 1000;
+                let changed = false;
+                
                 for (let [ip, data] of this.ips) {
                     if (now - data.lastSeen > fiveMinutes) {
-                        data.online = false;
-                    } else {
-                        data.online = true;
+                        if (data.online) {
+                            data.online = false;
+                            changed = true;
+                        }
                     }
                 }
-                this.saveToStorage();
+                
+                if (changed) {
+                    this.saveToStorage();
+                }
             },
             
             getOnlineCount() {
@@ -1722,42 +1730,96 @@
                         this.cleanOldIPs();
                     }
                 } catch (e) {}
+            },
+            
+            broadcastToOtherTabs() {
+                // Store timestamp to notify other tabs
+                localStorage.setItem('gk_ip_tracker_update', Date.now().toString());
+            },
+            
+            clearAll() {
+                this.ips.clear();
+                this.saveToStorage();
+                this.broadcastToOtherTabs();
             }
         };
 
+        // Load saved IPs
         ipTracker.loadFromStorage();
 
+        // Listen for updates from other tabs
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'gk_ip_tracker_update') {
+                ipTracker.loadFromStorage();
+                updateOnlineCountDisplay(ipTracker.getOnlineCount());
+                renderIPList();
+            }
+        });
+
         // ============================================
-        // GET USER IP
+        // GET USER IP - Fixed to work for all users
         // ============================================
         async function trackUserIP() {
             try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                const ip = data.ip;
+                // Try multiple IP services for redundancy
+                const services = [
+                    'https://api.ipify.org?format=json',
+                    'https://api.myip.com',
+                    'https://jsonip.com'
+                ];
+                
+                let ip = null;
+                let response = null;
+                
+                for (const service of services) {
+                    try {
+                        response = await fetch(service, { mode: 'cors', cache: 'no-cache' });
+                        if (response.ok) {
+                            const data = await response.json();
+                            ip = data.ip || data;
+                            break;
+                        }
+                    } catch (e) {
+                        console.log('IP service failed:', service);
+                    }
+                }
+                
+                if (!ip) {
+                    throw new Error('All IP services failed');
+                }
+                
                 const userAgent = navigator.userAgent;
                 
+                // Add IP to tracker
                 const onlineCount = ipTracker.addIP(ip, userAgent);
                 updateOnlineCountDisplay(onlineCount);
                 
-                setInterval(async () => {
-                    try {
-                        const response = await fetch('https://api.ipify.org?format=json');
-                        const data = await response.json();
-                        ipTracker.addIP(data.ip, navigator.userAgent);
+                // Set up periodic ping to keep this user online
+                setInterval(() => {
+                    ipTracker.addIP(ip, navigator.userAgent);
+                    updateOnlineCountDisplay(ipTracker.getOnlineCount());
+                }, 60000); // Ping every minute
+                
+                // Also ping on page visibility change
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) {
+                        ipTracker.addIP(ip, navigator.userAgent);
                         updateOnlineCountDisplay(ipTracker.getOnlineCount());
-                    } catch (e) {}
-                }, 120000);
+                    }
+                });
                 
                 return ip;
+                
             } catch (error) {
+                console.log('Could not get IP, using session ID');
+                // Fallback to session ID
                 let sessionId = localStorage.getItem('gk_session_id');
                 if (!sessionId) {
                     sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
                     localStorage.setItem('gk_session_id', sessionId);
                 }
-                ipTracker.addIP(sessionId, navigator.userAgent);
-                updateOnlineCountDisplay(ipTracker.getOnlineCount());
+                const onlineCount = ipTracker.addIP(sessionId, navigator.userAgent);
+                updateOnlineCountDisplay(onlineCount);
                 return sessionId;
             }
         }
@@ -1784,9 +1846,12 @@
                 return;
             }
             
+            const now = Date.now();
+            const fiveMinutes = 5 * 60 * 1000;
+            
             container.innerHTML = ips.map(item => {
-                const timeAgo = Math.round((Date.now() - item.lastSeen) / 60000);
-                const status = timeAgo <= 5 ? 'online' : 'offline';
+                const timeAgo = Math.round((now - item.lastSeen) / 60000);
+                const status = (now - item.lastSeen) <= fiveMinutes ? 'online' : 'offline';
                 const timeText = timeAgo <= 1 ? 'just now' : timeAgo + 'm ago';
                 
                 return `
@@ -1798,7 +1863,7 @@
             }).join('');
             
             if (modalList) {
-                const onlineIPs = ips.filter(item => (Date.now() - item.lastSeen) <= 300000);
+                const onlineIPs = ips.filter(item => (now - item.lastSeen) <= fiveMinutes);
                 modalList.innerHTML = onlineIPs.length > 0 
                     ? onlineIPs.map(item => `<div class="ip-item online"><i class="fa fa-circle"></i> ${item.ip}</div>`).join('')
                     : '<div style="text-align:center; font-size:0.8rem;">No users currently online</div>';
@@ -3231,12 +3296,23 @@
         // INITIALIZATION
         // ============================================
         function initApp() {
+            // Track user IP immediately
             trackUserIP();
             
+            // Clean up old IPs every minute
             setInterval(() => {
                 ipTracker.cleanOldIPs();
-                updateOnlineCountDisplay(ipTracker.getOnlineCount());
+                const onlineCount = ipTracker.getOnlineCount();
+                updateOnlineCountDisplay(onlineCount);
             }, 60000);
+            
+            // Also check IPs when page becomes visible
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    const onlineCount = ipTracker.getOnlineCount();
+                    updateOnlineCountDisplay(onlineCount);
+                }
+            });
             
             const savedLang = localStorage.getItem('gk_language') || 'en';
             applyTranslation(savedLang);
