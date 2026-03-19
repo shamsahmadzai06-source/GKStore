@@ -162,6 +162,9 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .sub-head {
@@ -471,7 +474,7 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button - UPDATED style for Android */
+        /* Install Button - KEPT EXACTLY AS IN YOUR ORIGINAL */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
@@ -507,27 +510,27 @@
             font-size: 24px;
         }
 
-        /* Connection status - Messenger style dot (no text) */
-        .connection-status {
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            width: 12px;
-            height: 12px;
+        /* REMOVED: Floating connection status dot from top-right */
+        /* Connection status - NEW: Only in title position */
+        .title-connection-status {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #f59e0b;
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-            z-index: 9999;
             transition: all 0.3s ease;
             animation: pulse 2s infinite;
+            margin-right: 10px;
+            vertical-align: middle;
         }
         
-        .connection-status.connected {
+        .title-connection-status.connected {
             background: #10b981;
             box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
         
-        .connection-status.offline {
+        .title-connection-status.offline {
             background: #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
@@ -636,7 +639,7 @@
             margin-top: 0.5rem;
         }
 
-        /* Android install banner */
+        /* Android install banner - KEPT EXACTLY AS IN YOUR ORIGINAL */
         .android-install-banner {
             background: var(--surface);
             border-bottom: 1px solid var(--primary);
@@ -671,19 +674,18 @@
     </style>
 </head>
 <body dir="ltr">
-    <!-- Connection Status - Just a dot (no text) -->
-    <div id="connection-status" class="connection-status"></div>
+    <!-- REMOVED: Floating connection status div -->
 
-    <!-- Android Install Banner - Shows at top for Android users -->
+    <!-- Android Install Banner - UPDATED with direct installApp() -->
     <div id="android-install-banner" class="android-install-banner" style="display: none;">
         <p><i class="fa fa-android" style="color: #3DDC84;"></i> Install GK Store for better experience</p>
-        <button onclick="showAndroidInstallPrompt()">
+        <button onclick="installApp()">
             <i class="fa fa-download"></i> Install
         </button>
     </div>
 
-    <!-- Main Install Button - Shows at bottom -->
-    <button class="install-btn-fixed" id="install-button" onclick="showAndroidInstallPrompt()" style="display: none;">
+    <!-- Main Install Button - UPDATED with direct installApp() -->
+    <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
         <i class="fa fa-android"></i> Install GK Store App
     </button>
 
@@ -704,7 +706,10 @@
         <!-- MAIN SCREEN -->
         <div id="main-screen" class="screen active">
             <div class="main-layout">
-                <h1 class="big-title main-title" data-i18n="mainTitle">PUBG Marketplace</h1>
+                <h1 class="big-title main-title" data-i18n="mainTitle">
+                    <span id="title-connection-status" class="title-connection-status"></span>
+                    PUBG Marketplace
+                </h1>
                 <div class="sub-head main-subtitle" data-i18n="mainSubtitle">Secure · Instant delivery</div>
                 <button class="cta-button" onclick="switchScreen('accounts')">
                     <i class="fa fa-gamepad"></i> <span class="cta-text" data-i18n="cta">Click to see PUBG account</span>
@@ -1283,7 +1288,7 @@
         ];
 
         // ============================================
-        // SERVICE WORKER - MODIFIED FOR BETTER INSTALLATION
+        // SERVICE WORKER - KEPT EXACTLY AS IN YOUR ORIGINAL
         // ============================================
         if ('serviceWorker' in navigator) {
             // Unregister any existing service workers
@@ -1314,7 +1319,7 @@
         }
 
         // ============================================
-        // PWA INSTALLATION - SIMPLIFIED FOR ANDROID
+        // PWA INSTALLATION - DIRECT INSTALL ON CLICK (UPDATED)
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
@@ -1335,77 +1340,105 @@
             e.preventDefault();
             deferredPrompt = e;
             
-            // Show install button for Android
+            // Show install buttons
             if (!isStandalone) {
-                // Check if it's Android
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                
-                if (isAndroid) {
-                    installButton.style.display = 'flex';
-                    androidBanner.style.display = 'flex';
-                } else {
-                    installButton.style.display = 'flex';
-                }
+                installButton.style.display = 'flex';
+                androidBanner.style.display = 'flex';
             }
             
-            console.log('beforeinstallprompt fired');
+            console.log('✅ Install prompt ready');
         });
 
         // Handle app installed
         window.addEventListener('appinstalled', (e) => {
-            console.log('✅ App was installed');
+            console.log('✅ App was installed successfully');
             installButton.style.display = 'none';
             androidBanner.style.display = 'none';
             deferredPrompt = null;
         });
 
-        // Show Android install prompt
-        window.showAndroidInstallPrompt = function() {
-            if (!deferredPrompt) {
-                // Fallback instructions for Android
-                if (/Android/i.test(navigator.userAgent)) {
-                    alert('To install:\n1. Tap the menu (⋮)\n2. Select "Install app" or "Add to Home screen"');
-                } else {
-                    alert('To install, use browser menu → "Add to Home screen"');
-                }
-                return;
+        // DIRECT INSTALL FUNCTION - NO ALERTS OR MESSAGES
+        window.installApp = function() {
+            if (deferredPrompt) {
+                // Show the native install prompt immediately
+                deferredPrompt.prompt();
+                
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('✅ User installed the app');
+                        installButton.style.display = 'none';
+                        androidBanner.style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                // If no deferred prompt, just log it - no alerts
+                console.log('Install prompt not available yet');
             }
-            
-            // Show the install prompt
-            deferredPrompt.prompt();
-            
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted install');
-                    installButton.style.display = 'none';
-                    androidBanner.style.display = 'none';
-                } else {
-                    console.log('User dismissed install');
-                }
-                deferredPrompt = null;
-            });
         };
 
-        // Also show button after 2 seconds if not installed and no prompt yet
+        // Also show button after 2 seconds if not installed
         setTimeout(() => {
-            if (!isStandalone && !deferredPrompt) {
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                if (isAndroid) {
-                    installButton.style.display = 'flex';
-                    androidBanner.style.display = 'flex';
-                } else {
-                    installButton.style.display = 'flex';
-                }
+            if (!isStandalone) {
+                installButton.style.display = 'flex';
+                androidBanner.style.display = 'flex';
             }
         }, 2000);
 
         // ============================================
-        // REST OF YOUR CODE REMAINS EXACTLY THE SAME
+        // CONNECTION STATUS - UPDATED to use title position
         // ============================================
-        // ... (keep all your existing code from here - translations, state, functions, etc.)
+        let isConnected = false;
+        const titleConnectionStatus = document.getElementById('title-connection-status');
+
+        async function testConnection() {
+            try {
+                console.log('🔌 Testing connection to Cloudflare Tunnel...');
+                titleConnectionStatus.className = 'title-connection-status'; // orange by default
+                
+                // Test the health endpoint
+                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    isConnected = true;
+                    titleConnectionStatus.className = 'title-connection-status connected'; // green dot
+                    console.log('✅ Connected to PocketBase via Cloudflare');
+                    
+                    // Load data from server
+                    await loadAccountsFromPB();
+                    await loadContactsFromPB();
+                    await loadSettingsFromPB();
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (error) {
+                console.log('⚠️ Cloudflare tunnel not reachable, using local data');
+                titleConnectionStatus.className = 'title-connection-status offline'; // red dot
+                isConnected = false;
+                
+                // Still render with local data
+                renderAccounts();
+            }
+        }
+
+        // Test connection after a short delay
+        setTimeout(testConnection, 2000);
+
+        // ============================================
+        // REST OF YOUR CODE - KEEP ALL YOUR EXISTING CODE HERE
+        // All your existing functions (renderAccounts, renderContacts, etc.) remain exactly as they are
+        // Make sure to include all your existing functions below this line
+        // ============================================
         
-        // Note: All your existing JavaScript code from line 1036 onwards should be kept exactly as is
-        // I'm not duplicating it here to save space, but you need to keep all of it
+        // [YOUR EXISTING FUNCTIONS - renderAccounts, renderContacts, adminLogin, uploadNewAccount, etc.]
+        // Paste all your existing JavaScript functions here
         
     </script>
 </body>
