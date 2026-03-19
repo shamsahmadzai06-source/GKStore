@@ -12,6 +12,11 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     
+    <!-- Cache Control Meta Tags - NEW -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <!-- Your Icons -->
     <link rel="icon" type="image/png" sizes="72x72" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png">
     <link rel="icon" type="image/png" sizes="96x96" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png">
@@ -27,14 +32,14 @@
     
     <title>GK Store · PUBG accounts</title>
     
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font Awesome 6 with version for cache busting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2.0.0">
     
-    <!-- intl-tel-input -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+    <!-- intl-tel-input with version -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css?v=2.0.0">
     
-    <!-- PocketBase SDK -->
-    <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
+    <!-- PocketBase SDK with version -->
+    <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js?v=2.0.0"></script>
     
     <style>
         /* Your existing CSS - keep exactly as is */
@@ -497,6 +502,35 @@
             box-shadow: 0 6px 20px rgba(236,72,153,0.7);
         }
 
+        /* Update Button - NEW */
+        .update-btn-fixed {
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: fit-content;
+            z-index: 9999;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .update-btn-fixed:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.7);
+        }
+
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
@@ -763,6 +797,16 @@
             cursor: pointer;
             margin-top: 0.5rem;
         }
+        
+        /* Version badge - NEW */
+        .version-badge {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            padding: 0.2rem 0.5rem;
+            background: var(--surface-lighter);
+            border-radius: 1rem;
+            display: inline-block;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -772,6 +816,11 @@
     <!-- Install Button -->
     <button class="install-btn-fixed" id="install-button" onclick="installApp()" style="display: none;">
         <i class="fas fa-download"></i> Install GK Store
+    </button>
+    
+    <!-- Update Button - NEW -->
+    <button class="update-btn-fixed" id="update-button" onclick="forceUpdate()" style="display: none;">
+        <i class="fas fa-sync-alt"></i> Update Available
     </button>
 
     <!-- top nav -->
@@ -841,6 +890,15 @@
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
+                    <!-- Version Info - NEW -->
+                    <div class="account-card" style="padding:0.8rem; margin-bottom:1rem; text-align:center;">
+                        <span class="version-badge" id="app-version-display">Version 2.0.0</span>
+                        <span class="version-badge" style="margin-left:0.5rem;" id="build-date-display">Build: 2024-01-15</span>
+                        <button class="action-btn" style="padding:0.2rem 0.5rem; margin-left:0.5rem;" onclick="checkForUpdates()">
+                            <i class="fas fa-sync-alt"></i> Check Updates
+                        </button>
+                    </div>
+                    
                     <!-- Stats Cards -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
                         <div class="user-card">
@@ -1106,8 +1164,41 @@
         <img id="fullscreen-image" src="" alt="Fullscreen">
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js?v=2.0.0"></script>
     <script>
+        // ============================================
+        // APP VERSION - CHANGE THIS WHEN YOU UPDATE
+        // ============================================
+        const APP_VERSION = '2.0.0'; // Increment this with every update
+        const BUILD_DATE = '2024-01-15'; // Update this date manually
+        
+        // Force clear old caches and localStorage on version change
+        if (localStorage.getItem('app_version') !== APP_VERSION) {
+            console.log('New version detected, clearing old caches...');
+            
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            
+            // Clear localStorage except language preference
+            const savedLang = localStorage.getItem('gk_language');
+            localStorage.clear();
+            if (savedLang) localStorage.setItem('gk_language', savedLang);
+            
+            // Set new version
+            localStorage.setItem('app_version', APP_VERSION);
+            localStorage.setItem('build_date', BUILD_DATE);
+        }
+
+        // Update version display
+        document.getElementById('app-version-display').textContent = `Version ${APP_VERSION}`;
+        document.getElementById('build-date-display').textContent = `Build: ${BUILD_DATE}`;
+
         // ============================================
         // COMPLETE TRANSLATIONS - English, Pashto, Dari
         // ============================================
@@ -1158,7 +1249,7 @@
                 manageAdsTitle: 'Manage Swipe Ads',
                 addAd: '➕ Add New Ad (Image/Video)',
                 imageOption: 'Image',
-                videoOption: 'Video',
+                videoOption: 'ideo',
                 adMediaLabel: 'Ad Media *',
                 addAdBtn: 'Add Ad',
                 currentAds: '📋 Current Ads',
@@ -1370,24 +1461,94 @@
         ];
 
         // ============================================
-        // SERVICE WORKER - MODIFIED TO NOT INTERFERE
+        // SERVICE WORKER - UPDATED WITH VERSION CONTROL
         // ============================================
         if ('serviceWorker' in navigator) {
-            // Unregister any existing service workers that might be caching old URLs
+            // Unregister all existing service workers first
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let registration of registrations) {
                     registration.unregister();
                     console.log('Service worker unregistered');
                 }
             }).then(function() {
-                // Register fresh service worker
-                navigator.serviceWorker.register('sw.js')
+                // Register fresh service worker with version
+                navigator.serviceWorker.register('sw.js?v=' + APP_VERSION)
                     .then(registration => {
-                        console.log('✅ New ServiceWorker registered');
+                        console.log('✅ New ServiceWorker registered with version:', APP_VERSION);
+                        
+                        // Check for updates
+                        registration.update();
+                        
+                        // Handle updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version available - show update button
+                                    document.getElementById('update-button').style.display = 'flex';
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         console.log('❌ ServiceWorker registration failed:', error);
                     });
+            });
+        }
+
+        // ============================================
+        // FORCE UPDATE FUNCTION
+        // ============================================
+        window.checkForUpdates = async function() {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    registration.update(); // Force service worker update check
+                }
+            }
+            
+            // Clear browser cache for this page
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map(name => caches.delete(name))
+                );
+            }
+            
+            // Reload with cache busting
+            window.location.reload(true);
+        }
+
+        window.forceUpdate = function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg) {
+                        reg.unregister().then(() => {
+                            window.location.reload(true);
+                        });
+                    } else {
+                        window.location.reload(true);
+                    }
+                });
+            } else {
+                window.location.reload(true);
+            }
+        }
+
+        // Auto-check for updates every hour
+        setInterval(checkForUpdates, 60 * 60 * 1000);
+
+        // Check for updates when page becomes visible again
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkForUpdates();
+            }
+        });
+
+        // Listen for new service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
             });
         }
 
@@ -1844,7 +2005,7 @@
                     <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
                     <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
                     <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')">
-                        <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
+                        <i class="fab fa-whatsapp"></i> ${t.chatNow}
                     </button>
                 </div>
             `).join('');
@@ -2483,7 +2644,7 @@
                     appState.bookPhoneInput = intlTelInput(input, {
                         initialCountry: 'af',
                         separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js?v=2.0.0',
                         dropdownContainer: document.body
                     });
                 }
@@ -2648,7 +2809,7 @@
                 appState.phoneInput = intlTelInput(input, {
                     initialCountry: 'af',
                     separateDialCode: true,
-                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
+                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js?v=2.0.0',
                     dropdownContainer: document.body
                 });
             }
