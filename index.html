@@ -12,7 +12,7 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Cache Control Meta Tags - NEW -->
+    <!-- Cache Control Meta Tags -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -472,7 +472,7 @@
         .btn-primary { background:var(--gradient-primary); color:white; border:none; }
         .whatsapp-btn { background: #25D366; color:white; border:none; }
 
-        /* Install Button */
+        /* Install Button - FIXED FOR ANDROID */
         .install-btn-fixed {
             position: fixed;
             bottom: 20px;
@@ -502,7 +502,7 @@
             box-shadow: 0 6px 20px rgba(236,72,153,0.7);
         }
 
-        /* Update Button - NEW */
+        /* Update Button */
         .update-btn-fixed {
             position: fixed;
             bottom: 80px;
@@ -798,7 +798,7 @@
             margin-top: 0.5rem;
         }
         
-        /* Version badge - NEW */
+        /* Version badge */
         .version-badge {
             font-size: 0.7rem;
             color: var(--text-secondary);
@@ -806,6 +806,59 @@
             background: var(--surface-lighter);
             border-radius: 1rem;
             display: inline-block;
+        }
+
+        /* Android install instructions modal */
+        .android-install-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .android-install-content {
+            background: var(--surface);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .android-install-content h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .android-install-content p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .android-install-content .browser-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin: 1rem 0;
+        }
+        
+        .android-install-content .close-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
         }
     </style>
 </head>
@@ -818,10 +871,26 @@
         <i class="fas fa-download"></i> Install GK Store
     </button>
     
-    <!-- Update Button - NEW -->
+    <!-- Update Button -->
     <button class="update-btn-fixed" id="update-button" onclick="forceUpdate()" style="display: none;">
         <i class="fas fa-sync-alt"></i> Update Available
     </button>
+
+    <!-- Android Install Instructions Modal - NEW -->
+    <div id="android-install-modal" class="android-install-modal" onclick="closeAndroidInstallModal()">
+        <div class="android-install-content" onclick="event.stopPropagation()">
+            <i class="fas fa-android browser-icon"></i>
+            <h3>📱 Install GK Store</h3>
+            <p>To install this app on your Android device:</p>
+            <p>1️⃣ Tap the <strong>menu button (⋮)</strong> in your browser</p>
+            <p>2️⃣ Select <strong>"Add to Home screen"</strong></p>
+            <p>3️⃣ Tap <strong>"Install"</strong> or <strong>"Add"</strong></p>
+            <p style="margin-top: 1rem; color: var(--primary);">
+                <i class="fas fa-star"></i> This will add GK Store to your home screen like a real app!
+            </p>
+            <button class="close-btn" onclick="closeAndroidInstallModal()">Got it!</button>
+        </div>
+    </div>
 
     <!-- top nav -->
     <div class="top-nav">
@@ -890,7 +959,7 @@
                 
                 <!-- Admin Dashboard -->
                 <div id="admin-dashboard" class="hidden">
-                    <!-- Version Info - NEW -->
+                    <!-- Version Info -->
                     <div class="account-card" style="padding:0.8rem; margin-bottom:1rem; text-align:center;">
                         <span class="version-badge" id="app-version-display">Version 2.0.0</span>
                         <span class="version-badge" style="margin-left:0.5rem;" id="build-date-display">Build: 2024-01-15</span>
@@ -1249,7 +1318,7 @@
                 manageAdsTitle: 'Manage Swipe Ads',
                 addAd: '➕ Add New Ad (Image/Video)',
                 imageOption: 'Image',
-                videoOption: 'ideo',
+                videoOption: 'Video',
                 adMediaLabel: 'Ad Media *',
                 addAdBtn: 'Add Ad',
                 currentAds: '📋 Current Ads',
@@ -1553,191 +1622,87 @@
         }
 
         // ============================================
-        // APP STATE - EMPTY ACCOUNTS AND ADS
-        // ============================================
-        const appState = {
-            accounts: fallbackAccounts, // Empty array - no demo accounts
-            contacts: fallbackContacts,
-            ads: [], // Empty array - no demo ads
-            bookRequests: [],
-            uniqueVisitors: new Set(),
-            activeSessions: new Map(),
-            visitorCount: 0,
-            onlineCount: 0,
-            currentFilter: 'all',
-            isAdminLoggedIn: false,
-            currentAccount: null,
-            currentMediaData: null,
-            currentAdData: null,
-            phoneInput: null,
-            bookPhoneInput: null,
-            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-            currentLanguage: 'en',
-            autoSlideInterval: null,
-            usingFallback: true,
-            uploadRetryCount: 0
-        };
-
-        // Clear any old cached data on startup
-        try {
-            // Check if we have accounts with old URLs and clear them
-            if (localStorage.getItem('gk_accounts')) {
-                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                // If any account has the old URL in media, clear localStorage
-                if (saved.some(acc => acc.media && acc.media.includes('days-substitute-metadata-ireland'))) {
-                    console.log('Found old URLs, clearing localStorage');
-                    localStorage.removeItem('gk_accounts');
-                    localStorage.removeItem('gk_contacts');
-                    localStorage.removeItem('gk_ads');
-                    localStorage.removeItem('gk_bookings');
-                }
-            }
-        } catch (e) {}
-
-        // Load from localStorage (but don't use fallback if empty)
-        if (localStorage.getItem('gk_accounts')) {
-            try {
-                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                if (saved && saved.length > 0) {
-                    appState.accounts = saved;
-                    appState.usingFallback = false;
-                }
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_contacts')) {
-            try {
-                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_ads')) {
-            try {
-                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_bookings')) {
-            try {
-                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_usdt_address')) {
-            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-        }
-
-        // ============================================
-        // CORE FUNCTIONS
-        // ============================================
-        function applyTranslation(lang) {
-            const t = translations[lang] || translations.en;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
-            });
-            document.documentElement.lang = lang;
-            document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
-            appState.currentLanguage = lang;
-            localStorage.setItem('gk_language', lang);
-            renderAccounts();
-            renderContacts();
-            if (appState.isAdminLoggedIn) renderBookRequests();
-        }
-
-        function setLanguage(lang) {
-            applyTranslation(lang);
-            closeModal('language-modal');
-        }
-
-        function openLanguageModal() {
-            document.getElementById('language-modal').classList.remove('hidden');
-        }
-
-        // ============================================
-        // CONNECTION TEST - SIMPLIFIED (Messenger style dot)
-        // ============================================
-        let isConnected = false;
-        const connectionStatus = document.getElementById('connection-status');
-
-        async function testConnection() {
-            try {
-                console.log('🔌 Testing connection to Cloudflare Tunnel...');
-                connectionStatus.className = 'connection-status'; // orange by default
-                
-                // Test the health endpoint
-                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    isConnected = true;
-                    connectionStatus.className = 'connection-status connected'; // green dot
-                    console.log('✅ Connected to PocketBase via Cloudflare');
-                    
-                    // Load data from server
-                    await loadAccountsFromPB();
-                    await loadContactsFromPB();
-                    await loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
-                }
-            } catch (error) {
-                console.log('⚠️ Cloudflare tunnel not reachable, using local data');
-                connectionStatus.className = 'connection-status offline'; // red dot
-                isConnected = false;
-                
-                // Still render with local data
-                renderAccounts();
-            }
-        }
-
-        // Test connection after a short delay
-        setTimeout(testConnection, 2000);
-
-        // ============================================
-        // PWA INSTALLATION
+        // PWA INSTALLATION - FIXED FOR ANDROID
         // ============================================
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
+        const androidInstallModal = document.getElementById('android-install-modal');
 
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        // Check if already installed
+        function isAppInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true ||
+                   localStorage.getItem('app_installed') === 'true';
+        }
+
+        if (isAppInstalled()) {
             installButton.style.display = 'none';
         }
 
+        // Listen for beforeinstallprompt event (Chrome, Edge, Samsung Internet)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
+            if (!isAppInstalled()) {
                 installButton.style.display = 'flex';
             }
         });
 
-        window.installApp = function() {
-            if (!deferredPrompt) {
-                alert('To install: Tap browser menu → "Add to Home Screen"');
-                return;
-            }
-            
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    installButton.style.display = 'none';
+        // Also check if we're on Android but beforeinstallprompt didn't fire
+        function detectAndroid() {
+            const ua = navigator.userAgent.toLowerCase();
+            return ua.indexOf('android') > -1;
+        }
+
+        // Show install button after a delay if not installed and on Android
+        setTimeout(() => {
+            if (!isAppInstalled() && detectAndroid()) {
+                // If beforeinstallprompt didn't fire within 3 seconds, show button anyway
+                if (!deferredPrompt) {
+                    installButton.style.display = 'flex';
                 }
-                deferredPrompt = null;
-            });
+            }
+        }, 3000);
+
+        // Android install function with fallback
+        window.installApp = function() {
+            if (deferredPrompt) {
+                // Use the beforeinstallprompt event if available
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        installButton.style.display = 'none';
+                        localStorage.setItem('app_installed', 'true');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                // Fallback for Android browsers that don't support beforeinstallprompt
+                // Show custom instructions modal
+                androidInstallModal.style.display = 'flex';
+            }
         };
 
-        setTimeout(() => {
-            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && !deferredPrompt) {
-                installButton.style.display = 'flex';
-            }
-        }, 2000);
+        // Close Android install modal
+        window.closeAndroidInstallModal = function() {
+            androidInstallModal.style.display = 'none';
+        };
+
+        // Also hide install button if already installed
+        window.addEventListener('appinstalled', (e) => {
+            console.log('App was installed');
+            installButton.style.display = 'none';
+            localStorage.setItem('app_installed', 'true');
+        });
+
+        // Check if running as standalone app
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            installButton.style.display = 'none';
+            localStorage.setItem('app_installed', 'true');
+        }
 
         // ============================================
         // FULLSCREEN IMAGE FUNCTION
@@ -2012,6 +1977,49 @@
         }
 
         // ============================================
+        // CONNECTION TEST - SIMPLIFIED (Messenger style dot)
+        // ============================================
+        let isConnected = false;
+        const connectionStatus = document.getElementById('connection-status');
+
+        async function testConnection() {
+            try {
+                console.log('🔌 Testing connection to Cloudflare Tunnel...');
+                connectionStatus.className = 'connection-status'; // orange by default
+                
+                // Test the health endpoint
+                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    isConnected = true;
+                    connectionStatus.className = 'connection-status connected'; // green dot
+                    console.log('✅ Connected to PocketBase via Cloudflare');
+                    
+                    // Load data from server
+                    await loadAccountsFromPB();
+                    await loadContactsFromPB();
+                    await loadSettingsFromPB();
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (error) {
+                console.log('⚠️ Cloudflare tunnel not reachable, using local data');
+                connectionStatus.className = 'connection-status offline'; // red dot
+                isConnected = false;
+                
+                // Still render with local data
+                renderAccounts();
+            }
+        }
+
+        // ============================================
         // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
@@ -2081,6 +2089,111 @@
                 }
             } catch (error) {}
         }
+
+        // ============================================
+        // APP STATE - EMPTY ACCOUNTS AND ADS
+        // ============================================
+        const appState = {
+            accounts: fallbackAccounts, // Empty array - no demo accounts
+            contacts: fallbackContacts,
+            ads: [], // Empty array - no demo ads
+            bookRequests: [],
+            uniqueVisitors: new Set(),
+            activeSessions: new Map(),
+            visitorCount: 0,
+            onlineCount: 0,
+            currentFilter: 'all',
+            isAdminLoggedIn: false,
+            currentAccount: null,
+            currentMediaData: null,
+            currentAdData: null,
+            phoneInput: null,
+            bookPhoneInput: null,
+            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
+            currentLanguage: 'en',
+            autoSlideInterval: null,
+            usingFallback: true,
+            uploadRetryCount: 0
+        };
+
+        // Clear any old cached data on startup
+        try {
+            // Check if we have accounts with old URLs and clear them
+            if (localStorage.getItem('gk_accounts')) {
+                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                // If any account has the old URL in media, clear localStorage
+                if (saved.some(acc => acc.media && acc.media.includes('days-substitute-metadata-ireland'))) {
+                    console.log('Found old URLs, clearing localStorage');
+                    localStorage.removeItem('gk_accounts');
+                    localStorage.removeItem('gk_contacts');
+                    localStorage.removeItem('gk_ads');
+                    localStorage.removeItem('gk_bookings');
+                }
+            }
+        } catch (e) {}
+
+        // Load from localStorage (but don't use fallback if empty)
+        if (localStorage.getItem('gk_accounts')) {
+            try {
+                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
+                if (saved && saved.length > 0) {
+                    appState.accounts = saved;
+                    appState.usingFallback = false;
+                }
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_contacts')) {
+            try {
+                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_ads')) {
+            try {
+                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_bookings')) {
+            try {
+                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            } catch (e) {}
+        }
+        
+        if (localStorage.getItem('gk_usdt_address')) {
+            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
+        }
+
+        // ============================================
+        // CORE FUNCTIONS
+        // ============================================
+        function applyTranslation(lang) {
+            const t = translations[lang] || translations.en;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            document.documentElement.lang = lang;
+            document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
+            appState.currentLanguage = lang;
+            localStorage.setItem('gk_language', lang);
+            renderAccounts();
+            renderContacts();
+            if (appState.isAdminLoggedIn) renderBookRequests();
+        }
+
+        function setLanguage(lang) {
+            applyTranslation(lang);
+            closeModal('language-modal');
+        }
+
+        function openLanguageModal() {
+            document.getElementById('language-modal').classList.remove('hidden');
+        }
+
+        // Test connection after a short delay
+        setTimeout(testConnection, 2000);
 
         // ============================================
         // ULTIMATE FIXED UPLOAD FUNCTION - WITH HTTP/2 PROTOCOL FIX
