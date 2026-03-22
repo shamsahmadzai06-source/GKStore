@@ -425,13 +425,58 @@
             border-radius: 0.8rem;
             border: 1px solid var(--border);
             overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .account-card:active {
+            transform: scale(0.98);
+        }
+
+        .image-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #1a1a24, #2a2a36);
+            overflow: hidden;
         }
 
         .card-media {
             width: 100%;
-            aspect-ratio: 16/9;
+            height: 100%;
             object-fit: cover;
-            background: #1a1a24;
+            transition: transform 0.3s ease;
+        }
+
+        .image-container:hover .card-media {
+            transform: scale(1.05);
+        }
+
+        .image-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(236,72,153,0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .image-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+        }
+
+        .image-error i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
             display: block;
         }
 
@@ -483,6 +528,11 @@
             gap: 2px;
             cursor: pointer;
             color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
         }
 
         .action-btn.buy {
@@ -1035,7 +1085,7 @@
             <div class="modal-body">
                 <div style="display:flex; gap:0.4rem; margin-bottom:0.4rem;"><span class="status-dot" id="modal-status-dot"></span><span id="modal-status-text">Checking...</span></div>
                 <div class="ip-list"><h4 style="font-size:0.75rem;">Online Users:</h4><div id="online-users-list"></div></div>
-                <p class="version-badge" style="margin-top:0.4rem;">Version: <span id="app-version">2.0.4</span></p>
+                <p class="version-badge" style="margin-top:0.4rem;">Version: <span id="app-version">2.0.5</span></p>
             </div>
         </div>
     </div>
@@ -1170,7 +1220,7 @@
         // ============================================
         // APP CONFIGURATION
         // ============================================
-        const APP_VERSION = '2.0.4';
+        const APP_VERSION = '2.0.5';
         const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
         const PB_URL = CLOUDFLARE_URL;
         
@@ -1331,7 +1381,7 @@
         function clearAllIPs() { if(confirm('Clear all IP data?')) { ipTracker.clearAll(); updateOnlineCount(0); } }
 
         // ============================================
-        // MANUAL UPDATE BUTTON - Replaces pull-to-refresh
+        // MANUAL UPDATE BUTTON
         // ============================================
         async function manualUpdate() {
             const updateBtn = document.getElementById('update-btn');
@@ -1345,7 +1395,6 @@
                 renderContacts();
                 renderAdsSlider();
                 
-                // Show success toast
                 const toast = document.getElementById('update-toast');
                 toast.style.display = 'block';
                 setTimeout(() => {
@@ -1463,7 +1512,7 @@
         }
 
         // ============================================
-        // RENDER FUNCTIONS - FIXED IMAGES
+        // RENDER FUNCTIONS - FIXED IMAGES (Facebook style)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1474,14 +1523,23 @@
             const t = translations[appState.currentLanguage] || translations.en;
             
             grid.innerHTML = filtered.map(acc => {
-                const mediaHtml = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" onerror="this.style.display='none'; this.parentElement.innerHTML='<img src=\'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400\' class=\'card-media\' style=\'cursor:pointer;\' onclick=\'openFullscreenImage(this.src)\'>'"></video>`
-                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer; width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
+                // Create image with lazy loading and error handling
+                const imageUrl = acc.media;
+                const imageId = `img_${acc.id}`;
                 
                 return `
                     <div class="account-card">
-                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:#1a1a24; overflow:hidden;">
-                            ${mediaHtml}
+                        <div class="image-container" id="img_container_${acc.id}">
+                            <img 
+                                src="${imageUrl}" 
+                                class="card-media" 
+                                alt="${acc.title}"
+                                loading="lazy"
+                                onclick="openFullscreenImage('${imageUrl}')"
+                                style="cursor:pointer; width:100%; height:100%; object-fit:cover;"
+                                onerror="this.onerror=null; this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'; this.parentElement.style.background='linear-gradient(135deg, #1a1a24, #2a2a36)';"
+                                onload="this.style.opacity='1';"
+                            />
                         </div>
                         <div class="card-content">
                             <div class="card-title">${acc.title}<span class="tier-badge ${acc.tier}">${acc.tier}</span></div>
@@ -1540,7 +1598,7 @@
             if(appState.accounts.length === 0) { list.innerHTML = '<p>No accounts</p>'; return; }
             list.innerHTML = appState.accounts.map(acc => `
                 <div style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem; background:var(--surface-light); border-radius:0.5rem; margin-bottom:0.3rem;">
-                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:35px; height:35px; border-radius:4px; object-fit:cover;"></video>` : `<img src="${acc.media}" style="width:35px; height:35px; border-radius:4px; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`}
+                    <img src="${acc.media}" style="width:35px; height:35px; border-radius:4px; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">
                     <div style="flex:1;"><strong>${acc.title}</strong><div>$${acc.price_usd}</div></div>
                     <button class="action-btn" style="background:#ef4444; padding:0.15rem 0.4rem; font-size:0.55rem;" onclick="deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> Delete</button>
                 </div>
@@ -1576,7 +1634,7 @@
             if(appState.ads.length === 0) { container.innerHTML = '<div style="text-align:center; padding:0.8rem;">No ads</div>'; return; }
             let slides = '', dots = '';
             appState.ads.forEach((ad, i) => {
-                slides += `<div class="slide">${ad.type === 'video' ? `<video src="${ad.data}" autoplay muted loop playsinline></video>` : `<img src="${ad.data}" alt="ad">`}<div class="slide-caption">${ad.caption || ''}</div></div>`;
+                slides += `<div class="slide">${ad.type === 'video' ? `<video src="${ad.data}" autoplay muted loop playsinline></video>` : `<img src="${ad.data}" alt="ad" loading="lazy">`}<div class="slide-caption">${ad.caption || ''}</div></div>`;
                 dots += `<span class="dot ${i === 0 ? 'active' : ''}" onclick="jumpToSlide(${i})"></span>`;
             });
             container.innerHTML = `<div class="slider-container"><div class="slider-track" id="slider-track">${slides}</div><div class="slider-dots">${dots}</div></div>`;
