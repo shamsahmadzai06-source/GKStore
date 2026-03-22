@@ -218,7 +218,7 @@
             font-weight: 500;
         }
 
-        /* Pull to Refresh Indicator - iOS Fixed */
+        /* Pull to Refresh Indicator */
         .refresh-indicator {
             position: fixed;
             top: 0;
@@ -443,6 +443,7 @@
             width: 100%;
             aspect-ratio: 16/9;
             object-fit: cover;
+            background: #1a1a24;
         }
 
         .card-content {
@@ -1010,7 +1011,7 @@
             <div class="modal-body">
                 <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem;"><span class="status-dot" id="modal-status-dot"></span><span id="modal-status-text">Checking...</span></div>
                 <div class="ip-list"><h4 style="font-size:0.8rem;">Online Users:</h4><div id="online-users-list"></div></div>
-                <p class="version-badge" style="margin-top:0.5rem;">Version: <span id="app-version">2.0.2</span></p>
+                <p class="version-badge" style="margin-top:0.5rem;">Version: <span id="app-version">2.0.3</span></p>
             </div>
         </div>
     </div>
@@ -1145,7 +1146,7 @@
         // ============================================
         // APP CONFIGURATION
         // ============================================
-        const APP_VERSION = '2.0.2';
+        const APP_VERSION = '2.0.3';
         const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
         const PB_URL = CLOUDFLARE_URL;
         
@@ -1306,15 +1307,14 @@
         function clearAllIPs() { if(confirm('Clear all IP data?')) { ipTracker.clearAll(); updateOnlineCount(0); } }
 
         // ============================================
-        // PULL TO REFRESH - iOS FIXED
+        // PULL TO REFRESH - iOS Compatible
         // ============================================
         let touchStart = 0;
         let refreshing = false;
         let refreshTimer = null;
         const refreshDiv = document.getElementById('refresh-indicator');
-        const refreshText = refreshDiv?.querySelector('span');
+        const refreshTextSpan = refreshDiv?.querySelector('span');
         
-        // Reset refresh indicator position
         if (refreshDiv) refreshDiv.style.transform = 'translateY(-100%)';
         
         document.addEventListener('touchstart', (e) => {
@@ -1331,9 +1331,9 @@
                     const translateY = Math.min(pull - 50, 0);
                     refreshDiv.style.transform = `translateY(${translateY}px)`;
                     if (pull > 70) {
-                        refreshText.innerText = 'Release to refresh';
+                        if (refreshTextSpan) refreshTextSpan.innerText = 'Release to refresh';
                     } else {
-                        refreshText.innerText = 'Pull to refresh';
+                        if (refreshTextSpan) refreshTextSpan.innerText = 'Pull to refresh';
                     }
                 }
             }
@@ -1355,7 +1355,7 @@
             refreshDiv.style.transform = 'translateY(-100%)';
             setTimeout(() => {
                 refreshing = false;
-                refreshText.innerText = 'Pull to refresh';
+                if (refreshTextSpan) refreshTextSpan.innerText = 'Pull to refresh';
             }, 300);
         }
 
@@ -1365,17 +1365,17 @@
             if (refreshTimer) clearTimeout(refreshTimer);
             
             refreshDiv.style.transform = 'translateY(0)';
-            refreshText.innerText = 'Refreshing...';
+            if (refreshTextSpan) refreshTextSpan.innerText = 'Refreshing...';
             
             try {
                 await Promise.all([testConnection(), loadAccountsFromPB(), loadContactsFromPB(), loadSettingsFromPB()]);
                 renderAccounts();
                 renderContacts();
                 renderAdsSlider();
-                refreshText.innerText = 'Updated!';
+                if (refreshTextSpan) refreshTextSpan.innerText = 'Updated!';
                 refreshTimer = setTimeout(hideRefreshIndicator, 800);
             } catch (error) {
-                refreshText.innerText = 'Failed';
+                if (refreshTextSpan) refreshTextSpan.innerText = 'Failed';
                 refreshTimer = setTimeout(hideRefreshIndicator, 1000);
             }
         }
@@ -1443,10 +1443,19 @@
             try {
                 const records = await pb.collection('accounts').getFullList({ sort: '-created' });
                 if(records.length) {
-                    appState.accounts = records.map(r => ({ id: r.id, title: r.title, desc: r.description, tier: r.tier, price_usd: r.price_usd, price_afn: r.price_afn, media: r.media ? pb.files.getUrl(r, r.media) : '', mediaType: r.mediaType || 'image' }));
+                    appState.accounts = records.map(r => ({ 
+                        id: r.id, 
+                        title: r.title, 
+                        desc: r.description, 
+                        tier: r.tier, 
+                        price_usd: r.price_usd, 
+                        price_afn: r.price_afn, 
+                        media: r.media ? pb.files.getUrl(r, r.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', 
+                        mediaType: r.mediaType || 'image' 
+                    }));
                     renderAccounts();
                 }
-            } catch(e) {}
+            } catch(e) { console.log('Error loading accounts:', e); }
         }
 
         async function loadContactsFromPB() {
@@ -1468,7 +1477,7 @@
         }
 
         // ============================================
-        // RENDER FUNCTIONS
+        // RENDER FUNCTIONS - FIXED IMAGES
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1477,23 +1486,31 @@
             if(appState.currentFilter !== 'all') filtered = filtered.filter(a => a.tier === appState.currentFilter);
             if(filtered.length === 0) { grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts</div>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            grid.innerHTML = filtered.map(acc => `
-                <div class="account-card">
-                    <div style="position:relative; width:100%; aspect-ratio:16/9; background:#1a1a24;">
-                        ${acc.mediaType === 'video' ? `<video src="${acc.media}" class="card-media" controls playsinline></video>` : `<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`}
-                    </div>
-                    <div class="card-content">
-                        <div class="card-title">${acc.title}<span class="tier-badge ${acc.tier}">${acc.tier}</span></div>
-                        <div class="card-desc">${acc.desc || ''}</div>
-                        <div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div>
-                        <div class="action-buttons">
-                            <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
-                            <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
-                            <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
+            
+            grid.innerHTML = filtered.map(acc => {
+                // FIXED: Better image handling with fallback
+                const mediaHtml = acc.mediaType === 'video' 
+                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" onerror="this.style.display='none'; this.parentElement.innerHTML='<img src=\'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400\' class=\'card-media\' style=\'cursor:pointer;\' onclick=\'openFullscreenImage(this.src)\'>'"></video>`
+                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
+                
+                return `
+                    <div class="account-card">
+                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:#1a1a24;">
+                            ${mediaHtml}
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">${acc.title}<span class="tier-badge ${acc.tier}">${acc.tier}</span></div>
+                            <div class="card-desc">${acc.desc || ''}</div>
+                            <div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div>
+                            <div class="action-buttons">
+                                <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
+                                <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
+                                <button class="action-btn" onclick="infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function renderContacts() {
@@ -1538,7 +1555,7 @@
             if(appState.accounts.length === 0) { list.innerHTML = '<p>No accounts</p>'; return; }
             list.innerHTML = appState.accounts.map(acc => `
                 <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem; background:var(--surface-light); border-radius:0.5rem; margin-bottom:0.3rem;">
-                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:40px; height:40px; border-radius:5px; object-fit:cover;"></video>` : `<img src="${acc.media}" style="width:40px; height:40px; border-radius:5px; object-fit:cover;">`}
+                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:40px; height:40px; border-radius:5px; object-fit:cover;"></video>` : `<img src="${acc.media}" style="width:40px; height:40px; border-radius:5px; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`}
                     <div style="flex:1;"><strong>${acc.title}</strong><div>$${acc.price_usd}</div></div>
                     <button class="action-btn" style="background:#ef4444; padding:0.2rem 0.5rem;" onclick="deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> Delete</button>
                 </div>
