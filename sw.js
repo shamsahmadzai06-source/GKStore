@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gk-store-v1';
+const CACHE_NAME = 'gk-store-v2';
 const urlsToCache = [
   '/GKStore/',
   '/GKStore/index.html',
@@ -24,7 +24,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activate event
+// Activate event - cleanup old caches
 self.addEventListener('activate', event => {
   console.log('Service Worker activating...');
   event.waitUntil(
@@ -46,7 +46,7 @@ self.addEventListener('activate', event => {
 
 // Fetch event - network first, then cache
 self.addEventListener('fetch', event => {
-  // Skip cross-origin requests
+  // Skip cross-origin requests like Cloudflare tunnel
   if (event.request.url.includes('trycloudflare.com')) {
     event.respondWith(fetch(event.request));
     return;
