@@ -208,34 +208,57 @@
             justify-content: center;
         }
 
-        .nav-actions {
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(22, 22, 31, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
             display: flex;
-            gap: 8px;
+            justify-content: space-around;
+            padding: 8px 16px;
+            z-index: 1000;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
         }
 
-        .nav-btn {
-            background: var(--surface-light);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 0.4rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.85rem;
+        .bottom-nav-btn {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 40px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.2s;
+            font-weight: 500;
         }
 
-        .nav-btn:hover {
-            background: var(--gradient-primary);
-            border-color: transparent;
+        .bottom-nav-btn i {
+            font-size: 20px;
+        }
+
+        .bottom-nav-btn.active {
+            color: var(--primary);
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .bottom-nav-btn:hover {
+            background: var(--surface-light);
+            color: var(--text);
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 16px;
+            padding-bottom: 80px;
         }
 
         .screen {
@@ -633,7 +656,7 @@
         /* Install Button - Fixed for Android */
         .install-btn-fixed {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 0;
             right: 0;
             margin: 0 auto;
@@ -891,11 +914,6 @@
                 font-size: 0.8rem;
             }
             
-            .nav-btn {
-                min-height: 44px;
-                padding: 0.5rem 0.8rem;
-            }
-            
             .title-section {
                 flex-direction: column;
                 align-items: flex-start;
@@ -903,6 +921,15 @@
             
             .big-title {
                 font-size: 2rem;
+            }
+            
+            .bottom-nav-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
+            .bottom-nav-btn i {
+                font-size: 18px;
             }
         }
         
@@ -1052,6 +1079,53 @@
             cursor: pointer;
             margin-top: 0.5rem;
         }
+        
+        /* Install instructions modal */
+        .install-instructions {
+            background: var(--surface-lighter);
+            padding: 1rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .install-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .install-step:last-child {
+            border-bottom: none;
+        }
+        
+        .install-step .step-number {
+            width: 28px;
+            height: 28px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .install-step .step-text {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+        
+        .platform-badge {
+            display: inline-block;
+            background: var(--surface);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 0 4px;
+            border: 1px solid var(--border);
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -1085,8 +1159,6 @@
         
         <div class="nav-actions">
             <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span class="lang-text" data-i18n="lang">Lang</span></button>
-            <button class="nav-btn" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span class="contact-text" data-i18n="contact">Contact</span></button>
-            <button class="nav-btn" onclick="switchScreen('admin')"><i class="fa fa-user-shield"></i><span class="admin-text" data-i18n="admin">Admin</span></button>
         </div>
     </div>
 
@@ -1142,13 +1214,13 @@
 
         <!-- CONTACT SCREEN -->
         <div id="contact-screen" class="screen">
-            <h2 class="contact-title" data-i18n="contactTitle">Contact & Support</h2>
+            <h2 class="contact-title" style="margin-bottom:1rem;" data-i18n="contactTitle">Contact & Support</h2>
             <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
         </div>
 
         <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
-            <h2 class="admin-title" data-i18n="adminTitle">Admin Panel</h2>
+            <h2 class="admin-title" style="margin-bottom:1rem;" data-i18n="adminTitle">Admin Panel</h2>
             <div style="max-width:600px; margin:0 auto;">
                 <!-- Login Section -->
                 <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
@@ -1231,6 +1303,22 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Bottom Navigation - Contact and Admin buttons -->
+    <div class="bottom-nav">
+        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')">
+            <i class="fab fa-whatsapp"></i>
+            <span data-i18n="contact">Contact</span>
+        </button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')">
+            <i class="fas fa-user-shield"></i>
+            <span data-i18n="admin">Admin</span>
+        </button>
     </div>
 
     <!-- EDIT USDT MODAL -->
@@ -1423,6 +1511,34 @@
                 <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('en')">🇺🇸 English</button>
                 <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="setLanguage('ps')">🇦🇫 پښتو</button>
                 <button class="btn" style="width:100%;" onclick="setLanguage('fa')">🇮🇷 فارسی</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INSTALL INSTRUCTIONS MODAL -->
+    <div id="install-modal" class="modal-overlay hidden" onclick="closeModal('install-modal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-download"></i> Install as App</h3>
+                <button class="modal-close" onclick="closeModal('install-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="install-instructions" id="install-instructions"></div>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-light); border-radius: 1rem;">
+                    <p style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                        <strong>Benefits:</strong>
+                    </p>
+                    <ul style="list-style: none; padding-left: 1.5rem;">
+                        <li>✓ Works offline</li>
+                        <li>✓ Faster loading</li>
+                        <li>✓ Like a native app</li>
+                        <li>✓ No browser address bar</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('install-modal')">Close</button>
             </div>
         </div>
     </div>
@@ -1836,7 +1952,8 @@
                 
                 if (isAndroid) {
                     installText.textContent = 'Install on Android';
-                    document.querySelector('.banner-text small').textContent = 'Add to home screen';
+                    const bannerText = document.querySelector('.banner-text small');
+                    if (bannerText) bannerText.textContent = 'Add to home screen';
                 } else {
                     installText.textContent = 'Install App';
                 }
@@ -1870,21 +1987,22 @@
                 });
             } else {
                 // For iOS or if prompt not available, show instructions
-                showIOSInstructions();
+                showInstallInstructions();
             }
         };
 
         // Close install banner
         window.closeInstallBanner = function() {
             installBanner.style.display = 'none';
-            // Store in localStorage to not show again for this session
+            // Store in sessionStorage to not show again for this session
             sessionStorage.setItem('banner_closed', 'true');
         };
 
-        // Show iOS instructions
-        function showIOSInstructions() {
+        // Show install instructions
+        function showInstallInstructions() {
             const instructions = document.getElementById('install-instructions');
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
             
             if (isIOS) {
                 instructions.innerHTML = `
@@ -1901,19 +2019,30 @@
                         <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
                     </div>
                 `;
-            } else {
+            } else if (isAndroid) {
                 instructions.innerHTML = `
                     <div class="install-step">
                         <span class="step-number">1</span>
-                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button</span>
+                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span>
                     </div>
                     <div class="install-step">
                         <span class="step-number">2</span>
-                        <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span></span>
+                        <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span> or <span class="platform-badge">Add to Home Screen</span></span>
                     </div>
                     <div class="install-step">
                         <span class="step-number">3</span>
                         <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
+                    </div>
+                `;
+            } else {
+                instructions.innerHTML = `
+                    <div class="install-step">
+                        <span class="step-number">1</span>
+                        <span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span>
+                    </div>
+                    <div class="install-step">
+                        <span class="step-number">2</span>
+                        <span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span>
                     </div>
                 `;
             }
@@ -1921,59 +2050,24 @@
             openModal('install-modal');
         }
 
-        // Create install instructions modal if not exists
-        if (!document.getElementById('install-modal')) {
-            const modal = document.createElement('div');
-            modal.id = 'install-modal';
-            modal.className = 'modal-overlay hidden';
-            modal.innerHTML = `
-                <div class="modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h3><i class="fas fa-download"></i> Install as App</h3>
-                        <button class="modal-close" onclick="closeModal('install-modal')">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="install-instructions" id="install-instructions"></div>
-                        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-light); border-radius: 1rem;">
-                            <p style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                                <strong>Benefits:</strong>
-                            </p>
-                            <ul style="list-style: none; padding-left: 1.5rem;">
-                                <li>✓ Works offline</li>
-                                <li>✓ Faster loading</li>
-                                <li>✓ Like a native app</li>
-                                <li>✓ No browser address bar</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn" onclick="closeModal('install-modal')">Close</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
         // Show install UI after delay if not installed
         setTimeout(() => {
             if (!isAppInstalled() && !sessionStorage.getItem('banner_closed')) {
-                // Check if we're on Android
+                // Always show install button for Android
                 const isAndroid = /Android/.test(navigator.userAgent);
                 if (isAndroid) {
-                    // For Android, try to trigger the install prompt
+                    installButton.style.display = 'flex';
+                    installText.textContent = 'Install App';
+                    // Also show banner if available
                     if (appState.deferredPrompt) {
                         installBanner.style.display = 'flex';
-                        installButton.style.display = 'flex';
-                    } else {
-                        // If no prompt yet, show banner anyway
-                        installBanner.style.display = 'flex';
-                        installButton.style.display = 'flex';
-                        installText.textContent = 'Install App';
                     }
+                } else if (appState.deferredPrompt) {
+                    installButton.style.display = 'flex';
+                    installText.textContent = 'Install App';
                 }
             }
-        }, 3000);
+        }, 2000);
 
         // ============================================
         // CORE FUNCTIONS
@@ -1991,6 +2085,12 @@
             renderAccounts();
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
+            
+            // Update bottom nav text
+            const contactBtn = document.getElementById('nav-contact');
+            const adminBtn = document.getElementById('nav-admin');
+            if (contactBtn) contactBtn.querySelector('span').textContent = t.contact;
+            if (adminBtn) adminBtn.querySelector('span').textContent = t.admin;
         }
 
         function setLanguage(lang) {
@@ -2003,7 +2103,7 @@
         }
 
         // ============================================
-        // ONLINE COUNT TRACKING - FIXED
+        // ONLINE COUNT TRACKING
         // ============================================
         let isConnected = false;
         let refreshCountdown = 5;
@@ -2108,7 +2208,7 @@
         }, 2000);
 
         // ============================================
-        // ZOOM FUNCTIONS (keep existing)
+        // ZOOM FUNCTIONS
         // ============================================
         let zoomLevel = 1;
         let panX = 0;
@@ -2299,7 +2399,7 @@
         }
 
         // ============================================
-        // RENDERING FUNCTIONS (keep existing)
+        // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -2627,7 +2727,7 @@
         }
 
         // ============================================
-        // UPLOAD FUNCTION (keep existing)
+        // UPLOAD FUNCTION
         // ============================================
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
@@ -2828,6 +2928,19 @@
         window.switchScreen = function(screen) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screen + '-screen').classList.add('active');
+            
+            // Update bottom nav active state
+            const navButtons = document.querySelectorAll('.bottom-nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            
+            if (screen === 'main') {
+                document.getElementById('nav-main').classList.add('active');
+            } else if (screen === 'contact') {
+                document.getElementById('nav-contact').classList.add('active');
+            } else if (screen === 'admin') {
+                document.getElementById('nav-admin').classList.add('active');
+            }
+            
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
             if (screen === 'admin' && appState.isAdminLoggedIn) {
@@ -2838,6 +2951,9 @@
                 document.getElementById('online-user-count').innerText = appState.onlineCount;
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
                 renderBookRequests();
+            } else if (screen === 'admin' && !appState.isAdminLoggedIn) {
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                document.getElementById('admin-login-section').classList.remove('hidden');
             }
         };
 
@@ -3386,6 +3502,9 @@
         renderAdsSlider();
         renderContacts();
         renderAccounts();
+        
+        // Set active nav for main screen
+        document.getElementById('nav-main').classList.add('active');
         
         // Track visitor immediately and then every 30 seconds
         trackVisitor();
