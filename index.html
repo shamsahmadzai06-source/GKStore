@@ -141,62 +141,122 @@
         }
         .overlay.active { display: block; }
 
-        /* Video Container - FIXED FOR CONTINUOUS PLAY */
-        .video-wrapper {
+        /* YouTube-like Video Player Styles */
+        .youtube-player {
             position: relative;
             width: 100%;
             height: 100%;
-            cursor: pointer;
             background: #000;
+            cursor: pointer;
         }
-        .video-wrapper video {
+        .youtube-player video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .video-play-icon {
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 20;
+        }
+        .youtube-player:hover .player-controls,
+        .youtube-player.controls-visible .player-controls {
+            opacity: 1;
+        }
+        .play-pause-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .play-pause-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .seek-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            margin: 0 10px;
+        }
+        .seek-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: var(--primary);
+            border-radius: 2px;
+            width: 0%;
+        }
+        .time-display {
+            font-size: 12px;
+            color: white;
+            margin-left: 10px;
+            font-family: monospace;
+        }
+        .fullscreen-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fullscreen-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .big-play-btn {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             background: rgba(0,0,0,0.7);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 10;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            cursor: pointer;
+            z-index: 15;
+            transition: transform 0.2s;
         }
-        .video-play-icon i {
-            font-size: 28px;
+        .big-play-btn:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .big-play-btn i {
+            font-size: 35px;
             color: white;
             margin-left: 5px;
         }
-        .video-wrapper.playing .video-play-icon {
-            opacity: 0;
-        }
-        .fullscreen-btn {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 36px;
-            height: 36px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 11;
-            opacity: 0.8;
-            transition: opacity 0.3s;
-        }
-        .fullscreen-btn i {
-            font-size: 18px;
-            color: white;
+        .big-play-btn.hidden {
+            display: none;
         }
 
         /* PWA Standalone Mode Styles */
@@ -527,7 +587,7 @@
             cursor: pointer;
         }
 
-        /* Swipe Ads - iOS Fixed */
+        /* Swipe Ads */
         .swipe-ads {
             width: 100%;
             border-radius: 2rem;
@@ -561,11 +621,6 @@
             background: #000;
         }
         .slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .slide video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -646,9 +701,7 @@
         .card-media {
             width: 100%;
             aspect-ratio: 16/9;
-            object-fit: cover;
             background: #1a1a24;
-            cursor: pointer;
         }
         .card-content {
             padding: 1rem;
@@ -1188,7 +1241,7 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="playClickSound(); switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- MODALS -->
+    <!-- MODALS (same as before) -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="playClickSound(); closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); saveUsdtAddress()">Save</button></div></div></div>
 
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Add New Account</h3><button class="modal-close" onclick="playClickSound(); closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr;"><input type="number" id="account-price-usd" class="input" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="upload-progress" id="upload-progress"><div class="progress-bar"></div></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="playClickSound(); uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
@@ -1235,92 +1288,203 @@
         }
 
         // ============================================
-        // VIDEO HANDLER WITH CONTINUOUS PLAYBACK
+        // YOUTUBE-LIKE VIDEO PLAYER
         // ============================================
-        function setupVideoWithFullscreen(container, videoUrl) {
+        function setupYouTubePlayer(container, videoUrl) {
             if (!container) return;
             container.innerHTML = '';
             
-            const wrapper = document.createElement('div');
-            wrapper.className = 'video-wrapper';
+            // Create player wrapper
+            const player = document.createElement('div');
+            player.className = 'youtube-player';
             
+            // Create video element
             const video = document.createElement('video');
             video.src = videoUrl;
             video.style.width = '100%';
             video.style.height = '100%';
             video.style.objectFit = 'cover';
             video.loop = true;
-            video.muted = false;
             video.setAttribute('playsinline', '');
             video.setAttribute('webkit-playsinline', '');
             video.preload = 'auto';
             
-            // Important: Enable playback without user interaction on iOS
-            video.setAttribute('autoplay', '');
+            // Create big play button (center)
+            const bigPlayBtn = document.createElement('div');
+            bigPlayBtn.className = 'big-play-btn';
+            bigPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
             
-            const playIcon = document.createElement('div');
-            playIcon.className = 'video-play-icon';
-            playIcon.innerHTML = '<i class="fas fa-play"></i>';
+            // Create controls bar
+            const controls = document.createElement('div');
+            controls.className = 'player-controls';
+            controls.innerHTML = `
+                <div class="controls-row">
+                    <button class="play-pause-btn"><i class="fas fa-play"></i></button>
+                    <div class="seek-bar">
+                        <div class="seek-progress"></div>
+                    </div>
+                    <span class="time-display">0:00 / 0:00</span>
+                    <button class="fullscreen-btn"><i class="fas fa-expand"></i></button>
+                </div>
+            `;
             
-            const fullscreenBtn = document.createElement('div');
-            fullscreenBtn.className = 'fullscreen-btn';
-            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+            player.appendChild(video);
+            player.appendChild(bigPlayBtn);
+            player.appendChild(controls);
+            container.appendChild(player);
             
-            wrapper.appendChild(video);
-            wrapper.appendChild(playIcon);
-            wrapper.appendChild(fullscreenBtn);
-            container.appendChild(wrapper);
+            // Get elements
+            const playPauseBtn = controls.querySelector('.play-pause-btn');
+            const seekBar = controls.querySelector('.seek-bar');
+            const seekProgress = controls.querySelector('.seek-progress');
+            const timeDisplay = controls.querySelector('.time-display');
+            const fullscreenBtn = controls.querySelector('.fullscreen-btn');
             
-            // Play/pause on click
-            wrapper.onclick = (e) => {
-                if (e.target === fullscreenBtn || fullscreenBtn.contains(e.target)) {
-                    return;
+            let isPlaying = false;
+            let controlsTimeout;
+            
+            // Format time (mm:ss)
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Update progress bar and time
+            function updateProgress() {
+                if (video.duration) {
+                    const percent = (video.currentTime / video.duration) * 100;
+                    seekProgress.style.width = percent + '%';
+                    timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
                 }
+            }
+            
+            // Play/Pause function
+            function togglePlay() {
                 if (video.paused) {
                     video.play().then(() => {
-                        wrapper.classList.add('playing');
+                        isPlaying = true;
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        bigPlayBtn.classList.add('hidden');
                     }).catch(e => {
                         console.log('Play failed:', e);
                         video.muted = true;
                         video.play();
-                        wrapper.classList.add('playing');
+                        isPlaying = true;
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        bigPlayBtn.classList.add('hidden');
                     });
                 } else {
                     video.pause();
-                    wrapper.classList.remove('playing');
+                    isPlaying = false;
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    bigPlayBtn.classList.remove('hidden');
                 }
-            };
+            }
             
-            // Fullscreen button click
-            fullscreenBtn.onclick = (e) => {
-                e.stopPropagation();
+            // Seek function
+            function seek(e) {
+                const rect = seekBar.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                video.currentTime = x * video.duration;
+                updateProgress();
+            }
+            
+            // Fullscreen function
+            function goFullscreen() {
                 if (video.webkitEnterFullscreen) {
                     video.webkitEnterFullscreen();
+                } else if (player.requestFullscreen) {
+                    player.requestFullscreen();
                 } else if (video.requestFullscreen) {
                     video.requestFullscreen();
-                } else {
-                    window.open(videoUrl, '_blank');
                 }
-            };
+            }
             
-            // Ensure video keeps playing
-            video.addEventListener('pause', () => {
-                wrapper.classList.remove('playing');
+            // Show controls temporarily
+            function showControls() {
+                controls.style.opacity = '1';
+                clearTimeout(controlsTimeout);
+                controlsTimeout = setTimeout(() => {
+                    if (isPlaying) {
+                        controls.style.opacity = '0';
+                    }
+                }, 2000);
+            }
+            
+            // Event listeners
+            video.addEventListener('timeupdate', updateProgress);
+            video.addEventListener('loadedmetadata', () => {
+                timeDisplay.textContent = `0:00 / ${formatTime(video.duration)}`;
             });
-            
             video.addEventListener('play', () => {
-                wrapper.classList.add('playing');
+                isPlaying = true;
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                bigPlayBtn.classList.add('hidden');
+                showControls();
             });
-            
+            video.addEventListener('pause', () => {
+                isPlaying = false;
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                bigPlayBtn.classList.remove('hidden');
+                controls.style.opacity = '1';
+            });
             video.addEventListener('ended', () => {
                 video.currentTime = 0;
-                video.play().catch(e => console.log('Loop failed'));
+                video.play();
             });
             
-            // Try to start playing
-            video.play().catch(e => {
-                console.log('Autoplay blocked, waiting for user interaction');
-                wrapper.classList.remove('playing');
+            // Player click toggles play/pause
+            player.addEventListener('click', (e) => {
+                if (e.target === fullscreenBtn || fullscreenBtn.contains(e.target)) return;
+                if (e.target === seekBar || seekBar.contains(e.target)) return;
+                togglePlay();
+                showControls();
+            });
+            
+            // Controls hover
+            player.addEventListener('mousemove', showControls);
+            player.addEventListener('mouseleave', () => {
+                if (isPlaying) {
+                    controls.style.opacity = '0';
+                }
+            });
+            
+            // Button listeners
+            playPauseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePlay();
+                showControls();
+            });
+            
+            seekBar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                seek(e);
+                showControls();
+            });
+            
+            fullscreenBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goFullscreen();
+                showControls();
+            });
+            
+            // Try to autoplay muted
+            video.muted = true;
+            video.play().then(() => {
+                bigPlayBtn.classList.add('hidden');
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                isPlaying = true;
+            }).catch(e => {
+                console.log('Autoplay blocked, waiting for user');
+                bigPlayBtn.classList.remove('hidden');
+            });
+            
+            // Big play button click
+            bigPlayBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                video.muted = false;
+                togglePlay();
             });
         }
 
@@ -1834,7 +1998,7 @@
                 filtered.forEach(acc => {
                     if (acc.mediaType === 'video') {
                         const container = document.getElementById(`video-${acc.id}`);
-                        if (container) setupVideoWithFullscreen(container, acc.media);
+                        if (container) setupYouTubePlayer(container, acc.media);
                     }
                 });
             }, 100);
@@ -1871,7 +2035,7 @@
                 appState.ads.forEach((ad, i) => {
                     if (ad.type === 'video') {
                         const videoDiv = document.getElementById(`ad-video-${i}`);
-                        if (videoDiv) setupVideoWithFullscreen(videoDiv, ad.data);
+                        if (videoDiv) setupYouTubePlayer(videoDiv, ad.data);
                     }
                 });
             }, 100);
