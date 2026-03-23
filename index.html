@@ -141,7 +141,7 @@
         }
         .overlay.active { display: block; }
 
-        /* Video Player - Simple and Reliable */
+        /* Video Player - Working Version */
         .video-player {
             position: relative;
             width: 100%;
@@ -1844,7 +1844,7 @@
         }
 
         // ============================================
-        // VIDEO PLAYER - RELIABLE VERSION
+        // VIDEO PLAYER - WORKING VERSION
         // ============================================
         function setupVideoPlayer(container, videoUrl) {
             if (!container) return;
@@ -1869,13 +1869,54 @@
             video.setAttribute('webkit-playsinline', 'true');
             video.preload = 'auto';
             
+            // CRITICAL: Force video to keep playing
+            video.addEventListener('pause', function(e) {
+                // Don't auto-resume if video ended naturally
+                if (!video.ended && video.currentTime > 0) {
+                    setTimeout(() => {
+                        if (video.paused && !video.ended) {
+                            console.log('Video paused unexpectedly, resuming...');
+                            video.play().catch(err => console.log('Resume failed'));
+                        }
+                    }, 100);
+                }
+            });
+            
+            // Handle ended event
+            video.addEventListener('ended', function() {
+                video.currentTime = 0;
+                video.play().catch(e => console.log('Loop failed'));
+            });
+            
             // Add loading indicator
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'video-loading';
             loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
             loadingDiv.style.display = 'none';
             
-            // Add error handler
+            video.onwaiting = function() {
+                loadingDiv.style.display = 'flex';
+            };
+            
+            video.onplaying = function() {
+                loadingDiv.style.display = 'none';
+            };
+            
+            video.oncanplay = function() {
+                loadingDiv.style.display = 'none';
+            };
+            
+            wrapper.appendChild(video);
+            wrapper.appendChild(loadingDiv);
+            container.appendChild(wrapper);
+            
+            // Try to play
+            video.play().catch(e => {
+                console.log('Autoplay blocked, user must click play');
+                loadingDiv.style.display = 'none';
+            });
+            
+            // Add error handling
             video.onerror = function(e) {
                 console.error('Video error:', videoUrl, e);
                 const errorDiv = document.createElement('div');
@@ -1890,38 +1931,6 @@
                 wrapper.appendChild(errorDiv);
                 loadingDiv.style.display = 'none';
             };
-            
-            video.oncanplay = function() {
-                loadingDiv.style.display = 'none';
-            };
-            
-            video.onwaiting = function() {
-                loadingDiv.style.display = 'flex';
-            };
-            
-            video.onplaying = function() {
-                loadingDiv.style.display = 'none';
-            };
-            
-            wrapper.appendChild(video);
-            wrapper.appendChild(loadingDiv);
-            container.appendChild(wrapper);
-            
-            // Try to play
-            video.muted = true;
-            loadingDiv.style.display = 'flex';
-            video.play().then(() => {
-                loadingDiv.style.display = 'none';
-            }).catch(e => {
-                console.log('Autoplay blocked, user must click play');
-                loadingDiv.style.display = 'none';
-            });
-            
-            // Handle ended event for looping
-            video.addEventListener('ended', () => {
-                video.currentTime = 0;
-                video.play().catch(e => console.log('Loop failed'));
-            });
         }
 
         // ============================================
@@ -2673,7 +2682,7 @@
                 `;
             }).join('');
             
-            // Setup videos after render with a delay to ensure DOM is ready
+            // Setup videos after render with a delay
             setTimeout(() => {
                 filtered.forEach(acc => {
                     if (acc.mediaType === 'video') {
