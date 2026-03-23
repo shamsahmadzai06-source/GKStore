@@ -64,8 +64,8 @@
             --gradient-small: linear-gradient(135deg, #10b981, #059669);
             --gradient-medium: linear-gradient(135deg, #f59e0b, #d97706);
             --gradient-big: linear-gradient(135deg, #ef4444, #dc2626);
-            --notification-bg: rgba(16, 185, 129, 0.95);
-            --notification-border: #10b981;
+            --notification-bg: rgba(22, 22, 31, 0.95);
+            --notification-border: #ec4899;
         }
 
         body {
@@ -77,84 +77,142 @@
             padding-bottom: 80px;
         }
 
-        /* Notification Toast */
-        .notification-toast {
-            position: fixed;
-            top: 70px;
-            right: 16px;
-            left: 16px;
-            max-width: 400px;
-            margin: 0 auto;
-            background: var(--notification-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 10000;
-            animation: slideInRight 0.3s ease;
-            border-left: 4px solid var(--notification-border);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: transform 0.2s;
+        /* Notification Center Styles */
+        .notification-btn {
+            position: relative;
         }
         
-        .notification-toast:hover {
-            transform: scale(1.02);
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateX(0); }
-            to { opacity: 0; transform: translateX(100%); }
-        }
-        
-        .notification-toast.fade-out {
-            animation: fadeOut 0.3s ease forwards;
-        }
-        
-        .notification-toast .notification-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.2);
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
             border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-        }
-        
-        .notification-toast .notification-content {
-            flex: 1;
-        }
-        
-        .notification-toast .notification-title {
             font-weight: bold;
-            font-size: 14px;
         }
         
-        .notification-toast .notification-message {
-            font-size: 12px;
-            opacity: 0.9;
+        .notification-center {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 400px;
+            background: var(--surface);
+            z-index: 10001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
         }
         
-        .notification-toast .notification-close {
+        .notification-center.open {
+            transform: translateX(0);
+        }
+        
+        .notification-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface-light);
+        }
+        
+        .notification-header h3 {
+            font-size: 1.2rem;
+        }
+        
+        .notification-header button {
             background: none;
             border: none;
-            color: white;
-            font-size: 16px;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
+            padding: 8px;
         }
         
-        .notification-toast .notification-close:hover {
-            background: rgba(255,255,255,0.2);
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        
+        .notification-item {
+            background: var(--surface-light);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .notification-item:hover {
+            background: var(--surface-lighter);
+            transform: translateX(-2px);
+        }
+        
+        .notification-item.read {
+            opacity: 0.6;
+            border-left-color: var(--text-secondary);
+        }
+        
+        .notification-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .notification-message {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .notification-time {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .mark-read-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        
+        .empty-notifications {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            display: none;
+        }
+        
+        .overlay.active {
+            display: block;
         }
 
         /* PWA Standalone Mode Styles */
@@ -371,6 +429,7 @@
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
+            position: relative;
         }
         
         .nav-btn:hover {
@@ -1124,6 +1183,11 @@
             .bottom-nav-btn i {
                 font-size: 18px;
             }
+            
+            .notification-center {
+                width: 100%;
+                max-width: 100%;
+            }
         }
         
         /* Fullscreen image modal with improved zoom and pan */
@@ -1316,32 +1380,22 @@
             margin: 0 4px;
             border: 1px solid var(--border);
         }
-        
-        /* Update notification badge */
-        .update-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .nav-btn {
-            position: relative;
-        }
     </style>
 </head>
 <body dir="ltr">
-    <!-- Notification Toast Container -->
-    <div id="notification-container" style="position: fixed; top: 70px; left: 0; right: 0; z-index: 10000; pointer-events: none;">
-        <div style="pointer-events: auto; max-width: 400px; margin: 0 auto;"></div>
+    <!-- Notification Center -->
+    <div class="overlay" id="notification-overlay" onclick="closeNotificationCenter()"></div>
+    <div class="notification-center" id="notification-center">
+        <div class="notification-header">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <button onclick="closeNotificationCenter()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notification-list" id="notification-list">
+            <div class="empty-notifications">No notifications</div>
+        </div>
+        <div style="padding: 12px; border-top: 1px solid var(--border);">
+            <button class="mark-read-btn" onclick="markAllNotificationsRead()">Mark all as read</button>
+        </div>
     </div>
     
     <!-- iOS Install Banner -->
@@ -1394,6 +1448,10 @@
         </div>
         
         <div class="nav-actions">
+            <button class="nav-btn notification-btn" id="notification-btn" onclick="openNotificationCenter()">
+                <i class="fas fa-bell"></i>
+                <span id="notification-badge" class="notification-badge" style="display: none;">0</span>
+            </button>
             <button class="nav-btn update-btn" id="update-btn" onclick="checkForUpdates()">
                 <i class="fas fa-sync-alt"></i>
                 <span data-i18n="update">Update</span>
@@ -1803,7 +1861,6 @@
         // ============================================
         function playClickSound() {
             try {
-                // Simple beep using Web Audio API - works on iOS
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (AudioContext) {
                     const audioCtx = new AudioContext();
@@ -1817,13 +1874,11 @@
                     gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
                     oscillator.stop(audioCtx.currentTime + 0.1);
                 }
-            } catch(e) {
-                // Silent fail if audio not supported
-            }
+            } catch(e) {}
         }
 
         // ============================================
-        // NOTIFICATION SYSTEM
+        // NOTIFICATION CENTER
         // ============================================
         let notifications = [];
         
@@ -1834,23 +1889,22 @@
                     notifications = JSON.parse(saved);
                     const now = Date.now();
                     const twentyFourHours = 24 * 60 * 60 * 1000;
-                    const oldCount = notifications.length;
                     notifications = notifications.filter(n => (now - n.timestamp) < twentyFourHours);
-                    if (notifications.length !== oldCount) {
-                        saveNotifications();
-                    }
+                    saveNotifications();
                 } catch(e) {}
             }
+            updateNotificationBadge();
+            renderNotificationList();
         }
         
         function saveNotifications() {
             localStorage.setItem('gk_notifications', JSON.stringify(notifications));
+            updateNotificationBadge();
         }
         
-        function showNotification(title, message, accountId = null) {
-            const id = Date.now();
-            notifications.push({
-                id: id,
+        function addNotification(title, message, accountId = null) {
+            notifications.unshift({
+                id: Date.now(),
                 title: title,
                 message: message,
                 accountId: accountId,
@@ -1858,50 +1912,82 @@
                 read: false
             });
             saveNotifications();
-            
-            // Create toast element
-            const container = document.getElementById('notification-container');
-            const toastContainer = container.querySelector('div');
-            
-            const toast = document.createElement('div');
-            toast.className = 'notification-toast';
-            toast.setAttribute('data-id', id);
-            toast.onclick = (e) => {
-                if (e.target.classList.contains('notification-close')) return;
-                if (accountId) {
-                    switchScreen('accounts');
-                }
-                closeNotificationElement(toast);
-            };
-            
-            toast.innerHTML = `
-                <div class="notification-icon">
-                    <i class="fas fa-gift"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">${escapeHtml(title)}</div>
-                    <div class="notification-message">${escapeHtml(message)}</div>
-                </div>
-                <button class="notification-close" onclick="event.stopPropagation(); closeNotificationElement(this.parentElement)">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            
-            toastContainer.appendChild(toast);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    closeNotificationElement(toast);
-                }
-            }, 5000);
+            renderNotificationList();
+            updateNotificationBadge();
         }
         
-        function closeNotificationElement(element) {
-            element.classList.add('fade-out');
-            setTimeout(() => {
-                if (element.parentNode) element.remove();
-            }, 300);
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-badge');
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        function renderNotificationList() {
+            const container = document.getElementById('notification-list');
+            if (!container) return;
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<div class="empty-notifications"><i class="fas fa-bell-slash"></i><br>No notifications</div>';
+                return;
+            }
+            
+            container.innerHTML = notifications.map(notif => `
+                <div class="notification-item ${notif.read ? 'read' : ''}" onclick="openNotification(${notif.id})">
+                    <div class="notification-title">${escapeHtml(notif.title)}</div>
+                    <div class="notification-message">${escapeHtml(notif.message)}</div>
+                    <div class="notification-time">${formatTime(notif.timestamp)}</div>
+                </div>
+            `).join('');
+        }
+        
+        function formatTime(timestamp) {
+            const diff = Date.now() - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${days}d ago`;
+        }
+        
+        function openNotification(id) {
+            const notif = notifications.find(n => n.id === id);
+            if (notif) {
+                notif.read = true;
+                saveNotifications();
+                renderNotificationList();
+                if (notif.accountId) {
+                    closeNotificationCenter();
+                    switchScreen('accounts');
+                }
+            }
+        }
+        
+        function markAllNotificationsRead() {
+            notifications.forEach(n => n.read = true);
+            saveNotifications();
+            renderNotificationList();
+            updateNotificationBadge();
+        }
+        
+        function openNotificationCenter() {
+            document.getElementById('notification-center').classList.add('open');
+            document.getElementById('notification-overlay').classList.add('active');
+            renderNotificationList();
+        }
+        
+        function closeNotificationCenter() {
+            document.getElementById('notification-center').classList.remove('open');
+            document.getElementById('notification-overlay').classList.remove('active');
         }
         
         function checkForNewAccounts(oldAccounts, newAccounts) {
@@ -1911,7 +1997,7 @@
             const newAccountsList = newAccounts.filter(a => !oldIds.has(a.id));
             
             newAccountsList.forEach(account => {
-                showNotification(
+                addNotification(
                     '🆕 New Account Added!',
                     `${account.title} - $${account.price_usd} has been added to the store!`,
                     account.id
@@ -1926,7 +2012,7 @@
         
         window.checkForUpdates = async function() {
             if (isUpdating) {
-                showNotification('Update', 'Already checking for updates...', null);
+                addNotification('Update', 'Already checking for updates...', null);
                 return;
             }
             
@@ -1953,11 +2039,11 @@
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 }
                 
-                showNotification('✅ Update Complete', 'Store data has been refreshed successfully!', null);
+                addNotification('✅ Update Complete', 'Store data has been refreshed successfully!', null);
                 
             } catch (error) {
                 console.error('Update error:', error);
-                showNotification('❌ Update Failed', 'Could not refresh data. Check your connection.', null);
+                addNotification('❌ Update Failed', 'Could not refresh data. Check your connection.', null);
             } finally {
                 isUpdating = false;
                 updateBtn.innerHTML = originalHtml;
@@ -1969,13 +2055,13 @@
         };
 
         // ============================================
-        // iOS VIDEO PLAYBACK FIX
+        // iOS VIDEO PLAYBACK FIX - FIXED!
         // ============================================
         function setupIOSVideoPlayback() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) return;
             
-            // Function to enable video playback on user interaction
+            // Function to enable video playback
             function enableVideoPlayback() {
                 const videos = document.querySelectorAll('video');
                 videos.forEach(video => {
@@ -1999,7 +2085,8 @@
                     if (entry.isIntersecting) {
                         const video = entry.target;
                         if (video.tagName === 'VIDEO') {
-                            video.play().catch(e => console.log('Auto-play prevented'));
+                            video.muted = true;
+                            video.play().catch(e => console.log('Auto-play prevented, waiting for user interaction'));
                         }
                     }
                 });
@@ -2012,6 +2099,22 @@
                 if (videos.length > 0) clearInterval(checkVideos);
             }, 1000);
         }
+        
+        // Fix for images not loading on iOS - add cache busting
+        function fixImageLoading() {
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                if (img.src && !img.src.includes('data:') && !img.complete) {
+                    img.loading = 'eager';
+                    // Add timestamp to force reload on iOS
+                    const separator = img.src.includes('?') ? '&' : '?';
+                    img.src = img.src + separator + '_t=' + Date.now();
+                }
+            });
+        }
+        
+        // Refresh images periodically
+        setInterval(fixImageLoading, 5000);
 
         // ============================================
         // COMPLETE TRANSLATIONS
@@ -2504,6 +2607,9 @@
             const adminBtn = document.getElementById('nav-admin');
             if (contactBtn) contactBtn.querySelector('span').textContent = t.contact;
             if (adminBtn) adminBtn.querySelector('span').textContent = t.admin;
+            
+            const updateSpan = document.querySelector('#update-btn span');
+            if (updateSpan) updateSpan.textContent = t.update;
         }
 
         function setLanguage(lang) {
@@ -2941,7 +3047,7 @@
             }
             startAutoSlide();
             
-            // iOS video autoplay fix - manually play videos after user interaction
+            // iOS video autoplay fix
             if (isIOS()) {
                 const videos = document.querySelectorAll('.slide video');
                 videos.forEach(video => {
@@ -3319,8 +3425,8 @@
                     progressBar.style.width = '100%';
                     progressText.innerHTML = 'Upload complete!';
                     
-                    // Show notification about new account
-                    showNotification('📱 New Account Added!', `${title} - $${priceUsd} has been added to the store!`);
+                    // Add notification
+                    addNotification('📱 New Account Added!', `${title} - $${priceUsd} has been added to the store!`, record.id);
                     
                     setTimeout(() => {
                         closeModal('add-account-modal');
@@ -3353,7 +3459,7 @@
                         clearInterval(interval);
                         progressBar.style.width = '100%';
                         progressText.innerHTML = 'Upload complete!';
-                        showNotification('📱 New Account Added (Offline)', `${title} - $${priceUsd} has been added locally!`);
+                        addNotification('📱 New Account Added (Offline)', `${title} - $${priceUsd} has been added locally!`);
                         setTimeout(() => {
                             closeModal('add-account-modal');
                             renderAccounts();
@@ -3818,13 +3924,12 @@
         trackVisitor();
         setInterval(trackVisitor, 30000);
         
-        // Add translation for update button
-        const updateText = translations[savedLang]?.update || 'Update';
-        const updateSpan = document.querySelector('#update-btn span');
-        if (updateSpan) updateSpan.textContent = updateText;
-        
         // Setup iOS video playback
         setupIOSVideoPlayback();
+        
+        // Fix image loading
+        setTimeout(fixImageLoading, 1000);
+        setInterval(fixImageLoading, 10000);
     </script>
 </body>
 </html>
