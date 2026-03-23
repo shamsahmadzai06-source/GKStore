@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     
-    <!-- PWA Required Meta Tags - CRITICAL for native installation -->
+    <!-- PWA Required Meta Tags - CRITICAL for iOS -->
     <meta name="theme-color" content="#ec4899">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,8 +20,14 @@
     <link rel="icon" type="image/png" sizes="192x192" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
     
-    <!-- Apple Touch Icons -->
+    <!-- Apple Touch Icons - CRITICAL for iOS -->
     <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
+    
+    <!-- Apple Splash Screens for iOS -->
+    <link rel="apple-touch-startup-image" href="https://shamsahmadzai06-source.github.io/GKStore/splash.png">
     
     <!-- Manifest File - CRITICAL for native installation -->
     <link rel="manifest" href="manifest.json">
@@ -72,20 +78,78 @@
             padding-bottom: 80px;
         }
 
-        /* PWA Standalone Mode Styles */
+        /* PWA Standalone Mode Styles - HIDE ALL INSTALL BUTTONS when installed */
         @media all and (display-mode: standalone) {
             body {
                 padding-top: env(safe-area-inset-top);
                 padding-bottom: env(safe-area-inset-bottom);
             }
             
-            .install-btn-fixed {
+            .install-btn-fixed, .install-banner, .ios-install-banner {
                 display: none !important;
             }
-            
-            .install-banner {
-                display: none !important;
-            }
+        }
+
+        /* iOS specific install banner - styled differently */
+        .ios-install-banner {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            margin: 12px;
+            position: sticky;
+            top: 10px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .ios-install-banner .banner-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ios-install-banner .banner-title i {
+            font-size: 24px;
+        }
+
+        .ios-install-banner .banner-steps {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 12px 0;
+            padding-left: 34px;
+        }
+
+        .ios-install-banner .banner-steps li {
+            margin: 6px 0;
+        }
+
+        .ios-install-banner .share-icon {
+            display: inline-block;
+            background: #3a3a4a;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .ios-install-banner .close-ios-banner {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 25px;
+            color: white;
+            font-size: 13px;
+            margin-top: 8px;
+            width: 100%;
+            cursor: pointer;
         }
 
         /* Install Banner - Shows at top for Android */
@@ -1126,9 +1190,42 @@
             margin: 0 4px;
             border: 1px solid var(--border);
         }
+        
+        /* iOS Share button simulation */
+        .ios-share-sim {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #3a3a4a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin: 8px 0;
+        }
     </style>
 </head>
 <body dir="ltr">
+    <!-- iOS Install Banner - Specifically for iOS users -->
+    <div id="ios-install-banner" class="ios-install-banner" style="display: none;">
+        <div class="banner-title">
+            <i class="fab fa-apple"></i>
+            <span>Install GK Store on iPhone/iPad</span>
+        </div>
+        <div class="ios-share-sim">
+            <i class="fas fa-share-alt"></i> Share
+            <i class="fas fa-arrow-right"></i>
+            <i class="fas fa-plus-circle"></i> Add to Home Screen
+        </div>
+        <ul class="banner-steps">
+            <li>1️⃣ Tap the <strong>Share</strong> button <i class="fas fa-share-alt"></i> at the bottom</li>
+            <li>2️⃣ Scroll down and tap <strong>"Add to Home Screen"</strong> <i class="fas fa-plus-circle"></i></li>
+            <li>3️⃣ Tap <strong>"Add"</strong> in the top right corner</li>
+        </ul>
+        <button class="close-ios-banner" onclick="closeIOSBanner()">
+            <i class="fas fa-times"></i> Don't show again
+        </button>
+    </div>
+
     <!-- Install Banner - Shows at top for Android -->
     <div id="install-banner" class="install-banner" style="display: none;">
         <div class="banner-content">
@@ -1162,7 +1259,7 @@
         </div>
     </div>
 
-    <!-- Install Button - Fixed at bottom (alternative) -->
+    <!-- Install Button - Fixed at bottom (for Android) -->
     <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="installApp()">
         <i class="fas fa-download"></i> 
         <span id="install-text">Install GK Store</span>
@@ -1918,10 +2015,22 @@
         }
 
         // ============================================
-        // PWA INSTALLATION - FIXED for Android
+        // DETECT PLATFORM
+        // ============================================
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+
+        function isAndroid() {
+            return /Android/.test(navigator.userAgent);
+        }
+
+        // ============================================
+        // PWA INSTALLATION - FIXED for iOS
         // ============================================
         const installButton = document.getElementById('install-button');
         const installBanner = document.getElementById('install-banner');
+        const iosInstallBanner = document.getElementById('ios-install-banner');
         const installText = document.getElementById('install-text');
 
         // Check if already installed as PWA
@@ -1930,32 +2039,27 @@
                    window.navigator.standalone === true;
         }
 
-        // Hide install UI if already installed
+        // Hide all install UI if already installed
         if (isAppInstalled()) {
             installButton.style.display = 'none';
             installBanner.style.display = 'none';
+            if (iosInstallBanner) iosInstallBanner.style.display = 'none';
         }
 
-        // Listen for beforeinstallprompt event (Android Chrome)
+        // Listen for beforeinstallprompt event (Android Chrome ONLY)
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            appState.deferredPrompt = e;
-            
-            // Show install UI if not installed
-            if (!isAppInstalled()) {
-                // Show both banner and button for better visibility
-                installBanner.style.display = 'flex';
-                installButton.style.display = 'flex';
+            // Only handle on Android
+            if (!isIOS()) {
+                e.preventDefault();
+                appState.deferredPrompt = e;
                 
-                // Detect platform
-                const isAndroid = /Android/.test(navigator.userAgent);
-                
-                if (isAndroid) {
-                    installText.textContent = 'Install on Android';
+                // Show install UI if not installed
+                if (!isAppInstalled()) {
+                    installBanner.style.display = 'flex';
+                    installButton.style.display = 'flex';
+                    installText.textContent = 'Install App';
                     const bannerText = document.querySelector('.banner-text small');
                     if (bannerText) bannerText.textContent = 'Add to home screen';
-                } else {
-                    installText.textContent = 'Install App';
                 }
             }
         });
@@ -1965,28 +2069,28 @@
             console.log('✅ GK Store installed successfully!');
             installButton.style.display = 'none';
             installBanner.style.display = 'none';
+            if (iosInstallBanner) iosInstallBanner.style.display = 'none';
             appState.deferredPrompt = null;
         });
 
-        // Main install function - DIRECT native install for Android
+        // Main install function
         window.installApp = function() {
-            if (appState.deferredPrompt) {
-                // Show the native install prompt
+            if (isIOS()) {
+                // iOS: Show instructions modal instead
+                showInstallInstructions();
+            } else if (appState.deferredPrompt) {
+                // Android: Show native install prompt
                 appState.deferredPrompt.prompt();
-                
-                // Wait for user's choice
                 appState.deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('✅ User accepted install');
                         installButton.style.display = 'none';
                         installBanner.style.display = 'none';
-                    } else {
-                        console.log('❌ User dismissed install');
                     }
                     appState.deferredPrompt = null;
                 });
             } else {
-                // For iOS or if prompt not available, show instructions
+                // Fallback: Show instructions
                 showInstallInstructions();
             }
         };
@@ -1994,21 +2098,26 @@
         // Close install banner
         window.closeInstallBanner = function() {
             installBanner.style.display = 'none';
-            // Store in sessionStorage to not show again for this session
             sessionStorage.setItem('banner_closed', 'true');
+        };
+
+        // Close iOS banner
+        window.closeIOSBanner = function() {
+            if (iosInstallBanner) iosInstallBanner.style.display = 'none';
+            sessionStorage.setItem('ios_banner_closed', 'true');
         };
 
         // Show install instructions
         function showInstallInstructions() {
             const instructions = document.getElementById('install-instructions');
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
+            const isIOSDevice = isIOS();
+            const isAndroidDevice = isAndroid();
             
-            if (isIOS) {
+            if (isIOSDevice) {
                 instructions.innerHTML = `
                     <div class="install-step">
                         <span class="step-number">1</span>
-                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span>
+                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button at the bottom</span>
                     </div>
                     <div class="install-step">
                         <span class="step-number">2</span>
@@ -2016,10 +2125,10 @@
                     </div>
                     <div class="install-step">
                         <span class="step-number">3</span>
-                        <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
+                        <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right corner</span>
                     </div>
                 `;
-            } else if (isAndroid) {
+            } else if (isAndroidDevice) {
                 instructions.innerHTML = `
                     <div class="install-step">
                         <span class="step-number">1</span>
@@ -2050,27 +2159,41 @@
             openModal('install-modal');
         }
 
+        // Show iOS banner for iOS users
+        function showIOSInstallBanner() {
+            if (isIOS() && !isAppInstalled() && !sessionStorage.getItem('ios_banner_closed')) {
+                iosInstallBanner.style.display = 'block';
+                // Auto-hide after 8 seconds
+                setTimeout(() => {
+                    if (iosInstallBanner.style.display !== 'none') {
+                        iosInstallBanner.style.opacity = '0';
+                        setTimeout(() => {
+                            if (iosInstallBanner) iosInstallBanner.style.display = 'none';
+                        }, 500);
+                    }
+                }, 8000);
+            }
+        }
+
         // Show install UI after delay if not installed
         setTimeout(() => {
-            if (!isAppInstalled() && !sessionStorage.getItem('banner_closed')) {
-                // Always show install button for Android
-                const isAndroid = /Android/.test(navigator.userAgent);
-                if (isAndroid) {
-                    installButton.style.display = 'flex';
-                    installText.textContent = 'Install App';
-                    // Also show banner if available
+            if (!isAppInstalled()) {
+                if (isIOS()) {
+                    // iOS: Show special iOS banner
+                    showIOSInstallBanner();
+                } else if (isAndroid() && !sessionStorage.getItem('banner_closed')) {
+                    // Android: Show install button if prompt is available
                     if (appState.deferredPrompt) {
                         installBanner.style.display = 'flex';
+                        installButton.style.display = 'flex';
+                        installText.textContent = 'Install App';
                     }
-                } else if (appState.deferredPrompt) {
-                    installButton.style.display = 'flex';
-                    installText.textContent = 'Install App';
                 }
             }
         }, 2000);
 
         // ============================================
-        // CORE FUNCTIONS
+        // CORE FUNCTIONS (rest of your code remains the same)
         // ============================================
         function applyTranslation(lang) {
             const t = translations[lang] || translations.en;
