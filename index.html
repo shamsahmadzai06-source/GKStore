@@ -141,7 +141,7 @@
         }
         .overlay.active { display: block; }
 
-        /* Video Container */
+        /* Video Container - FIXED FOR CONTINUOUS PLAY */
         .video-wrapper {
             position: relative;
             width: 100%;
@@ -191,12 +191,8 @@
             justify-content: center;
             cursor: pointer;
             z-index: 11;
-            opacity: 0;
+            opacity: 0.8;
             transition: opacity 0.3s;
-        }
-        .video-wrapper:hover .fullscreen-btn,
-        .video-wrapper:active .fullscreen-btn {
-            opacity: 1;
         }
         .fullscreen-btn i {
             font-size: 18px;
@@ -1192,7 +1188,7 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="playClickSound(); switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- MODALS (simplified for brevity) -->
+    <!-- MODALS -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="playClickSound(); closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); saveUsdtAddress()">Save</button></div></div></div>
 
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Add New Account</h3><button class="modal-close" onclick="playClickSound(); closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr;"><input type="number" id="account-price-usd" class="input" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="upload-progress" id="upload-progress"><div class="progress-bar"></div></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="playClickSound(); uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
@@ -1239,7 +1235,7 @@
         }
 
         // ============================================
-        // VIDEO HANDLER WITH FULLSCREEN
+        // VIDEO HANDLER WITH CONTINUOUS PLAYBACK
         // ============================================
         function setupVideoWithFullscreen(container, videoUrl) {
             if (!container) return;
@@ -1254,8 +1250,13 @@
             video.style.height = '100%';
             video.style.objectFit = 'cover';
             video.loop = true;
+            video.muted = false;
             video.setAttribute('playsinline', '');
             video.setAttribute('webkit-playsinline', '');
+            video.preload = 'auto';
+            
+            // Important: Enable playback without user interaction on iOS
+            video.setAttribute('autoplay', '');
             
             const playIcon = document.createElement('div');
             playIcon.className = 'video-play-icon';
@@ -1270,26 +1271,22 @@
             wrapper.appendChild(fullscreenBtn);
             container.appendChild(wrapper);
             
-            let isPlaying = false;
-            
-            // Play/pause on click (not on fullscreen button)
+            // Play/pause on click
             wrapper.onclick = (e) => {
                 if (e.target === fullscreenBtn || fullscreenBtn.contains(e.target)) {
                     return;
                 }
                 if (video.paused) {
-                    video.muted = false;
                     video.play().then(() => {
-                        isPlaying = true;
                         wrapper.classList.add('playing');
                     }).catch(e => {
+                        console.log('Play failed:', e);
                         video.muted = true;
                         video.play();
                         wrapper.classList.add('playing');
                     });
                 } else {
                     video.pause();
-                    isPlaying = false;
                     wrapper.classList.remove('playing');
                 }
             };
@@ -1298,22 +1295,33 @@
             fullscreenBtn.onclick = (e) => {
                 e.stopPropagation();
                 if (video.webkitEnterFullscreen) {
-                    // iOS native fullscreen
                     video.webkitEnterFullscreen();
                 } else if (video.requestFullscreen) {
                     video.requestFullscreen();
                 } else {
-                    // Fallback: open in new tab
                     window.open(videoUrl, '_blank');
                 }
             };
             
-            // Try autoplay muted
-            video.muted = true;
-            video.play().catch(e => console.log('Autoplay blocked'));
+            // Ensure video keeps playing
+            video.addEventListener('pause', () => {
+                wrapper.classList.remove('playing');
+            });
             
-            video.addEventListener('pause', () => wrapper.classList.remove('playing'));
-            video.addEventListener('play', () => wrapper.classList.add('playing'));
+            video.addEventListener('play', () => {
+                wrapper.classList.add('playing');
+            });
+            
+            video.addEventListener('ended', () => {
+                video.currentTime = 0;
+                video.play().catch(e => console.log('Loop failed'));
+            });
+            
+            // Try to start playing
+            video.play().catch(e => {
+                console.log('Autoplay blocked, waiting for user interaction');
+                wrapper.classList.remove('playing');
+            });
         }
 
         // ============================================
