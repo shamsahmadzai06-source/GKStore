@@ -215,6 +215,39 @@
             display: block;
         }
 
+        /* Video Play Button Overlay */
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .video-play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+        
+        .video-play-overlay i {
+            font-size: 48px;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .video-play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         /* PWA Standalone Mode Styles */
         @media all and (display-mode: standalone) {
             body {
@@ -648,14 +681,6 @@
             object-fit: cover;
         }
         
-        /* iOS video autoplay fix - ensure videos play */
-        .slide video {
-            -webkit-play-video: true;
-            playsinline: true;
-            webkit-playsinline: true;
-            muted: true;
-        }
-
         .slide-caption {
             position: absolute;
             bottom: 0;
@@ -1878,6 +1903,85 @@
         }
 
         // ============================================
+        // VIDEO PLAYBACK FIX FOR iOS AND ANDROID
+        // ============================================
+        function setupVideoPlayback() {
+            // Function to play video with user interaction
+            function playVideoWithOverlay(videoElement, overlayElement) {
+                if (videoElement.paused) {
+                    videoElement.play().then(() => {
+                        if (overlayElement) overlayElement.classList.add('hidden');
+                    }).catch(e => {
+                        console.log('Video play failed:', e);
+                    });
+                } else {
+                    videoElement.pause();
+                    if (overlayElement) overlayElement.classList.remove('hidden');
+                }
+            }
+            
+            // Setup all videos with play overlay
+            function setupAllVideos() {
+                const videos = document.querySelectorAll('video');
+                videos.forEach(video => {
+                    // Skip if already has container
+                    if (video.parentElement.classList.contains('video-container')) return;
+                    
+                    const parent = video.parentElement;
+                    const container = document.createElement('div');
+                    container.className = 'video-container';
+                    container.style.position = 'relative';
+                    container.style.width = '100%';
+                    container.style.height = '100%';
+                    
+                    // Create play overlay
+                    const overlay = document.createElement('div');
+                    overlay.className = 'video-play-overlay';
+                    overlay.innerHTML = '<i class="fas fa-play-circle"></i>';
+                    
+                    // Move video into container
+                    parent.insertBefore(container, video);
+                    container.appendChild(video);
+                    container.appendChild(overlay);
+                    
+                    // Set video attributes
+                    video.setAttribute('playsinline', '');
+                    video.setAttribute('webkit-playsinline', '');
+                    video.muted = true;
+                    
+                    // Hide overlay when video plays
+                    video.addEventListener('play', () => {
+                        overlay.classList.add('hidden');
+                    });
+                    
+                    video.addEventListener('pause', () => {
+                        overlay.classList.remove('hidden');
+                    });
+                    
+                    // Click handler
+                    container.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        playVideoWithOverlay(video, overlay);
+                    });
+                    
+                    // Try to autoplay muted (works on Android)
+                    video.play().catch(e => {
+                        console.log('Autoplay blocked, waiting for user interaction');
+                    });
+                });
+            }
+            
+            // Run initially and when new videos are added
+            setupAllVideos();
+            
+            // Observe for new videos
+            const observer = new MutationObserver(() => {
+                setupAllVideos();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+
+        // ============================================
         // NOTIFICATION CENTER
         // ============================================
         let notifications = [];
@@ -2055,274 +2159,89 @@
         };
 
         // ============================================
-        // iOS VIDEO PLAYBACK FIX - FIXED!
-        // ============================================
-        function setupIOSVideoPlayback() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (!isIOS) return;
-            
-            // Function to enable video playback
-            function enableVideoPlayback() {
-                const videos = document.querySelectorAll('video');
-                videos.forEach(video => {
-                    video.muted = true;
-                    video.setAttribute('playsinline', '');
-                    video.setAttribute('webkit-playsinline', '');
-                    video.load();
-                    video.play().catch(e => console.log('Video play attempt:', e));
-                });
-            }
-            
-            // Enable on first user interaction
-            const events = ['click', 'touchstart', 'touchend'];
-            events.forEach(event => {
-                document.body.addEventListener(event, enableVideoPlayback, { once: true });
-            });
-            
-            // Also try to play videos when they become visible in slider
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const video = entry.target;
-                        if (video.tagName === 'VIDEO') {
-                            video.muted = true;
-                            video.play().catch(e => console.log('Auto-play prevented, waiting for user interaction'));
-                        }
-                    }
-                });
-            }, { threshold: 0.5 });
-            
-            // Observe all videos
-            const checkVideos = setInterval(() => {
-                const videos = document.querySelectorAll('video');
-                videos.forEach(video => observer.observe(video));
-                if (videos.length > 0) clearInterval(checkVideos);
-            }, 1000);
-        }
-        
-        // Fix for images not loading on iOS - add cache busting
-        function fixImageLoading() {
-            const images = document.querySelectorAll('img');
-            images.forEach(img => {
-                if (img.src && !img.src.includes('data:') && !img.complete) {
-                    img.loading = 'eager';
-                    // Add timestamp to force reload on iOS
-                    const separator = img.src.includes('?') ? '&' : '?';
-                    img.src = img.src + separator + '_t=' + Date.now();
-                }
-            });
-        }
-        
-        // Refresh images periodically
-        setInterval(fixImageLoading, 5000);
-
-        // ============================================
-        // COMPLETE TRANSLATIONS
+        // COMPLETE TRANSLATIONS (same as before)
         // ============================================
         const translations = {
             en: {
-                brand: 'GK Store',
-                lang: 'Lang',
-                update: 'Update',
-                contact: 'Contact',
-                admin: 'Admin',
-                mainTitle: 'PUBG Marketplace',
-                mainSubtitle: 'Secure · Instant delivery',
-                cta: 'Click to see PUBG account',
-                sliderHint: '— swipe ads (auto change 2s) —',
-                all: 'All',
-                small: 'Small PUBG',
-                medium: 'Medium PUBG',
-                big: 'Big PUBG',
-                accountsTitle: 'PUBG Accounts',
-                contactTitle: 'Contact & Support',
-                adminTitle: 'Admin Panel',
-                loginTitle: 'Admin Login',
-                loginBtn: 'Login',
-                onlineUsers: 'ONLINE NOW',
-                accountsStat: 'accounts',
-                bookingsStat: 'book requests',
-                bookRequestsTitle: '📋 Book Requests',
-                addAccountBtn: 'Add New Account',
-                manageAccountsBtn: 'Manage Accounts (Delete)',
-                manageContactsBtn: 'Manage Contacts',
-                manageAdsBtn: 'Manage Swipe Ads',
-                logoutBtn: 'Logout',
-                addModalTitle: 'Add New Account',
-                selectTier: '-- Select Tier --',
-                smallTier: 'Small PUBG ($10-$500)',
-                mediumTier: 'Medium PUBG ($500-$1000)',
-                bigTier: 'Big PUBG ($1000-$100000)',
-                mediaLabel: 'Account Media (Image or Video) *',
-                uploadBtn: 'UPLOAD',
-                manageModalTitle: 'Manage Accounts',
+                brand: 'GK Store', lang: 'Lang', update: 'Update', contact: 'Contact', admin: 'Admin',
+                mainTitle: 'PUBG Marketplace', mainSubtitle: 'Secure · Instant delivery',
+                cta: 'Click to see PUBG account', sliderHint: '— swipe ads (auto change 2s) —',
+                all: 'All', small: 'Small PUBG', medium: 'Medium PUBG', big: 'Big PUBG',
+                accountsTitle: 'PUBG Accounts', contactTitle: 'Contact & Support', adminTitle: 'Admin Panel',
+                loginTitle: 'Admin Login', loginBtn: 'Login', onlineUsers: 'ONLINE NOW',
+                accountsStat: 'accounts', bookingsStat: 'book requests', bookRequestsTitle: '📋 Book Requests',
+                addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
+                manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads', logoutBtn: 'Logout',
+                addModalTitle: 'Add New Account', selectTier: '-- Select Tier --',
+                smallTier: 'Small PUBG ($10-$500)', mediumTier: 'Medium PUBG ($500-$1000)',
+                bigTier: 'Big PUBG ($1000-$100000)', mediaLabel: 'Account Media (Image or Video) *',
+                uploadBtn: 'UPLOAD', manageModalTitle: 'Manage Accounts',
                 existingAccounts: '📋 Existing Accounts (click delete to remove)',
-                manageContactsTitle: 'Manage Contacts',
-                addContact: '➕ Add New Contact',
-                whatsappNumberLabel: 'WhatsApp Number with Country Code',
-                saveContactBtn: 'Save Contact',
-                existingContacts: '📋 Existing Contacts',
-                manageAdsTitle: 'Manage Swipe Ads',
-                addAd: '➕ Add New Ad (Image/Video)',
-                imageOption: 'Image',
-                videoOption: 'Video',
-                adMediaLabel: 'Ad Media *',
-                addAdBtn: 'Add Ad',
-                currentAds: '📋 Current Ads',
-                bookTitle: 'Book account',
-                cancel: 'Cancel',
-                confirm: 'Confirm booking',
-                buyTitle: 'Buy with USDT',
-                confirmWA: 'Confirm via WhatsApp',
-                infoTitle: 'Account details',
-                selectLang: 'Select language',
-                yourName: 'Your name',
-                whatsappNumber: 'WhatsApp number',
-                chatNow: 'Chat Now',
-                delete: 'Delete',
-                edit: 'Edit',
-                editUsdtTitle: 'Edit USDT Address',
-                newUsdtAddress: 'New USDT Address',
-                usdtWarning: 'Make sure it\'s a valid TRC20 address',
-                save: 'Save',
-                autoRefresh: 'Auto-refresh',
-                contactViaWA: 'Contact via WhatsApp'
+                manageContactsTitle: 'Manage Contacts', addContact: '➕ Add New Contact',
+                whatsappNumberLabel: 'WhatsApp Number with Country Code', saveContactBtn: 'Save Contact',
+                existingContacts: '📋 Existing Contacts', manageAdsTitle: 'Manage Swipe Ads',
+                addAd: '➕ Add New Ad (Image/Video)', imageOption: 'Image', videoOption: 'Video',
+                adMediaLabel: 'Ad Media *', addAdBtn: 'Add Ad', currentAds: '📋 Current Ads',
+                bookTitle: 'Book account', cancel: 'Cancel', confirm: 'Confirm booking',
+                buyTitle: 'Buy with USDT', confirmWA: 'Confirm via WhatsApp', infoTitle: 'Account details',
+                selectLang: 'Select language', yourName: 'Your name', whatsappNumber: 'WhatsApp number',
+                chatNow: 'Chat Now', delete: 'Delete', edit: 'Edit', editUsdtTitle: 'Edit USDT Address',
+                newUsdtAddress: 'New USDT Address', usdtWarning: 'Make sure it\'s a valid TRC20 address',
+                save: 'Save', autoRefresh: 'Auto-refresh', contactViaWA: 'Contact via WhatsApp'
             },
             ps: {
-                brand: 'جي کې پلورنځیج',
-                lang: 'ژبه',
-                update: 'تازه کول',
-                contact: 'اړیکه',
-                admin: 'مدیر',
-                mainTitle: 'PUBG بازار',
-                mainSubtitle: 'خوندي · سمدستي سپارل',
-                cta: 'د PUBG اکونټونو لیدو لپاره کلیک وکړئ',
-                sliderHint: '— اعلاناتو ته سوپ ورکړئ (په هر ۲ ثانیو کې بدلون) —',
-                all: 'ټول',
-                small: 'وړوکی PUBG',
-                medium: 'منځنی PUBG',
-                big: ' غټPUBG',
-                accountsTitle: 'PUBG اکونټونه',
-                contactTitle: 'اړیکه او ملاتړ',
-                adminTitle: 'مدیر پینل',
-                loginTitle: 'مدیر ننوتل',
-                loginBtn: 'ننوتل',
-                onlineUsers: 'آنلاین اوس',
-                accountsStat: 'اکونټونه',
-                bookingsStat: 'بوک غوښتنې',
-                bookRequestsTitle: '📋 د بوک غوښتنې',
-                addAccountBtn: 'نوی اکونټ اضافه کړئ',
-                manageAccountsBtn: 'اکونټونه مدیریت کړئ (ړنګول)',
-                manageContactsBtn: 'اړیکې مدیریت کړئ',
-                manageAdsBtn: 'اعلانونه مدیریت کړئ',
-                logoutBtn: 'وتل',
-                addModalTitle: 'نوی اکونټ اضافه کړئ',
-                selectTier: '-- کچه وټاکئ --',
-                smallTier: 'وړوکی PUBG ($10-$500)',
-                mediumTier: 'منځنی PUBG ($500-$1000)',
-                bigTier: 'لوی PUBG ($1000-$100000)',
-                mediaLabel: 'د اکونټ رسنیز فایل (انځور یا ویډیو) *',
-                uploadBtn: 'پورته کول',
-                manageModalTitle: 'اکونټونه مدیریت کړئ',
+                brand: 'جي کې پلورنځیج', lang: 'ژبه', update: 'تازه کول', contact: 'اړیکه', admin: 'مدیر',
+                mainTitle: 'PUBG بازار', mainSubtitle: 'خوندي · سمدستي سپارل',
+                cta: 'د PUBG اکونټونو لیدو لپاره کلیک وکړئ', sliderHint: '— اعلاناتو ته سوپ ورکړئ (په هر ۲ ثانیو کې بدلون) —',
+                all: 'ټول', small: 'وړوکی PUBG', medium: 'منځنی PUBG', big: 'غټPUBG',
+                accountsTitle: 'PUBG اکونټونه', contactTitle: 'اړیکه او ملاتړ', adminTitle: 'مدیر پینل',
+                loginTitle: 'مدیر ننوتل', loginBtn: 'ننوتل', onlineUsers: 'آنلاین اوس',
+                accountsStat: 'اکونټونه', bookingsStat: 'بوک غوښتنې', bookRequestsTitle: '📋 د بوک غوښتنې',
+                addAccountBtn: 'نوی اکونټ اضافه کړئ', manageAccountsBtn: 'اکونټونه مدیریت کړئ (ړنګول)',
+                manageContactsBtn: 'اړیکې مدیریت کړئ', manageAdsBtn: 'اعلانونه مدیریت کړئ', logoutBtn: 'وتل',
+                addModalTitle: 'نوی اکونټ اضافه کړئ', selectTier: '-- کچه وټاکئ --',
+                smallTier: 'وړوکی PUBG ($10-$500)', mediumTier: 'منځنی PUBG ($500-$1000)',
+                bigTier: 'لوی PUBG ($1000-$100000)', mediaLabel: 'د اکونټ رسنیز فایل (انځور یا ویډیو) *',
+                uploadBtn: 'پورته کول', manageModalTitle: 'اکونټونه مدیریت کړئ',
                 existingAccounts: '📋 شته اکونټونو (د ړنګولو لپاره کلیک وکړئ)',
-                manageContactsTitle: 'اړیکې مدیریت کړئ',
-                addContact: '➕ نوې اړیکه اضافه کړئ',
-                whatsappNumberLabel: 'د هیواد کوډ سره WhatsApp شمېره',
-                saveContactBtn: 'اړیکه خوندي کړئ',
-                existingContacts: '📋 شته اړیکې',
-                manageAdsTitle: 'اعلانونه مدیریت کړئ',
-                addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)',
-                imageOption: 'انځور',
-                videoOption: 'ویډیو',
-                adMediaLabel: 'د اعلان رسنیز فایل *',
-                addAdBtn: 'اعلان اضافه کړئ',
-                currentAds: '📋 اوسني اعلانونه',
-                bookTitle: 'اکونټ بوک کړئ',
-                cancel: 'لغوه',
-                confirm: 'بوک تایید کړئ',
-                buyTitle: 'د USDT سره واخلئ',
-                confirmWA: 'د WhatsApp له لارې تایید کړئ',
-                infoTitle: 'داکونټ معلومات',
-                selectLang: 'ژبه وټاکئ',
-                yourName: 'ستاسو نوم',
-                whatsappNumber: 'WhatsApp شمېره',
-                chatNow: 'اوس خبرې وکړئ',
-                delete: 'ړنګول',
-                edit: 'سمول',
-                editUsdtTitle: 'USDT پته سمول',
-                newUsdtAddress: 'نوې USDT پته',
-                usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
-                save: 'خوندي کړئ',
-                autoRefresh: 'اتومات تازه کول',
-                contactViaWA: 'د واټساپ له لارې اړیکه'
+                manageContactsTitle: 'اړیکې مدیریت کړئ', addContact: '➕ نوې اړیکه اضافه کړئ',
+                whatsappNumberLabel: 'د هیواد کوډ سره WhatsApp شمېره', saveContactBtn: 'اړیکه خوندي کړئ',
+                existingContacts: '📋 شته اړیکې', manageAdsTitle: 'اعلانونه مدیریت کړئ',
+                addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)', imageOption: 'انځور', videoOption: 'ویډیو',
+                adMediaLabel: 'د اعلان رسنیز فایل *', addAdBtn: 'اعلان اضافه کړئ', currentAds: '📋 اوسني اعلانونه',
+                bookTitle: 'اکونټ بوک کړئ', cancel: 'لغوه', confirm: 'بوک تایید کړئ',
+                buyTitle: 'د USDT سره واخلئ', confirmWA: 'د WhatsApp له لارې تایید کړئ', infoTitle: 'داکونټ معلومات',
+                selectLang: 'ژبه وټاکئ', yourName: 'ستاسو نوم', whatsappNumber: 'WhatsApp شمېره',
+                chatNow: 'اوس خبرې وکړئ', delete: 'ړنګول', edit: 'سمول', editUsdtTitle: 'USDT پته سمول',
+                newUsdtAddress: 'نوې USDT پته', usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
+                save: 'خوندي کړئ', autoRefresh: 'اتومات تازه کول', contactViaWA: 'د واټساپ له لارې اړیکه'
             },
             fa: {
-                brand: 'جی کی فروشگاه',
-                lang: 'زبان',
-                update: 'به روز رسانی',
-                contact: 'تماس',
-                admin: 'مدیر',
-                mainTitle: 'بازار PUBG',
-                mainSubtitle: 'ایمن · تحویل فوری',
-                cta: 'برای دیدن اکونت های PUBG کلیک کنید',
-                sliderHint: '— تبلیغات را بکشید (تغییر هر ۲ ثانیه) —',
-                all: 'همه',
-                small: 'کوچک PUBG',
-                medium: 'متوسط PUBG',
-                big: 'بزرگ PUBG',
-                accountsTitle: 'اکونت های PUBG',
-                contactTitle: 'تماس و پشتیبانی',
-                adminTitle: 'پنل مدیریت',
-                loginTitle: 'ورود مدیر',
-                loginBtn: 'ورود',
-                onlineUsers: 'آنلاین الآن',
-                accountsStat: 'اکونت ها',
-                bookingsStat: 'درخواست‌های رزرو',
-                bookRequestsTitle: '📋 درخواست‌های رزرو',
-                addAccountBtn: 'افزودن اکونت جدید',
-                manageAccountsBtn: 'مدیریت اکونت ها (حذف)',
-                manageContactsBtn: 'مدیریت مخاطبان',
-                manageAdsBtn: 'مدیریت تبلیغات',
-                logoutBtn: 'خروج',
-                addModalTitle: 'افزودن اکونت جدید',
-                selectTier: '-- سطح را انتخاب کنید --',
-                smallTier: 'کوچک PUBG ($10-$500)',
-                mediumTier: 'متوسط PUBG ($500-$1000)',
-                bigTier: 'بزرگ PUBG ($1000-$100000)',
-                mediaLabel: 'رسانه اکونت (تصویر یا ویدیو) *',
-                uploadBtn: 'آپلود',
-                manageModalTitle: 'مدیریت اکونت ها',
+                brand: 'جی کی فروشگاه', lang: 'زبان', update: 'به روز رسانی', contact: 'تماس', admin: 'مدیر',
+                mainTitle: 'بازار PUBG', mainSubtitle: 'ایمن · تحویل فوری',
+                cta: 'برای دیدن اکونت های PUBG کلیک کنید', sliderHint: '— تبلیغات را بکشید (تغییر هر ۲ ثانیه) —',
+                all: 'همه', small: 'کوچک PUBG', medium: 'متوسط PUBG', big: 'بزرگ PUBG',
+                accountsTitle: 'اکونت های PUBG', contactTitle: 'تماس و پشتیبانی', adminTitle: 'پنل مدیریت',
+                loginTitle: 'ورود مدیر', loginBtn: 'ورود', onlineUsers: 'آنلاین الآن',
+                accountsStat: 'اکونت ها', bookingsStat: 'درخواست‌های رزرو', bookRequestsTitle: '📋 درخواست‌های رزرو',
+                addAccountBtn: 'افزودن اکونت جدید', manageAccountsBtn: 'مدیریت اکونت ها (حذف)',
+                manageContactsBtn: 'مدیریت مخاطبان', manageAdsBtn: 'مدیریت تبلیغات', logoutBtn: 'خروج',
+                addModalTitle: 'افزودن اکونت جدید', selectTier: '-- سطح را انتخاب کنید --',
+                smallTier: 'کوچک PUBG ($10-$500)', mediumTier: 'متوسط PUBG ($500-$1000)',
+                bigTier: 'بزرگ PUBG ($1000-$100000)', mediaLabel: 'رسانه اکونت (تصویر یا ویدیو) *',
+                uploadBtn: 'آپلود', manageModalTitle: 'مدیریت اکونت ها',
                 existingAccounts: '📋 اکونت های موجود (برای حذف کلیک کنید)',
-                manageContactsTitle: 'مدیریت مخاطبان',
-                addContact: '➕ افزودن مخاطب جدید',
-                whatsappNumberLabel: 'شماره WhatsApp با کد کشور',
-                saveContactBtn: 'ذخیره مخاطب',
-                existingContacts: '📋 مخاطبان موجود',
-                manageAdsTitle: 'مدیریت تبلیغات',
-                addAd: '➕ افزودن تبلیغ جدید (تصویر/ویدیو)',
-                imageOption: 'تصویر',
-                videoOption: 'ویدیو',
-                adMediaLabel: 'رسانه تبلیغ *',
-                addAdBtn: 'افزودن تبلیغ',
-                currentAds: '📋 تبلیغات فعلی',
-                bookTitle: 'بوک کردن اکونت ',
-                cancel: 'لغو',
-                confirm: 'تایید رزرو',
-                buyTitle: 'خرید با USDT',
-                confirmWA: 'تایید از طریق WhatsApp',
-                infoTitle: 'معلومات اکونت',
-                selectLang: 'انتخاب زبان',
-                yourName: 'نام شما',
-                whatsappNumber: 'شماره WhatsApp',
-                chatNow: 'اکنون گفتگو',
-                delete: 'حذف',
-                edit: 'ویرایش',
-                editUsdtTitle: 'ویرایش آدرس USDT',
-                newUsdtAddress: 'آدرس جدید USDT',
-                usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
-                save: 'ذخیره',
-                autoRefresh: 'تازه سازی خودکار',
-                contactViaWA: 'تماس از طریق واتساپ'
+                manageContactsTitle: 'مدیریت مخاطبان', addContact: '➕ افزودن مخاطب جدید',
+                whatsappNumberLabel: 'شماره WhatsApp با کد کشور', saveContactBtn: 'ذخیره مخاطب',
+                existingContacts: '📋 مخاطبان موجود', manageAdsTitle: 'مدیریت تبلیغات',
+                addAd: '➕ افزودن تبلیغ جدید (تصویر/ویدیو)', imageOption: 'تصویر', videoOption: 'ویدیو',
+                adMediaLabel: 'رسانه تبلیغ *', addAdBtn: 'افزودن تبلیغ', currentAds: '📋 تبلیغات فعلی',
+                bookTitle: 'بوک کردن اکونت ', cancel: 'لغو', confirm: 'تایید رزرو',
+                buyTitle: 'خرید با USDT', confirmWA: 'تایید از طریق WhatsApp', infoTitle: 'معلومات اکونت',
+                selectLang: 'انتخاب زبان', yourName: 'نام شما', whatsappNumber: 'شماره WhatsApp',
+                chatNow: 'اکنون گفتگو', delete: 'حذف', edit: 'ویرایش', editUsdtTitle: 'ویرایش آدرس USDT',
+                newUsdtAddress: 'آدرس جدید USDT', usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
+                save: 'ذخیره', autoRefresh: 'تازه سازی خودکار', contactViaWA: 'تماس از طریق واتساپ'
             }
         };
 
@@ -2939,6 +2858,9 @@
                     </div>
                 `;
             }).join('');
+            
+            // Setup videos after rendering
+            setTimeout(setupVideoPlayback, 100);
         }
 
         function renderContacts() {
@@ -3020,7 +2942,7 @@
             let slides = '';
             appState.ads.forEach((ad, idx) => {
                 if (ad.type === 'video') {
-                    slides += `<div class="slide"><video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover;"></video><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
+                    slides += `<div class="slide"><video src="${ad.data}" loop playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover;" muted></video><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
                 } else {
                     slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="playClickSound(); openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
                 }
@@ -3047,17 +2969,8 @@
             }
             startAutoSlide();
             
-            // iOS video autoplay fix
-            if (isIOS()) {
-                const videos = document.querySelectorAll('.slide video');
-                videos.forEach(video => {
-                    video.muted = true;
-                    video.setAttribute('playsinline', '');
-                    video.setAttribute('webkit-playsinline', '');
-                    video.load();
-                    video.play().catch(e => console.log('Auto-play prevented, user must interact first'));
-                });
-            }
+            // Setup video playback for slider videos
+            setTimeout(setupVideoPlayback, 100);
         }
 
         function startAutoSlide() {
@@ -3114,6 +3027,8 @@
                     </div>
                 `;
             }).join('');
+            
+            setTimeout(setupVideoPlayback, 100);
         }
 
         function renderAdminAds() {
@@ -3144,6 +3059,8 @@
                     </button>
                 </div>
             `).join('');
+            
+            setTimeout(setupVideoPlayback, 100);
         }
 
         function renderBookRequests() {
@@ -3924,12 +3841,8 @@
         trackVisitor();
         setInterval(trackVisitor, 30000);
         
-        // Setup iOS video playback
-        setupIOSVideoPlayback();
-        
-        // Fix image loading
-        setTimeout(fixImageLoading, 1000);
-        setInterval(fixImageLoading, 10000);
+        // Setup video playback after everything loads
+        setTimeout(setupVideoPlayback, 1000);
     </script>
 </body>
 </html>
