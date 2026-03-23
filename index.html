@@ -109,6 +109,15 @@
             to { transform: translateX(0); opacity: 1; }
         }
         
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+        }
+        
+        .notification-toast.fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+        
         .notification-toast .notification-icon {
             width: 40px;
             height: 40px;
@@ -141,6 +150,11 @@
             font-size: 16px;
             cursor: pointer;
             padding: 5px;
+            border-radius: 50%;
+        }
+        
+        .notification-toast .notification-close:hover {
+            background: rgba(255,255,255,0.2);
         }
 
         /* PWA Standalone Mode Styles */
@@ -575,11 +589,12 @@
             object-fit: cover;
         }
         
-        /* iOS video autoplay fix */
+        /* iOS video autoplay fix - ensure videos play */
         .slide video {
             -webkit-play-video: true;
             playsinline: true;
             webkit-playsinline: true;
+            muted: true;
         }
 
         .slide-caption {
@@ -1325,7 +1340,9 @@
 </head>
 <body dir="ltr">
     <!-- Notification Toast Container -->
-    <div id="notification-container"></div>
+    <div id="notification-container" style="position: fixed; top: 70px; left: 0; right: 0; z-index: 10000; pointer-events: none;">
+        <div style="pointer-events: auto; max-width: 400px; margin: 0 auto;"></div>
+    </div>
     
     <!-- iOS Install Banner -->
     <div id="ios-install-banner" class="ios-install-banner" style="display: none;">
@@ -1786,49 +1803,42 @@
         // ============================================
         function playClickSound() {
             try {
-                const audio = new Audio();
-                audio.src = 'data:audio/wav;base64,U3RlYWx0aCBzb3VuZA==';
-                audio.volume = 0.3;
-                audio.play().catch(e => console.log('Sound not supported'));
-            } catch(e) {}
+                // Simple beep using Web Audio API - works on iOS
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.frequency.value = 800;
+                    gainNode.gain.value = 0.15;
+                    oscillator.start();
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                }
+            } catch(e) {
+                // Silent fail if audio not supported
+            }
         }
-        
-        // Create a simple beep using Web Audio API for better compatibility
-        function createBeep() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.frequency.value = 800;
-                gainNode.gain.value = 0.2;
-                oscillator.start();
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
-                oscillator.stop(audioCtx.currentTime + 0.1);
-            } catch(e) {}
-        }
-        
-        // Override playClickSound to use beep
-        window.playClickSound = function() {
-            createBeep();
-        };
 
         // ============================================
         // NOTIFICATION SYSTEM
         // ============================================
         let notifications = [];
         
-        // Load notifications from localStorage
         function loadNotifications() {
             const saved = localStorage.getItem('gk_notifications');
             if (saved) {
                 try {
                     notifications = JSON.parse(saved);
-                    // Remove old notifications (older than 24 hours)
                     const now = Date.now();
-                    notifications = notifications.filter(n => (now - n.timestamp) < 24 * 60 * 60 * 1000);
-                    saveNotifications();
+                    const twentyFourHours = 24 * 60 * 60 * 1000;
+                    const oldCount = notifications.length;
+                    notifications = notifications.filter(n => (now - n.timestamp) < twentyFourHours);
+                    if (notifications.length !== oldCount) {
+                        saveNotifications();
+                    }
                 } catch(e) {}
             }
         }
@@ -1849,17 +1859,21 @@
             });
             saveNotifications();
             
-            // Show toast
+            // Create toast element
             const container = document.getElementById('notification-container');
+            const toastContainer = container.querySelector('div');
+            
             const toast = document.createElement('div');
             toast.className = 'notification-toast';
-            toast.onclick = () => {
+            toast.setAttribute('data-id', id);
+            toast.onclick = (e) => {
+                if (e.target.classList.contains('notification-close')) return;
                 if (accountId) {
                     switchScreen('accounts');
-                    // Scroll to account if needed
                 }
-                closeNotification(id);
+                closeNotificationElement(toast);
             };
+            
             toast.innerHTML = `
                 <div class="notification-icon">
                     <i class="fas fa-gift"></i>
@@ -1868,27 +1882,26 @@
                     <div class="notification-title">${escapeHtml(title)}</div>
                     <div class="notification-message">${escapeHtml(message)}</div>
                 </div>
-                <button class="notification-close" onclick="event.stopPropagation(); closeNotification(${id})">
+                <button class="notification-close" onclick="event.stopPropagation(); closeNotificationElement(this.parentElement)">
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            container.appendChild(toast);
+            
+            toastContainer.appendChild(toast);
             
             // Auto remove after 5 seconds
             setTimeout(() => {
                 if (toast.parentNode) {
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(100%)';
-                    setTimeout(() => toast.remove(), 300);
+                    closeNotificationElement(toast);
                 }
             }, 5000);
         }
         
-        function closeNotification(id) {
-            const toast = document.querySelector(`.notification-toast`);
-            if (toast) toast.remove();
-            notifications = notifications.filter(n => n.id !== id);
-            saveNotifications();
+        function closeNotificationElement(element) {
+            element.classList.add('fade-out');
+            setTimeout(() => {
+                if (element.parentNode) element.remove();
+            }, 300);
         }
         
         function checkForNewAccounts(oldAccounts, newAccounts) {
@@ -1924,19 +1937,15 @@
             updateBtn.disabled = true;
             
             try {
-                // Save current accounts to compare
                 const oldAccounts = [...appState.accounts];
                 
-                // Force refresh data
                 await testConnection();
                 await loadAccountsFromPB();
                 await loadContactsFromPB();
                 await loadSettingsFromPB();
                 
-                // Check for new accounts
                 checkForNewAccounts(oldAccounts, appState.accounts);
                 
-                // Refresh all displays
                 renderAccounts();
                 renderContacts();
                 if (appState.isAdminLoggedIn) {
@@ -1958,7 +1967,52 @@
                 }, 1000);
             }
         };
-        
+
+        // ============================================
+        // iOS VIDEO PLAYBACK FIX
+        // ============================================
+        function setupIOSVideoPlayback() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (!isIOS) return;
+            
+            // Function to enable video playback on user interaction
+            function enableVideoPlayback() {
+                const videos = document.querySelectorAll('video');
+                videos.forEach(video => {
+                    video.muted = true;
+                    video.setAttribute('playsinline', '');
+                    video.setAttribute('webkit-playsinline', '');
+                    video.load();
+                    video.play().catch(e => console.log('Video play attempt:', e));
+                });
+            }
+            
+            // Enable on first user interaction
+            const events = ['click', 'touchstart', 'touchend'];
+            events.forEach(event => {
+                document.body.addEventListener(event, enableVideoPlayback, { once: true });
+            });
+            
+            // Also try to play videos when they become visible in slider
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const video = entry.target;
+                        if (video.tagName === 'VIDEO') {
+                            video.play().catch(e => console.log('Auto-play prevented'));
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            // Observe all videos
+            const checkVideos = setInterval(() => {
+                const videos = document.querySelectorAll('video');
+                videos.forEach(video => observer.observe(video));
+                if (videos.length > 0) clearInterval(checkVideos);
+            }, 1000);
+        }
+
         // ============================================
         // COMPLETE TRANSLATIONS
         // ============================================
@@ -2752,7 +2806,7 @@
             
             grid.innerHTML = filtered.map(acc => {
                 const mediaHtml = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" loading="lazy"></video>`
+                    ? `<video src="${acc.media}" class="card-media" controls playsinline webkit-playsinline preload="metadata" loading="lazy" muted></video>`
                     : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="playClickSound(); openFullscreenImage('${acc.media}')" style="cursor:pointer;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 
                 return `
@@ -2891,9 +2945,11 @@
             if (isIOS()) {
                 const videos = document.querySelectorAll('.slide video');
                 videos.forEach(video => {
-                    video.addEventListener('loadedmetadata', () => {
-                        video.play().catch(e => console.log('Auto-play prevented, user must interact'));
-                    });
+                    video.muted = true;
+                    video.setAttribute('playsinline', '');
+                    video.setAttribute('webkit-playsinline', '');
+                    video.load();
+                    video.play().catch(e => console.log('Auto-play prevented, user must interact first'));
                 });
             }
         }
@@ -2935,7 +2991,7 @@
             
             list.innerHTML = appState.accounts.map(acc => {
                 const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline webkit-playsinline></video>`
+                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline webkit-playsinline muted></video>`
                     : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="playClickSound(); openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
                 
                 return `
@@ -2969,7 +3025,7 @@
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
                     <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">
                         ${ad.type === 'video' 
-                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline webkit-playsinline></video>`
+                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline webkit-playsinline muted></video>`
                             : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" onclick="playClickSound(); openFullscreenImage('${ad.data}')" style="cursor:pointer;">`
                         }
                     </div>
@@ -3764,7 +3820,11 @@
         
         // Add translation for update button
         const updateText = translations[savedLang]?.update || 'Update';
-        document.querySelector('#update-btn span').textContent = updateText;
+        const updateSpan = document.querySelector('#update-btn span');
+        if (updateSpan) updateSpan.textContent = updateText;
+        
+        // Setup iOS video playback
+        setupIOSVideoPlayback();
     </script>
 </body>
 </html>
