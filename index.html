@@ -30,7 +30,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* Your existing CSS - keep exactly as is */
         * {
             margin: 0;
             padding: 0;
@@ -142,7 +141,7 @@
         }
         .overlay.active { display: block; }
 
-        /* Simple Video Player - Native Controls (WORKS PERFECTLY) */
+        /* Video Player - Fixed for iOS/Android */
         .video-player {
             position: relative;
             width: 100%;
@@ -156,6 +155,84 @@
             height: 100%;
             object-fit: contain;
             background: #000;
+        }
+        
+        /* Swipe Ads - Fixed for iOS */
+        .swipe-ads {
+            width: 100%;
+            border-radius: 2rem;
+            overflow: hidden;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            position: relative;
+            touch-action: pan-y pinch-zoom;
+        }
+        .slider-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        .slider-track {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            background: #111;
+            touch-action: pan-y pinch-zoom;
+        }
+        .slider-track::-webkit-scrollbar {
+            display: none;
+        }
+        .slide {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+            position: relative;
+            aspect-ratio: 16/9;
+            background: #000;
+            touch-action: pan-y pinch-zoom;
+        }
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .slide video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .slide-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            padding: 2rem 1rem 1rem;
+            font-weight: 600;
+            z-index: 5;
+            pointer-events: none;
+        }
+        .slider-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: var(--surface-light);
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 10px;
+            background: var(--text-secondary);
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .dot.active {
+            background: var(--primary);
+            width: 24px;
         }
 
         /* PWA Standalone Mode Styles */
@@ -533,80 +610,6 @@
             gap: 12px;
             box-shadow: 0 10px 30px rgba(236,72,153,0.4);
             cursor: pointer;
-        }
-
-        .swipe-ads {
-            width: 100%;
-            border-radius: 2rem;
-            overflow: hidden;
-            background: var(--surface);
-            border: 1px solid var(--border);
-        }
-
-        .slider-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .slider-track {
-            display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            background: #111;
-        }
-
-        .slider-track::-webkit-scrollbar {
-            display: none;
-        }
-
-        .slide {
-            flex: 0 0 100%;
-            scroll-snap-align: start;
-            position: relative;
-            aspect-ratio: 16/9;
-            background: #000;
-        }
-
-        .slide img, .slide video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .slide-caption {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
-            color: white;
-            padding: 2rem 1rem 1rem;
-            font-weight: 600;
-        }
-
-        .slider-dots {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px;
-            background: var(--surface-light);
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 10px;
-            background: var(--text-secondary);
-            transition: 0.2s;
-            cursor: pointer;
-        }
-
-        .dot.active {
-            background: var(--primary);
-            width: 24px;
         }
 
         .tier-header {
@@ -1228,7 +1231,6 @@
             background: var(--primary-dark);
         }
         
-        /* Video upload hint */
         .video-hint {
             font-size: 0.8rem;
             color: var(--text-secondary);
@@ -1240,7 +1242,6 @@
             border-left: 3px solid var(--primary);
         }
         
-        /* Retry button */
         .retry-btn {
             background: #f59e0b;
             color: white;
@@ -1252,7 +1253,6 @@
             margin-top: 0.5rem;
         }
         
-        /* Install instructions modal */
         .install-instructions {
             background: var(--surface-lighter);
             padding: 1rem;
@@ -1297,26 +1297,6 @@
             font-size: 0.8rem;
             margin: 0 4px;
             border: 1px solid var(--border);
-        }
-        
-        /* Update notification badge */
-        .update-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .nav-btn {
-            position: relative;
         }
     </style>
 </head>
@@ -1541,259 +1521,35 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation - Contact and Admin buttons -->
+    <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <button class="bottom-nav-btn" id="nav-main" onclick="playClickSound(); switchScreen('main')">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </button>
-        <button class="bottom-nav-btn" id="nav-contact" onclick="playClickSound(); switchScreen('contact')">
-            <i class="fab fa-whatsapp"></i>
-            <span data-i18n="contact">Contact</span>
-        </button>
-        <button class="bottom-nav-btn" id="nav-admin" onclick="playClickSound(); switchScreen('admin')">
-            <i class="fas fa-user-shield"></i>
-            <span data-i18n="admin">Admin</span>
-        </button>
+        <button class="bottom-nav-btn" id="nav-main" onclick="playClickSound(); switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="playClickSound(); switchScreen('contact')"><i class="fab fa-whatsapp"></i><span data-i18n="contact">Contact</span></button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="playClickSound(); switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- EDIT USDT MODAL -->
-    <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> <span data-i18n="editUsdtTitle">Edit USDT Address</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('edit-usdt-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY">
-                <p style="color:var(--text-secondary); font-size:0.8rem;" data-i18n="usdtWarning">Make sure it's a valid TRC20 address</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="playClickSound(); closeModal('edit-usdt-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="btn-primary" onclick="playClickSound(); saveUsdtAddress()"><span data-i18n="save">Save</span></button>
-            </div>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="playClickSound(); closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); saveUsdtAddress()">Save</button></div></div></div>
 
-    <!-- ADD ACCOUNT MODAL -->
-    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-plus-circle"></i> <span data-i18n="addModalTitle">Add New Account</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('add-account-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="add-account-form" onsubmit="return false;">
-                    <select id="account-tier" class="input" required>
-                        <option value=""><span data-i18n="selectTier">-- Select Tier --</span></option>
-                        <option value="small"><span data-i18n="smallTier">Small PUBG ($10-$500)</span></option>
-                        <option value="medium"><span data-i18n="mediumTier">Medium PUBG ($500-$1000)</span></option>
-                        <option value="big"><span data-i18n="bigTier">Big PUBG ($1000-$100000)</span></option>
-                    </select>
-                    
-                    <input type="text" id="account-title" class="input" placeholder="Account Title" required>
-                    <textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                        <input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price" required>
-                        <input type="number" id="account-price-afn" class="input" placeholder="AFN Price" required>
-                    </div>
-                    
-                    <label class="input-label"><span data-i18n="mediaLabel">Account Media (Image or Video) *</span></label>
-                    <div class="media-preview" id="media-preview">
-                        <i class="fa fa-cloud-upload-alt"></i>
-                    </div>
-                    
-                    <div class="video-hint">
-                        <i class="fa fa-info-circle"></i> Max video size: 200MB (MP4, WebM, MOV). Large videos may take a few minutes to upload.
-                    </div>
-                    
-                    <div class="upload-progress" id="upload-progress">
-                        <div class="progress-bar" id="progress-bar" style="width:0%"></div>
-                    </div>
-                    <div class="progress-text" id="progress-text"></div>
-                    
-                    <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
-                    
-                    <button type="button" class="upload-btn" id="upload-btn" onclick="playClickSound(); uploadNewAccount()" disabled>
-                        <i class="fa fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">UPLOAD</span>
-                    </button>
-                    <button type="button" class="retry-btn" id="retry-btn" style="display:none;" onclick="playClickSound(); uploadNewAccount()">
-                        <i class="fa fa-refresh"></i> Retry Upload
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Add New Account</h3><button class="modal-close" onclick="playClickSound(); closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr;"><input type="number" id="account-price-usd" class="input" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="upload-progress" id="upload-progress"><div class="progress-bar"></div></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="playClickSound(); uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
 
-    <!-- MANAGE ACCOUNTS MODAL -->
-    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-edit"></i> <span data-i18n="manageModalTitle">Manage Accounts</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('manage-accounts-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="existingAccounts">📋 Existing Accounts (click delete to remove)</span></h4>
-                <div id="admin-accounts-list" style="max-height:400px; overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
+    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="playClickSound(); closeModal('manage-accounts-modal')">&times;</button></div><div class="modal-body"><div id="admin-accounts-list"></div></div></div></div>
 
-    <!-- MANAGE CONTACTS MODAL -->
-    <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fab fa-whatsapp"></i> <span data-i18n="manageContactsTitle">Manage Contacts</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('manage-contacts-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="addContact">➕ Add New Contact</span></h4>
-                <form id="add-contact-form" onsubmit="return false;">
-                    <input type="text" id="contact-name" class="input" placeholder="Contact Name" required>
-                    <label class="input-label"><span data-i18n="whatsappNumberLabel">WhatsApp Number with Country Code</span></label>
-                    <input type="tel" id="contact-phone" class="input" placeholder="e.g., 93793066322">
-                    <textarea id="contact-desc" class="input" rows="2" placeholder="Description (optional)"></textarea>
-                    <button class="btn-primary" style="width:100%;" onclick="playClickSound(); saveNewContact()"><span data-i18n="saveContactBtn">Save Contact</span></button>
-                </form>
-                
-                <h4 style="margin:2rem 0 1rem;"><span data-i18n="existingContacts">📋 Existing Contacts</span></h4>
-                <div id="admin-contacts-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
+    <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Contacts</h3><button class="modal-close" onclick="playClickSound(); closeModal('manage-contacts-modal')">&times;</button></div><div class="modal-body"><input type="text" id="contact-name" class="input" placeholder="Contact Name"><input type="tel" id="contact-phone" class="input" placeholder="Phone Number"><textarea id="contact-desc" class="input" rows="2" placeholder="Description"></textarea><button class="btn-primary" style="width:100%;" onclick="playClickSound(); saveNewContact()">Save Contact</button><div id="admin-contacts-list" style="margin-top:1rem;"></div></div></div></div>
 
-    <!-- MANAGE ADS MODAL -->
-    <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fa fa-image"></i> <span data-i18n="manageAdsTitle">Manage Swipe Ads</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('manage-ads-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom:1rem;"><span data-i18n="addAd">➕ Add New Ad (Image/Video)</span></h4>
-                <form id="add-ad-form" onsubmit="return false;">
-                    <select id="ad-type" class="input">
-                        <option value="image"><span data-i18n="imageOption">Image</span></option>
-                        <option value="video"><span data-i18n="videoOption">Video</span></option>
-                    </select>
-                    
-                    <label class="input-label"><span data-i18n="adMediaLabel">Ad Media *</span></label>
-                    <div class="media-preview" id="ad-preview">
-                        <i class="fa fa-cloud-upload-alt"></i>
-                    </div>
-                    <input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()" required>
-                    
-                    <input type="text" id="ad-caption" class="input" placeholder="Caption (optional)">
-                    
-                    <button class="btn-primary" style="width:100%;" onclick="playClickSound(); saveNewAd()"><span data-i18n="addAdBtn">Add Ad</span></button>
-                </form>
-                
-                <h4 style="margin:2rem 0 1rem;"><span data-i18n="currentAds">📋 Current Ads</span></h4>
-                <div id="admin-ads-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
+    <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Ads</h3><button class="modal-close" onclick="playClickSound(); closeModal('manage-ads-modal')">&times;</button></div><div class="modal-body"><select id="ad-type" class="input"><option value="image">Image</option><option value="video">Video</option></select><div class="media-preview" id="ad-preview"><i class="fa fa-cloud-upload-alt"></i></div><input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()"><input type="text" id="ad-caption" class="input" placeholder="Caption"><button class="btn-primary" style="width:100%;" onclick="playClickSound(); saveNewAd()">Add Ad</button><div id="admin-ads-list" style="margin-top:1rem;"></div></div></div></div>
 
-    <!-- BOOK MODAL -->
-    <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>📘 <span data-i18n="bookTitle">Book account</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('book-modal')">&times;</button>
-            </div>
-            <div class="modal-body" id="book-modal-body"></div>
-            <div class="modal-footer">
-                <button class="btn" onclick="playClickSound(); closeModal('book-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="btn-primary" onclick="playClickSound(); submitBook()"><span data-i18n="confirm">Confirm booking</span></button>
-            </div>
-        </div>
-    </div>
+    <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Book account</h3><button class="modal-close" onclick="playClickSound(); closeModal('book-modal')">&times;</button></div><div class="modal-body" id="book-modal-body"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('book-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); submitBook()">Confirm</button></div></div></div>
 
-    <!-- BUY MODAL -->
-    <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>💳 <span data-i18n="buyTitle">Buy with USDT</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('buy-modal')">&times;</button>
-            </div>
-            <div class="modal-body" id="buy-modal-body"></div>
-            <div class="modal-footer">
-                <button class="btn" onclick="playClickSound(); closeModal('buy-modal')"><span data-i18n="cancel">Cancel</span></button>
-                <button class="whatsapp-btn" onclick="playClickSound(); confirmBuyWhatsApp()"><span data-i18n="confirmWA">Confirm via WhatsApp</span></button>
-            </div>
-        </div>
-    </div>
+    <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Buy with USDT</h3><button class="modal-close" onclick="playClickSound(); closeModal('buy-modal')">&times;</button></div><div class="modal-body" id="buy-modal-body"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('buy-modal')">Cancel</button><button class="whatsapp-btn" onclick="playClickSound(); confirmBuyWhatsApp()">Confirm via WhatsApp</button></div></div></div>
 
-    <!-- INFO MODAL -->
-    <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>ℹ️ <span data-i18n="infoTitle">Account details</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('info-modal')">&times;</button>
-            </div>
-            <div class="modal-body" id="info-modal-body"></div>
-        </div>
-    </div>
+    <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Account details</h3><button class="modal-close" onclick="playClickSound(); closeModal('info-modal')">&times;</button></div><div class="modal-body" id="info-modal-body"></div></div></div>
 
-    <!-- LANGUAGE MODAL -->
-    <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><span data-i18n="selectLang">Select language</span></h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('language-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="playClickSound(); setLanguage('en')">🇺🇸 English</button>
-                <button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="playClickSound(); setLanguage('ps')">🇦🇫 پښتو</button>
-                <button class="btn" style="width:100%;" onclick="playClickSound(); setLanguage('fa')">🇮🇷 فارسی</button>
-            </div>
-        </div>
-    </div>
+    <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Select language</h3><button class="modal-close" onclick="playClickSound(); closeModal('language-modal')">&times;</button></div><div class="modal-body"><button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="playClickSound(); setLanguage('en')">English</button><button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="playClickSound(); setLanguage('ps')">پښتو</button><button class="btn" style="width:100%;" onclick="playClickSound(); setLanguage('fa')">فارسی</button></div></div></div>
 
-    <!-- INSTALL INSTRUCTIONS MODAL -->
-    <div id="install-modal" class="modal-overlay hidden" onclick="closeModal('install-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3><i class="fas fa-download"></i> Install as App</h3>
-                <button class="modal-close" onclick="playClickSound(); closeModal('install-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="install-instructions" id="install-instructions"></div>
-                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-light); border-radius: 1rem;">
-                    <p style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                        <strong>Benefits:</strong>
-                    </p>
-                    <ul style="list-style: none; padding-left: 1.5rem;">
-                        <li>✓ Works offline</li>
-                        <li>✓ Faster loading</li>
-                        <li>✓ Like a native app</li>
-                        <li>✓ No browser address bar</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="playClickSound(); closeModal('install-modal')">Close</button>
-            </div>
-        </div>
-    </div>
+    <div id="install-modal" class="modal-overlay hidden" onclick="closeModal('install-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Install as App</h3><button class="modal-close" onclick="playClickSound(); closeModal('install-modal')">&times;</button></div><div class="modal-body"><div class="install-instructions" id="install-instructions"></div></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('install-modal')">Close</button></div></div></div>
 
-    <!-- FULLSCREEN IMAGE MODAL -->
-    <div id="fullscreen-image-modal" class="fullscreen-modal">
-        <div class="fullscreen-content">
-            <span class="close-btn" onclick="playClickSound(); closeFullscreenImage()">&times;</span>
-            <div class="fullscreen-image-container" id="fullscreen-image-container">
-                <img id="fullscreen-image" src="" alt="Fullscreen" draggable="false">
-            </div>
-            <div class="zoom-controls">
-                <button onclick="playClickSound(); zoomImage('out')"><i class="fa fa-search-minus"></i></button>
-                <span class="zoom-level" id="zoom-level">1.0x</span>
-                <button onclick="playClickSound(); zoomImage('in')"><i class="fa fa-search-plus"></i></button>
-                <button onclick="playClickSound(); resetZoom()"><i class="fa fa-undo"></i></button>
-            </div>
-        </div>
-    </div>
+    <div id="fullscreen-image-modal" class="fullscreen-modal"><div class="fullscreen-content"><span class="close-btn" style="position:absolute;top:20px;right:20px;background:var(--primary);color:white;border:none;width:44px;height:44px;border-radius:50%;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10001;" onclick="playClickSound(); closeFullscreenImage()">&times;</span><img id="fullscreen-image" src="" style="max-width:100%;max-height:100%;object-fit:contain;"><div class="zoom-controls"><button onclick="playClickSound(); zoomImage('out')"><i class="fa fa-search-minus"></i></button><span class="zoom-level" id="zoom-level">1.0x</span><button onclick="playClickSound(); zoomImage('in')"><i class="fa fa-search-plus"></i></button><button onclick="playClickSound(); resetZoom()"><i class="fa fa-undo"></i></button></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
@@ -1819,7 +1575,7 @@
         }
 
         // ============================================
-        // VIDEO PLAYER - SIMPLE NATIVE CONTROLS (WORKS PERFECTLY)
+        // VIDEO PLAYER - FIXED FOR iOS/ANDROID
         // ============================================
         function setupVideoPlayer(container, videoUrl) {
             if (!container) return;
@@ -1827,10 +1583,6 @@
             
             const wrapper = document.createElement('div');
             wrapper.className = 'video-player';
-            wrapper.style.position = 'relative';
-            wrapper.style.width = '100%';
-            wrapper.style.height = '100%';
-            wrapper.style.background = '#000';
             
             const video = document.createElement('video');
             video.src = videoUrl;
@@ -1838,8 +1590,8 @@
             video.style.width = '100%';
             video.style.height = '100%';
             video.style.objectFit = 'contain';
-            video.style.background = '#000';
             video.loop = true;
+            // CRITICAL for iOS video playback
             video.setAttribute('playsinline', 'true');
             video.setAttribute('webkit-playsinline', 'true');
             video.preload = 'auto';
@@ -1847,14 +1599,52 @@
             wrapper.appendChild(video);
             container.appendChild(wrapper);
             
-            // Try to play muted (optional)
+            // Try to play muted (required for autoplay on iOS)
             video.muted = true;
             video.play().catch(e => console.log('Autoplay blocked, user must click play'));
             
-            // Handle ended event
+            // Handle ended event for looping
             video.addEventListener('ended', () => {
                 video.currentTime = 0;
                 video.play().catch(e => console.log('Loop failed'));
+            });
+        }
+
+        // ============================================
+        // SWIPE ADS - FIXED FOR iOS
+        // ============================================
+        function setupSwipeAds() {
+            const track = document.getElementById('slider-track');
+            if (!track) return;
+            
+            // iOS touch handling
+            let startX = 0;
+            let startY = 0;
+            let isScrolling = false;
+            
+            track.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isScrolling = false;
+            }, { passive: true });
+            
+            track.addEventListener('touchmove', (e) => {
+                if (!isScrolling) {
+                    const dx = Math.abs(e.touches[0].clientX - startX);
+                    const dy = Math.abs(e.touches[0].clientY - startY);
+                    if (dx > dy) {
+                        e.preventDefault();
+                        isScrolling = true;
+                    }
+                }
+            }, { passive: false });
+            
+            // Update dots on scroll
+            track.addEventListener('scroll', () => {
+                const idx = Math.round(track.scrollLeft / track.clientWidth);
+                document.querySelectorAll('.dot').forEach((d, i) => {
+                    d.classList.toggle('active', i === idx);
+                });
             });
         }
 
@@ -1946,90 +1736,22 @@
         };
 
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION
+        // CONFIGURATION
         // ============================================
         const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
         const PB_URL = CLOUDFLARE_URL;
-        
-        console.log('🚀 Connecting to Cloudflare Tunnel:', PB_URL);
-        
-        // Create PocketBase instance
         const pb = new PocketBase(PB_URL);
         pb.autoCancellation(false);
-
-        // Override fetch with better error handling
-        const originalSend = pb.send.bind(pb);
-        pb.send = async function(path, options = {}) {
-            options = {
-                ...options,
-                headers: {
-                    ...options.headers,
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            };
-            
-            const isFileUpload = options.body instanceof FormData;
-            const timeoutMs = isFileUpload ? 600000 : 10000;
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-            
-            try {
-                options.signal = controller.signal;
-                const result = await originalSend(path, options);
-                clearTimeout(timeoutId);
-                return result;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                console.log('PocketBase error:', error);
-                throw error;
-            }
-        };
-
-        // ============================================
-        // FALLBACK DATA
-        // ============================================
-        const fallbackAccounts = [];
-        const fallbackContacts = [
-            { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
-            { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
-        ];
-
-        // ============================================
-        // SERVICE WORKER - CRITICAL for PWA
-        // ============================================
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js', { scope: '/' })
-                .then(registration => {
-                    console.log('✅ ServiceWorker registered successfully');
-                    registration.addEventListener('updatefound', () => {
-                        console.log('ServiceWorker update found');
-                    });
-                })
-                .catch(error => {
-                    console.log('❌ ServiceWorker registration failed:', error);
-                });
-                
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    window.location.reload();
-                }
-            });
-        }
 
         // ============================================
         // APP STATE
         // ============================================
         const appState = {
-            accounts: fallbackAccounts,
-            contacts: fallbackContacts,
+            accounts: [],
+            contacts: [{ id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' }],
             ads: [],
             bookRequests: [],
             uniqueVisitors: new Set(),
-            visitorCount: 0,
             onlineCount: 0,
             currentFilter: 'all',
             isAdminLoggedIn: false,
@@ -2041,51 +1763,23 @@
             usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
             currentLanguage: 'en',
             autoSlideInterval: null,
-            usingFallback: true,
-            uploadRetryCount: 0,
             autoRefreshEnabled: true,
-            refreshInterval: null,
-            zoomLevel: 1,
-            panX: 0,
-            panY: 0,
-            isDragging: false,
-            lastX: 0,
-            lastY: 0,
             deferredPrompt: null
         };
 
         // Load from localStorage
         if (localStorage.getItem('gk_accounts')) {
-            try {
-                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                if (saved && saved.length > 0) {
-                    appState.accounts = saved;
-                    appState.usingFallback = false;
-                }
-            } catch (e) {}
+            try { appState.accounts = JSON.parse(localStorage.getItem('gk_accounts')); } catch(e) {}
         }
-        
         if (localStorage.getItem('gk_contacts')) {
-            try {
-                const saved = JSON.parse(localStorage.getItem('gk_contacts'));
-                if (saved && saved.length > 0) {
-                    appState.contacts = saved;
-                }
-            } catch (e) {}
+            try { appState.contacts = JSON.parse(localStorage.getItem('gk_contacts')); } catch(e) {}
         }
-        
         if (localStorage.getItem('gk_ads')) {
-            try {
-                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-            } catch (e) {}
+            try { appState.ads = JSON.parse(localStorage.getItem('gk_ads')); } catch(e) {}
         }
-        
         if (localStorage.getItem('gk_bookings')) {
-            try {
-                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            } catch (e) {}
+            try { appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings')); } catch(e) {}
         }
-        
         if (localStorage.getItem('gk_usdt_address')) {
             appState.usdtAddress = localStorage.getItem('gk_usdt_address');
         }
@@ -2100,8 +1794,7 @@
             if (saved) {
                 try {
                     notifications = JSON.parse(saved);
-                    const now = Date.now();
-                    notifications = notifications.filter(n => (now - n.timestamp) < 24 * 60 * 60 * 1000);
+                    notifications = notifications.filter(n => (Date.now() - n.timestamp) < 24 * 60 * 60 * 1000);
                     saveNotifications();
                 } catch(e) {}
             }
@@ -2201,10 +1894,10 @@
             const oldIds = new Set(oldAccounts.map(a => a.id));
             const newList = newAccounts.filter(a => !oldIds.has(a.id));
             newList.forEach(acc => {
-                addNotification('🆕 New Account Added!', `${acc.title} - $${acc.price_usd} has been added to the store!`, acc.id);
+                addNotification('🆕 New Account Added!', `${acc.title} - $${acc.price_usd} added!`, acc.id);
             });
         }
-        
+
         // ============================================
         // UPDATE FUNCTION
         // ============================================
@@ -2212,15 +1905,14 @@
         
         async function checkForUpdates() {
             if (isUpdating) {
-                addNotification('Update', 'Already checking for updates...', null);
+                addNotification('Update', 'Already checking...', null);
                 return;
             }
             isUpdating = true;
             const btn = document.getElementById('update-btn');
-            const originalHtml = btn.innerHTML;
+            const oldHtml = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Updating...';
             btn.disabled = true;
-            
             try {
                 const oldAccounts = [...appState.accounts];
                 await testConnection();
@@ -2233,12 +1925,12 @@
                 if (appState.isAdminLoggedIn) {
                     document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 }
-                addNotification('✅ Update Complete', 'Store data refreshed successfully!', null);
+                addNotification('✅ Update Complete', 'Store data refreshed!', null);
             } catch(e) {
-                addNotification('❌ Update Failed', 'Could not refresh data. Check your connection.', null);
+                addNotification('❌ Update Failed', 'Could not refresh data', null);
             } finally {
                 isUpdating = false;
-                btn.innerHTML = originalHtml;
+                btn.innerHTML = oldHtml;
                 btn.disabled = false;
             }
         }
@@ -2246,15 +1938,7 @@
         // ============================================
         // CORE FUNCTIONS
         // ============================================
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
         
         function applyTranslation(lang) {
             const t = translations[lang] || translations.en;
@@ -2269,73 +1953,42 @@
             renderAccounts();
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
-            
             const contactBtn = document.getElementById('nav-contact');
             const adminBtn = document.getElementById('nav-admin');
             if (contactBtn) contactBtn.querySelector('span').textContent = t.contact;
             if (adminBtn) adminBtn.querySelector('span').textContent = t.admin;
-            
             const updateSpan = document.querySelector('#update-btn span');
             if (updateSpan) updateSpan.textContent = t.update;
         }
-
-        function setLanguage(lang) {
-            applyTranslation(lang);
-            closeModal('language-modal');
-        }
-
-        function openLanguageModal() {
-            document.getElementById('language-modal').classList.remove('hidden');
-        }
-
-        // ============================================
-        // ONLINE COUNT TRACKING
-        // ============================================
+        
+        function setLanguage(lang) { applyTranslation(lang); closeModal('language-modal'); }
+        function openLanguageModal() { openModal('language-modal'); }
+        
         let isConnected = false;
         let refreshCountdown = 5;
         let countdownInterval;
-
+        
         function updateOnlineStatus(status) {
             const dot = document.getElementById('status-dot-badge');
             const text = document.getElementById('status-text-badge');
             const countSpan = document.getElementById('online-count-badge');
-            
-            if (status === 'connected') {
-                dot.className = 'status-dot-badge connected';
-                text.textContent = 'Online';
-                isConnected = true;
-            } else if (status === 'offline') {
-                dot.className = 'status-dot-badge offline';
-                text.textContent = 'Offline';
-                isConnected = false;
-            } else {
-                dot.className = 'status-dot-badge';
-                text.textContent = 'Connecting...';
-            }
-            
-            if (countSpan) {
-                countSpan.textContent = appState.onlineCount;
-            }
-            
+            if (status === 'connected') { dot.className = 'status-dot-badge connected'; text.textContent = 'Online'; isConnected = true; }
+            else if (status === 'offline') { dot.className = 'status-dot-badge offline'; text.textContent = 'Offline'; isConnected = false; }
+            else { dot.className = 'status-dot-badge'; text.textContent = 'Connecting...'; }
+            if (countSpan) countSpan.textContent = appState.onlineCount;
             const onlineUserEl = document.getElementById('online-user-count');
-            if (onlineUserEl) {
-                onlineUserEl.innerText = appState.onlineCount;
-            }
+            if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
         }
-
+        
         function startRefreshCountdown() {
             if (countdownInterval) clearInterval(countdownInterval);
             refreshCountdown = 5;
-            
             countdownInterval = setInterval(() => {
                 refreshCountdown--;
-                if (refreshCountdown <= 0 && appState.autoRefreshEnabled) {
-                    refreshData();
-                    refreshCountdown = 5;
-                }
+                if (refreshCountdown <= 0 && appState.autoRefreshEnabled) { refreshData(); refreshCountdown = 5; }
             }, 1000);
         }
-
+        
         async function refreshData() {
             if (!appState.autoRefreshEnabled) return;
             const oldAccounts = [...appState.accounts];
@@ -2343,379 +1996,119 @@
             checkForNewAccounts(oldAccounts, appState.accounts);
             trackVisitor();
         }
-
+        
         function toggleAutoRefresh() {
             const toggle = document.getElementById('auto-refresh-toggle');
             appState.autoRefreshEnabled = toggle.checked;
-            if (appState.autoRefreshEnabled) {
-                startRefreshCountdown();
-            } else {
-                if (countdownInterval) clearInterval(countdownInterval);
-            }
+            if (appState.autoRefreshEnabled) startRefreshCountdown();
+            else if (countdownInterval) clearInterval(countdownInterval);
         }
-
+        
         async function testConnection() {
             try {
-                console.log('🔌 Testing connection...');
                 updateOnlineStatus('connecting');
-                
-                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    headers: { 'Accept': 'application/json' }
-                });
-                
+                const response = await fetch(CLOUDFLARE_URL + '/api/health', { mode: 'cors', cache: 'no-cache' });
                 if (response.ok) {
                     isConnected = true;
                     updateOnlineStatus('connected');
-                    console.log('✅ Connected to PocketBase');
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
-                } else {
-                    throw new Error('Connection failed');
-                }
-            } catch (error) {
-                console.log('⚠️ Using local data');
+                } else throw new Error();
+            } catch(error) {
                 updateOnlineStatus('offline');
                 isConnected = false;
                 renderAccounts();
             }
         }
-
-        setTimeout(() => {
-            testConnection();
-            startRefreshCountdown();
-        }, 2000);
-
+        
+        setTimeout(() => { testConnection(); startRefreshCountdown(); }, 2000);
+        
         // ============================================
         // ZOOM FUNCTIONS
         // ============================================
-        let zoomLevel = 1;
-        let panX = 0;
-        let panY = 0;
-        let isDragging = false;
-        let lastX = 0;
-        let lastY = 0;
-        let pinchDistance = 0;
-        let pinchZoom = 1;
-        const minZoom = 1;
-        const maxZoom = 3;
-        const zoomStep = 0.25;
-
-        window.openFullscreenImage = function(imageSrc) {
+        let zoomLevel = 1, panX = 0, panY = 0;
+        window.openFullscreenImage = function(src) {
             const modal = document.getElementById('fullscreen-image-modal');
             const img = document.getElementById('fullscreen-image');
-            img.src = imageSrc;
+            img.src = src;
             modal.style.display = 'flex';
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
+            zoomLevel = 1; panX = 0; panY = 0;
             updateImageTransform();
-            setupImageEvents();
         }
-
-        function setupImageEvents() {
-            const img = document.getElementById('fullscreen-image');
-            img.removeEventListener('touchstart', handleTouchStart);
-            img.removeEventListener('touchmove', handleTouchMove);
-            img.removeEventListener('touchend', handleTouchEnd);
-            img.removeEventListener('mousedown', handleMouseDown);
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-            img.addEventListener('touchstart', handleTouchStart, { passive: false });
-            img.addEventListener('touchmove', handleTouchMove, { passive: false });
-            img.addEventListener('touchend', handleTouchEnd);
-            img.addEventListener('mousedown', handleMouseDown);
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-
-        function handleTouchStart(e) {
-            e.preventDefault();
-            if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                pinchDistance = Math.sqrt(dx * dx + dy * dy);
-                pinchZoom = zoomLevel;
-            } else if (e.touches.length === 1 && zoomLevel > 1) {
-                isDragging = true;
-                lastX = e.touches[0].clientX;
-                lastY = e.touches[0].clientY;
-            }
-        }
-
-        function handleTouchMove(e) {
-            e.preventDefault();
-            if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (pinchDistance > 0) {
-                    const scale = distance / pinchDistance;
-                    let newZoom = pinchZoom * scale;
-                    newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
-                    if (newZoom !== zoomLevel) {
-                        zoomLevel = newZoom;
-                        constrainPan();
-                        updateImageTransform();
-                        updateZoomLevel();
-                    }
-                }
-            } else if (e.touches.length === 1 && isDragging) {
-                const x = e.touches[0].clientX;
-                const y = e.touches[0].clientY;
-                const dx = x - lastX;
-                const dy = y - lastY;
-                panX += dx;
-                panY += dy;
-                constrainPan();
-                lastX = x;
-                lastY = y;
-                updateImageTransform();
-            }
-        }
-
-        function handleTouchEnd(e) {
-            isDragging = false;
-            pinchDistance = 0;
-        }
-
-        function handleMouseDown(e) {
-            if (zoomLevel > 1) {
-                e.preventDefault();
-                isDragging = true;
-                lastX = e.clientX;
-                lastY = e.clientY;
-            }
-        }
-
-        function handleMouseMove(e) {
-            if (isDragging) {
-                e.preventDefault();
-                const dx = e.clientX - lastX;
-                const dy = e.clientY - lastY;
-                panX += dx;
-                panY += dy;
-                constrainPan();
-                lastX = e.clientX;
-                lastY = e.clientY;
-                updateImageTransform();
-            }
-        }
-
-        function handleMouseUp() {
-            isDragging = false;
-        }
-
-        function constrainPan() {
-            const containerWidth = window.innerWidth;
-            const containerHeight = window.innerHeight;
-            const imgWidth = containerWidth * zoomLevel;
-            const imgHeight = containerHeight * zoomLevel;
-            const maxPanX = (imgWidth - containerWidth) / 2;
-            const maxPanY = (imgHeight - containerHeight) / 2;
-            panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
-            panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
-        }
-
-        window.zoomImage = function(direction) {
-            let newZoom = zoomLevel + (direction === 'in' ? zoomStep : -zoomStep);
-            newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
-            if (newZoom !== zoomLevel) {
-                zoomLevel = newZoom;
-                constrainPan();
-                updateImageTransform();
-                updateZoomLevel();
-            }
-        }
-
-        window.resetZoom = function() {
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
-            updateImageTransform();
-            updateZoomLevel();
-        }
-
         function updateImageTransform() {
             const img = document.getElementById('fullscreen-image');
-            if (img) {
-                img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-            }
+            if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
         }
-
-        function updateZoomLevel() {
-            const zoomLevelEl = document.getElementById('zoom-level');
-            if (zoomLevelEl) {
-                zoomLevelEl.textContent = zoomLevel.toFixed(1) + 'x';
-            }
+        window.zoomImage = function(dir) {
+            zoomLevel = Math.max(1, Math.min(3, zoomLevel + (dir === 'in' ? 0.25 : -0.25)));
+            updateImageTransform();
+            document.getElementById('zoom-level').textContent = zoomLevel.toFixed(1) + 'x';
         }
-
-        window.closeFullscreenImage = function() {
-            const modal = document.getElementById('fullscreen-image-modal');
-            modal.style.display = 'none';
-            resetZoom();
-        }
-
+        window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); document.getElementById('zoom-level').textContent = '1.0x'; }
+        window.closeFullscreenImage = function() { document.getElementById('fullscreen-image-modal').style.display = 'none'; resetZoom(); }
+        
         // ============================================
         // RENDERING FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
             if (!grid) return;
-            
             let filtered = appState.accounts;
-            if (appState.currentFilter !== 'all') {
-                filtered = filtered.filter(a => a.tier === appState.currentFilter);
-            }
-            
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>';
-                return;
-            }
-            
+            if (appState.currentFilter !== 'all') filtered = filtered.filter(a => a.tier === appState.currentFilter);
+            if (filtered.length === 0) { grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>'; return; }
             const t = translations[appState.currentLanguage || 'en'];
-            
             grid.innerHTML = filtered.map(acc => {
                 const mediaHtml = acc.mediaType === 'video' 
-                    ? `<div class="card-media" id="video-${acc.id}" style="position:relative; width:100%; height:100%; background:#000;"></div>`
-                    : `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="playClickSound(); openFullscreenImage('${acc.media}')" style="cursor:pointer;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
-                
-                return `
-                    <div class="account-card" data-id="${acc.id}">
-                        <div style="position:relative; width:100%; aspect-ratio:16/9; background:var(--surface-lighter);">
-                            ${mediaHtml}
-                        </div>
-                        <div class="card-content">
-                            <div class="card-title">
-                                ${escapeHtml(acc.title)}
-                                <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            </div>
-                            <div class="card-desc">${escapeHtml(acc.desc || '')}</div>
-                            <div class="price-row">
-                                <span class="usd-price">$${acc.price_usd}</span>
-                                <span class="afn-price">${acc.price_afn} AFN</span>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="action-btn" onclick="playClickSound(); bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
-                                <button class="action-btn buy" onclick="playClickSound(); buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
-                                <button class="action-btn" onclick="playClickSound(); infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                    ? `<div class="card-media" id="video-${acc.id}" style="position:relative; width:100%; height:100%;"></div>`
+                    : `<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
+                return `<div class="account-card"><div style="position:relative; width:100%; aspect-ratio:16/9; background:#000;">${mediaHtml}</div><div class="card-content"><div class="card-title">${escapeHtml(acc.title)} <span class="tier-badge ${acc.tier}">${acc.tier}</span></div><div class="card-desc">${escapeHtml(acc.desc || '')}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="playClickSound(); bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button><button class="action-btn buy" onclick="playClickSound(); buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button><button class="action-btn" onclick="playClickSound(); infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button></div></div></div>`;
             }).join('');
-            
-            // Setup videos after render
             setTimeout(() => {
                 filtered.forEach(acc => {
                     if (acc.mediaType === 'video') {
                         const container = document.getElementById(`video-${acc.id}`);
-                        if (container) {
-                            setupVideoPlayer(container, acc.media);
-                        }
+                        if (container) setupVideoPlayer(container, acc.media);
                     }
                 });
             }, 100);
         }
-
+        
         function renderContacts() {
             const container = document.getElementById('contacts-container');
             if (!container) return;
-            
-            if (appState.contacts.length === 0) {
-                container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>';
-                return;
-            }
-            
+            if (appState.contacts.length === 0) { container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>'; return; }
             const t = translations[appState.currentLanguage || 'en'];
-            
-            container.innerHTML = appState.contacts.map(contact => {
-                let cleanPhone = contact.phone.replace(/\D/g, '');
-                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
-                    cleanPhone = '93' + cleanPhone;
-                }
-                return `
-                    <div class="account-card" style="padding:1.5rem;">
-                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${escapeHtml(contact.name)}</h3>
-                        <p>${escapeHtml(contact.desc || '')}</p>
-                        <p><strong>+${cleanPhone}</strong></p>
-                        <button class="action-btn buy" style="width:100%;" onclick="playClickSound(); window.open('https://wa.me/${cleanPhone}', '_blank')">
-                            <i class="fab fa-whatsapp"></i> ${t.chatNow}
-                        </button>
-                    </div>
-                `;
+            container.innerHTML = appState.contacts.map(c => {
+                let phone = c.phone.replace(/\D/g, '');
+                if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone;
+                return `<div class="account-card" style="padding:1.5rem;"><h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${escapeHtml(c.name)}</h3><p>${escapeHtml(c.desc || '')}</p><p><strong>+${phone}</strong></p><button class="action-btn buy" style="width:100%;" onclick="playClickSound(); window.open('https://wa.me/${phone}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.chatNow}</button></div>`;
             }).join('');
         }
-
+        
         function renderAdminContacts() {
             const list = document.getElementById('admin-contacts-list');
             if (!list) return;
-            
-            if (appState.contacts.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
-                return;
-            }
-            
+            if (appState.contacts.length === 0) { list.innerHTML = '<p>No contacts yet.</p>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.contacts.map(contact => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                        <i class="fab fa-whatsapp"></i>
-                    </div>
-                    <div style="flex:1;">
-                        <strong>${escapeHtml(contact.name)}</strong>
-                        <div style="font-size:0.8rem;">+${contact.phone}</div>
-                        <div style="font-size:0.7rem;">${escapeHtml(contact.desc || '')}</div>
-                    </div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteContact('${contact.id}')">
-                        <i class="fa fa-trash"></i> ${t.delete}
-                    </button>
-                </div>
-            `).join('');
+            list.innerHTML = appState.contacts.map(c => `<div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;"><div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fab fa-whatsapp"></i></div><div style="flex:1;"><strong>${escapeHtml(c.name)}</strong><div>+${c.phone}</div><div>${escapeHtml(c.desc || '')}</div></div><button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteContact('${c.id}')"><i class="fa fa-trash"></i> ${t.delete}</button></div>`).join('');
         }
-
+        
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
-            
-            if (appState.ads.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-secondary);">No ads available</div>';
-                return;
-            }
-            
+            if (appState.ads.length === 0) { container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; return; }
             let slides = '';
-            appState.ads.forEach((ad, idx) => {
+            appState.ads.forEach((ad, i) => {
                 if (ad.type === 'video') {
-                    slides += `<div class="slide" data-ad-index="${idx}"><div id="ad-video-${idx}" style="width:100%; height:100%; background:#000;"></div><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
+                    slides += `<div class="slide" data-ad-index="${i}"><div id="ad-video-${i}" style="width:100%; height:100%;"></div><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
                 } else {
-                    slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="playClickSound(); openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
+                    slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
                 }
             });
-            
             let dots = '';
-            appState.ads.forEach((_, idx) => {
-                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="playClickSound(); jumpToSlide(${idx})"></span>`;
-            });
-            
-            container.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-track" id="slider-track">${slides}</div>
-                    <div class="slider-dots">${dots}</div>
-                </div>
-            `;
-            
-            const track = document.getElementById('slider-track');
-            if (track) {
-                track.addEventListener('scroll', function() {
-                    const idx = Math.round(track.scrollLeft / track.clientWidth);
-                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-                });
-            }
-            
-            // Setup ad videos
+            appState.ads.forEach((_, i) => dots += `<span class="dot ${i === 0 ? 'active' : ''}" onclick="playClickSound(); jumpToSlide(${i})"></span>`);
+            container.innerHTML = `<div class="slider-container"><div class="slider-track" id="slider-track">${slides}</div><div class="slider-dots">${dots}</div></div>`;
             setTimeout(() => {
                 appState.ads.forEach((ad, i) => {
                     if (ad.type === 'video') {
@@ -2724,400 +2117,112 @@
                     }
                 });
             }, 100);
-            
+            const track = document.getElementById('slider-track');
+            if (track) {
+                track.addEventListener('scroll', () => {
+                    const idx = Math.round(track.scrollLeft / track.clientWidth);
+                    document.querySelectorAll('.dot').forEach((d, j) => d.classList.toggle('active', j === idx));
+                });
+            }
             startAutoSlide();
+            setupSwipeAds();
         }
-
+        
         function startAutoSlide() {
             if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
             appState.autoSlideInterval = setInterval(() => {
                 const track = document.getElementById('slider-track');
                 if (!track || appState.ads.length === 0) return;
                 const slideWidth = track.clientWidth;
-                const currentScroll = track.scrollLeft;
-                const currentIndex = Math.round(currentScroll / slideWidth);
+                const currentIndex = Math.round(track.scrollLeft / slideWidth);
                 const nextIndex = (currentIndex + 1) % appState.ads.length;
                 track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                document.querySelectorAll('.dot').forEach((dot, i) => {
-                    dot.classList.toggle('active', i === nextIndex);
-                });
+                document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === nextIndex));
             }, 2000);
         }
-
-        window.jumpToSlide = function(idx) {
-            const track = document.getElementById('slider-track');
-            if (track) {
-                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-                startAutoSlide();
-            }
-        };
-
+        
+        function jumpToSlide(idx) { const track = document.getElementById('slider-track'); if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' }); }
+        
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
-            
-            if (appState.accounts.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
-                return;
-            }
-            
+            if (appState.accounts.length === 0) { list.innerHTML = '<p>No accounts yet.</p>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.accounts.map(acc => {
-                const mediaTag = acc.mediaType === 'video' 
-                    ? `<div style="width:60px; height:60px; border-radius:10px; background:#000; display:flex; align-items:center; justify-content:center;"><i class="fas fa-video"></i></div>`
-                    : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="playClickSound(); openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
-                
-                return `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        ${mediaTag}
-                        <div style="flex:1;">
-                            <strong>${escapeHtml(acc.title)}</strong> 
-                            <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            <div style="font-size:0.8rem;">$${acc.price_usd} / ${acc.price_afn} AFN</div>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i> ${t.delete}
-                        </button>
-                    </div>
-                `;
-            }).join('');
+            list.innerHTML = appState.accounts.map(acc => `<div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;"><div style="width:60px; height:60px; border-radius:10px; background:#000; display:flex; align-items:center; justify-content:center;">${acc.mediaType === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}</div><div style="flex:1;"><strong>${escapeHtml(acc.title)}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span><div>$${acc.price_usd} / ${acc.price_afn} AFN</div></div><button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> ${t.delete}</button></div>`).join('');
         }
-
+        
         function renderAdminAds() {
             const list = document.getElementById('admin-ads-list');
             if (!list) return;
-            
-            if (appState.ads.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
-                return;
-            }
-            
+            if (appState.ads.length === 0) { list.innerHTML = '<p>No ads yet.</p>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.ads.map((ad, index) => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="width:60px; height:60px; border-radius:10px; background:#000; display:flex; align-items:center; justify-content:center;">
-                        ${ad.type === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}
-                    </div>
-                    <div style="flex:1;">
-                        <strong>${escapeHtml(ad.caption || 'No caption')}</strong>
-                        <div style="font-size:0.7rem;">${ad.type}</div>
-                    </div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteAd(${index})">
-                        <i class="fa fa-trash"></i> ${t.delete}
-                    </button>
-                </div>
-            `).join('');
+            list.innerHTML = appState.ads.map((ad, i) => `<div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;"><div style="width:60px; height:60px; border-radius:10px; background:#000; display:flex; align-items:center; justify-content:center;">${ad.type === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}</div><div style="flex:1;"><strong>${escapeHtml(ad.caption || 'No caption')}</strong><div>${ad.type}</div></div><button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteAd(${i})"><i class="fa fa-trash"></i> ${t.delete}</button></div>`).join('');
         }
-
+        
         function renderBookRequests() {
             const list = document.getElementById('admin-book-requests-list');
             if (!list) return;
-            
-            if (appState.bookRequests.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
-                return;
-            }
-            
+            if (appState.bookRequests.length === 0) { list.innerHTML = '<p>No book requests yet.</p>'; return; }
             const t = translations[appState.currentLanguage || 'en'];
-            
-            list.innerHTML = appState.bookRequests.map(req => `
-                <div class="book-request-item">
-                    <p><span class="label">${t.accountsStat}:</span> ${escapeHtml(req.account_title)}</p>
-                    <p><span class="label">${t.yourName}:</span> ${escapeHtml(req.user_name)}</p>
-                    <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
-                    <button class="btn-wa" onclick="playClickSound(); window.open('https://wa.me/${req.whatsapp}', '_blank')">
-                        <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
-                    </button>
-                </div>
-            `).join('');
+            list.innerHTML = appState.bookRequests.map(req => `<div class="book-request-item"><p><span class="label">${t.accountsStat}:</span> ${escapeHtml(req.account_title)}</p><p><span class="label">${t.yourName}:</span> ${escapeHtml(req.user_name)}</p><p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p><button class="btn-wa" onclick="playClickSound(); window.open('https://wa.me/${req.whatsapp}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.contactViaWA}</button></div>`).join('');
         }
-
+        
         // ============================================
         // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
             if (!isConnected) return;
-            
             try {
-                const records = await pb.collection('accounts').getFullList({
-                    $autoCancel: false,
-                    requestKey: null,
-                    sort: '-created'
-                });
-                
-                if (records && records.length > 0) {
-                    appState.accounts = records.map(record => {
-                        const mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
-                        
-                        return {
-                            id: record.id,
-                            title: record.title,
-                            desc: record.description,
-                            tier: record.tier,
-                            price_usd: record.price_usd,
-                            price_afn: record.price_afn,
-                            media: mediaUrl,
-                            mediaType: record.mediaType || 'image'
-                        };
-                    });
-                    appState.usingFallback = false;
-                    renderAccounts();
-                } else {
-                    appState.accounts = [];
+                const records = await pb.collection('accounts').getFullList({ sort: '-created' });
+                if (records && records.length) {
+                    appState.accounts = records.map(r => ({
+                        id: r.id, title: r.title, desc: r.description, tier: r.tier,
+                        price_usd: r.price_usd, price_afn: r.price_afn,
+                        media: r.media ? pb.files.getUrl(r, r.media) : '',
+                        mediaType: r.mediaType || 'image'
+                    }));
                     renderAccounts();
                 }
-            } catch (error) {
-                console.log('Using local accounts only');
-                appState.accounts = appState.accounts.length ? appState.accounts : [];
-                renderAccounts();
-            }
+            } catch(e) { console.log('Using local accounts'); }
         }
-
+        
         async function loadContactsFromPB() {
             if (!isConnected) return;
-            
             try {
                 const records = await pb.collection('contacts').getFullList();
-                if (records && records.length > 0) {
-                    appState.contacts = records.map(record => ({
-                        id: record.id,
-                        name: record.name,
-                        phone: record.phone,
-                        desc: record.description
-                    }));
+                if (records && records.length) {
+                    appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description }));
                     renderContacts();
                 }
-            } catch (error) {}
+            } catch(e) {}
         }
-
+        
         async function loadSettingsFromPB() {
             if (!isConnected) return;
-            
             try {
                 const records = await pb.collection('settings').getFullList();
-                const usdtSetting = records.find(r => r.key === 'usdt_address');
-                if (usdtSetting) {
-                    appState.usdtAddress = usdtSetting.value;
-                    document.getElementById('current-usdt-address').innerText = usdtSetting.value;
-                }
-            } catch (error) {}
+                const usdt = records.find(r => r.key === 'usdt_address');
+                if (usdt) { appState.usdtAddress = usdt.value; document.getElementById('current-usdt-address').innerText = usdt.value; }
+            } catch(e) {}
         }
-
-        // ============================================
-        // UPLOAD FUNCTION
-        // ============================================
-        window.uploadNewAccount = async function() {
-            const tier = document.getElementById('account-tier').value;
-            const title = document.getElementById('account-title').value.trim();
-            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-            
-            if (!tier || !title || !priceUsd || !priceAfn) {
-                alert('Please fill all required fields');
-                return;
-            }
-            
-            const fileInput = document.getElementById('account-media-file');
-            if (!fileInput.files || !fileInput.files[0]) {
-                alert('Please select an image or video');
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            const isVideo = file.type.startsWith('video/');
-            
-            const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-            if (file.size > maxSize) {
-                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
-                return;
-            }
-            
-            const progressContainer = document.getElementById('upload-progress');
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-            const uploadBtn = document.getElementById('upload-btn');
-            const retryBtn = document.getElementById('retry-btn');
-            
-            progressContainer.classList.add('active');
-            uploadBtn.disabled = true;
-            if (retryBtn) retryBtn.style.display = 'none';
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 2;
-                if (progress >= 100) progress = 100;
-                progressBar.style.width = progress + '%';
-                progressText.innerHTML = `Uploading... ${Math.round(progress)}% (${(file.size / (1024 * 1024)).toFixed(1)}MB)`;
-            }, 500);
-            
-            try {
-                if (isConnected) {
-                    const uniqueKey = 'upload_' + Date.now() + '_' + Math.random().toString(36).substring(2) + '_' + file.size;
-                    
-                    const formData = new FormData();
-                    formData.append('title', title);
-                    formData.append('description', desc);
-                    formData.append('tier', tier);
-                    formData.append('price_usd', priceUsd.toString());
-                    formData.append('price_afn', priceAfn.toString());
-                    formData.append('media', file);
-                    formData.append('mediaType', isVideo ? 'video' : 'image');
-                    
-                    console.log('Uploading to PocketBase...', {
-                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
-                    });
-                    
-                    const record = await pb.collection('accounts').create(formData, {
-                        requestKey: uniqueKey,
-                        $autoCancel: false
-                    });
-                    
-                    console.log('Upload successful:', record);
-                    
-                    const mediaUrl = pb.files.getUrl(record, record.media);
-                    
-                    const newAccount = {
-                        id: record.id,
-                        title: title,
-                        desc: desc,
-                        tier: tier,
-                        price_usd: priceUsd,
-                        price_afn: priceAfn,
-                        media: mediaUrl,
-                        mediaType: isVideo ? 'video' : 'image'
-                    };
-                    
-                    appState.accounts.push(newAccount);
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    
-                    clearInterval(interval);
-                    progressBar.style.width = '100%';
-                    progressText.innerHTML = 'Upload complete!';
-                    
-                    addNotification('📱 New Account Added!', `${title} - $${priceUsd} has been added to the store!`, record.id);
-                    
-                    setTimeout(() => {
-                        closeModal('add-account-modal');
-                        renderAccounts();
-                        if (appState.isAdminLoggedIn) {
-                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                        }
-                        alert('✅ Account uploaded successfully to server!');
-                        
-                        progressContainer.classList.remove('active');
-                        progressBar.style.width = '0%';
-                        progressText.innerHTML = '';
-                        uploadBtn.disabled = false;
-                        appState.uploadRetryCount = 0;
-                    }, 500);
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const newAccount = {
-                            id: 'local_' + Date.now(),
-                            title: title,
-                            desc: desc,
-                            tier: tier,
-                            price_usd: priceUsd,
-                            price_afn: priceAfn,
-                            media: e.target.result,
-                            mediaType: isVideo ? 'video' : 'image'
-                        };
-                        
-                        appState.accounts.push(newAccount);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                        
-                        clearInterval(interval);
-                        progressBar.style.width = '100%';
-                        progressText.innerHTML = 'Upload complete!';
-                        
-                        addNotification('📱 New Account Added (Offline)', `${title} - $${priceUsd} added locally!`);
-                        
-                        setTimeout(() => {
-                            closeModal('add-account-modal');
-                            renderAccounts();
-                            if (appState.isAdminLoggedIn) {
-                                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                            }
-                            alert('📱 Account saved locally (offline mode)');
-                            
-                            progressContainer.classList.remove('active');
-                            progressBar.style.width = '0%';
-                            progressText.innerHTML = '';
-                            uploadBtn.disabled = false;
-                            appState.uploadRetryCount = 0;
-                        }, 500);
-                    };
-                    reader.readAsDataURL(file);
-                    return;
-                }
-                
-            } catch (error) {
-                console.error('Upload error details:', error);
-                clearInterval(interval);
-                
-                let errorMessage = 'Upload failed: ';
-                
-                if (error.message && error.message.includes('ERR_HTTP2_PROTOCOL_ERROR')) {
-                    errorMessage += 'HTTP/2 protocol error. ';
-                    
-                    appState.uploadRetryCount++;
-                    if (appState.uploadRetryCount < 3) {
-                        errorMessage += `Retrying... (Attempt ${appState.uploadRetryCount + 1}/3)`;
-                        
-                        if (retryBtn) retryBtn.style.display = 'block';
-                        
-                        setTimeout(() => {
-                            uploadNewAccount();
-                        }, 2000);
-                    } else {
-                        errorMessage += 'Please try again later or use a smaller video.';
-                    }
-                } else if (error.response && error.response.data) {
-                    const data = error.response.data;
-                    if (data.message) {
-                        errorMessage += data.message;
-                    } else {
-                        errorMessage += JSON.stringify(data);
-                    }
-                } else if (error.message) {
-                    errorMessage += error.message;
-                } else {
-                    errorMessage += 'Unknown error';
-                }
-                
-                alert(errorMessage);
-                
-                progressContainer.classList.remove('active');
-                progressBar.style.width = '0%';
-                progressText.innerHTML = '';
-                uploadBtn.disabled = false;
-            }
-        };
-
+        
         // ============================================
         // ACTION FUNCTIONS
         // ============================================
-        window.filterAccounts = function(tier) {
+        function filterAccounts(tier) {
             appState.currentFilter = tier;
             document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
             renderAccounts();
-        };
-
-        window.switchScreen = function(screen) {
+        }
+        
+        function switchScreen(screen) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screen + '-screen').classList.add('active');
-            
-            const navButtons = document.querySelectorAll('.bottom-nav-btn');
-            navButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
             if (screen === 'main') document.getElementById('nav-main').classList.add('active');
             else if (screen === 'contact') document.getElementById('nav-contact').classList.add('active');
             else if (screen === 'admin') document.getElementById('nav-admin').classList.add('active');
-            
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
             if (screen === 'admin' && appState.isAdminLoggedIn) {
@@ -3132,70 +2237,93 @@
                 document.getElementById('admin-dashboard').classList.add('hidden');
                 document.getElementById('admin-login-section').classList.remove('hidden');
             }
-        };
-
-        window.previewMediaFromFile = function() {
-            const fileInput = document.getElementById('account-media-file');
+        }
+        
+        function previewMediaFromFile() {
+            const file = document.getElementById('account-media-file').files[0];
             const preview = document.getElementById('media-preview');
-            const uploadBtn = document.getElementById('upload-btn');
-            
-            if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                const isVideo = file.type.startsWith('video/');
-                
-                const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
-                    uploadBtn.disabled = true;
-                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    return;
-                }
-                
-                uploadBtn.disabled = false;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px; max-width:100%;" playsinline webkit-playsinline></video>`;
-                        appState.currentMediaData = { type: 'video', data: e.target.result };
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;" onclick="playClickSound(); openFullscreenImage('${e.target.result}')" style="cursor:pointer;">`;
-                        appState.currentMediaData = { type: 'image', data: e.target.result };
-                    }
-                };
-                reader.readAsDataURL(file);
-            } else {
-                uploadBtn.disabled = true;
-            }
-        };
-
-        window.previewAdMedia = function() {
-            const fileInput = document.getElementById('ad-media-file');
+            const btn = document.getElementById('upload-btn');
+            if (!file) { btn.disabled = true; preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>'; return; }
+            const isVideo = file.type.startsWith('video/');
+            const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (file.size > maxSize) { alert(`File too large. Max size: ${isVideo ? '200MB' : '10MB'}`); btn.disabled = true; return; }
+            btn.disabled = false;
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                appState.currentMediaData = { type: isVideo ? 'video' : 'image', data: e.target.result };
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function previewAdMedia() {
+            const file = document.getElementById('ad-media-file').files[0];
             const preview = document.getElementById('ad-preview');
-            if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                const isVideo = file.type.startsWith('video/');
-                
-                const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
-                    return;
+            if (!file) { preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>'; return; }
+            const isVideo = file.type.startsWith('video/');
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                appState.currentAdData = { type: isVideo ? 'video' : 'image', data: e.target.result };
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function uploadNewAccount() {
+            const tier = document.getElementById('account-tier').value;
+            const title = document.getElementById('account-title').value.trim();
+            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            const file = document.getElementById('account-media-file').files[0];
+            if (!tier || !title || !priceUsd || !priceAfn || !file) { alert('Please fill all fields'); return; }
+            const isVideo = file.type.startsWith('video/');
+            const progress = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            progress.classList.add('active');
+            let progressInt = 0;
+            const interval = setInterval(() => { progressInt += 5; if (progressInt >= 100) progressInt = 100; progressBar.style.width = progressInt + '%'; }, 200);
+            try {
+                if (isConnected) {
+                    const formData = new FormData();
+                    formData.append('title', title); formData.append('description', desc); formData.append('tier', tier);
+                    formData.append('price_usd', priceUsd); formData.append('price_afn', priceAfn);
+                    formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
+                    const record = await pb.collection('accounts').create(formData);
+                    const newAccount = {
+                        id: record.id, title, desc, tier, price_usd: priceUsd, price_afn: priceAfn,
+                        media: pb.files.getUrl(record, record.media), mediaType: isVideo ? 'video' : 'image'
+                    };
+                    appState.accounts.unshift(newAccount);
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                    addNotification('📱 New Account Added!', `${title} - $${priceUsd} added!`, record.id);
+                    renderAccounts();
+                    alert('✅ Uploaded successfully!');
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const newAccount = {
+                            id: 'local_' + Date.now(), title, desc, tier, price_usd: priceUsd, price_afn: priceAfn,
+                            media: e.target.result, mediaType: isVideo ? 'video' : 'image'
+                        };
+                        appState.accounts.unshift(newAccount);
+                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                        addNotification('📱 New Account Added (Offline)', `${title} - $${priceUsd} added locally!`);
+                        renderAccounts();
+                        alert('✅ Saved locally!');
+                    };
+                    reader.readAsDataURL(file);
                 }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px; max-width:100%;" playsinline webkit-playsinline></video>`;
-                        appState.currentAdData = { type: 'video', data: e.target.result };
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;" onclick="playClickSound(); openFullscreenImage('${e.target.result}')" style="cursor:pointer;">`;
-                        appState.currentAdData = { type: 'image', data: e.target.result };
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        window.showAddAccountModal = function() {
+                closeModal('add-account-modal');
+                document.getElementById('add-account-form')?.reset();
+                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            } catch(e) { alert('Upload failed: ' + e.message); }
+            finally { clearInterval(interval); progress.classList.remove('active'); progressBar.style.width = '0%'; document.getElementById('upload-btn').disabled = false; }
+        }
+        
+        function showAddAccountModal() {
             document.getElementById('account-tier').value = '';
             document.getElementById('account-title').value = '';
             document.getElementById('account-description').value = '';
@@ -3203,419 +2331,201 @@
             document.getElementById('account-price-afn').value = '';
             document.getElementById('account-media-file').value = '';
             document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            document.getElementById('upload-progress').classList.remove('active');
-            document.getElementById('progress-bar').style.width = '0%';
-            document.getElementById('progress-text').innerHTML = '';
             document.getElementById('upload-btn').disabled = true;
-            const retryBtn = document.getElementById('retry-btn');
-            if (retryBtn) retryBtn.style.display = 'none';
-            appState.uploadRetryCount = 0;
-            appState.currentMediaData = null;
             openModal('add-account-modal');
-        };
-
-        window.showManageAccountsModal = function() {
-            renderAdminAccounts();
-            openModal('manage-accounts-modal');
-        };
-
-        window.showManageContactsModal = function() {
-            renderAdminContacts();
-            initPhoneInput();
-            openModal('manage-contacts-modal');
-        };
-
-        window.showManageAdsModal = function() {
-            document.getElementById('ad-type').value = 'image';
-            document.getElementById('ad-media-file').value = '';
-            document.getElementById('ad-caption').value = '';
-            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            appState.currentAdData = null;
-            renderAdminAds();
-            openModal('manage-ads-modal');
-        };
-
-        window.showEditUsdtModal = function() {
-            document.getElementById('new-usdt-address').value = appState.usdtAddress;
-            openModal('edit-usdt-modal');
-        };
-
-        window.saveUsdtAddress = function() {
-            const newAddress = document.getElementById('new-usdt-address').value.trim();
-            if (!newAddress) {
-                alert('Please enter a USDT address');
-                return;
-            }
-            appState.usdtAddress = newAddress;
-            localStorage.setItem('gk_usdt_address', newAddress);
-            document.getElementById('current-usdt-address').innerText = newAddress;
+        }
+        
+        function showManageAccountsModal() { renderAdminAccounts(); openModal('manage-accounts-modal'); }
+        function showManageContactsModal() { renderAdminContacts(); initPhoneInput(); openModal('manage-contacts-modal'); }
+        function showManageAdsModal() { renderAdminAds(); openModal('manage-ads-modal'); }
+        function showEditUsdtModal() { openModal('edit-usdt-modal'); }
+        
+        function saveUsdtAddress() {
+            const newAddr = document.getElementById('new-usdt-address').value.trim();
+            if (!newAddr) { alert('Enter address'); return; }
+            appState.usdtAddress = newAddr;
+            localStorage.setItem('gk_usdt_address', newAddr);
+            document.getElementById('current-usdt-address').innerText = newAddr;
             closeModal('edit-usdt-modal');
-            alert('USDT address updated successfully!');
-        };
-
-        window.deleteAccount = async function(id) {
-            if (!confirm('Delete this account permanently?')) return;
-            
-            const deleteBtn = event?.target?.closest('button');
-            if (deleteBtn) {
-                deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Deleting...';
-                deleteBtn.disabled = true;
+            alert('USDT address updated');
+        }
+        
+        async function deleteAccount(id) {
+            if (!confirm('Delete this account?')) return;
+            if (isConnected && appState.isAdminLoggedIn && !id.startsWith('local_')) {
+                try { await pb.collection('accounts').delete(id); } catch(e) {}
             }
-            
-            try {
-                let serverDeleted = false;
-                if (isConnected && appState.isAdminLoggedIn && !id.startsWith('local_')) {
-                    try {
-                        const token = pb.authStore.token;
-                        const url = `${PB_URL}/api/collections/accounts/records/${id}`;
-                        const response = await fetch(url, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': token ? `Bearer ${token}` : '' },
-                            cache: 'no-cache'
-                        });
-                        if (response.ok) serverDeleted = true;
-                    } catch (pbError) {}
-                }
-                appState.accounts = appState.accounts.filter(a => a.id !== id);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                renderAccounts();
-                renderAdminAccounts();
-                const accountCountEl = document.getElementById('admin-account-count');
-                if (accountCountEl) accountCountEl.innerText = appState.accounts.length;
-                alert(serverDeleted ? '✅ Account deleted from server' : '✅ Account deleted locally');
-            } catch (error) {
-                alert('Error deleting account');
-            } finally {
-                if (deleteBtn) {
-                    deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
-                    deleteBtn.disabled = false;
-                }
-            }
-        };
-
-        window.saveNewContact = function() {
+            appState.accounts = appState.accounts.filter(a => a.id !== id);
+            localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+            renderAccounts();
+            if (appState.isAdminLoggedIn) document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            alert('Deleted');
+        }
+        
+        function saveNewContact() {
             const name = document.getElementById('contact-name').value.trim();
+            const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
             const desc = document.getElementById('contact-desc').value.trim();
-            
-            if (!name) {
-                alert('Please enter contact name');
-                return;
-            }
-            
-            let fullNumber = '';
-            if (appState.phoneInput) {
-                const number = appState.phoneInput.getNumber();
-                if (number) {
-                    fullNumber = number.replace(/\D/g, '');
-                } else {
-                    alert('Please enter a valid phone number');
-                    return;
-                }
-            } else {
-                const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
-                if (!phone) {
-                    alert('Please enter phone number');
-                    return;
-                }
-                fullNumber = phone;
-            }
-            
-            const newContact = {
-                id: 'c' + Date.now(),
-                name: name,
-                phone: fullNumber,
-                desc: desc
-            };
-            
+            if (!name || !phone) { alert('Please enter name and phone'); return; }
+            const newContact = { id: 'c' + Date.now(), name, phone, desc };
             appState.contacts.push(newContact);
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            
+            renderContacts();
+            renderAdminContacts();
             document.getElementById('contact-name').value = '';
             document.getElementById('contact-phone').value = '';
             document.getElementById('contact-desc').value = '';
-            
+            alert('Contact saved');
+        }
+        
+        function deleteContact(id) {
+            if (!confirm('Delete contact?')) return;
+            appState.contacts = appState.contacts.filter(c => c.id !== id);
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
             renderContacts();
             renderAdminContacts();
-            alert('Contact added successfully!');
-        };
-
-        window.deleteContact = function(id) {
-            if (confirm('Delete this contact?')) {
-                appState.contacts = appState.contacts.filter(c => c.id !== id);
-                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                renderContacts();
-                renderAdminContacts();
-            }
-        };
-
-        window.saveNewAd = function() {
-            const type = document.getElementById('ad-type').value;
+        }
+        
+        function saveNewAd() {
+            if (!appState.currentAdData) { alert('Please select media'); return; }
             const caption = document.getElementById('ad-caption').value.trim();
-            
-            if (!appState.currentAdData) {
-                alert('Please upload an image or video');
-                return;
-            }
-            
-            const newAd = {
-                type: type,
-                data: appState.currentAdData.data,
-                caption: caption
-            };
-            
-            appState.ads.push(newAd);
+            appState.ads.push({ ...appState.currentAdData, caption });
             localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-            
+            renderAdsSlider();
+            renderAdminAds();
             document.getElementById('ad-type').value = 'image';
             document.getElementById('ad-media-file').value = '';
             document.getElementById('ad-caption').value = '';
             document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
             appState.currentAdData = null;
-            
+            alert('Ad added');
+        }
+        
+        function deleteAd(index) {
+            if (!confirm('Delete ad?')) return;
+            appState.ads.splice(index, 1);
+            localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
             renderAdsSlider();
             renderAdminAds();
-            alert('Ad added successfully!');
-        };
-
-        window.deleteAd = function(index) {
-            if (confirm('Delete this ad?')) {
-                appState.ads.splice(index, 1);
-                localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-                renderAdsSlider();
-                renderAdminAds();
-            }
-        };
-
-        window.bookAccount = function(id) {
+        }
+        
+        function bookAccount(id) {
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
             appState.currentAccount = acc;
-            
             const t = translations[appState.currentLanguage || 'en'];
-            
-            document.getElementById('book-modal-body').innerHTML = `
-                <p><strong>${escapeHtml(acc.title)}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
-                <label class="input-label">${t.whatsappNumber} with country code</label>
-                <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
-            `;
-            
+            document.getElementById('book-modal-body').innerHTML = `<p><strong>${escapeHtml(acc.title)}</strong> - $${acc.price_usd}</p><input type="text" id="book-name" class="input" placeholder="${t.yourName}"><input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber}">`;
             openModal('book-modal');
-            
             setTimeout(() => {
                 const input = document.getElementById('book-phone');
                 if (input) {
-                    if (appState.bookPhoneInput) {
-                        try {
-                            appState.bookPhoneInput.destroy();
-                        } catch (e) {}
-                    }
-                    appState.bookPhoneInput = intlTelInput(input, {
-                        initialCountry: 'af',
-                        separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                        dropdownContainer: document.body
-                    });
+                    if (appState.bookPhoneInput) { try { appState.bookPhoneInput.destroy(); } catch(e) {} }
+                    appState.bookPhoneInput = intlTelInput(input, { initialCountry: 'af', separateDialCode: true, utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
                 }
             }, 200);
-        };
-
-        window.submitBook = function() {
+        }
+        
+        function submitBook() {
             const name = document.getElementById('book-name')?.value;
-            
-            if (!name) {
-                alert('Please enter your name');
-                return;
-            }
-            
             let phone = '';
             if (appState.bookPhoneInput) {
                 const number = appState.bookPhoneInput.getNumber();
-                if (number) {
-                    phone = number.replace(/\D/g, '');
-                } else {
-                    alert('Please enter a valid WhatsApp number');
-                    return;
-                }
+                if (number) phone = number.replace(/\D/g, '');
+                else { alert('Enter valid phone'); return; }
             } else {
                 phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
-                if (!phone) {
-                    alert('Please enter a valid WhatsApp number');
-                    return;
-                }
+                if (!phone) { alert('Enter phone'); return; }
             }
-            
-            const req = {
-                id: Date.now(),
-                account_id: appState.currentAccount.id,
-                account_title: appState.currentAccount.title,
-                user_name: name,
-                whatsapp: phone,
-                date: new Date().toISOString()
-            };
+            if (!name) { alert('Enter name'); return; }
+            const req = { id: Date.now(), account_id: appState.currentAccount.id, account_title: appState.currentAccount.title, user_name: name, whatsapp: phone, date: new Date().toISOString() };
             appState.bookRequests.push(req);
             localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-            
-            alert('✅ Booking submitted! We will contact you on WhatsApp.');
+            alert('Booking submitted!');
             closeModal('book-modal');
-        };
-
-        window.buyAccount = function(id) {
+        }
+        
+        function buyAccount(id) {
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
             appState.currentAccount = acc;
-            
-            document.getElementById('buy-modal-body').innerHTML = `
-                <p><strong>${escapeHtml(acc.title)}</strong> — $${acc.price_usd}</p>
-                <p>Send exact USDT (TRC20) to:</p>
-                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
-                <button class="btn" onclick="playClickSound(); copyUsdt()">Copy address</button>
-            `;
+            document.getElementById('buy-modal-body').innerHTML = `<p><strong>${escapeHtml(acc.title)}</strong> - $${acc.price_usd}</p><p>Send USDT (TRC20) to:</p><code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code><button class="btn" onclick="copyUsdt()">Copy address</button>`;
             openModal('buy-modal');
-        };
-
-        window.confirmBuyWhatsApp = function() {
+        }
+        
+        function confirmBuyWhatsApp() {
             if (!appState.currentAccount) return;
-            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
+            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}`;
             window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
             closeModal('buy-modal');
-        };
-
-        window.copyUsdt = function() {
-            navigator.clipboard.writeText(appState.usdtAddress);
-            alert('USDT address copied');
-        };
-
-        window.infoAccount = function(id) {
+        }
+        
+        function copyUsdt() { navigator.clipboard.writeText(appState.usdtAddress); alert('Copied'); }
+        
+        function infoAccount(id) {
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
-            
-            document.getElementById('info-modal-body').innerHTML = `
-                <p><strong>${escapeHtml(acc.title)}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                <p>${escapeHtml(acc.desc || 'Premium PUBG account')}</p>
-                <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                <p>✅ Includes email & password, full access.</p>
-            `;
+            document.getElementById('info-modal-body').innerHTML = `<p><strong>${escapeHtml(acc.title)}</strong></p><p>${escapeHtml(acc.desc || 'Premium PUBG account')}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`;
             openModal('info-modal');
-        };
-
-        window.adminLogin = async function() {
+        }
+        
+        async function adminLogin() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
-            const loginBtn = document.querySelector('#admin-login-section .action-btn');
-            const originalText = loginBtn.innerHTML;
-            const errorDiv = document.getElementById('admin-error');
-            
-            if (!email || !pass) {
-                errorDiv.innerText = 'Please enter email and password';
-                return;
-            }
-            
-            loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
-            loginBtn.disabled = true;
-            errorDiv.innerText = '';
-            
+            const btn = document.querySelector('#admin-login-section .action-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner"></span>';
+            btn.disabled = true;
             try {
                 await pb.admins.authWithPassword(email, pass);
-                
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
-                errorDiv.innerText = '';
-                
-                if (isConnected) {
-                    await loadAccountsFromPB();
-                    await loadContactsFromPB();
-                    await loadSettingsFromPB();
-                }
-                
+                await loadAccountsFromPB();
+                await loadContactsFromPB();
+                await loadSettingsFromPB();
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
                 document.getElementById('online-user-count').innerText = appState.onlineCount;
                 document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                
                 renderBookRequests();
-                
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                errorDiv.innerText = 'Invalid credentials or connection failed';
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-            }
-        };
-
-        window.logout = function() {
+            } catch(e) { document.getElementById('admin-error').innerText = 'Invalid credentials'; }
+            finally { btn.innerHTML = original; btn.disabled = false; }
+        }
+        
+        function logout() {
             pb.authStore.clear();
             appState.isAdminLoggedIn = false;
             document.getElementById('admin-login-section').classList.remove('hidden');
             document.getElementById('admin-dashboard').classList.add('hidden');
             switchScreen('main');
-        };
-
-        window.openModal = function(id) {
-            document.getElementById(id).classList.remove('hidden');
-        };
+        }
         
-        window.closeModal = function(id) {
-            document.getElementById(id).classList.add('hidden');
-            if (id === 'book-modal' && appState.bookPhoneInput) {
-                try {
-                    appState.bookPhoneInput.destroy();
-                } catch (e) {}
-                appState.bookPhoneInput = null;
-            }
-        };
-
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
         function initPhoneInput() {
             const input = document.querySelector('#contact-phone');
             if (input && !appState.phoneInput) {
-                appState.phoneInput = intlTelInput(input, {
-                    initialCountry: 'af',
-                    separateDialCode: true,
-                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                    dropdownContainer: document.body
-                });
+                appState.phoneInput = intlTelInput(input, { initialCountry: 'af', separateDialCode: true, utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
             }
         }
-
+        
         function trackVisitor() {
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(data => {
-                    const ip = data.ip;
-                    const minute = Math.floor(Date.now() / 60000);
-                    const sessionId = ip + '_' + minute;
-                    appState.uniqueVisitors.add(sessionId);
-                    const fiveMinutesAgo = Math.floor((Date.now() - 5 * 60 * 1000) / 60000);
-                    let count = 0;
-                    appState.uniqueVisitors.forEach(id => {
-                        const timestamp = parseInt(id.split('_')[1]);
-                        if (timestamp >= fiveMinutesAgo) count++;
-                    });
-                    appState.onlineCount = Math.max(1, count);
-                    updateOnlineStatus(isConnected ? 'connected' : 'offline');
-                    localStorage.setItem('gk_visitors', JSON.stringify({ count: appState.onlineCount, timestamp: Date.now() }));
-                })
-                .catch(() => {
-                    appState.onlineCount = Math.floor(Math.random() * 5) + 1;
-                    updateOnlineStatus(isConnected ? 'connected' : 'offline');
-                });
+            fetch('https://api.ipify.org?format=json').then(r => r.json()).then(data => {
+                const minute = Math.floor(Date.now() / 60000);
+                const sessionId = data.ip + '_' + minute;
+                appState.uniqueVisitors.add(sessionId);
+                const fiveMinsAgo = Math.floor((Date.now() - 5 * 60 * 1000) / 60000);
+                let count = 0;
+                appState.uniqueVisitors.forEach(id => { if (parseInt(id.split('_')[1]) >= fiveMinsAgo) count++; });
+                appState.onlineCount = Math.max(1, count);
+                updateOnlineStatus(isConnected ? 'connected' : 'offline');
+            }).catch(() => { appState.onlineCount = Math.floor(Math.random() * 5) + 1; updateOnlineStatus(isConnected ? 'connected' : 'offline'); });
         }
-
-        try {
-            const savedVisitors = localStorage.getItem('gk_visitors');
-            if (savedVisitors) {
-                const data = JSON.parse(savedVisitors);
-                if (Date.now() - data.timestamp < 5 * 60 * 1000) {
-                    appState.onlineCount = data.count;
-                }
-            }
-        } catch (e) {}
-
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
         const savedLang = localStorage.getItem('gk_language') || 'en';
         applyTranslation(savedLang);
         renderAdsSlider();
@@ -3625,7 +2535,7 @@
         trackVisitor();
         setInterval(trackVisitor, 30000);
         
-        // Platform detection and iOS banner
+        // PWA Installation
         function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
         function isAndroid() { return /Android/.test(navigator.userAgent); }
         function isAppInstalled() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
@@ -3648,8 +2558,48 @@
                         setTimeout(() => { if (banner) banner.style.display = 'none'; }, 500);
                     }
                 }, 8000);
+            } else if (!isAppInstalled() && isAndroid() && !sessionStorage.getItem('banner_closed')) {
+                if (appState.deferredPrompt) {
+                    document.getElementById('install-banner').style.display = 'flex';
+                    document.getElementById('install-button').style.display = 'flex';
+                }
             }
         }, 2000);
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            if (!isIOS()) {
+                e.preventDefault();
+                appState.deferredPrompt = e;
+                if (!isAppInstalled()) {
+                    document.getElementById('install-banner').style.display = 'flex';
+                    document.getElementById('install-button').style.display = 'flex';
+                }
+            }
+        });
+        
+        window.installApp = function() {
+            if (isIOS()) {
+                const instructions = document.getElementById('install-instructions');
+                instructions.innerHTML = `<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span></div><div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span></div>`;
+                openModal('install-modal');
+            } else if (appState.deferredPrompt) {
+                appState.deferredPrompt.prompt();
+                appState.deferredPrompt.userChoice.then(() => {
+                    document.getElementById('install-banner').style.display = 'none';
+                    document.getElementById('install-button').style.display = 'none';
+                    appState.deferredPrompt = null;
+                });
+            } else {
+                const instructions = document.getElementById('install-instructions');
+                instructions.innerHTML = `<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span></span></div><div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span></div>`;
+                openModal('install-modal');
+            }
+        };
+        
+        window.closeInstallBanner = function() {
+            document.getElementById('install-banner').style.display = 'none';
+            sessionStorage.setItem('banner_closed', 'true');
+        };
     </script>
 </body>
 </html>
