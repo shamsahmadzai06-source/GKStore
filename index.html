@@ -513,6 +513,9 @@
             color: var(--text-secondary);
             font-size: 0.9rem;
             margin: 0.5rem 0;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
         }
 
         .price-row {
@@ -1140,6 +1143,26 @@
             pointer-events: none;
             z-index: 10;
         }
+        
+        /* Error message styling */
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+        
+        .retry-button {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            margin-top: 0.5rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -1579,16 +1602,44 @@
         // ============================================
         // IMPORTANT: UPDATE THIS WITH YOUR VPS IP
         // ============================================
-        const VPS_IP = '216.126.225.4';  // Your VPS IP address
+        const VPS_IP = '216.126.225.4';
         const PB_URL = `http://${VPS_IP}`;
         
         console.log('🚀 Connecting to PocketBase at:', PB_URL);
         
         // Create PocketBase instance
         const pb = new PocketBase(PB_URL);
-        
-        // CRITICAL: Globally disable auto-cancellation
         pb.autoCancellation(false);
+
+        // Override fetch with better error handling
+        const originalSend = pb.send.bind(pb);
+        pb.send = async function(path, options = {}) {
+            options = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            };
+            
+            const isFileUpload = options.body instanceof FormData;
+            const timeoutMs = isFileUpload ? 600000 : 10000;
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            
+            try {
+                options.signal = controller.signal;
+                const result = await originalSend(path, options);
+                clearTimeout(timeoutId);
+                return result;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.log('PocketBase error:', error);
+                throw error;
+            }
+        };
 
         // ============================================
         // iOS VIDEO COMPATIBILITY FUNCTION
@@ -1603,7 +1654,7 @@
         }
 
         // ============================================
-        // COMPLETE TRANSLATIONS (ALL 3 LANGUAGES - KEPT FULL)
+        // COMPLETE TRANSLATIONS (ALL 3 LANGUAGES)
         // ============================================
         const translations = {
             en: {
@@ -1840,7 +1891,8 @@
             isDragging: false,
             lastX: 0,
             lastY: 0,
-            deferredPrompt: null
+            deferredPrompt: null,
+            isConnected: false
         };
 
         // Load from localStorage
@@ -1999,7 +2051,6 @@
         // ============================================
         // CONNECTION STATUS
         // ============================================
-        let isConnected = false;
         let refreshCountdown = 5;
         let countdownInterval;
 
@@ -2011,11 +2062,11 @@
             if (status === 'connected') {
                 dot.className = 'status-dot-badge connected';
                 text.textContent = 'Online';
-                isConnected = true;
+                appState.isConnected = true;
             } else if (status === 'offline') {
                 dot.className = 'status-dot-badge offline';
                 text.textContent = 'Offline';
-                isConnected = false;
+                appState.isConnected = false;
             } else {
                 dot.className = 'status-dot-badge';
                 text.textContent = 'Connecting...';
@@ -2075,6 +2126,7 @@
                     throw new Error('Connection failed');
                 }
             } catch (error) {
+                console.log('Connection error:', error);
                 updateOnlineStatus('offline');
                 renderAccounts();
             }
@@ -2218,12 +2270,13 @@
                                 ${isIOSDevice ? 'webkit-playsinline' : ''}
                                 preload="metadata"
                                 poster="${acc.media}#t=0.5"
+                                onerror="this.style.display='none'"
                             ></video>
                             ${isIOSDevice ? '<div class="video-compatibility-hint"><i class="fa fa-apple"></i> Optimized for iOS</div>' : ''}
                         </div>
                     `;
                 } else {
-                    mediaHtml = `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
+                    mediaHtml = `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 }
                 
                 return `
@@ -2461,7 +2514,7 @@
         // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
-            if (!isConnected) return;
+            if (!appState.isConnected) return;
             
             try {
                 const records = await pb.collection('accounts').getFullList({
@@ -2498,6 +2551,7 @@
                         };
                     });
                     appState.usingFallback = false;
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     renderAccounts();
                 } else {
                     appState.accounts = [];
@@ -2510,7 +2564,7 @@
         }
 
         async function loadContactsFromPB() {
-            if (!isConnected) return;
+            if (!appState.isConnected) return;
             
             try {
                 const records = await pb.collection('contacts').getFullList();
@@ -2527,7 +2581,7 @@
         }
 
         async function loadSettingsFromPB() {
-            if (!isConnected) return;
+            if (!appState.isConnected) return;
             
             try {
                 const records = await pb.collection('settings').getFullList();
@@ -2588,7 +2642,7 @@
             }, 500);
             
             try {
-                if (isConnected) {
+                if (appState.isConnected) {
                     const uniqueKey = 'upload_' + Date.now() + '_' + Math.random().toString(36).substring(2);
                     
                     const formData = new FormData();
@@ -2889,7 +2943,7 @@
             try {
                 let serverDeleted = false;
                 
-                if (isConnected && appState.isAdminLoggedIn) {
+                if (appState.isConnected && appState.isAdminLoggedIn) {
                     try {
                         const isPocketBaseId = !id.startsWith('local_') && id.length > 10;
                         
@@ -3171,7 +3225,7 @@
                 document.getElementById('admin-dashboard').classList.remove('hidden');
                 errorDiv.innerText = '';
                 
-                if (isConnected) {
+                if (appState.isConnected) {
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
@@ -3252,7 +3306,7 @@
                     });
                     
                     appState.onlineCount = Math.max(1, count);
-                    updateOnlineStatus(isConnected ? 'connected' : 'offline');
+                    updateOnlineStatus(appState.isConnected ? 'connected' : 'offline');
                     localStorage.setItem('gk_visitors', JSON.stringify({
                         count: appState.onlineCount,
                         timestamp: Date.now()
@@ -3260,7 +3314,7 @@
                 })
                 .catch(() => {
                     appState.onlineCount = Math.floor(Math.random() * 5) + 1;
-                    updateOnlineStatus(isConnected ? 'connected' : 'offline');
+                    updateOnlineStatus(appState.isConnected ? 'connected' : 'offline');
                 });
         }
 
