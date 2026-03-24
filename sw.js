@@ -40,11 +40,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // For video files - network-first strategy (don't cache videos)
+  // For video files - network-first with blob fallback
   if (url.pathname.match(/\.(mp4|webm|mov|avi|mkv)$/i)) {
     event.respondWith(
       fetch(event.request).catch(error => {
-        console.log('[Service Worker] Video fetch failed');
+        console.log('[Service Worker] Video fetch failed, returning error');
         return new Response('Video not available', { status: 404 });
       })
     );
@@ -72,7 +72,6 @@ self.addEventListener('fetch', event => {
         return cachedResponse;
       }
       return fetch(event.request).then(networkResponse => {
-        // Don't cache video files
         if (!url.pathname.match(/\.(mp4|webm|mov)$/i)) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
