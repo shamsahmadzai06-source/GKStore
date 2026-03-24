@@ -25,6 +25,32 @@
     
     <title>GK Store · PUBG accounts</title>
     
+    <script>
+        // Auto-detect base path for PWA
+        (function() {
+            // Detect if we're in subfolder
+            const isSubfolder = window.location.pathname.includes('/GKStore/');
+            const basePath = isSubfolder ? '/GKStore/' : '/';
+            const manifestPath = basePath + 'manifest.json';
+            
+            // Update manifest path
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            if (manifestLink) {
+                manifestLink.href = manifestPath;
+            }
+            
+            // Register service worker with correct path
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(basePath + 'sw.js')
+                    .then(reg => console.log('SW registered:', reg))
+                    .catch(err => console.log('SW error:', err));
+            }
+            
+            console.log('Base path detected:', basePath);
+            console.log('Manifest path:', manifestPath);
+        })();
+    </script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
@@ -1688,7 +1714,8 @@
                 addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
                 manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads', logoutBtn: 'Logout',
                 edit: 'Edit', autoRefresh: 'Auto-refresh', contactViaWA: 'Contact via WhatsApp',
-                yourName: 'Your name', whatsappNumber: 'WhatsApp number', chatNow: 'Chat Now', delete: 'Delete'
+                yourName: 'Your name', whatsappNumber: 'WhatsApp number', chatNow: 'Chat Now', delete: 'Delete',
+                bookTitle: 'Book', buyTitle: 'Buy', infoTitle: 'Info'
             },
             ps: {
                 brand: 'جي کې پلورنځی', lang: 'ژبه', update: 'تازه کول', contact: 'اړیکه', admin: 'مدیر',
@@ -1701,7 +1728,8 @@
                 addAccountBtn: 'نوی اکونټ اضافه کړئ', manageAccountsBtn: 'اکونټونه مدیریت کړئ (ړنګول)',
                 manageContactsBtn: 'اړیکې مدیریت کړئ', manageAdsBtn: 'اعلانونه مدیریت کړئ', logoutBtn: 'وتل',
                 edit: 'سمول', autoRefresh: 'اتومات تازه کول', contactViaWA: 'د واټساپ له لارې اړیکه',
-                yourName: 'ستاسو نوم', whatsappNumber: 'WhatsApp شمېره', chatNow: 'اوس خبرې وکړئ', delete: 'ړنګول'
+                yourName: 'ستاسو نوم', whatsappNumber: 'WhatsApp شمېره', chatNow: 'اوس خبرې وکړئ', delete: 'ړنګول',
+                bookTitle: 'بوک', buyTitle: 'پیرل', infoTitle: 'مالومات'
             },
             fa: {
                 brand: 'جی کی فروشگاه', lang: 'زبان', update: 'به روز رسانی', contact: 'تماس', admin: 'مدیر',
@@ -1714,7 +1742,8 @@
                 addAccountBtn: 'افزودن اکونت جدید', manageAccountsBtn: 'مدیریت اکونت ها (حذف)',
                 manageContactsBtn: 'مدیریت مخاطبان', manageAdsBtn: 'مدیریت تبلیغات', logoutBtn: 'خروج',
                 edit: 'ویرایش', autoRefresh: 'تازه سازی خودکار', contactViaWA: 'تماس از طریق واتساپ',
-                yourName: 'نام شما', whatsappNumber: 'شماره WhatsApp', chatNow: 'اکنون گفتگو', delete: 'حذف'
+                yourName: 'نام شما', whatsappNumber: 'شماره WhatsApp', chatNow: 'اکنون گفتگو', delete: 'حذف',
+                bookTitle: 'رزرو', buyTitle: 'خرید', infoTitle: 'اطلاعات'
             }
         };
 
@@ -2045,7 +2074,7 @@
                 const mediaHtml = acc.mediaType === 'video' 
                     ? `<div class="card-media" id="video-${acc.id}" style="position:relative; width:100%; height:100%;"></div>`
                     : `<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
-                return `<div class="account-card"><div style="position:relative; width:100%; aspect-ratio:16/9; background:#000;">${mediaHtml}</div><div class="card-content"><div class="card-title">${escapeHtml(acc.title)} <span class="tier-badge ${acc.tier}">${acc.tier}</span></div><div class="card-desc">${escapeHtml(acc.desc || '')}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="playClickSound(); bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle || 'Book'}</button><button class="action-btn buy" onclick="playClickSound(); buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle || 'Buy'}</button><button class="action-btn" onclick="playClickSound(); infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle || 'Info'}</button></div></div></div>`;
+                return `<div class="account-card"><div style="position:relative; width:100%; aspect-ratio:16/9; background:#000;">${mediaHtml}</div><div class="card-content"><div class="card-title">${escapeHtml(acc.title)} <span class="tier-badge ${acc.tier}">${acc.tier}</span></div><div class="card-desc">${escapeHtml(acc.desc || '')}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="playClickSound(); bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button><button class="action-btn buy" onclick="playClickSound(); buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button><button class="action-btn" onclick="playClickSound(); infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle}</button></div></div></div>`;
             }).join('');
             setTimeout(() => {
                 filtered.forEach(acc => {
@@ -2080,7 +2109,10 @@
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
-            if (appState.ads.length === 0) { container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; return; }
+            if (appState.ads.length === 0) { 
+                container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; 
+                return; 
+            }
             let slides = '';
             appState.ads.forEach((ad, i) => {
                 if (ad.type === 'video') {
@@ -2129,7 +2161,7 @@
                 const nextIndex = (currentIndex + 1) % appState.ads.length;
                 track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
                 document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === nextIndex));
-            }, 2000);
+            }, 3000);
         }
         
         function jumpToSlide(idx) { const track = document.getElementById('slider-track'); if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' }); }
@@ -2172,6 +2204,7 @@
                         media: r.media ? pb.files.getUrl(r, r.media) : '',
                         mediaType: r.mediaType || 'image'
                     }));
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     renderAccounts();
                 }
             } catch(e) { console.log('Using local accounts'); }
@@ -2183,6 +2216,7 @@
                 const records = await pb.collection('contacts').getFullList();
                 if (records && records.length) {
                     appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description }));
+                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
                     renderContacts();
                 }
             } catch(e) {}
@@ -2193,7 +2227,11 @@
             try {
                 const records = await pb.collection('settings').getFullList();
                 const usdt = records.find(r => r.key === 'usdt_address');
-                if (usdt) { appState.usdtAddress = usdt.value; document.getElementById('current-usdt-address').innerText = usdt.value; }
+                if (usdt) { 
+                    appState.usdtAddress = usdt.value; 
+                    document.getElementById('current-usdt-address').innerText = usdt.value;
+                    localStorage.setItem('gk_usdt_address', usdt.value);
+                }
             } catch(e) {}
         }
         
@@ -2349,7 +2387,13 @@
         
         function saveNewContact() {
             const name = document.getElementById('contact-name').value.trim();
-            const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
+            let phone = document.getElementById('contact-phone').value.trim();
+            if (appState.phoneInput) {
+                const number = appState.phoneInput.getNumber();
+                if (number) phone = number.replace(/\D/g, '');
+            } else {
+                phone = phone.replace(/\D/g, '');
+            }
             const desc = document.getElementById('contact-desc').value.trim();
             if (!name || !phone) { alert('Please enter name and phone'); return; }
             const newContact = { id: 'c' + Date.now(), name, phone, desc };
@@ -2513,6 +2557,15 @@
         // ============================================
         const savedLang = localStorage.getItem('gk_language') || 'en';
         applyTranslation(savedLang);
+        
+        // Load sample ads if empty
+        if (appState.ads.length === 0) {
+            appState.ads = [
+                { type: 'image', data: 'https://via.placeholder.com/800x450/ec4899/white?text=GK+Store', caption: 'Welcome to GK Store!' },
+                { type: 'image', data: 'https://via.placeholder.com/800x450/8b5cf6/white?text=Best+PUBG+Accounts', caption: 'Best PUBG Accounts' }
+            ];
+        }
+        
         renderAdsSlider();
         renderContacts();
         renderAccounts();
