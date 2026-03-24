@@ -1,7 +1,9 @@
-const CACHE_NAME = 'gk-store-v2';
+const CACHE_NAME = 'gk-store-v3';
+const BASE_PATH = '/GKStore/';
+
 const urlsToCache = [
-  '/',
-  '/index.html',
+  BASE_PATH,
+  BASE_PATH + 'index.html',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js',
   'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css',
