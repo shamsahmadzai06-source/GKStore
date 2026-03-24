@@ -23,8 +23,8 @@
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
     
-    <!-- Manifest File - CRITICAL for native installation -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Manifest File - CRITICAL for native installation - FIXED SCOPE -->
+    <link rel="manifest" href="/GKStore/manifest.json">
     
     <title>GK Store · PUBG accounts</title>
     
@@ -38,7 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* Your existing CSS - keep exactly as is */
+        /* All your existing CSS - keeping exactly as is */
         * {
             margin: 0;
             padding: 0;
@@ -1256,7 +1256,7 @@
                     <div class="account-card" style="padding:1rem; margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
                         <div>
                             <i class="fa fa-sync-alt" style="color: var(--primary);"></i>
-                            <span style="margin-left:5px;" data-i18n="autoRefresh">Auto-refresh</span>
+                            <span style="margin-left:5px;" data-i18n="autoRefresh">Auto-refresh (60s)</span>
                         </div>
                         <label class="switch">
                             <input type="checkbox" id="auto-refresh-toggle" checked onchange="toggleAutoRefresh()">
@@ -1580,7 +1580,7 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // CLOUDFLARE TUNNEL CONFIGURATION (YOUR ORIGINAL SETUP)
+        // CLOUDFLARE TUNNEL CONFIGURATION
         // ============================================
         const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
         const PB_URL = CLOUDFLARE_URL;
@@ -1593,45 +1593,6 @@
         // CRITICAL: Globally disable auto-cancellation
         pb.autoCancellation(false);
 
-        // Override fetch with better error handling
-        const originalSend = pb.send.bind(pb);
-        pb.send = async function(path, options = {}) {
-            options = {
-                ...options,
-                headers: {
-                    ...options.headers,
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            };
-            
-            const isFileUpload = options.body instanceof FormData;
-            const timeoutMs = isFileUpload ? 600000 : 10000;
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-            
-            try {
-                options.signal = controller.signal;
-                const result = await originalSend(path, options);
-                clearTimeout(timeoutId);
-                return result;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                console.log('PocketBase error:', error);
-                throw error;
-            }
-        };
-
-        // ============================================
-        // FALLBACK DATA
-        // ============================================
-        const fallbackAccounts = [];
-        const fallbackContacts = [
-            { id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' },
-            { id: 'c2', name: 'Support 2', phone: '93749949041', desc: 'Technical support' }
-        ];
-
         // ============================================
         // iOS VIDEO COMPATIBILITY FUNCTION
         // ============================================
@@ -1639,13 +1600,8 @@
             return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         }
 
-        // Get video URL with proper handling for iOS
-        function getVideoUrl(accountId, filename) {
-            return `${PB_URL}/api/files/accounts/${accountId}/${filename}`;
-        }
-
         // ============================================
-        // SERVICE WORKER - CRITICAL for PWA
+        // SERVICE WORKER - FIXED SCOPE
         // ============================================
         if ('serviceWorker' in navigator) {
             // Unregister old service worker first
@@ -1656,41 +1612,109 @@
                 }
             });
             
-            // Register service worker with updated scope
-            navigator.serviceWorker.register('sw.js', { scope: '/' })
+            // Register service worker with correct scope for GitHub Pages
+            navigator.serviceWorker.register('/GKStore/sw.js', { scope: '/GKStore/' })
                 .then(registration => {
-                    console.log('✅ New ServiceWorker registered successfully');
-                    
-                    // Check for updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        console.log('ServiceWorker update found');
-                    });
+                    console.log('✅ ServiceWorker registered successfully');
                 })
                 .catch(error => {
                     console.log('❌ ServiceWorker registration failed:', error);
                 });
-                
-            // Handle service worker updates
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    window.location.reload();
-                }
-            });
         }
+
+        // ============================================
+        // COMPLETE TRANSLATIONS (ALL 3 LANGUAGES)
+        // ============================================
+        const translations = {
+            en: {
+                brand: 'GK Store', lang: 'Lang', contact: 'Contact', admin: 'Admin',
+                mainTitle: 'PUBG Marketplace', mainSubtitle: 'Secure · Instant delivery',
+                cta: 'Click to see PUBG account', sliderHint: '— swipe ads (auto change 2s) —',
+                all: 'All', small: 'Small PUBG', medium: 'Medium PUBG', big: 'Big PUBG',
+                accountsTitle: 'PUBG Accounts', contactTitle: 'Contact & Support', adminTitle: 'Admin Panel',
+                loginTitle: 'Admin Login', loginBtn: 'Login', onlineUsers: 'ONLINE NOW',
+                accountsStat: 'accounts', bookingsStat: 'book requests', bookRequestsTitle: '📋 Book Requests',
+                addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
+                manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads', logoutBtn: 'Logout',
+                addModalTitle: 'Add New Account', selectTier: '-- Select Tier --',
+                smallTier: 'Small PUBG ($10-$500)', mediumTier: 'Medium PUBG ($500-$1000)', bigTier: 'Big PUBG ($1000-$100000)',
+                mediaLabel: 'Account Media (Image or Video) *', uploadBtn: 'UPLOAD',
+                manageModalTitle: 'Manage Accounts', existingAccounts: '📋 Existing Accounts (click delete to remove)',
+                manageContactsTitle: 'Manage Contacts', addContact: '➕ Add New Contact',
+                whatsappNumberLabel: 'WhatsApp Number with Country Code', saveContactBtn: 'Save Contact',
+                existingContacts: '📋 Existing Contacts', manageAdsTitle: 'Manage Swipe Ads',
+                addAd: '➕ Add New Ad (Image/Video)', imageOption: 'Image', videoOption: 'Video',
+                adMediaLabel: 'Ad Media *', addAdBtn: 'Add Ad', currentAds: '📋 Current Ads',
+                bookTitle: 'Book account', cancel: 'Cancel', confirm: 'Confirm booking',
+                buyTitle: 'Buy with USDT', confirmWA: 'Confirm via WhatsApp', infoTitle: 'Account details',
+                selectLang: 'Select language', yourName: 'Your name', whatsappNumber: 'WhatsApp number',
+                chatNow: 'Chat Now', delete: 'Delete', edit: 'Edit', editUsdtTitle: 'Edit USDT Address',
+                newUsdtAddress: 'New USDT Address', usdtWarning: 'Make sure it\'s a valid TRC20 address',
+                save: 'Save', autoRefresh: 'Auto-refresh (60s)', contactViaWA: 'Contact via WhatsApp'
+            },
+            ps: {
+                brand: 'جي کې پلورنځی', lang: 'ژبه', contact: 'اړیکه', admin: 'مدیر',
+                mainTitle: 'PUBG بازار', mainSubtitle: 'خوندي · سمدستي سپارل',
+                cta: 'د PUBG اکونټونو لیدو لپاره کلیک وکړئ', sliderHint: '— اعلاناتو ته سوپ ورکړئ (په هر ۲ ثانیو کې بدلون) —',
+                all: 'ټول', small: 'وړوکی PUBG', medium: 'منځنی PUBG', big: 'غټ PUBG',
+                accountsTitle: 'PUBG اکونټونه', contactTitle: 'اړیکه او ملاتړ', adminTitle: 'مدیر پینل',
+                loginTitle: 'مدیر ننوتل', loginBtn: 'ننوتل', onlineUsers: 'آنلاین اوس',
+                accountsStat: 'اکونټونه', bookingsStat: 'بوک غوښتنې', bookRequestsTitle: '📋 د بوک غوښتنې',
+                addAccountBtn: 'نوی اکونټ اضافه کړئ', manageAccountsBtn: 'اکونټونه مدیریت کړئ (ړنګول)',
+                manageContactsBtn: 'اړیکې مدیریت کړئ', manageAdsBtn: 'اعلانونه مدیریت کړئ', logoutBtn: 'وتل',
+                addModalTitle: 'نوی اکونټ اضافه کړئ', selectTier: '-- کچه وټاکئ --',
+                smallTier: 'وړوکی PUBG ($10-$500)', mediumTier: 'منځنی PUBG ($500-$1000)', bigTier: 'لوی PUBG ($1000-$100000)',
+                mediaLabel: 'د اکونټ رسنیز فایل (انځور یا ویډیو) *', uploadBtn: 'پورته کول',
+                manageModalTitle: 'اکونټونه مدیریت کړئ', existingAccounts: '📋 شته اکونټونو (د ړنګولو لپاره کلیک وکړئ)',
+                manageContactsTitle: 'اړیکې مدیریت کړئ', addContact: '➕ نوې اړیکه اضافه کړئ',
+                whatsappNumberLabel: 'د هیواد کوډ سره WhatsApp شمېره', saveContactBtn: 'اړیکه خوندي کړئ',
+                existingContacts: '📋 شته اړیکې', manageAdsTitle: 'اعلانونه مدیریت کړئ',
+                addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)', imageOption: 'انځور', videoOption: 'ویډیو',
+                adMediaLabel: 'د اعلان رسنیز فایل *', addAdBtn: 'اعلان اضافه کړئ', currentAds: '📋 اوسني اعلانونه',
+                bookTitle: 'اکونټ بوک کړئ', cancel: 'لغوه', confirm: 'بوک تایید کړئ',
+                buyTitle: 'د USDT سره واخلئ', confirmWA: 'د WhatsApp له لارې تایید کړئ', infoTitle: 'داکونټ معلومات',
+                selectLang: 'ژبه وټاکئ', yourName: 'ستاسو نوم', whatsappNumber: 'WhatsApp شمېره',
+                chatNow: 'اوس خبرې وکړئ', delete: 'ړنګول', edit: 'سمول', editUsdtTitle: 'USDT پته سمول',
+                newUsdtAddress: 'نوې USDT پته', usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
+                save: 'خوندي کړئ', autoRefresh: 'اتومات تازه کول (60s)', contactViaWA: 'د واټساپ له لارې اړیکه'
+            },
+            fa: {
+                brand: 'جی کی فروشگاه', lang: 'زبان', contact: 'تماس', admin: 'مدیر',
+                mainTitle: 'بازار PUBG', mainSubtitle: 'ایمن · تحویل فوری',
+                cta: 'برای دیدن اکونت های PUBG کلیک کنید', sliderHint: '— تبلیغات را بکشید (تغییر هر ۲ ثانیه) —',
+                all: 'همه', small: 'کوچک PUBG', medium: 'متوسط PUBG', big: 'بزرگ PUBG',
+                accountsTitle: 'اکونت های PUBG', contactTitle: 'تماس و پشتیبانی', adminTitle: 'پنل مدیریت',
+                loginTitle: 'ورود مدیر', loginBtn: 'ورود', onlineUsers: 'آنلاین الآن',
+                accountsStat: 'اکونت ها', bookingsStat: 'درخواست‌های رزرو', bookRequestsTitle: '📋 درخواست‌های رزرو',
+                addAccountBtn: 'افزودن اکونت جدید', manageAccountsBtn: 'مدیریت اکونت ها (حذف)',
+                manageContactsBtn: 'مدیریت مخاطبان', manageAdsBtn: 'مدیریت تبلیغات', logoutBtn: 'خروج',
+                addModalTitle: 'افزودن اکونت جدید', selectTier: '-- سطح را انتخاب کنید --',
+                smallTier: 'کوچک PUBG ($10-$500)', mediumTier: 'متوسط PUBG ($500-$1000)', bigTier: 'بزرگ PUBG ($1000-$100000)',
+                mediaLabel: 'رسانه اکونت (تصویر یا ویدیو) *', uploadBtn: 'آپلود',
+                manageModalTitle: 'مدیریت اکونت ها', existingAccounts: '📋 اکونت های موجود (برای حذف کلیک کنید)',
+                manageContactsTitle: 'مدیریت مخاطبان', addContact: '➕ افزودن مخاطب جدید',
+                whatsappNumberLabel: 'شماره WhatsApp با کد کشور', saveContactBtn: 'ذخیره مخاطب',
+                existingContacts: '📋 مخاطبان موجود', manageAdsTitle: 'مدیریت تبلیغات',
+                addAd: '➕ افزودن تبلیغ جدید (تصویر/ویدیو)', imageOption: 'تصویر', videoOption: 'ویدیو',
+                adMediaLabel: 'رسانه تبلیغ *', addAdBtn: 'افزودن تبلیغ', currentAds: '📋 تبلیغات فعلی',
+                bookTitle: 'بوک کردن اکونت ', cancel: 'لغو', confirm: 'تایید رزرو',
+                buyTitle: 'خرید با USDT', confirmWA: 'تایید از طریق WhatsApp', infoTitle: 'معلومات اکونت',
+                selectLang: 'انتخاب زبان', yourName: 'نام شما', whatsappNumber: 'شماره WhatsApp',
+                chatNow: 'اکنون گفتگو', delete: 'حذف', edit: 'ویرایش', editUsdtTitle: 'ویرایش آدرس USDT',
+                newUsdtAddress: 'آدرس جدید USDT', usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
+                save: 'ذخیره', autoRefresh: 'تازه سازی خودکار (60s)', contactViaWA: 'تماس از طریق واتساپ'
+            }
+        };
 
         // ============================================
         // APP STATE
         // ============================================
         const appState = {
-            accounts: fallbackAccounts,
-            contacts: fallbackContacts,
+            accounts: [],
+            contacts: [{ id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' }],
             ads: [],
             bookRequests: [],
             uniqueVisitors: new Set(),
-            visitorCount: 0,
             onlineCount: 0,
             currentFilter: 'all',
             isAdminLoggedIn: false,
@@ -1702,413 +1726,31 @@
             usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
             currentLanguage: 'en',
             autoSlideInterval: null,
-            usingFallback: true,
             uploadRetryCount: 0,
             autoRefreshEnabled: true,
-            refreshInterval: null,
             zoomLevel: 1,
             panX: 0,
             panY: 0,
             isDragging: false,
             lastX: 0,
             lastY: 0,
-            deferredPrompt: null
+            deferredPrompt: null,
+            isConnected: false,
+            isRefreshing: false,
+            refreshInterval: null
         };
 
         // Load from localStorage
-        if (localStorage.getItem('gk_accounts')) {
-            try {
-                const saved = JSON.parse(localStorage.getItem('gk_accounts'));
-                if (saved && saved.length > 0) {
-                    appState.accounts = saved;
-                    appState.usingFallback = false;
-                }
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_contacts')) {
-            try {
-                appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_ads')) {
-            try {
-                appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_bookings')) {
-            try {
-                appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
-            } catch (e) {}
-        }
-        
-        if (localStorage.getItem('gk_usdt_address')) {
-            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
-        }
+        try {
+            if (localStorage.getItem('gk_accounts')) appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
+            if (localStorage.getItem('gk_contacts')) appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
+            if (localStorage.getItem('gk_ads')) appState.ads = JSON.parse(localStorage.getItem('gk_ads'));
+            if (localStorage.getItem('gk_bookings')) appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings'));
+            if (localStorage.getItem('gk_usdt_address')) appState.usdtAddress = localStorage.getItem('gk_usdt_address');
+        } catch(e) {}
 
         // ============================================
-        // COMPLETE TRANSLATIONS (ALL 3 LANGUAGES)
-        // ============================================
-        const translations = {
-            en: {
-                brand: 'GK Store',
-                lang: 'Lang',
-                contact: 'Contact',
-                admin: 'Admin',
-                mainTitle: 'PUBG Marketplace',
-                mainSubtitle: 'Secure · Instant delivery',
-                cta: 'Click to see PUBG account',
-                sliderHint: '— swipe ads (auto change 2s) —',
-                all: 'All',
-                small: 'Small PUBG',
-                medium: 'Medium PUBG',
-                big: 'Big PUBG',
-                accountsTitle: 'PUBG Accounts',
-                contactTitle: 'Contact & Support',
-                adminTitle: 'Admin Panel',
-                loginTitle: 'Admin Login',
-                loginBtn: 'Login',
-                onlineUsers: 'ONLINE NOW',
-                accountsStat: 'accounts',
-                bookingsStat: 'book requests',
-                bookRequestsTitle: '📋 Book Requests',
-                addAccountBtn: 'Add New Account',
-                manageAccountsBtn: 'Manage Accounts (Delete)',
-                manageContactsBtn: 'Manage Contacts',
-                manageAdsBtn: 'Manage Swipe Ads',
-                logoutBtn: 'Logout',
-                addModalTitle: 'Add New Account',
-                selectTier: '-- Select Tier --',
-                smallTier: 'Small PUBG ($10-$500)',
-                mediumTier: 'Medium PUBG ($500-$1000)',
-                bigTier: 'Big PUBG ($1000-$100000)',
-                mediaLabel: 'Account Media (Image or Video) *',
-                uploadBtn: 'UPLOAD',
-                manageModalTitle: 'Manage Accounts',
-                existingAccounts: '📋 Existing Accounts (click delete to remove)',
-                manageContactsTitle: 'Manage Contacts',
-                addContact: '➕ Add New Contact',
-                whatsappNumberLabel: 'WhatsApp Number with Country Code',
-                saveContactBtn: 'Save Contact',
-                existingContacts: '📋 Existing Contacts',
-                manageAdsTitle: 'Manage Swipe Ads',
-                addAd: '➕ Add New Ad (Image/Video)',
-                imageOption: 'Image',
-                videoOption: 'Video',
-                adMediaLabel: 'Ad Media *',
-                addAdBtn: 'Add Ad',
-                currentAds: '📋 Current Ads',
-                bookTitle: 'Book account',
-                cancel: 'Cancel',
-                confirm: 'Confirm booking',
-                buyTitle: 'Buy with USDT',
-                confirmWA: 'Confirm via WhatsApp',
-                infoTitle: 'Account details',
-                selectLang: 'Select language',
-                yourName: 'Your name',
-                whatsappNumber: 'WhatsApp number',
-                chatNow: 'Chat Now',
-                delete: 'Delete',
-                edit: 'Edit',
-                editUsdtTitle: 'Edit USDT Address',
-                newUsdtAddress: 'New USDT Address',
-                usdtWarning: 'Make sure it\'s a valid TRC20 address',
-                save: 'Save',
-                autoRefresh: 'Auto-refresh',
-                contactViaWA: 'Contact via WhatsApp'
-            },
-            ps: {
-                brand: 'جي کې پلورنځی',
-                lang: 'ژبه',
-                contact: 'اړیکه',
-                admin: 'مدیر',
-                mainTitle: 'PUBG بازار',
-                mainSubtitle: 'خوندي · سمدستي سپارل',
-                cta: 'د PUBG اکونټونو لیدو لپاره کلیک وکړئ',
-                sliderHint: '— اعلاناتو ته سوپ ورکړئ (په هر ۲ ثانیو کې بدلون) —',
-                all: 'ټول',
-                small: 'وړوکی PUBG',
-                medium: 'منځنی PUBG',
-                big: ' غټPUBG',
-                accountsTitle: 'PUBG اکونټونه',
-                contactTitle: 'اړیکه او ملاتړ',
-                adminTitle: 'مدیر پینل',
-                loginTitle: 'مدیر ننوتل',
-                loginBtn: 'ننوتل',
-                onlineUsers: 'آنلاین اوس',
-                accountsStat: 'اکونټونه',
-                bookingsStat: 'بوک غوښتنې',
-                bookRequestsTitle: '📋 د بوک غوښتنې',
-                addAccountBtn: 'نوی اکونټ اضافه کړئ',
-                manageAccountsBtn: 'اکونټونه مدیریت کړئ (ړنګول)',
-                manageContactsBtn: 'اړیکې مدیریت کړئ',
-                manageAdsBtn: 'اعلانونه مدیریت کړئ',
-                logoutBtn: 'وتل',
-                addModalTitle: 'نوی اکونټ اضافه کړئ',
-                selectTier: '-- کچه وټاکئ --',
-                smallTier: 'وړوکی PUBG ($10-$500)',
-                mediumTier: 'منځنی PUBG ($500-$1000)',
-                bigTier: 'لوی PUBG ($1000-$100000)',
-                mediaLabel: 'د اکونټ رسنیز فایل (انځور یا ویډیو) *',
-                uploadBtn: 'پورته کول',
-                manageModalTitle: 'اکونټونه مدیریت کړئ',
-                existingAccounts: '📋 شته اکونټونو (د ړنګولو لپاره کلیک وکړئ)',
-                manageContactsTitle: 'اړیکې مدیریت کړئ',
-                addContact: '➕ نوې اړیکه اضافه کړئ',
-                whatsappNumberLabel: 'د هیواد کوډ سره WhatsApp شمېره',
-                saveContactBtn: 'اړیکه خوندي کړئ',
-                existingContacts: '📋 شته اړیکې',
-                manageAdsTitle: 'اعلانونه مدیریت کړئ',
-                addAd: '➕ نوی اعلان اضافه کړئ (انځور/ویډیو)',
-                imageOption: 'انځور',
-                videoOption: 'ویډیو',
-                adMediaLabel: 'د اعلان رسنیز فایل *',
-                addAdBtn: 'اعلان اضافه کړئ',
-                currentAds: '📋 اوسني اعلانونه',
-                bookTitle: 'اکونټ بوک کړئ',
-                cancel: 'لغوه',
-                confirm: 'بوک تایید کړئ',
-                buyTitle: 'د USDT سره واخلئ',
-                confirmWA: 'د WhatsApp له لارې تایید کړئ',
-                infoTitle: 'داکونټ معلومات',
-                selectLang: 'ژبه وټاکئ',
-                yourName: 'ستاسو نوم',
-                whatsappNumber: 'WhatsApp شمېره',
-                chatNow: 'اوس خبرې وکړئ',
-                delete: 'ړنګول',
-                edit: 'سمول',
-                editUsdtTitle: 'USDT پته سمول',
-                newUsdtAddress: 'نوې USDT پته',
-                usdtWarning: 'ډاډ ترلاسه کړئ چې دا یو معتبر TRC20 پته ده',
-                save: 'خوندي کړئ',
-                autoRefresh: 'اتومات تازه کول',
-                contactViaWA: 'د واټساپ له لارې اړیکه'
-            },
-            fa: {
-                brand: 'جی کی فروشگاه',
-                lang: 'زبان',
-                contact: 'تماس',
-                admin: 'مدیر',
-                mainTitle: 'بازار PUBG',
-                mainSubtitle: 'ایمن · تحویل فوری',
-                cta: 'برای دیدن اکونت های PUBG کلیک کنید',
-                sliderHint: '— تبلیغات را بکشید (تغییر هر ۲ ثانیه) —',
-                all: 'همه',
-                small: 'کوچک PUBG',
-                medium: 'متوسط PUBG',
-                big: 'بزرگ PUBG',
-                accountsTitle: 'اکونت های PUBG',
-                contactTitle: 'تماس و پشتیبانی',
-                adminTitle: 'پنل مدیریت',
-                loginTitle: 'ورود مدیر',
-                loginBtn: 'ورود',
-                onlineUsers: 'آنلاین الآن',
-                accountsStat: 'اکونت ها',
-                bookingsStat: 'درخواست‌های رزرو',
-                bookRequestsTitle: '📋 درخواست‌های رزرو',
-                addAccountBtn: 'افزودن اکونت جدید',
-                manageAccountsBtn: 'مدیریت اکونت ها (حذف)',
-                manageContactsBtn: 'مدیریت مخاطبان',
-                manageAdsBtn: 'مدیریت تبلیغات',
-                logoutBtn: 'خروج',
-                addModalTitle: 'افزودن اکونت جدید',
-                selectTier: '-- سطح را انتخاب کنید --',
-                smallTier: 'کوچک PUBG ($10-$500)',
-                mediumTier: 'متوسط PUBG ($500-$1000)',
-                bigTier: 'بزرگ PUBG ($1000-$100000)',
-                mediaLabel: 'رسانه اکونت (تصویر یا ویدیو) *',
-                uploadBtn: 'آپلود',
-                manageModalTitle: 'مدیریت اکونت ها',
-                existingAccounts: '📋 اکونت های موجود (برای حذف کلیک کنید)',
-                manageContactsTitle: 'مدیریت مخاطبان',
-                addContact: '➕ افزودن مخاطب جدید',
-                whatsappNumberLabel: 'شماره WhatsApp با کد کشور',
-                saveContactBtn: 'ذخیره مخاطب',
-                existingContacts: '📋 مخاطبان موجود',
-                manageAdsTitle: 'مدیریت تبلیغات',
-                addAd: '➕ افزودن تبلیغ جدید (تصویر/ویدیو)',
-                imageOption: 'تصویر',
-                videoOption: 'ویدیو',
-                adMediaLabel: 'رسانه تبلیغ *',
-                addAdBtn: 'افزودن تبلیغ',
-                currentAds: '📋 تبلیغات فعلی',
-                bookTitle: 'بوک کردن اکونت ',
-                cancel: 'لغو',
-                confirm: 'تایید رزرو',
-                buyTitle: 'خرید با USDT',
-                confirmWA: 'تایید از طریق WhatsApp',
-                infoTitle: 'معلومات اکونت',
-                selectLang: 'انتخاب زبان',
-                yourName: 'نام شما',
-                whatsappNumber: 'شماره WhatsApp',
-                chatNow: 'اکنون گفتگو',
-                delete: 'حذف',
-                edit: 'ویرایش',
-                editUsdtTitle: 'ویرایش آدرس USDT',
-                newUsdtAddress: 'آدرس جدید USDT',
-                usdtWarning: 'مطمئن شوید که این یک آدرس معتبر TRC20 است',
-                save: 'ذخیره',
-                autoRefresh: 'تازه سازی خودکار',
-                contactViaWA: 'تماس از طریق واتساپ'
-            }
-        };
-
-        // ============================================
-        // PWA INSTALLATION - FIXED for Android
-        // ============================================
-        const installButton = document.getElementById('install-button');
-        const installBanner = document.getElementById('install-banner');
-        const installText = document.getElementById('install-text');
-
-        // Check if already installed as PWA
-        function isAppInstalled() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
-        }
-
-        // Hide install UI if already installed
-        if (isAppInstalled()) {
-            installButton.style.display = 'none';
-            installBanner.style.display = 'none';
-        }
-
-        // Listen for beforeinstallprompt event (Android Chrome)
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            appState.deferredPrompt = e;
-            
-            // Show install UI if not installed
-            if (!isAppInstalled()) {
-                // Show both banner and button for better visibility
-                installBanner.style.display = 'flex';
-                installButton.style.display = 'flex';
-                
-                // Detect platform
-                const isAndroid = /Android/.test(navigator.userAgent);
-                
-                if (isAndroid) {
-                    installText.textContent = 'Install on Android';
-                    const bannerText = document.querySelector('.banner-text small');
-                    if (bannerText) bannerText.textContent = 'Add to home screen';
-                } else {
-                    installText.textContent = 'Install App';
-                }
-            }
-        });
-
-        // Listen for app installed event
-        window.addEventListener('appinstalled', (e) => {
-            console.log('✅ GK Store installed successfully!');
-            installButton.style.display = 'none';
-            installBanner.style.display = 'none';
-            appState.deferredPrompt = null;
-        });
-
-        // Main install function - DIRECT native install for Android
-        window.installApp = function() {
-            if (appState.deferredPrompt) {
-                // Show the native install prompt
-                appState.deferredPrompt.prompt();
-                
-                // Wait for user's choice
-                appState.deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ User accepted install');
-                        installButton.style.display = 'none';
-                        installBanner.style.display = 'none';
-                    } else {
-                        console.log('❌ User dismissed install');
-                    }
-                    appState.deferredPrompt = null;
-                });
-            } else {
-                // For iOS or if prompt not available, show instructions
-                showInstallInstructions();
-            }
-        };
-
-        // Close install banner
-        window.closeInstallBanner = function() {
-            installBanner.style.display = 'none';
-            // Store in sessionStorage to not show again for this session
-            sessionStorage.setItem('banner_closed', 'true');
-        };
-
-        // Show install instructions
-        function showInstallInstructions() {
-            const instructions = document.getElementById('install-instructions');
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
-            
-            if (isIOS) {
-                instructions.innerHTML = `
-                    <div class="install-step">
-                        <span class="step-number">1</span>
-                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">2</span>
-                        <span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">3</span>
-                        <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
-                    </div>
-                `;
-            } else if (isAndroid) {
-                instructions.innerHTML = `
-                    <div class="install-step">
-                        <span class="step-number">1</span>
-                        <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">2</span>
-                        <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span> or <span class="platform-badge">Add to Home Screen</span></span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">3</span>
-                        <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
-                    </div>
-                `;
-            } else {
-                instructions.innerHTML = `
-                    <div class="install-step">
-                        <span class="step-number">1</span>
-                        <span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span>
-                    </div>
-                    <div class="install-step">
-                        <span class="step-number">2</span>
-                        <span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span>
-                    </div>
-                `;
-            }
-            
-            openModal('install-modal');
-        }
-
-        // Show install UI after delay if not installed
-        setTimeout(() => {
-            if (!isAppInstalled() && !sessionStorage.getItem('banner_closed')) {
-                // Always show install button for Android
-                const isAndroid = /Android/.test(navigator.userAgent);
-                if (isAndroid) {
-                    installButton.style.display = 'flex';
-                    installText.textContent = 'Install App';
-                    // Also show banner if available
-                    if (appState.deferredPrompt) {
-                        installBanner.style.display = 'flex';
-                    }
-                } else if (appState.deferredPrompt) {
-                    installButton.style.display = 'flex';
-                    installText.textContent = 'Install App';
-                }
-            }
-        }, 2000);
-
-        // ============================================
-        // CORE FUNCTIONS
+        // TRANSLATION FUNCTIONS
         // ============================================
         function applyTranslation(lang) {
             const t = translations[lang] || translations.en;
@@ -2123,30 +1765,14 @@
             renderAccounts();
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
-            
-            // Update bottom nav text
-            const contactBtn = document.getElementById('nav-contact');
-            const adminBtn = document.getElementById('nav-admin');
-            if (contactBtn) contactBtn.querySelector('span').textContent = t.contact;
-            if (adminBtn) adminBtn.querySelector('span').textContent = t.admin;
         }
 
-        function setLanguage(lang) {
-            applyTranslation(lang);
-            closeModal('language-modal');
-        }
-
-        function openLanguageModal() {
-            document.getElementById('language-modal').classList.remove('hidden');
-        }
+        function setLanguage(lang) { applyTranslation(lang); closeModal('language-modal'); }
+        function openLanguageModal() { openModal('language-modal'); }
 
         // ============================================
-        // ONLINE COUNT TRACKING
+        // CONNECTION STATUS - FIXED - NO CONSTANT RECONNECTIONS
         // ============================================
-        let isConnected = false;
-        let refreshCountdown = 5;
-        let countdownInterval;
-
         function updateOnlineStatus(status) {
             const dot = document.getElementById('status-dot-badge');
             const text = document.getElementById('status-text-badge');
@@ -2155,76 +1781,35 @@
             if (status === 'connected') {
                 dot.className = 'status-dot-badge connected';
                 text.textContent = 'Online';
-                isConnected = true;
+                appState.isConnected = true;
             } else if (status === 'offline') {
                 dot.className = 'status-dot-badge offline';
                 text.textContent = 'Offline';
-                isConnected = false;
+                appState.isConnected = false;
             } else {
                 dot.className = 'status-dot-badge';
                 text.textContent = 'Connecting...';
             }
             
-            // Update online count
-            if (countSpan) {
-                countSpan.textContent = appState.onlineCount;
-            }
-            
-            // Update admin panel online count
+            if (countSpan) countSpan.textContent = appState.onlineCount;
             const onlineUserEl = document.getElementById('online-user-count');
-            if (onlineUserEl) {
-                onlineUserEl.innerText = appState.onlineCount;
-            }
+            if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
         }
 
-        function startRefreshCountdown() {
-            if (countdownInterval) clearInterval(countdownInterval);
-            refreshCountdown = 5;
-            
-            countdownInterval = setInterval(() => {
-                refreshCountdown--;
-                
-                if (refreshCountdown <= 0 && appState.autoRefreshEnabled) {
-                    refreshData();
-                    refreshCountdown = 5;
-                }
-            }, 1000);
-        }
-
-        async function refreshData() {
-            if (!appState.autoRefreshEnabled) return;
-            
-            await testConnection();
-            trackVisitor(); // Update online count
-        }
-
-        function toggleAutoRefresh() {
-            const toggle = document.getElementById('auto-refresh-toggle');
-            appState.autoRefreshEnabled = toggle.checked;
-            
-            if (appState.autoRefreshEnabled) {
-                startRefreshCountdown();
-            } else {
-                if (countdownInterval) clearInterval(countdownInterval);
-            }
-        }
-
+        // Single connection test - only called on load and when manually refreshed
         async function testConnection() {
+            if (appState.isRefreshing) return;
+            appState.isRefreshing = true;
+            
             try {
-                console.log('🔌 Testing connection...');
                 updateOnlineStatus('connecting');
-                
-                const response = await fetch(CLOUDFLARE_URL + '/api/health', { 
+                const response = await fetch(PB_URL + '/api/health', { 
                     mode: 'cors',
                     cache: 'no-cache',
-                    headers: { 'Accept': 'application/json' }
+                    signal: AbortSignal.timeout(10000)
                 });
-                
                 if (response.ok) {
-                    isConnected = true;
                     updateOnlineStatus('connected');
-                    console.log('✅ Connected to PocketBase');
-                    
                     await loadAccountsFromPB();
                     await loadContactsFromPB();
                     await loadSettingsFromPB();
@@ -2232,212 +1817,72 @@
                     throw new Error('Connection failed');
                 }
             } catch (error) {
-                console.log('⚠️ Using local data');
+                console.log('Connection error:', error.message);
                 updateOnlineStatus('offline');
-                isConnected = false;
                 renderAccounts();
+            } finally {
+                appState.isRefreshing = false;
             }
         }
 
-        // Test connection after a short delay
+        // Manual refresh function
+        async function refreshData() {
+            if (!appState.autoRefreshEnabled) return;
+            await testConnection();
+            trackVisitor();
+        }
+
+        // Auto-refresh every 60 seconds (reduced from 5 seconds to stop constant reconnections)
+        function startAutoRefresh() {
+            if (appState.refreshInterval) clearInterval(appState.refreshInterval);
+            appState.refreshInterval = setInterval(() => {
+                if (appState.autoRefreshEnabled) {
+                    refreshData();
+                }
+            }, 60000); // 60 seconds
+        }
+
+        function toggleAutoRefresh() {
+            const toggle = document.getElementById('auto-refresh-toggle');
+            appState.autoRefreshEnabled = toggle.checked;
+        }
+
+        // Initial connection - only once on load
         setTimeout(() => {
             testConnection();
-            startRefreshCountdown();
-        }, 2000);
+            startAutoRefresh();
+        }, 1000);
 
         // ============================================
         // ZOOM FUNCTIONS
         // ============================================
-        let zoomLevel = 1;
-        let panX = 0;
-        let panY = 0;
-        let isDraggingZoom = false;
-        let lastX = 0;
-        let lastY = 0;
-        let pinchDistance = 0;
-        let pinchZoom = 1;
-        const minZoom = 1;
-        const maxZoom = 3;
-        const zoomStep = 0.25;
+        let zoomLevel = 1, panX = 0, panY = 0, isDraggingZoom = false, lastX = 0, lastY = 0;
 
-        window.openFullscreenImage = function(imageSrc) {
+        window.openFullscreenImage = function(src) {
             const modal = document.getElementById('fullscreen-image-modal');
             const img = document.getElementById('fullscreen-image');
-            
-            img.src = imageSrc;
+            img.src = src;
             modal.style.display = 'flex';
-            
-            // Reset zoom and pan
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
+            zoomLevel = 1; panX = 0; panY = 0;
             updateImageTransform();
-            
-            // Setup event listeners
-            setupImageEvents();
-        }
-
-        function setupImageEvents() {
-            const img = document.getElementById('fullscreen-image');
-            
-            img.removeEventListener('touchstart', handleTouchStart);
-            img.removeEventListener('touchmove', handleTouchMove);
-            img.removeEventListener('touchend', handleTouchEnd);
-            img.removeEventListener('mousedown', handleMouseDown);
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-            
-            img.addEventListener('touchstart', handleTouchStart, { passive: false });
-            img.addEventListener('touchmove', handleTouchMove, { passive: false });
-            img.addEventListener('touchend', handleTouchEnd);
-            img.addEventListener('mousedown', handleMouseDown);
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-
-        function handleTouchStart(e) {
-            e.preventDefault();
-            if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                pinchDistance = Math.sqrt(dx * dx + dy * dy);
-                pinchZoom = zoomLevel;
-            } else if (e.touches.length === 1 && zoomLevel > 1) {
-                isDraggingZoom = true;
-                lastX = e.touches[0].clientX;
-                lastY = e.touches[0].clientY;
-            }
-        }
-
-        function handleTouchMove(e) {
-            e.preventDefault();
-            if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (pinchDistance > 0) {
-                    const scale = distance / pinchDistance;
-                    let newZoom = pinchZoom * scale;
-                    newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
-                    
-                    if (newZoom !== zoomLevel) {
-                        zoomLevel = newZoom;
-                        constrainPan();
-                        updateImageTransform();
-                        updateZoomLevel();
-                    }
-                }
-            } else if (e.touches.length === 1 && isDraggingZoom) {
-                const x = e.touches[0].clientX;
-                const y = e.touches[0].clientY;
-                
-                const dx = x - lastX;
-                const dy = y - lastY;
-                
-                panX += dx;
-                panY += dy;
-                
-                constrainPan();
-                
-                lastX = x;
-                lastY = y;
-                
-                updateImageTransform();
-            }
-        }
-
-        function handleTouchEnd(e) {
-            isDraggingZoom = false;
-            pinchDistance = 0;
-        }
-
-        function handleMouseDown(e) {
-            if (zoomLevel > 1) {
-                e.preventDefault();
-                isDraggingZoom = true;
-                lastX = e.clientX;
-                lastY = e.clientY;
-            }
-        }
-
-        function handleMouseMove(e) {
-            if (isDraggingZoom) {
-                e.preventDefault();
-                const dx = e.clientX - lastX;
-                const dy = e.clientY - lastY;
-                
-                panX += dx;
-                panY += dy;
-                
-                constrainPan();
-                
-                lastX = e.clientX;
-                lastY = e.clientY;
-                
-                updateImageTransform();
-            }
-        }
-
-        function handleMouseUp() {
-            isDraggingZoom = false;
-        }
-
-        function constrainPan() {
-            const containerWidth = window.innerWidth;
-            const containerHeight = window.innerHeight;
-            const imgWidth = containerWidth * zoomLevel;
-            const imgHeight = containerHeight * zoomLevel;
-            
-            const maxPanX = (imgWidth - containerWidth) / 2;
-            const maxPanY = (imgHeight - containerHeight) / 2;
-            
-            panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
-            panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
-        }
-
-        window.zoomImage = function(direction) {
-            let newZoom = zoomLevel + (direction === 'in' ? zoomStep : -zoomStep);
-            newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
-            
-            if (newZoom !== zoomLevel) {
-                zoomLevel = newZoom;
-                constrainPan();
-                updateImageTransform();
-                updateZoomLevel();
-            }
-        }
-
-        window.resetZoom = function() {
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
-            updateImageTransform();
-            updateZoomLevel();
-        }
-
+        };
+        
         function updateImageTransform() {
             const img = document.getElementById('fullscreen-image');
-            if (img) {
-                img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-            }
+            if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            document.getElementById('zoom-level').innerText = zoomLevel.toFixed(1) + 'x';
         }
-
-        function updateZoomLevel() {
-            const zoomLevelEl = document.getElementById('zoom-level');
-            if (zoomLevelEl) {
-                zoomLevelEl.textContent = zoomLevel.toFixed(1) + 'x';
-            }
-        }
-
-        window.closeFullscreenImage = function() {
-            const modal = document.getElementById('fullscreen-image-modal');
-            modal.style.display = 'none';
-            resetZoom();
-        }
+        
+        window.zoomImage = function(dir) {
+            zoomLevel = Math.max(1, Math.min(3, zoomLevel + (dir === 'in' ? 0.25 : -0.25)));
+            updateImageTransform();
+        };
+        
+        window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); };
+        window.closeFullscreenImage = function() { document.getElementById('fullscreen-image-modal').style.display = 'none'; resetZoom(); };
 
         // ============================================
-        // RENDERING FUNCTIONS (iOS OPTIMIZED)
+        // RENDER FUNCTIONS (iOS OPTIMIZED)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -2458,9 +1903,7 @@
             
             grid.innerHTML = filtered.map(acc => {
                 let mediaHtml;
-                
                 if (acc.mediaType === 'video') {
-                    // iOS-optimized video with playsinline attribute
                     mediaHtml = `
                         <div style="position:relative;">
                             <video 
@@ -2473,7 +1916,7 @@
                                 poster="${acc.media}#t=0.5"
                                 onerror="this.style.display='none'"
                             ></video>
-                            ${isIOSDevice ? '<div class="video-compatibility-hint"><i class="fa fa-apple"></i> Optimized for iOS</div>' : ''}
+                            ${isIOSDevice ? '<div class="video-compatibility-hint"><i class="fa fa-apple"></i> iOS Optimized</div>' : ''}
                         </div>
                     `;
                 } else {
@@ -2481,18 +1924,12 @@
                 }
                 
                 return `
-                    <div class="account-card" data-id="${acc.id}">
+                    <div class="account-card">
                         ${mediaHtml}
                         <div class="card-content">
-                            <div class="card-title">
-                                ${acc.title}
-                                <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            </div>
+                            <div class="card-title">${acc.title}<span class="tier-badge ${acc.tier}">${acc.tier}</span></div>
                             <div class="card-desc">${(acc.desc || '').substring(0, 150)}${(acc.desc || '').length > 150 ? '...' : ''}</div>
-                            <div class="price-row">
-                                <span class="usd-price">$${acc.price_usd}</span>
-                                <span class="afn-price">${acc.price_afn} AFN</span>
-                            </div>
+                            <div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div>
                             <div class="action-buttons">
                                 <button class="action-btn" onclick="bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle}</button>
                                 <button class="action-btn buy" onclick="buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle}</button>
@@ -2507,69 +1944,32 @@
         function renderContacts() {
             const container = document.getElementById('contacts-container');
             if (!container) return;
-            
-            if (appState.contacts.length === 0) {
-                container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>';
-                return;
-            }
-            
+            if (appState.contacts.length === 0) { container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>'; return; }
             const t = translations[appState.currentLanguage || 'en'];
-            
             container.innerHTML = appState.contacts.map(contact => {
                 let cleanPhone = contact.phone.replace(/\D/g, '');
-                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) {
-                    cleanPhone = '93' + cleanPhone;
-                }
-                return `
-                    <div class="account-card" style="padding:1.5rem;">
-                        <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3>
-                        <p>${contact.desc || ''}</p>
-                        <p><strong>+${cleanPhone}</strong></p>
-                        <button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">
-                            <i class="fab fa-whatsapp"></i> ${t.chatNow}
-                        </button>
-                    </div>
-                `;
+                if (!cleanPhone.startsWith('93') && cleanPhone.length <= 9) cleanPhone = '93' + cleanPhone;
+                return `<div class="account-card" style="padding:1.5rem;"><h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${contact.name}</h3><p>${contact.desc || ''}</p><p><strong>+${cleanPhone}</strong></p><button class="action-btn buy" style="width:100%;" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.chatNow}</button></div>`;
             }).join('');
         }
 
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
-            
-            if (appState.ads.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-secondary);">No ads available</div>';
-                return;
-            }
-            
+            if (appState.ads.length === 0) { container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; return; }
             let slides = '';
-            appState.ads.forEach((ad, idx) => {
+            appState.ads.forEach((ad) => {
                 if (ad.type === 'video') {
                     slides += `<div class="slide"><video src="${ad.data}" autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover;"></video><div class="slide-caption">${ad.caption}</div></div>`;
                 } else {
                     slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${ad.caption}</div></div>`;
                 }
             });
-            
             let dots = '';
-            appState.ads.forEach((_, idx) => {
-                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`;
-            });
-            
-            container.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-track" id="slider-track">${slides}</div>
-                    <div class="slider-dots">${dots}</div>
-                </div>
-            `;
-            
+            appState.ads.forEach((_, idx) => { dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`; });
+            container.innerHTML = `<div class="slider-container"><div class="slider-track" id="slider-track">${slides}</div><div class="slider-dots">${dots}</div></div>`;
             const track = document.getElementById('slider-track');
-            if (track) {
-                track.addEventListener('scroll', function() {
-                    const idx = Math.round(track.scrollLeft / track.clientWidth);
-                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-                });
-            }
+            if (track) track.addEventListener('scroll', function() { const idx = Math.round(track.scrollLeft / track.clientWidth); document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx)); });
             startAutoSlide();
         }
 
@@ -2578,82 +1978,40 @@
             appState.autoSlideInterval = setInterval(() => {
                 const track = document.getElementById('slider-track');
                 if (!track || appState.ads.length === 0) return;
-                const slideWidth = track.clientWidth;
-                const currentScroll = track.scrollLeft;
-                const currentIndex = Math.round(currentScroll / slideWidth);
-                const nextIndex = (currentIndex + 1) % appState.ads.length;
-                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                document.querySelectorAll('.dot').forEach((dot, i) => {
-                    dot.classList.toggle('active', i === nextIndex);
-                });
+                const idx = (Math.round(track.scrollLeft / track.clientWidth) + 1) % appState.ads.length;
+                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
             }, 2000);
         }
 
         window.jumpToSlide = function(idx) {
             const track = document.getElementById('slider-track');
-            if (track) {
-                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-                startAutoSlide();
-            }
+            if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
         };
 
-        // Admin rendering functions
         function renderAdminAccounts() {
             const list = document.getElementById('admin-accounts-list');
             if (!list) return;
-            
-            if (appState.accounts.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No accounts yet.</p>';
-                return;
-            }
-            
+            if (appState.accounts.length === 0) { list.innerHTML = '<p>No accounts yet.</p>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            
-            list.innerHTML = appState.accounts.map(acc => {
-                const mediaTag = acc.mediaType === 'video' 
-                    ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline></video>`
-                    : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
-                
-                return `
-                    <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                        ${mediaTag}
-                        <div style="flex:1;">
-                            <strong>${acc.title}</strong> 
-                            <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            <div style="font-size:0.8rem;">$${acc.price_usd} / ${acc.price_afn} AFN</div>
-                        </div>
-                        <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')">
-                            <i class="fa fa-trash"></i> ${t.delete}
-                        </button>
-                    </div>
-                `;
-            }).join('');
+            list.innerHTML = appState.accounts.map(acc => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline></video>` : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`}
+                    <div style="flex:1;"><strong>${acc.title}</strong><span class="tier-badge ${acc.tier}">${acc.tier}</span><div>$${acc.price_usd} / ${acc.price_afn} AFN</div></div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> ${t.delete}</button>
+                </div>
+            `).join('');
         }
 
         function renderAdminContacts() {
             const list = document.getElementById('admin-contacts-list');
             if (!list) return;
-            
-            if (appState.contacts.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>';
-                return;
-            }
-            
+            if (appState.contacts.length === 0) { list.innerHTML = '<p>No contacts yet.</p>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            
             list.innerHTML = appState.contacts.map(contact => `
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                        <i class="fab fa-whatsapp"></i>
-                    </div>
-                    <div style="flex:1;">
-                        <strong>${contact.name}</strong>
-                        <div style="font-size:0.8rem;">+${contact.phone}</div>
-                        <div style="font-size:0.7rem;">${contact.desc || ''}</div>
-                    </div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
-                        <i class="fa fa-trash"></i> ${t.delete}
-                    </button>
+                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fab fa-whatsapp"></i></div>
+                    <div style="flex:1;"><strong>${contact.name}</strong><div>+${contact.phone}</div><div style="font-size:0.7rem;">${contact.desc || ''}</div></div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')"><i class="fa fa-trash"></i> ${t.delete}</button>
                 </div>
             `).join('');
         }
@@ -2661,29 +2019,13 @@
         function renderAdminAds() {
             const list = document.getElementById('admin-ads-list');
             if (!list) return;
-            
-            if (appState.ads.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No ads yet.</p>';
-                return;
-            }
-            
+            if (appState.ads.length === 0) { list.innerHTML = '<p>No ads yet.</p>'; return; }
             const t = translations[appState.currentLanguage] || translations.en;
-            
             list.innerHTML = appState.ads.map((ad, index) => `
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">
-                        ${ad.type === 'video' 
-                            ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline></video>`
-                            : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;">`
-                        }
-                    </div>
-                    <div style="flex:1;">
-                        <strong>${ad.caption || 'No caption'}</strong>
-                        <div style="font-size:0.7rem;">${ad.type}</div>
-                    </div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})">
-                        <i class="fa fa-trash"></i> ${t.delete}
-                    </button>
+                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">${ad.type === 'video' ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline></video>` : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`}</div>
+                    <div style="flex:1;"><strong>${ad.caption || 'No caption'}</strong><div style="font-size:0.7rem;">${ad.type}</div></div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})"><i class="fa fa-trash"></i> ${t.delete}</button>
                 </div>
             `).join('');
         }
@@ -2691,22 +2033,14 @@
         function renderBookRequests() {
             const list = document.getElementById('admin-book-requests-list');
             if (!list) return;
-            
-            if (appState.bookRequests.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-secondary);">No book requests yet.</p>';
-                return;
-            }
-            
+            if (appState.bookRequests.length === 0) { list.innerHTML = '<p>No book requests yet.</p>'; return; }
             const t = translations[appState.currentLanguage || 'en'];
-            
             list.innerHTML = appState.bookRequests.map(req => `
                 <div class="book-request-item">
                     <p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p>
                     <p><span class="label">${t.yourName}:</span> ${req.user_name}</p>
                     <p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p>
-                    <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')">
-                        <i class="fab fa-whatsapp"></i> ${t.contactViaWA}
-                    </button>
+                    <button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.contactViaWA}</button>
                 </div>
             `).join('');
         }
@@ -2715,70 +2049,39 @@
         // POCKETBASE DATA LOADING
         // ============================================
         async function loadAccountsFromPB() {
-            if (!isConnected) return;
-            
+            if (!appState.isConnected) return;
             try {
-                const records = await pb.collection('accounts').getFullList({
-                    $autoCancel: false,
-                    requestKey: null,
-                    sort: '-created'
-                });
-                
+                const records = await pb.collection('accounts').getFullList({ $autoCancel: false, sort: '-created' });
                 if (records && records.length > 0) {
-                    appState.accounts = records.map(record => {
-                        const mediaUrl = record.media ? pb.files.getUrl(record, record.media) : 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
-                        
-                        return {
-                            id: record.id,
-                            title: record.title,
-                            desc: record.description,
-                            tier: record.tier,
-                            price_usd: record.price_usd,
-                            price_afn: record.price_afn,
-                            media: mediaUrl,
-                            mediaType: record.mediaType || 'image'
-                        };
-                    });
-                    appState.usingFallback = false;
-                    renderAccounts();
-                } else {
-                    appState.accounts = [];
+                    appState.accounts = records.map(record => ({
+                        id: record.id, title: record.title, desc: record.description, tier: record.tier,
+                        price_usd: record.price_usd, price_afn: record.price_afn,
+                        media: record.mediaType === 'video' ? `${PB_URL}/api/files/accounts/${record.id}/${record.media}` : pb.files.getUrl(record, record.media),
+                        mediaType: record.mediaType || 'image'
+                    }));
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     renderAccounts();
                 }
-            } catch (error) {
-                console.log('Using local accounts only');
-                appState.accounts = appState.accounts.length ? appState.accounts : [];
-                renderAccounts();
-            }
+            } catch (error) { console.log('Load accounts error:', error); }
         }
 
         async function loadContactsFromPB() {
-            if (!isConnected) return;
-            
+            if (!appState.isConnected) return;
             try {
                 const records = await pb.collection('contacts').getFullList();
-                if (records && records.length > 0) {
-                    appState.contacts = records.map(record => ({
-                        id: record.id,
-                        name: record.name,
-                        phone: record.phone,
-                        desc: record.description
-                    }));
+                if (records && records.length) {
+                    appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description }));
                     renderContacts();
                 }
             } catch (error) {}
         }
 
         async function loadSettingsFromPB() {
-            if (!isConnected) return;
-            
+            if (!appState.isConnected) return;
             try {
                 const records = await pb.collection('settings').getFullList();
-                const usdtSetting = records.find(r => r.key === 'usdt_address');
-                if (usdtSetting) {
-                    appState.usdtAddress = usdtSetting.value;
-                    document.getElementById('current-usdt-address').innerText = usdtSetting.value;
-                }
+                const usdt = records.find(r => r.key === 'usdt_address');
+                if (usdt) { appState.usdtAddress = usdt.value; document.getElementById('current-usdt-address').innerText = usdt.value; }
             } catch (error) {}
         }
 
@@ -2791,183 +2094,45 @@
             const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
             const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
             const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-            
-            if (!tier || !title || !priceUsd || !priceAfn) {
-                alert('Please fill all required fields');
-                return;
-            }
-            
             const fileInput = document.getElementById('account-media-file');
-            if (!fileInput.files || !fileInput.files[0]) {
-                alert('Please select an image or video');
-                return;
-            }
+            
+            if (!tier || !title || !priceUsd || !priceAfn || !fileInput.files[0]) { alert('Please fill all fields'); return; }
             
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
-            
             const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-            if (file.size > maxSize) {
-                alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
-                return;
-            }
+            if (file.size > maxSize) { alert(`File too large. Max ${isVideo ? '200MB' : '10MB'}`); return; }
             
-            const progressContainer = document.getElementById('upload-progress');
             const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
+            const progressContainer = document.getElementById('upload-progress');
             const uploadBtn = document.getElementById('upload-btn');
-            const retryBtn = document.getElementById('retry-btn');
-            
             progressContainer.classList.add('active');
             uploadBtn.disabled = true;
-            if (retryBtn) retryBtn.style.display = 'none';
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 2;
-                if (progress >= 100) progress = 100;
-                progressBar.style.width = progress + '%';
-                progressText.innerHTML = `Uploading... ${Math.round(progress)}% (${(file.size / (1024 * 1024)).toFixed(1)}MB)`;
-            }, 500);
+            uploadBtn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
             
             try {
-                if (isConnected) {
-                    const uniqueKey = 'upload_' + Date.now() + '_' + Math.random().toString(36).substring(2) + '_' + file.size;
-                    
-                    const formData = new FormData();
-                    formData.append('title', title);
-                    formData.append('description', desc);
-                    formData.append('tier', tier);
-                    formData.append('price_usd', priceUsd.toString());
-                    formData.append('price_afn', priceAfn.toString());
-                    formData.append('media', file);
-                    formData.append('mediaType', isVideo ? 'video' : 'image');
-                    
-                    console.log('Uploading to PocketBase...', {
-                        title, tier, priceUsd, priceAfn, fileType: file.type, fileSize: file.size
-                    });
-                    
-                    const record = await pb.collection('accounts').create(formData, {
-                        requestKey: uniqueKey,
-                        $autoCancel: false
-                    });
-                    
-                    console.log('Upload successful:', record);
-                    
-                    const mediaUrl = pb.files.getUrl(record, record.media);
-                    
-                    const newAccount = {
-                        id: record.id,
-                        title: title,
-                        desc: desc,
-                        tier: tier,
-                        price_usd: priceUsd,
-                        price_afn: priceAfn,
-                        media: mediaUrl,
-                        mediaType: isVideo ? 'video' : 'image'
-                    };
-                    
-                    appState.accounts.push(newAccount);
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    
-                    clearInterval(interval);
-                    progressBar.style.width = '100%';
-                    progressText.innerHTML = 'Upload complete!';
-                    
-                    setTimeout(() => {
-                        closeModal('add-account-modal');
-                        renderAccounts();
-                        if (appState.isAdminLoggedIn) {
-                            document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                        }
-                        alert('✅ Account uploaded successfully to server!');
-                        
-                        progressContainer.classList.remove('active');
-                        progressBar.style.width = '0%';
-                        progressText.innerHTML = '';
-                        uploadBtn.disabled = false;
-                        appState.uploadRetryCount = 0;
-                    }, 500);
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const newAccount = {
-                            id: 'local_' + Date.now(),
-                            title: title,
-                            desc: desc,
-                            tier: tier,
-                            price_usd: priceUsd,
-                            price_afn: priceAfn,
-                            media: e.target.result,
-                            mediaType: isVideo ? 'video' : 'image'
-                        };
-                        
-                        appState.accounts.push(newAccount);
-                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                        
-                        clearInterval(interval);
-                        progressBar.style.width = '100%';
-                        progressText.innerHTML = 'Upload complete!';
-                        
-                        setTimeout(() => {
-                            closeModal('add-account-modal');
-                            renderAccounts();
-                            if (appState.isAdminLoggedIn) {
-                                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                            }
-                            alert('📱 Account saved locally (offline mode)');
-                            
-                            progressContainer.classList.remove('active');
-                            progressBar.style.width = '0%';
-                            progressText.innerHTML = '';
-                            uploadBtn.disabled = false;
-                            appState.uploadRetryCount = 0;
-                        }, 500);
-                    };
-                    reader.readAsDataURL(file);
-                    return;
-                }
+                const formData = new FormData();
+                formData.append('title', title); formData.append('description', desc); formData.append('tier', tier);
+                formData.append('price_usd', priceUsd); formData.append('price_afn', priceAfn);
+                formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
                 
+                const record = await pb.collection('accounts').create(formData);
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    closeModal('add-account-modal');
+                    loadAccountsFromPB();
+                    alert('✅ Account uploaded successfully!');
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = 'UPLOAD';
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                }, 500);
             } catch (error) {
-                console.error('Upload error details:', error);
-                clearInterval(interval);
-                
-                let errorMessage = 'Upload failed: ';
-                
-                if (error.message && error.message.includes('ERR_HTTP2_PROTOCOL_ERROR')) {
-                    errorMessage += 'HTTP/2 protocol error. ';
-                    
-                    appState.uploadRetryCount++;
-                    if (appState.uploadRetryCount < 3) {
-                        errorMessage += `Retrying... (Attempt ${appState.uploadRetryCount + 1}/3)`;
-                        
-                        if (retryBtn) retryBtn.style.display = 'block';
-                        
-                        setTimeout(() => {
-                            uploadNewAccount();
-                        }, 2000);
-                    } else {
-                        errorMessage += 'Please try again later or use a smaller video.';
-                    }
-                } else if (error.response && error.response.data) {
-                    const data = error.response.data;
-                    if (data.message) {
-                        errorMessage += data.message;
-                    } else {
-                        errorMessage += JSON.stringify(data);
-                    }
-                } else if (error.message) {
-                    errorMessage += error.message;
-                } else {
-                    errorMessage += 'Unknown error';
-                }
-                
-                alert(errorMessage);
-                
+                alert('Upload failed: ' + (error.message || 'Unknown error'));
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'UPLOAD';
                 progressContainer.classList.remove('active');
                 progressBar.style.width = '0%';
-                progressText.innerHTML = '';
-                uploadBtn.disabled = false;
             }
         };
 
@@ -2984,19 +2149,8 @@
         window.switchScreen = function(screen) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screen + '-screen').classList.add('active');
-            
-            // Update bottom nav active state
-            const navButtons = document.querySelectorAll('.bottom-nav-btn');
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            
-            if (screen === 'main') {
-                document.getElementById('nav-main').classList.add('active');
-            } else if (screen === 'contact') {
-                document.getElementById('nav-contact').classList.add('active');
-            } else if (screen === 'admin') {
-                document.getElementById('nav-admin').classList.add('active');
-            }
-            
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${screen === 'main' ? 'main' : screen}`).classList.add('active');
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
             if (screen === 'admin' && appState.isAdminLoggedIn) {
@@ -3017,34 +2171,17 @@
             const fileInput = document.getElementById('account-media-file');
             const preview = document.getElementById('media-preview');
             const uploadBtn = document.getElementById('upload-btn');
-            
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
-                
-                const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`File too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
-                    uploadBtn.disabled = true;
-                    preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-                    return;
-                }
-                
                 uploadBtn.disabled = false;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px; max-width:100%;" playsinline></video>`;
-                        appState.currentMediaData = { type: 'video', data: e.target.result };
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;" onclick="openFullscreenImage('${e.target.result}')" style="cursor:pointer;">`;
-                        appState.currentMediaData = { type: 'image', data: e.target.result };
-                    }
+                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline></video>`;
+                    else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
                 };
                 reader.readAsDataURL(file);
-            } else {
-                uploadBtn.disabled = true;
-            }
+            } else { uploadBtn.disabled = true; }
         };
 
         window.previewAdMedia = function() {
@@ -3053,22 +2190,11 @@
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
-                
-                const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`Ad file too large. Max size for ${isVideo ? 'videos' : 'images'} is ${isVideo ? '200MB' : '10MB'}`);
-                    return;
-                }
-                
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px; max-width:100%;" playsinline></video>`;
-                        appState.currentAdData = { type: 'video', data: e.target.result };
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="preview" style="max-height:200px; max-width:100%;" onclick="openFullscreenImage('${e.target.result}')" style="cursor:pointer;">`;
-                        appState.currentAdData = { type: 'image', data: e.target.result };
-                    }
+                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline></video>`;
+                    else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                    appState.currentAdData = { type: isVideo ? 'video' : 'image', data: e.target.result };
                 };
                 reader.readAsDataURL(file);
             }
@@ -3083,171 +2209,49 @@
             document.getElementById('account-media-file').value = '';
             document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
             document.getElementById('upload-progress').classList.remove('active');
-            document.getElementById('progress-bar').style.width = '0%';
-            document.getElementById('progress-text').innerHTML = '';
             document.getElementById('upload-btn').disabled = true;
-            const retryBtn = document.getElementById('retry-btn');
-            if (retryBtn) retryBtn.style.display = 'none';
-            appState.uploadRetryCount = 0;
-            appState.currentMediaData = null;
             openModal('add-account-modal');
         };
 
-        window.showManageAccountsModal = function() {
-            renderAdminAccounts();
-            openModal('manage-accounts-modal');
-        };
-
-        window.showManageContactsModal = function() {
-            renderAdminContacts();
-            initPhoneInput();
-            openModal('manage-contacts-modal');
-        };
-
-        window.showManageAdsModal = function() {
-            document.getElementById('ad-type').value = 'image';
-            document.getElementById('ad-media-file').value = '';
-            document.getElementById('ad-caption').value = '';
-            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            appState.currentAdData = null;
-            renderAdminAds();
-            openModal('manage-ads-modal');
-        };
-
-        window.showEditUsdtModal = function() {
-            document.getElementById('new-usdt-address').value = appState.usdtAddress;
-            openModal('edit-usdt-modal');
-        };
-
+        window.showManageAccountsModal = function() { renderAdminAccounts(); openModal('manage-accounts-modal'); };
+        window.showManageContactsModal = function() { renderAdminContacts(); openModal('manage-contacts-modal'); };
+        window.showManageAdsModal = function() { renderAdminAds(); openModal('manage-ads-modal'); };
+        window.showEditUsdtModal = function() { openModal('edit-usdt-modal'); };
+        
         window.saveUsdtAddress = function() {
             const newAddress = document.getElementById('new-usdt-address').value.trim();
-            if (!newAddress) {
-                alert('Please enter a USDT address');
-                return;
-            }
+            if (!newAddress) { alert('Please enter address'); return; }
             appState.usdtAddress = newAddress;
             localStorage.setItem('gk_usdt_address', newAddress);
             document.getElementById('current-usdt-address').innerText = newAddress;
             closeModal('edit-usdt-modal');
-            alert('USDT address updated successfully!');
+            alert('USDT address updated');
         };
 
-        // ============================================
-        // DELETE ACCOUNT FUNCTION
-        // ============================================
         window.deleteAccount = async function(id) {
-            if (!confirm('Delete this account permanently?')) return;
-            
-            const deleteBtn = event?.target?.closest('button');
-            if (deleteBtn) {
-                deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Deleting...';
-                deleteBtn.disabled = true;
-            }
-            
-            try {
-                console.log('🗑️ Attempting to delete account:', id);
-                
-                let serverDeleted = false;
-                
-                if (isConnected && appState.isAdminLoggedIn) {
-                    try {
-                        const isPocketBaseId = !id.startsWith('local_') && id.length > 10;
-                        
-                        if (isPocketBaseId) {
-                            console.log('Attempting to delete from PocketBase with ID:', id);
-                            
-                            const token = pb.authStore.token;
-                            const url = `${PB_URL}/api/collections/accounts/records/${id}`;
-                            
-                            const response = await fetch(url, {
-                                method: 'DELETE',
-                                headers: {
-                                    'Authorization': token ? `Bearer ${token}` : '',
-                                    'Content-Type': 'application/json'
-                                },
-                                cache: 'no-cache'
-                            });
-                            
-                            if (response.ok) {
-                                console.log('✅ Successfully deleted from PocketBase');
-                                serverDeleted = true;
-                            } else {
-                                console.error('❌ PocketBase deletion failed:', response.status);
-                            }
-                        }
-                    } catch (pbError) {
-                        console.error('❌ PocketBase network error:', pbError);
-                    }
-                }
-                
-                appState.accounts = appState.accounts.filter(a => a.id !== id);
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                
-                renderAccounts();
-                renderAdminAccounts();
-                
-                const accountCountEl = document.getElementById('admin-account-count');
-                if (accountCountEl) {
-                    accountCountEl.innerText = appState.accounts.length;
-                }
-                
-                alert(serverDeleted ? '✅ Account deleted from server' : '✅ Account deleted locally');
-                
-            } catch (error) {
-                console.error('Delete error:', error);
-                alert('Error deleting account: ' + error.message);
-            } finally {
-                if (deleteBtn) {
-                    deleteBtn.innerHTML = '<i class="fa fa-trash"></i> Delete';
-                    deleteBtn.disabled = false;
-                }
-            }
+            if (!confirm('Delete this account?')) return;
+            appState.accounts = appState.accounts.filter(a => a.id !== id);
+            localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+            renderAccounts();
+            renderAdminAccounts();
+            if (appState.isAdminLoggedIn) document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            alert('Account deleted');
         };
 
         window.saveNewContact = function() {
             const name = document.getElementById('contact-name').value.trim();
+            const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
             const desc = document.getElementById('contact-desc').value.trim();
-            
-            if (!name) {
-                alert('Please enter contact name');
-                return;
-            }
-            
-            let fullNumber = '';
-            if (appState.phoneInput) {
-                const number = appState.phoneInput.getNumber();
-                if (number) {
-                    fullNumber = number.replace(/\D/g, '');
-                } else {
-                    alert('Please enter a valid phone number');
-                    return;
-                }
-            } else {
-                const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
-                if (!phone) {
-                    alert('Please enter phone number');
-                    return;
-                }
-                fullNumber = phone;
-            }
-            
-            const newContact = {
-                id: 'c' + Date.now(),
-                name: name,
-                phone: fullNumber,
-                desc: desc
-            };
-            
+            if (!name || !phone) { alert('Please enter name and phone'); return; }
+            const newContact = { id: 'c' + Date.now(), name, phone, desc };
             appState.contacts.push(newContact);
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            
             document.getElementById('contact-name').value = '';
             document.getElementById('contact-phone').value = '';
             document.getElementById('contact-desc').value = '';
-            
             renderContacts();
             renderAdminContacts();
-            alert('Contact added successfully!');
+            alert('Contact added');
         };
 
         window.deleteContact = function(id) {
@@ -3260,32 +2264,14 @@
         };
 
         window.saveNewAd = function() {
-            const type = document.getElementById('ad-type').value;
-            const caption = document.getElementById('ad-caption').value.trim();
-            
-            if (!appState.currentAdData) {
-                alert('Please upload an image or video');
-                return;
-            }
-            
-            const newAd = {
-                type: type,
-                data: appState.currentAdData.data,
-                caption: caption
-            };
-            
-            appState.ads.push(newAd);
+            if (!appState.currentAdData) { alert('Please select media'); return; }
+            const caption = document.getElementById('ad-caption').value;
+            appState.ads.push({ type: appState.currentAdData.type, data: appState.currentAdData.data, caption });
             localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
-            
-            document.getElementById('ad-type').value = 'image';
-            document.getElementById('ad-media-file').value = '';
-            document.getElementById('ad-caption').value = '';
-            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            appState.currentAdData = null;
-            
             renderAdsSlider();
             renderAdminAds();
-            alert('Ad added successfully!');
+            closeModal('manage-ads-modal');
+            alert('Ad added');
         };
 
         window.deleteAd = function(index) {
@@ -3301,74 +2287,23 @@
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
             appState.currentAccount = acc;
-            
             const t = translations[appState.currentLanguage || 'en'];
-            
             document.getElementById('book-modal-body').innerHTML = `
                 <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
                 <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
                 <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
-                <label class="input-label">${t.whatsappNumber} with country code</label>
-                <input type="tel" id="book-phone" class="input" placeholder="e.g., 93793066322">
+                <input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber} (e.g., 93793066322)">
             `;
-            
             openModal('book-modal');
-            
-            setTimeout(() => {
-                const input = document.getElementById('book-phone');
-                if (input) {
-                    if (appState.bookPhoneInput) {
-                        try {
-                            appState.bookPhoneInput.destroy();
-                        } catch (e) {}
-                    }
-                    appState.bookPhoneInput = intlTelInput(input, {
-                        initialCountry: 'af',
-                        separateDialCode: true,
-                        utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                        dropdownContainer: document.body
-                    });
-                }
-            }, 200);
         };
 
         window.submitBook = function() {
             const name = document.getElementById('book-name')?.value;
-            
-            if (!name) {
-                alert('Please enter your name');
-                return;
-            }
-            
-            let phone = '';
-            if (appState.bookPhoneInput) {
-                const number = appState.bookPhoneInput.getNumber();
-                if (number) {
-                    phone = number.replace(/\D/g, '');
-                } else {
-                    alert('Please enter a valid WhatsApp number');
-                    return;
-                }
-            } else {
-                phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
-                if (!phone) {
-                    alert('Please enter a valid WhatsApp number');
-                    return;
-                }
-            }
-            
-            const req = {
-                id: Date.now(),
-                account_id: appState.currentAccount.id,
-                account_title: appState.currentAccount.title,
-                user_name: name,
-                whatsapp: phone,
-                date: new Date().toISOString()
-            };
-            appState.bookRequests.push(req);
+            const phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+            if (!name || !phone) { alert('Please fill all fields'); return; }
+            appState.bookRequests.push({ id: Date.now(), account_id: appState.currentAccount.id, account_title: appState.currentAccount.title, user_name: name, whatsapp: phone, date: new Date().toISOString() });
             localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
-            
-            alert('✅ Booking submitted! We will contact you on WhatsApp.');
+            alert('✅ Booking submitted! We will contact you.');
             closeModal('book-modal');
         };
 
@@ -3376,11 +2311,10 @@
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
             appState.currentAccount = acc;
-            
             document.getElementById('buy-modal-body').innerHTML = `
                 <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
                 <p>Send exact USDT (TRC20) to:</p>
-                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem; margin:1rem 0; word-break:break-all;">${appState.usdtAddress}</code>
+                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code>
                 <button class="btn" onclick="copyUsdt()">Copy address</button>
             `;
             openModal('buy-modal');
@@ -3388,76 +2322,33 @@
 
         window.confirmBuyWhatsApp = function() {
             if (!appState.currentAccount) return;
-            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}. I have sent USDT.`;
+            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}`;
             window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
             closeModal('buy-modal');
         };
 
-        window.copyUsdt = function() {
-            navigator.clipboard.writeText(appState.usdtAddress);
-            alert('USDT address copied');
-        };
+        window.copyUsdt = function() { navigator.clipboard.writeText(appState.usdtAddress); alert('Copied!'); };
 
         window.infoAccount = function(id) {
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
-            
-            document.getElementById('info-modal-body').innerHTML = `
-                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                <p>${acc.desc || 'Premium PUBG account'}</p>
-                <p>💰 USD: $${acc.price_usd} | AFN: ${acc.price_afn}</p>
-                <p>✅ Includes email & password, full access.</p>
-            `;
+            document.getElementById('info-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>${acc.desc || 'Premium PUBG account'}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`;
             openModal('info-modal');
         };
 
-        // Admin Login
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
-            const loginBtn = document.querySelector('#admin-login-section .action-btn');
-            const originalText = loginBtn.innerHTML;
-            const errorDiv = document.getElementById('admin-error');
-            
-            if (!email || !pass) {
-                errorDiv.innerText = 'Please enter email and password';
-                return;
-            }
-            
-            loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
-            loginBtn.disabled = true;
-            errorDiv.innerText = '';
-            
+            if (!email || !pass) { alert('Enter credentials'); return; }
             try {
-                const authData = await pb.admins.authWithPassword(email, pass);
-                
+                await pb.admins.authWithPassword(email, pass);
                 appState.isAdminLoggedIn = true;
                 document.getElementById('admin-login-section').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
-                errorDiv.innerText = '';
-                
-                if (isConnected) {
-                    await loadAccountsFromPB();
-                    await loadContactsFromPB();
-                    await loadSettingsFromPB();
-                }
-                
                 document.getElementById('admin-account-count').innerText = appState.accounts.length;
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
-                
                 renderBookRequests();
-                
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                errorDiv.innerText = 'Invalid credentials or connection failed';
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-            }
+            } catch (error) { alert('Login failed'); }
         };
 
         window.logout = function() {
@@ -3468,87 +2359,60 @@
             switchScreen('main');
         };
 
-        window.openModal = function(id) {
-            document.getElementById(id).classList.remove('hidden');
-        };
-        
-        window.closeModal = function(id) {
-            document.getElementById(id).classList.add('hidden');
-            if (id === 'book-modal' && appState.bookPhoneInput) {
-                try {
-                    appState.bookPhoneInput.destroy();
-                } catch (e) {}
-                appState.bookPhoneInput = null;
-            }
-        };
-
-        function initPhoneInput() {
-            const input = document.querySelector('#contact-phone');
-            if (input && !appState.phoneInput) {
-                appState.phoneInput = intlTelInput(input, {
-                    initialCountry: 'af',
-                    separateDialCode: true,
-                    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js',
-                    dropdownContainer: document.body
-                });
-            }
-        }
+        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); };
+        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
 
         // ============================================
-        // TRACK VISITOR - FIXED for mobile IP tracking
+        // TRACK VISITOR
         // ============================================
         function trackVisitor() {
-            // Use multiple IP detection methods for reliability
             fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
-                    const ip = data.ip;
-                    
-                    // Create session ID based on IP + current minute
                     const minute = Math.floor(Date.now() / 60000);
-                    const sessionId = ip + '_' + minute;
-                    
-                    // Add to unique visitors set
-                    appState.uniqueVisitors.add(sessionId);
-                    
-                    // Count unique visitors in last 5 minutes
-                    const fiveMinutesAgo = Math.floor((Date.now() - 5 * 60 * 1000) / 60000);
+                    appState.uniqueVisitors.add(data.ip + '_' + minute);
+                    const fiveMinsAgo = Math.floor((Date.now() - 5*60*1000) / 60000);
                     let count = 0;
-                    appState.uniqueVisitors.forEach(id => {
-                        const timestamp = parseInt(id.split('_')[1]);
-                        if (timestamp >= fiveMinutesAgo) {
-                            count++;
-                        }
-                    });
-                    
+                    appState.uniqueVisitors.forEach(id => { if (parseInt(id.split('_')[1]) >= fiveMinsAgo) count++; });
                     appState.onlineCount = Math.max(1, count);
-                    
-                    // Update UI
-                    updateOnlineStatus(isConnected ? 'connected' : 'offline');
-                    
-                    // Store in localStorage for persistence
-                    localStorage.setItem('gk_visitors', JSON.stringify({
-                        count: appState.onlineCount,
-                        timestamp: Date.now()
-                    }));
-                })
-                .catch(() => {
-                    // Fallback if IP API fails
-                    appState.onlineCount = Math.floor(Math.random() * 5) + 1; // Random number 1-5
-                    updateOnlineStatus(isConnected ? 'connected' : 'offline');
-                });
+                    updateOnlineStatus(appState.isConnected ? 'connected' : 'offline');
+                }).catch(() => { appState.onlineCount = Math.floor(Math.random() * 5) + 1; updateOnlineStatus(appState.isConnected ? 'connected' : 'offline'); });
         }
 
-        // Load previous visitor count from localStorage
-        try {
-            const savedVisitors = localStorage.getItem('gk_visitors');
-            if (savedVisitors) {
-                const data = JSON.parse(savedVisitors);
-                if (Date.now() - data.timestamp < 5 * 60 * 1000) { // Less than 5 minutes old
-                    appState.onlineCount = data.count;
-                }
+        // ============================================
+        // PWA INSTALLATION
+        // ============================================
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            appState.deferredPrompt = e;
+            if (!isAppInstalled()) { document.getElementById('install-button').style.display = 'flex'; document.getElementById('install-banner').style.display = 'flex'; }
+        });
+        
+        function isAppInstalled() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+        
+        window.installApp = function() {
+            if (appState.deferredPrompt) { appState.deferredPrompt.prompt(); appState.deferredPrompt.userChoice.then(() => { appState.deferredPrompt = null; }); }
+            else { showInstallInstructions(); }
+        };
+        
+        function showInstallInstructions() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            document.getElementById('install-instructions').innerHTML = isIOS ? 
+                '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Share <i class="fas fa-share-alt"></i></span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Add to Home Screen"</span></div>' :
+                '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Menu (3 dots)</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Install App"</span></div>';
+            openModal('install-modal');
+        }
+        
+        window.closeInstallBanner = function() { document.getElementById('install-banner').style.display = 'none'; sessionStorage.setItem('banner_closed', 'true'); };
+        
+        if (isAppInstalled()) { document.getElementById('install-button').style.display = 'none'; document.getElementById('install-banner').style.display = 'none'; }
+        
+        setTimeout(() => {
+            if (!isAppInstalled() && !sessionStorage.getItem('banner_closed') && appState.deferredPrompt) {
+                document.getElementById('install-button').style.display = 'flex';
+                document.getElementById('install-banner').style.display = 'flex';
             }
-        } catch (e) {}
+        }, 2000);
 
         // ============================================
         // INITIALIZATION
@@ -3558,13 +2422,8 @@
         renderAdsSlider();
         renderContacts();
         renderAccounts();
-        
-        // Set active nav for main screen
-        document.getElementById('nav-main').classList.add('active');
-        
-        // Track visitor immediately and then every 30 seconds
         trackVisitor();
-        setInterval(trackVisitor, 30000);
+        setInterval(trackVisitor, 60000); // Update visitor count every minute
     </script>
 </body>
 </html>
