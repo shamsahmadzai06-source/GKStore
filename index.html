@@ -14,8 +14,13 @@
     <meta name="format-detection" content="telephone=no">
     
     <!-- Icons -->
-    <link rel="icon" type="image/png" sizes="72x72" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ec4899'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white' font-weight='bold'%3EGK%3C/text%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ec4899'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white' font-weight='bold'%3EGK%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" sizes="72x72" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-96-96.png">
+    <link rel="icon" type="image/png" sizes="144x144" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-144-144.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
+    
+    <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
     <link rel="manifest" href="manifest.json">
     
     <title>GK Store · PUBG accounts</title>
@@ -25,7 +30,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* [Previous CSS styles remain the same - keep all your existing styles] */
         * {
             margin: 0;
             padding: 0;
@@ -59,7 +63,85 @@
             padding-bottom: 80px;
         }
 
-        /* Video Player Styles - FIXED */
+        /* Notification Center Styles */
+        .notification-btn { position: relative; }
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .notification-center {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 400px;
+            background: var(--surface);
+            z-index: 10001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .notification-center.open { transform: translateX(0); }
+        .notification-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            background: var(--surface-light);
+        }
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .notification-item {
+            background: var(--surface-light);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--primary);
+            cursor: pointer;
+        }
+        .notification-item.read { opacity: 0.6; border-left-color: var(--text-secondary); }
+        .notification-title { font-weight: bold; font-size: 14px; }
+        .notification-message { font-size: 12px; color: var(--text-secondary); }
+        .notification-time { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+        .mark-read-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 12px;
+            cursor: pointer;
+        }
+        .empty-notifications { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            display: none;
+        }
+        .overlay.active { display: block; }
+
+        /* Video Player - FIXED for iOS/Android */
         .video-player {
             position: relative;
             width: 100%;
@@ -68,53 +150,24 @@
             border-radius: 12px;
             overflow: hidden;
         }
-        
         .video-player video {
             width: 100%;
             height: 100%;
             object-fit: contain;
             background: #000;
         }
-        
         .video-loading-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            padding: 12px 24px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
             border-radius: 30px;
             color: white;
             font-size: 14px;
             z-index: 10;
             display: none;
-            white-space: nowrap;
-        }
-        
-        .video-error-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            z-index: 10;
-            gap: 12px;
-        }
-        
-        .retry-video-btn {
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 14px;
         }
         
         /* Swipe Ads */
@@ -127,13 +180,11 @@
             position: relative;
             touch-action: pan-y pinch-zoom;
         }
-        
         .slider-container {
             position: relative;
             width: 100%;
             overflow: hidden;
         }
-        
         .slider-track {
             display: flex;
             overflow-x: auto;
@@ -144,11 +195,9 @@
             background: #111;
             touch-action: pan-y pinch-zoom;
         }
-        
         .slider-track::-webkit-scrollbar {
             display: none;
         }
-        
         .slide {
             flex: 0 0 100%;
             scroll-snap-align: start;
@@ -157,13 +206,16 @@
             background: #000;
             touch-action: pan-y pinch-zoom;
         }
-        
-        .slide img, .slide video {
+        .slide img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+        .slide video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
         .slide-caption {
             position: absolute;
             bottom: 0;
@@ -176,7 +228,6 @@
             z-index: 5;
             pointer-events: none;
         }
-        
         .slider-dots {
             display: flex;
             justify-content: center;
@@ -184,7 +235,6 @@
             padding: 12px;
             background: var(--surface-light);
         }
-        
         .dot {
             width: 8px;
             height: 8px;
@@ -193,27 +243,174 @@
             transition: 0.2s;
             cursor: pointer;
         }
-        
         .dot.active {
             background: var(--primary);
             width: 24px;
         }
-        
-        /* Keep all other existing styles from your original file */
-        .top-nav, .bottom-nav, .container, .account-card, .modal, etc {
-            /* Your existing styles */
-        }
-        
-        /* Add this for better mobile video handling */
-        @media (max-width: 768px) {
-            .video-player video {
-                object-fit: contain;
+
+        /* PWA Standalone Mode Styles */
+        @media all and (display-mode: standalone) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .install-btn-fixed, .install-banner, .ios-install-banner {
+                display: none !important;
             }
         }
-        
-        /* Hide all other styles from your original - paste your full CSS here */
-        /* ... (include all your existing CSS from the original file) ... */
-        
+
+        /* iOS specific install banner */
+        .ios-install-banner {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            margin: 12px;
+            position: sticky;
+            top: 10px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .ios-install-banner .banner-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ios-install-banner .banner-title i {
+            font-size: 24px;
+        }
+
+        .ios-install-banner .banner-steps {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 12px 0;
+            padding-left: 34px;
+        }
+
+        .ios-install-banner .banner-steps li {
+            margin: 6px 0;
+        }
+
+        .ios-share-sim {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #3a3a4a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin: 8px 0;
+        }
+
+        .close-ios-banner {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 25px;
+            color: white;
+            font-size: 13px;
+            margin-top: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* Install Banner */
+        .install-banner {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        .banner-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .banner-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .banner-text {
+            font-weight: 600;
+        }
+
+        .banner-text small {
+            font-size: 12px;
+            opacity: 0.9;
+            display: block;
+        }
+
+        .banner-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .banner-btn {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .banner-btn i {
+            font-size: 16px;
+        }
+
+        .banner-close {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        body[dir="rtl"] {
+            font-family: 'Segoe UI', 'Tahoma', 'Vazirmatn', sans-serif;
+        }
+
         .top-nav {
             background: rgba(22, 22, 31, 0.98);
             backdrop-filter: blur(8px);
@@ -226,7 +423,7 @@
             align-items: center;
             justify-content: space-between;
         }
-        
+
         .logo {
             display: flex;
             align-items: center;
@@ -235,7 +432,7 @@
             font-size: 1.2rem;
             cursor: pointer;
         }
-        
+
         .logo-icon {
             width: 2.2rem;
             height: 2.2rem;
@@ -245,7 +442,7 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .nav-actions {
             display: flex;
             gap: 8px;
@@ -267,6 +464,18 @@
             position: relative;
         }
         
+        .nav-btn:hover {
+            background: var(--surface-lighter);
+            transform: scale(0.98);
+        }
+        
+        .update-btn {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+        }
+
+        /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -281,7 +490,7 @@
             z-index: 1000;
             padding-bottom: max(8px, env(safe-area-inset-bottom));
         }
-        
+
         .bottom-nav-btn {
             display: flex;
             flex-direction: column;
@@ -297,48 +506,171 @@
             transition: all 0.2s;
             font-weight: 500;
         }
-        
+
         .bottom-nav-btn i {
             font-size: 20px;
         }
-        
+
         .bottom-nav-btn.active {
             color: var(--primary);
             background: rgba(236, 72, 153, 0.1);
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 16px;
             padding-bottom: 80px;
         }
-        
+
         .screen {
             display: none;
         }
-        
+
         .screen.active {
             display: block;
         }
-        
+
+        #main-screen .main-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .title-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .big-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+
+        .online-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(22, 22, 31, 0.9);
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .status-dot-badge {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot-badge.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .status-dot-badge.offline {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .status-text-badge {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .online-count-badge {
+            color: var(--primary);
+            font-weight: 700;
+            background: var(--surface-lighter);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 4px;
+        }
+
+        .sub-head {
+            color: var(--text-secondary);
+        }
+
+        .cta-button {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 1.2rem 1.5rem;
+            border-radius: 60px;
+            width: 100%;
+            max-width: 500px;
+            margin: 1.5rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(236,72,153,0.4);
+            cursor: pointer;
+        }
+
+        .tier-header {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
+
+        .tier-tab {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.7rem 1rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1 0 auto;
+            text-align: center;
+        }
+
+        .tier-tab.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        .tier-tab[data-tier="small"].active { background: var(--gradient-small); }
+        .tier-tab[data-tier="medium"].active { background: var(--gradient-medium); }
+        .tier-tab[data-tier="big"].active { background: var(--gradient-big); }
+
         .accounts-grid {
             display: grid;
             gap: 1rem;
             grid-template-columns: 1fr;
         }
-        
+
         @media (min-width: 640px) {
             .accounts-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        
+
         .account-card {
             background: var(--surface);
             border-radius: 1rem;
             border: 1px solid var(--border);
             overflow: hidden;
         }
-        
+
         .card-media {
             width: 100%;
             aspect-ratio: 16/9;
@@ -347,11 +679,15 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-        
+
+        .card-media:hover {
+            transform: scale(1.02);
+        }
+
         .card-content {
             padding: 1rem;
         }
-        
+
         .card-title {
             font-size: 1.1rem;
             font-weight: 700;
@@ -360,13 +696,13 @@
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-        
+
         .card-desc {
             color: var(--text-secondary);
             font-size: 0.9rem;
             margin: 0.5rem 0;
         }
-        
+
         .price-row {
             display: flex;
             justify-content: space-between;
@@ -375,16 +711,16 @@
             border-radius: 2rem;
             margin: 0.5rem 0;
         }
-        
+
         .usd-price { color: var(--primary); }
         .afn-price { color: var(--secondary); }
-        
+
         .action-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 0.3rem;
         }
-        
+
         .action-btn {
             background: var(--surface-light);
             border: 1px solid var(--border);
@@ -400,57 +736,18 @@
             color: var(--text);
             transition: 0.2s;
         }
-        
+
         .action-btn.buy {
             background: var(--gradient-primary);
             border: none;
             color: white;
         }
-        
-        .tier-badge {
-            display: inline-block;
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
+
+        .action-btn.buy:hover {
+            transform: scale(0.95);
         }
-        
-        .tier-badge.small { background: var(--gradient-small); color: white; }
-        .tier-badge.medium { background: var(--gradient-medium); color: white; }
-        .tier-badge.big { background: var(--gradient-big); color: white; }
-        
-        .modal-overlay {
-            position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
-            z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
-        }
-        
-        .modal {
-            background:var(--surface); border-radius:1.5rem; max-width:500px; width:100%; border:1px solid var(--border);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            padding:1rem;
-            border-bottom:1px solid var(--border);
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        }
-        
-        .modal-close {
-            background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;
-        }
-        
-        .modal-body { padding:1rem; }
-        .modal-footer { padding:1rem; display:flex; gap:0.8rem; }
-        
-        .btn {
-            padding:0.8rem 1.5rem; border-radius:2rem; font-weight:600; border:none; cursor:pointer; flex:1;
-            background: var(--surface-light); color:white; border:1px solid var(--border);
-        }
-        
-        .btn-primary { background:var(--gradient-primary); color:white; border:none; }
+
+        .hidden { display: none !important; }
         
         .input { 
             width:100%; 
@@ -461,9 +758,90 @@
             color:white; 
             margin-bottom:0.8rem; 
         }
-        
-        .hidden { display: none !important; }
-        
+
+        .tier-badge {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .tier-badge.small { background: var(--gradient-small); color: white; }
+        .tier-badge.medium { background: var(--gradient-medium); color: white; }
+        .tier-badge.big { background: var(--gradient-big); color: white; }
+
+        .user-card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .user-card .count {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .visitor-stats {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .online-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-overlay {
+            position: fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px);
+            z-index:2000; display:flex; align-items:center; justify-content:center; padding:1rem;
+        }
+
+        .modal {
+            background:var(--surface); border-radius:1.5rem; max-width:500px; width:100%; border:1px solid var(--border);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding:1rem;
+            border-bottom:1px solid var(--border);
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .modal-header h3 { font-size:1.2rem; }
+        .modal-close { background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; }
+
+        .modal-body { padding:1rem; }
+        .modal-footer { padding:1rem; display:flex; gap:0.8rem; }
+
+        .btn {
+            padding:0.8rem 1.5rem; border-radius:2rem; font-weight:600; border:none; cursor:pointer; flex:1;
+            background: var(--surface-light); color:white; border:1px solid var(--border);
+        }
+
+        .btn-primary { background:var(--gradient-primary); color:white; border:none; }
+        .whatsapp-btn { background: #25D366; color:white; border:none; }
+
+        /* Install Button */
         .install-btn-fixed {
             position: fixed;
             bottom: 80px;
@@ -484,109 +862,709 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: pulse-install 2s infinite;
         }
-        
-        .install-banner {
-            background: var(--gradient-primary);
-            color: white;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+
+        .install-btn-fixed i {
+            font-size: 20px;
         }
-        
-        .ios-install-banner {
+
+        .install-btn-fixed:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 30px rgba(236,72,153,0.8);
+        }
+
+        @keyframes pulse-install {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* intl-tel-input */
+        .iti {
+            width: 100%;
+            margin-bottom: 0.8rem;
+            z-index: 2001;
+        }
+        .iti__selected-flag {
+            background: var(--surface-lighter) !important;
+            border-radius: 12px 0 0 12px;
+        }
+        .iti__country-list {
             background: var(--surface);
             border: 1px solid var(--border);
+            max-width: 300px;
+            z-index: 99999 !important;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 12px;
+        }
+
+        .book-request-item {
+            background: var(--surface-light);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border: 1px solid var(--border);
+        }
+        .book-request-item .label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: inline-block;
+            width: 80px;
+        }
+        .btn-wa {
+            background: #25D366;
             color: white;
-            padding: 16px;
-            border-radius: 16px;
-            margin: 12px;
-            position: sticky;
-            top: 10px;
-            z-index: 1000;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 2rem;
+            width: 100%;
+            margin-top: 0.5rem;
+            cursor: pointer;
+        }
+
+        .media-preview {
+            width: 100%;
+            min-height: 150px;
+            border-radius: 12px;
+            border: 2px dashed var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: var(--surface-lighter);
+        }
+        
+        .media-preview img, .media-preview video {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+        
+        .media-preview i {
+            font-size: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .upload-progress {
+            width: 100%;
+            height: 8px;
+            background: var(--surface-lighter);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .upload-progress.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+
+        .upload-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(236,72,153,0.4);
+        }
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+        
+        .refresh-indicator i {
+            font-size: 0.6rem;
+            animation: spin 2s linear infinite;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--surface-lighter);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        @media (max-width: 768px) {
+            .card-media {
+                object-fit: contain;
+                background: #000;
+            }
+            
+            video.card-media {
+                max-height: 100%;
+                width: 100%;
+                background: #000;
+            }
+            
+            .action-btn {
+                min-height: 44px;
+                font-size: 0.8rem;
+            }
+            
+            .title-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .big-title {
+                font-size: 2rem;
+            }
+            
+            .bottom-nav-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
+            .bottom-nav-btn i {
+                font-size: 18px;
+            }
+        }
+        
+        .fullscreen-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.98);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .fullscreen-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .fullscreen-image-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            touch-action: none;
+        }
+        
+        #fullscreen-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transform-origin: 0 0;
+            cursor: grab;
+            transition: transform 0.1s ease;
+        }
+        
+        #fullscreen-image:active {
+            cursor: grabbing;
+        }
+        
+        .fullscreen-modal .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10001;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .fullscreen-modal .zoom-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(22, 22, 31, 0.9);
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        
+        .zoom-controls button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+            background: var(--surface-light);
+        }
+        
+        .zoom-controls button:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+        
+        .zoom-controls button:active {
+            transform: scale(0.95);
+        }
+        
+        .zoom-controls .zoom-level {
+            min-width: 70px;
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .video-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: rgba(236,72,153,0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .retry-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        
+        .install-instructions {
+            background: var(--surface-lighter);
+            padding: 1rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .install-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .install-step:last-child {
+            border-bottom: none;
+        }
+        
+        .install-step .step-number {
+            width: 28px;
+            height: 28px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .install-step .step-text {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+        
+        .platform-badge {
+            display: inline-block;
+            background: var(--surface);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 0 4px;
+            border: 1px solid var(--border);
         }
     </style>
 </head>
-<body>
-    <!-- Your existing HTML structure remains the same -->
+<body dir="ltr">
+    <!-- Notification Center -->
+    <div class="overlay" id="notification-overlay" onclick="closeNotificationCenter()"></div>
+    <div class="notification-center" id="notification-center">
+        <div class="notification-header">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <button onclick="closeNotificationCenter()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notification-list" id="notification-list">
+            <div class="empty-notifications">No notifications</div>
+        </div>
+        <button class="mark-read-btn" onclick="markAllNotificationsRead()">Mark all as read</button>
+    </div>
+    
+    <!-- iOS Install Banner -->
+    <div id="ios-install-banner" class="ios-install-banner" style="display: none;">
+        <div class="banner-title">
+            <i class="fab fa-apple"></i>
+            <span>Install GK Store on iPhone/iPad</span>
+        </div>
+        <div class="ios-share-sim">
+            <i class="fas fa-share-alt"></i> Share
+            <i class="fas fa-arrow-right"></i>
+            <i class="fas fa-plus-circle"></i> Add to Home Screen
+        </div>
+        <ul class="banner-steps">
+            <li>1️⃣ Tap the <strong>Share</strong> button <i class="fas fa-share-alt"></i> at the bottom</li>
+            <li>2️⃣ Scroll down and tap <strong>"Add to Home Screen"</strong> <i class="fas fa-plus-circle"></i></li>
+            <li>3️⃣ Tap <strong>"Add"</strong> in the top right corner</li>
+        </ul>
+        <button class="close-ios-banner" onclick="closeIOSBanner()">
+            <i class="fas fa-times"></i> Don't show again
+        </button>
+    </div>
+
+    <!-- Install Banner - For Android -->
+    <div id="install-banner" class="install-banner" style="display: none;">
+        <div class="banner-content">
+            <div class="banner-icon">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="banner-text">
+                <strong>Install GK Store</strong>
+                <small>Get native app experience</small>
+            </div>
+        </div>
+        <div class="banner-actions">
+            <button class="banner-btn" id="banner-install-btn" onclick="installApp()">
+                <i class="fas fa-download"></i> Install
+            </button>
+            <button class="banner-close" onclick="closeInstallBanner()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- top nav -->
     <div class="top-nav">
         <div class="logo" onclick="playClickSound(); switchScreen('main')">
             <div class="logo-icon">GK</div>
-            <span>GK Store</span>
+            <span class="brand-text" data-i18n="brand">GK Store</span>
         </div>
+        
         <div class="nav-actions">
-            <button class="nav-btn" onclick="playClickSound(); switchScreen('admin')"><i class="fas fa-user-shield"></i></button>
+            <button class="nav-btn notification-btn" id="notification-btn" onclick="playClickSound(); openNotificationCenter()">
+                <i class="fas fa-bell"></i>
+                <span id="notification-badge" class="notification-badge" style="display: none;">0</span>
+            </button>
+            <button class="nav-btn update-btn" id="update-btn" onclick="playClickSound(); checkForUpdates()">
+                <i class="fas fa-sync-alt"></i>
+                <span data-i18n="update">Update</span>
+            </button>
+            <button class="nav-btn" onclick="playClickSound(); openLanguageModal()">
+                <i class="fa fa-globe"></i>
+                <span class="lang-text" data-i18n="lang">Lang</span>
+            </button>
         </div>
     </div>
+
+    <!-- Install Button - Fixed at bottom -->
+    <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="playClickSound(); installApp()">
+        <i class="fas fa-download"></i> 
+        <span id="install-text">Install GK Store</span>
+        <i class="fas fa-mobile-alt"></i>
+    </button>
 
     <div class="container">
+        <!-- MAIN SCREEN -->
         <div id="main-screen" class="screen active">
-            <div class="swipe-ads" id="ads-slider"></div>
-            <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="switchScreen('accounts')">View Accounts</button>
+            <div class="main-layout">
+                <div class="title-section">
+                    <h1 class="big-title main-title" data-i18n="mainTitle">PUBG Marketplace</h1>
+                    
+                    <div class="online-status-badge" id="online-status-badge">
+                        <div id="status-dot-badge" class="status-dot-badge"></div>
+                        <span id="status-text-badge" class="status-text-badge">Connecting...</span>
+                        <span id="online-count-badge" class="online-count-badge">0</span>
+                    </div>
+                </div>
+                
+                <div class="sub-head main-subtitle" data-i18n="mainSubtitle">Secure · Instant delivery</div>
+                
+                <button class="cta-button" onclick="playClickSound(); switchScreen('accounts')">
+                    <i class="fa fa-gamepad"></i> <span class="cta-text" data-i18n="cta">Click to see PUBG account</span>
+                </button>
+                
+                <div class="swipe-ads" id="ads-slider"></div>
+                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;" data-i18n="sliderHint">— swipe ads (auto change 2s) —</p>
+            </div>
         </div>
 
+        <!-- ACCOUNT BROWSER SCREEN -->
         <div id="accounts-screen" class="screen">
+            <h2 class="accounts-title" style="margin-bottom:1rem;" data-i18n="accountsTitle">PUBG Accounts</h2>
             <div class="tier-header" id="tier-tabs">
-                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')">All</button>
-                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')">Small</button>
-                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')">Medium</button>
-                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')">Big</button>
+                <button class="tier-tab active" data-tier="all" onclick="playClickSound(); filterAccounts('all')"><span data-i18n="all">All</span></button>
+                <button class="tier-tab" data-tier="small" onclick="playClickSound(); filterAccounts('small')"><span data-i18n="small">Small PUBG</span></button>
+                <button class="tier-tab" data-tier="medium" onclick="playClickSound(); filterAccounts('medium')"><span data-i18n="medium">Medium PUBG</span></button>
+                <button class="tier-tab" data-tier="big" onclick="playClickSound(); filterAccounts('big')"><span data-i18n="big">Big PUBG</span></button>
             </div>
-            <div id="accounts-grid" class="accounts-grid"></div>
+            <div id="accounts-grid" class="accounts-grid">
+                <div style="text-align:center; padding:2rem; color:var(--text-secondary);">
+                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
+                    <p>Loading accounts...</p>
+                </div>
+            </div>
         </div>
 
+        <!-- CONTACT SCREEN -->
+        <div id="contact-screen" class="screen">
+            <h2 class="contact-title" style="margin-bottom:1rem;" data-i18n="contactTitle">Contact & Support</h2>
+            <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr;"></div>
+        </div>
+
+        <!-- ADMIN SCREEN -->
         <div id="admin-screen" class="screen">
-            <div id="admin-login-section">
-                <input type="email" id="admin-email" class="input" placeholder="Email" value="shamsahmadzai06@gmail.com">
-                <input type="password" id="admin-password" class="input" placeholder="Password">
-                <button class="btn-primary" style="width:100%;" onclick="adminLogin()">Login</button>
-            </div>
-            <div id="admin-dashboard" class="hidden">
-                <button class="btn-primary" style="width:100%; margin-bottom:10px;" onclick="showAddAccountModal()">Add Account</button>
-                <button class="btn-primary" style="width:100%;" onclick="logout()">Logout</button>
+            <h2 class="admin-title" style="margin-bottom:1rem;" data-i18n="adminTitle">Admin Panel</h2>
+            <div style="max-width:600px; margin:0 auto;">
+                <!-- Login Section -->
+                <div id="admin-login-section" class="account-card" style="padding:1.5rem;">
+                    <h3 class="login-title" data-i18n="loginTitle">Admin Login</h3>
+                    <input type="email" id="admin-email" class="input" placeholder="your@email.com" value="shamsahmadzai06@gmail.com">
+                    <input type="password" id="admin-password" class="input" placeholder="Enter your password">
+                    <button class="action-btn buy" style="width:100%;" onclick="playClickSound(); adminLogin()">
+                        <span data-i18n="loginBtn">Login</span>
+                    </button>
+                    <div id="admin-error" style="color:#ef4444; margin-top:0.5rem;"></div>
+                </div>
+                
+                <!-- Admin Dashboard -->
+                <div id="admin-dashboard" class="hidden">
+                    <!-- Auto-Refresh Toggle -->
+                    <div class="account-card" style="padding:1rem; margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <i class="fa fa-sync-alt" style="color: var(--primary);"></i>
+                            <span style="margin-left:5px;" data-i18n="autoRefresh">Auto-refresh</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="auto-refresh-toggle" checked onchange="playClickSound(); toggleAutoRefresh()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="visitor-stats">
+                        <div class="user-card">
+                            <span class="online-indicator"></span>
+                            <div class="count" id="online-user-count">0</div>
+                            <div class="label" data-i18n="onlineUsers">ONLINE NOW</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin:1rem 0;">
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <span id="admin-account-count">0</span> <span data-i18n="accountsStat">accounts</span>
+                        </div>
+                        <div class="account-card" style="padding:1rem; text-align:center;">
+                            <span id="admin-bookings-count">0</span> <span data-i18n="bookingsStat">book requests</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Book Requests List -->
+                    <div class="account-card" style="padding:1rem; margin:1rem 0;">
+                        <h3 style="margin-bottom:1rem;" data-i18n="bookRequestsTitle">📋 Book Requests</h3>
+                        <div id="admin-book-requests-list" style="max-height:300px; overflow-y:auto;"></div>
+                    </div>
+                    
+                    <!-- USDT Address -->
+                    <div class="account-card" style="padding:1rem; margin:1rem 0;">
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <h3>💳 USDT Address</h3>
+                            <button class="action-btn" style="padding:0.3rem 1rem;" onclick="playClickSound(); showEditUsdtModal()">
+                                <i class="fa fa-edit"></i> <span data-i18n="edit">Edit</span>
+                            </button>
+                        </div>
+                        <code id="current-usdt-address" style="display:block; background:#2a2a36; padding:0.8rem; border-radius:1rem; word-break:break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                    </div>
+                    
+                    <!-- Management Buttons -->
+                    <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                        <button class="action-btn buy" onclick="playClickSound(); showAddAccountModal()">
+                            <i class="fa fa-plus-circle"></i> <span data-i18n="addAccountBtn">Add New Account</span>
+                        </button>
+                        <button class="action-btn buy" onclick="playClickSound(); showManageAccountsModal()">
+                            <i class="fa fa-edit"></i> <span data-i18n="manageAccountsBtn">Manage Accounts (Delete)</span>
+                        </button>
+                        <button class="action-btn buy" onclick="playClickSound(); showManageContactsModal()">
+                            <i class="fab fa-whatsapp"></i> <span data-i18n="manageContactsBtn">Manage Contacts</span>
+                        </button>
+                        <button class="action-btn buy" onclick="playClickSound(); showManageAdsModal()">
+                            <i class="fa fa-image"></i> <span data-i18n="manageAdsBtn">Manage Swipe Ads</span>
+                        </button>
+                        <button class="action-btn" onclick="playClickSound(); logout()">
+                            <i class="fa fa-sign-out"></i> <span data-i18n="logoutBtn">Logout</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
-        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span>Accounts</span></button>
-        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button>
+        <button class="bottom-nav-btn" id="nav-main" onclick="playClickSound(); switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="playClickSound(); switchScreen('contact')"><i class="fab fa-whatsapp"></i><span data-i18n="contact">Contact</span></button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="playClickSound(); switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
     <!-- Modals -->
-    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header"><h3>Add Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div>
-            <div class="modal-body">
-                <select id="account-tier" class="input"><option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option></select>
-                <input type="text" id="account-title" class="input" placeholder="Title">
-                <textarea id="account-description" class="input" placeholder="Description"></textarea>
-                <input type="number" id="account-price-usd" class="input" placeholder="USD Price">
-                <input type="number" id="account-price-afn" class="input" placeholder="AFN Price">
-                <div class="media-preview" id="media-preview" style="background:#2a2a36; border-radius:12px; padding:20px; text-align:center;"><i class="fas fa-cloud-upload-alt"></i></div>
-                <input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()">
-                <button class="btn-primary" style="width:100%;" id="upload-btn" onclick="uploadNewAccount()" disabled>Upload</button>
-            </div>
-        </div>
-    </div>
+    <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="playClickSound(); closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); saveUsdtAddress()">Save</button></div></div></div>
+
+    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Add New Account</h3><button class="modal-close" onclick="playClickSound(); closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr;"><input type="number" id="account-price-usd" class="input" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="upload-progress" id="upload-progress"><div class="progress-bar"></div></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="playClickSound(); uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
+
+    <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="playClickSound(); closeModal('manage-accounts-modal')">&times;</button></div><div class="modal-body"><div id="admin-accounts-list"></div></div></div></div>
+
+    <div id="manage-contacts-modal" class="modal-overlay hidden" onclick="closeModal('manage-contacts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Contacts</h3><button class="modal-close" onclick="playClickSound(); closeModal('manage-contacts-modal')">&times;</button></div><div class="modal-body"><input type="text" id="contact-name" class="input" placeholder="Contact Name"><input type="tel" id="contact-phone" class="input" placeholder="Phone Number"><textarea id="contact-desc" class="input" rows="2" placeholder="Description"></textarea><button class="btn-primary" style="width:100%;" onclick="playClickSound(); saveNewContact()">Save Contact</button><div id="admin-contacts-list" style="margin-top:1rem;"></div></div></div></div>
+
+    <div id="manage-ads-modal" class="modal-overlay hidden" onclick="closeModal('manage-ads-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Ads</h3><button class="modal-close" onclick="playClickSound(); closeModal('manage-ads-modal')">&times;</button></div><div class="modal-body"><select id="ad-type" class="input"><option value="image">Image</option><option value="video">Video</option></select><div class="media-preview" id="ad-preview"><i class="fa fa-cloud-upload-alt"></i></div><input type="file" id="ad-media-file" class="input" accept="image/*,video/*" onchange="previewAdMedia()"><input type="text" id="ad-caption" class="input" placeholder="Caption"><button class="btn-primary" style="width:100%;" onclick="playClickSound(); saveNewAd()">Add Ad</button><div id="admin-ads-list" style="margin-top:1rem;"></div></div></div></div>
+
+    <div id="book-modal" class="modal-overlay hidden" onclick="closeModal('book-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Book account</h3><button class="modal-close" onclick="playClickSound(); closeModal('book-modal')">&times;</button></div><div class="modal-body" id="book-modal-body"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('book-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); submitBook()">Confirm</button></div></div></div>
+
+    <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Buy with USDT</h3><button class="modal-close" onclick="playClickSound(); closeModal('buy-modal')">&times;</button></div><div class="modal-body" id="buy-modal-body"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('buy-modal')">Cancel</button><button class="whatsapp-btn" onclick="playClickSound(); confirmBuyWhatsApp()">Confirm via WhatsApp</button></div></div></div>
+
+    <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Account details</h3><button class="modal-close" onclick="playClickSound(); closeModal('info-modal')">&times;</button></div><div class="modal-body" id="info-modal-body"></div></div></div>
+
+    <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Select language</h3><button class="modal-close" onclick="playClickSound(); closeModal('language-modal')">&times;</button></div><div class="modal-body"><button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="playClickSound(); setLanguage('en')">English</button><button class="btn" style="width:100%; margin-bottom:0.5rem;" onclick="playClickSound(); setLanguage('ps')">پښتو</button><button class="btn" style="width:100%;" onclick="playClickSound(); setLanguage('fa')">فارسی</button></div></div></div>
+
+    <div id="install-modal" class="modal-overlay hidden" onclick="closeModal('install-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Install as App</h3><button class="modal-close" onclick="playClickSound(); closeModal('install-modal')">&times;</button></div><div class="modal-body"><div class="install-instructions" id="install-instructions"></div></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('install-modal')">Close</button></div></div></div>
+
+    <div id="fullscreen-image-modal" class="fullscreen-modal"><div class="fullscreen-content"><span class="close-btn" onclick="playClickSound(); closeFullscreenImage()">&times;</span><img id="fullscreen-image" src=""><div class="zoom-controls"><button onclick="playClickSound(); zoomImage('out')"><i class="fa fa-search-minus"></i></button><span class="zoom-level" id="zoom-level">1.0x</span><button onclick="playClickSound(); zoomImage('in')"><i class="fa fa-search-plus"></i></button><button onclick="playClickSound(); resetZoom()"><i class="fa fa-undo"></i></button></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
     <script>
         // ============================================
-        // UPDATED VIDEO PLAYER - FIXED FOR iOS & Android
+        // FIXED VIDEO PLAYER FOR iOS/Android
         // ============================================
         async function setupVideoPlayer(container, videoUrl) {
             if (!container) return;
-            
-            // Clear container
             container.innerHTML = '';
             
-            // Create video element
+            const wrapper = document.createElement('div');
+            wrapper.className = 'video-player';
+            wrapper.style.position = 'relative';
+            wrapper.style.width = '100%';
+            wrapper.style.height = '100%';
+            
             const video = document.createElement('video');
             video.controls = true;
             video.playsInline = true;
@@ -597,78 +1575,64 @@
             video.style.objectFit = 'contain';
             video.style.backgroundColor = '#000';
             
-            // Create loading overlay
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'video-loading-overlay';
-            loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-            loadingDiv.style.display = 'flex';
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'video-loading-overlay';
+            loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading video...';
+            loadingOverlay.style.display = 'flex';
             
-            container.appendChild(video);
-            container.appendChild(loadingDiv);
+            wrapper.appendChild(video);
+            wrapper.appendChild(loadingOverlay);
+            container.appendChild(wrapper);
             
-            // Set up error handling
             let retryCount = 0;
-            const maxRetries = 2;
+            const maxRetries = 3;
             
-            function handleError() {
-                if (retryCount < maxRetries) {
-                    retryCount++;
-                    console.log(`Retry ${retryCount}/${maxRetries} for video`);
-                    setTimeout(() => {
-                        loadVideo();
-                    }, 1000);
-                } else {
-                    loadingDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Video unavailable<br><button class="retry-video-btn" onclick="this.parentElement.parentElement.querySelector(\'video\').load()">Retry</button>';
-                    loadingDiv.style.display = 'flex';
-                }
-            }
-            
-            async function loadVideo() {
-                loadingDiv.style.display = 'flex';
-                loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            function loadVideo() {
+                loadingOverlay.style.display = 'flex';
+                loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading video...';
                 
-                try {
-                    // For cross-origin videos, use fetch with blob for better compatibility
-                    const response = await fetch(videoUrl, {
-                        mode: 'cors',
-                        cache: 'force-cache'
-                    });
-                    
+                // Try fetch with blob for better cross-origin support
+                fetch(videoUrl, {
+                    mode: 'cors',
+                    cache: 'force-cache'
+                })
+                .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok');
-                    
-                    const blob = await response.blob();
+                    return response.blob();
+                })
+                .then(blob => {
                     const blobUrl = URL.createObjectURL(blob);
-                    
                     video.src = blobUrl;
                     
                     video.oncanplay = () => {
-                        loadingDiv.style.display = 'none';
-                        // Clean up blob URL after video loads
+                        loadingOverlay.style.display = 'none';
+                        // Clean up blob URL after 10 seconds
                         setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
                     };
                     
                     video.onerror = () => {
                         URL.revokeObjectURL(blobUrl);
-                        handleError();
+                        if (retryCount < maxRetries) {
+                            retryCount++;
+                            console.log(`Retry ${retryCount}/${maxRetries}`);
+                            setTimeout(loadVideo, 1000);
+                        } else {
+                            loadingOverlay.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Video unavailable<br><button class="retry-btn" onclick="this.parentElement.parentElement.querySelector(\'video\').load()">Retry</button>';
+                        }
                     };
-                    
-                    video.onwaiting = () => {
-                        loadingDiv.style.display = 'flex';
-                        loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buffering...';
-                    };
-                    
-                    video.onplaying = () => {
-                        loadingDiv.style.display = 'none';
-                    };
-                    
-                } catch (error) {
-                    console.error('Video fetch error:', error);
-                    handleError();
-                }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        setTimeout(loadVideo, 1000);
+                    } else {
+                        loadingOverlay.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Network error<br><button class="retry-btn" onclick="location.reload()">Retry</button>';
+                    }
+                });
             }
             
-            // Start loading
-            await loadVideo();
+            loadVideo();
             
             // Handle autoplay
             video.muted = true;
@@ -689,25 +1653,7 @@
         }
 
         // ============================================
-        // CONFIGURATION
-        // ============================================
-        const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
-        const PB_URL = CLOUDFLARE_URL;
-        const pb = new PocketBase(PB_URL);
-        
-        // App state
-        let accounts = [];
-        let currentFilter = 'all';
-        let isAdminLoggedIn = false;
-        let currentMediaData = null;
-        
-        // Load from localStorage
-        if (localStorage.getItem('gk_accounts')) {
-            try { accounts = JSON.parse(localStorage.getItem('gk_accounts')); } catch(e) {}
-        }
-        
-        // ============================================
-        // CORE FUNCTIONS
+        // CLICK SOUND
         // ============================================
         function playClickSound() {
             try {
@@ -726,325 +1672,428 @@
                 }
             } catch(e) {}
         }
+
+        // ============================================
+        // COMPLETE TRANSLATIONS
+        // ============================================
+        const translations = {
+            en: {
+                brand: 'GK Store', lang: 'Lang', update: 'Update', contact: 'Contact', admin: 'Admin',
+                mainTitle: 'PUBG Marketplace', mainSubtitle: 'Secure · Instant delivery',
+                cta: 'Click to see PUBG account', sliderHint: '— swipe ads (auto change 2s) —',
+                all: 'All', small: 'Small PUBG', medium: 'Medium PUBG', big: 'Big PUBG',
+                accountsTitle: 'PUBG Accounts', contactTitle: 'Contact & Support', adminTitle: 'Admin Panel',
+                loginTitle: 'Admin Login', loginBtn: 'Login', onlineUsers: 'ONLINE NOW',
+                accountsStat: 'accounts', bookingsStat: 'book requests', bookRequestsTitle: '📋 Book Requests',
+                addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts (Delete)',
+                manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads', logoutBtn: 'Logout',
+                edit: 'Edit', autoRefresh: 'Auto-refresh', contactViaWA: 'Contact via WhatsApp',
+                yourName: 'Your name', whatsappNumber: 'WhatsApp number', chatNow: 'Chat Now', delete: 'Delete'
+            },
+            ps: {
+                brand: 'جي کې پلورنځی', lang: 'ژبه', update: 'تازه کول', contact: 'اړیکه', admin: 'مدیر',
+                mainTitle: 'PUBG بازار', mainSubtitle: 'خوندي · سمدستي سپارل',
+                cta: 'د PUBG اکونټونو لیدو لپاره کلیک وکړئ', sliderHint: '— اعلاناتو ته سوپ ورکړئ (په هر ۲ ثانیو کې بدلون) —',
+                all: 'ټول', small: 'وړوکی PUBG', medium: 'منځنی PUBG', big: 'غټPUBG',
+                accountsTitle: 'PUBG اکونټونه', contactTitle: 'اړیکه او ملاتړ', adminTitle: 'مدیر پینل',
+                loginTitle: 'مدیر ننوتل', loginBtn: 'ننوتل', onlineUsers: 'آنلاین اوس',
+                accountsStat: 'اکونټونه', bookingsStat: 'بوک غوښتنې', bookRequestsTitle: '📋 د بوک غوښتنې',
+                addAccountBtn: 'نوی اکونټ اضافه کړئ', manageAccountsBtn: 'اکونټونه مدیریت کړئ (ړنګول)',
+                manageContactsBtn: 'اړیکې مدیریت کړئ', manageAdsBtn: 'اعلانونه مدیریت کړئ', logoutBtn: 'وتل',
+                edit: 'سمول', autoRefresh: 'اتومات تازه کول', contactViaWA: 'د واټساپ له لارې اړیکه',
+                yourName: 'ستاسو نوم', whatsappNumber: 'WhatsApp شمېره', chatNow: 'اوس خبرې وکړئ', delete: 'ړنګول'
+            },
+            fa: {
+                brand: 'جی کی فروشگاه', lang: 'زبان', update: 'به روز رسانی', contact: 'تماس', admin: 'مدیر',
+                mainTitle: 'بازار PUBG', mainSubtitle: 'ایمن · تحویل فوری',
+                cta: 'برای دیدن اکونت های PUBG کلیک کنید', sliderHint: '— تبلیغات را بکشید (تغییر هر ۲ ثانیه) —',
+                all: 'همه', small: 'کوچک PUBG', medium: 'متوسط PUBG', big: 'بزرگ PUBG',
+                accountsTitle: 'اکونت های PUBG', contactTitle: 'تماس و پشتیبانی', adminTitle: 'پنل مدیریت',
+                loginTitle: 'ورود مدیر', loginBtn: 'ورود', onlineUsers: 'آنلاین الآن',
+                accountsStat: 'اکونت ها', bookingsStat: 'درخواست‌های رزرو', bookRequestsTitle: '📋 درخواست‌های رزرو',
+                addAccountBtn: 'افزودن اکونت جدید', manageAccountsBtn: 'مدیریت اکونت ها (حذف)',
+                manageContactsBtn: 'مدیریت مخاطبان', manageAdsBtn: 'مدیریت تبلیغات', logoutBtn: 'خروج',
+                edit: 'ویرایش', autoRefresh: 'تازه سازی خودکار', contactViaWA: 'تماس از طریق واتساپ',
+                yourName: 'نام شما', whatsappNumber: 'شماره WhatsApp', chatNow: 'اکنون گفتگو', delete: 'حذف'
+            }
+        };
+
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const CLOUDFLARE_URL = 'https://skip-faces-entering-garmin.trycloudflare.com';
+        const PB_URL = CLOUDFLARE_URL;
+        const pb = new PocketBase(PB_URL);
+        pb.autoCancellation(false);
+
+        // ============================================
+        // APP STATE
+        // ============================================
+        const appState = {
+            accounts: [],
+            contacts: [],
+            ads: [],
+            bookRequests: [],
+            uniqueVisitors: new Set(),
+            onlineCount: 0,
+            currentFilter: 'all',
+            isAdminLoggedIn: false,
+            currentAccount: null,
+            currentMediaData: null,
+            currentAdData: null,
+            phoneInput: null,
+            bookPhoneInput: null,
+            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
+            currentLanguage: 'en',
+            autoSlideInterval: null,
+            autoRefreshEnabled: true,
+            deferredPrompt: null
+        };
+
+        // Load from localStorage
+        if (localStorage.getItem('gk_accounts')) {
+            try { appState.accounts = JSON.parse(localStorage.getItem('gk_accounts')); } catch(e) {}
+        }
+        if (localStorage.getItem('gk_contacts')) {
+            try { appState.contacts = JSON.parse(localStorage.getItem('gk_contacts')); } catch(e) {}
+        }
+        if (localStorage.getItem('gk_ads')) {
+            try { appState.ads = JSON.parse(localStorage.getItem('gk_ads')); } catch(e) {}
+        }
+        if (localStorage.getItem('gk_bookings')) {
+            try { appState.bookRequests = JSON.parse(localStorage.getItem('gk_bookings')); } catch(e) {}
+        }
+        if (localStorage.getItem('gk_usdt_address')) {
+            appState.usdtAddress = localStorage.getItem('gk_usdt_address');
+        }
+
+        // ============================================
+        // NOTIFICATION SYSTEM
+        // ============================================
+        let notifications = [];
         
+        function loadNotifications() {
+            const saved = localStorage.getItem('gk_notifications');
+            if (saved) {
+                try {
+                    notifications = JSON.parse(saved);
+                    notifications = notifications.filter(n => (Date.now() - n.timestamp) < 24 * 60 * 60 * 1000);
+                    saveNotifications();
+                } catch(e) {}
+            }
+            updateBadge();
+            renderNotifications();
+        }
+        
+        function saveNotifications() {
+            localStorage.setItem('gk_notifications', JSON.stringify(notifications));
+            updateBadge();
+        }
+        
+        function addNotification(title, message, accountId = null) {
+            notifications.unshift({
+                id: Date.now(),
+                title: title,
+                message: message,
+                accountId: accountId,
+                timestamp: Date.now(),
+                read: false
+            });
+            saveNotifications();
+            renderNotifications();
+            playClickSound();
+        }
+        
+        function updateBadge() {
+            const unread = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-badge');
+            if (badge) {
+                if (unread > 0) {
+                    badge.textContent = unread > 99 ? '99+' : unread;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        function renderNotifications() {
+            const container = document.getElementById('notification-list');
+            if (!container) return;
+            if (notifications.length === 0) {
+                container.innerHTML = '<div class="empty-notifications"><i class="fas fa-bell-slash"></i><br>No notifications</div>';
+                return;
+            }
+            container.innerHTML = notifications.map(n => `
+                <div class="notification-item ${n.read ? 'read' : ''}" onclick="openNotification(${n.id})">
+                    <div class="notification-title">${escapeHtml(n.title)}</div>
+                    <div class="notification-message">${escapeHtml(n.message)}</div>
+                    <div class="notification-time">${formatTime(n.timestamp)}</div>
+                </div>
+            `).join('');
+        }
+        
+        function formatTime(ts) {
+            const diff = Date.now() - ts;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${hours}h ago`;
+            return `${Math.floor(hours / 24)}d ago`;
+        }
+        
+        function openNotification(id) {
+            const n = notifications.find(n => n.id === id);
+            if (n) {
+                n.read = true;
+                saveNotifications();
+                renderNotifications();
+                if (n.accountId) {
+                    closeNotificationCenter();
+                    switchScreen('accounts');
+                }
+            }
+        }
+        
+        function markAllNotificationsRead() {
+            notifications.forEach(n => n.read = true);
+            saveNotifications();
+            renderNotifications();
+        }
+        
+        function openNotificationCenter() {
+            document.getElementById('notification-center').classList.add('open');
+            document.getElementById('notification-overlay').classList.add('active');
+        }
+        
+        function closeNotificationCenter() {
+            document.getElementById('notification-center').classList.remove('open');
+            document.getElementById('notification-overlay').classList.remove('active');
+        }
+        
+        function checkForNewAccounts(oldAccounts, newAccounts) {
+            if (!oldAccounts || oldAccounts.length === 0) return;
+            const oldIds = new Set(oldAccounts.map(a => a.id));
+            const newList = newAccounts.filter(a => !oldIds.has(a.id));
+            newList.forEach(acc => {
+                addNotification('🆕 New Account Added!', `${acc.title} - $${acc.price_usd} added!`, acc.id);
+            });
+        }
+
+        // ============================================
+        // UPDATE FUNCTION
+        // ============================================
+        let isUpdating = false;
+        
+        async function checkForUpdates() {
+            if (isUpdating) {
+                addNotification('Update', 'Already checking...', null);
+                return;
+            }
+            isUpdating = true;
+            const btn = document.getElementById('update-btn');
+            const oldHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Updating...';
+            btn.disabled = true;
+            try {
+                const oldAccounts = [...appState.accounts];
+                await testConnection();
+                await loadAccountsFromPB();
+                await loadContactsFromPB();
+                await loadSettingsFromPB();
+                checkForNewAccounts(oldAccounts, appState.accounts);
+                renderAccounts();
+                renderContacts();
+                if (appState.isAdminLoggedIn) {
+                    document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                }
+                addNotification('✅ Update Complete', 'Store data refreshed!', null);
+            } catch(e) {
+                addNotification('❌ Update Failed', 'Could not refresh data', null);
+            } finally {
+                isUpdating = false;
+                btn.innerHTML = oldHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // ============================================
+        // CORE FUNCTIONS
+        // ============================================
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
+        
+        function applyTranslation(lang) {
+            const t = translations[lang] || translations.en;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            document.documentElement.lang = lang;
+            document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
+            appState.currentLanguage = lang;
+            localStorage.setItem('gk_language', lang);
+            renderAccounts();
+            renderContacts();
+            if (appState.isAdminLoggedIn) renderBookRequests();
+            const contactBtn = document.getElementById('nav-contact');
+            const adminBtn = document.getElementById('nav-admin');
+            if (contactBtn) contactBtn.querySelector('span').textContent = t.contact;
+            if (adminBtn) adminBtn.querySelector('span').textContent = t.admin;
+            const updateSpan = document.querySelector('#update-btn span');
+            if (updateSpan) updateSpan.textContent = t.update;
+        }
+        
+        function setLanguage(lang) { applyTranslation(lang); closeModal('language-modal'); }
+        function openLanguageModal() { openModal('language-modal'); }
+        
+        let isConnected = false;
+        let refreshCountdown = 5;
+        let countdownInterval;
+        
+        function updateOnlineStatus(status) {
+            const dot = document.getElementById('status-dot-badge');
+            const text = document.getElementById('status-text-badge');
+            const countSpan = document.getElementById('online-count-badge');
+            if (status === 'connected') { dot.className = 'status-dot-badge connected'; text.textContent = 'Online'; isConnected = true; }
+            else if (status === 'offline') { dot.className = 'status-dot-badge offline'; text.textContent = 'Offline'; isConnected = false; }
+            else { dot.className = 'status-dot-badge'; text.textContent = 'Connecting...'; }
+            if (countSpan) countSpan.textContent = appState.onlineCount;
+            const onlineUserEl = document.getElementById('online-user-count');
+            if (onlineUserEl) onlineUserEl.innerText = appState.onlineCount;
+        }
+        
+        function startRefreshCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            refreshCountdown = 5;
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0 && appState.autoRefreshEnabled) { refreshData(); refreshCountdown = 5; }
+            }, 1000);
+        }
+        
+        async function refreshData() {
+            if (!appState.autoRefreshEnabled) return;
+            const oldAccounts = [...appState.accounts];
+            await testConnection();
+            checkForNewAccounts(oldAccounts, appState.accounts);
+            trackVisitor();
+        }
+        
+        function toggleAutoRefresh() {
+            const toggle = document.getElementById('auto-refresh-toggle');
+            appState.autoRefreshEnabled = toggle.checked;
+            if (appState.autoRefreshEnabled) startRefreshCountdown();
+            else if (countdownInterval) clearInterval(countdownInterval);
+        }
+        
+        async function testConnection() {
+            try {
+                updateOnlineStatus('connecting');
+                const response = await fetch(CLOUDFLARE_URL + '/api/health', { mode: 'cors', cache: 'no-cache' });
+                if (response.ok) {
+                    isConnected = true;
+                    updateOnlineStatus('connected');
+                    await loadAccountsFromPB();
+                    await loadContactsFromPB();
+                    await loadSettingsFromPB();
+                } else throw new Error();
+            } catch(error) {
+                updateOnlineStatus('offline');
+                isConnected = false;
+                renderAccounts();
+            }
+        }
+        
+        setTimeout(() => { testConnection(); startRefreshCountdown(); }, 2000);
+        
+        // ============================================
+        // ZOOM FUNCTIONS
+        // ============================================
+        let zoomLevel = 1, panX = 0, panY = 0;
+        window.openFullscreenImage = function(src) {
+            const modal = document.getElementById('fullscreen-image-modal');
+            const img = document.getElementById('fullscreen-image');
+            img.src = src;
+            modal.style.display = 'flex';
+            zoomLevel = 1; panX = 0; panY = 0;
+            updateImageTransform();
+        }
+        function updateImageTransform() {
+            const img = document.getElementById('fullscreen-image');
+            if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+        }
+        window.zoomImage = function(dir) {
+            zoomLevel = Math.max(1, Math.min(3, zoomLevel + (dir === 'in' ? 0.25 : -0.25)));
+            updateImageTransform();
+            document.getElementById('zoom-level').textContent = zoomLevel.toFixed(1) + 'x';
+        }
+        window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); document.getElementById('zoom-level').textContent = '1.0x'; }
+        window.closeFullscreenImage = function() { document.getElementById('fullscreen-image-modal').style.display = 'none'; resetZoom(); }
+        
+        // ============================================
+        // RENDERING FUNCTIONS
+        // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
             if (!grid) return;
-            
-            let filtered = accounts;
-            if (currentFilter !== 'all') {
-                filtered = accounts.filter(a => a.tier === currentFilter);
-            }
-            
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>';
-                return;
-            }
-            
+            let filtered = appState.accounts;
+            if (appState.currentFilter !== 'all') filtered = filtered.filter(a => a.tier === appState.currentFilter);
+            if (filtered.length === 0) { grid.innerHTML = '<div style="text-align:center; padding:2rem;">No accounts available</div>'; return; }
+            const t = translations[appState.currentLanguage || 'en'];
             grid.innerHTML = filtered.map(acc => {
                 const mediaHtml = acc.mediaType === 'video' 
-                    ? `<div class="card-media" id="video-${acc.id}" style="width:100%; height:100%;"></div>`
+                    ? `<div class="card-media" id="video-${acc.id}" style="position:relative; width:100%; height:100%;"></div>`
                     : `<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`;
-                    
-                return `
-                    <div class="account-card">
-                        <div style="width:100%; aspect-ratio:16/9; background:#000;">
-                            ${mediaHtml}
-                        </div>
-                        <div class="card-content">
-                            <div class="card-title">
-                                ${escapeHtml(acc.title)}
-                                <span class="tier-badge ${acc.tier}">${acc.tier}</span>
-                            </div>
-                            <div class="card-desc">${escapeHtml(acc.desc || '')}</div>
-                            <div class="price-row">
-                                <span class="usd-price">$${acc.price_usd}</span>
-                                <span class="afn-price">${acc.price_afn} AFN</span>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="action-btn" onclick="buyAccount('${acc.id}')">
-                                    <i class="fa fa-bolt"></i> Buy
-                                </button>
-                                <button class="action-btn" onclick="infoAccount('${acc.id}')">
-                                    <i class="fa fa-info"></i> Info
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                return `<div class="account-card"><div style="position:relative; width:100%; aspect-ratio:16/9; background:#000;">${mediaHtml}</div><div class="card-content"><div class="card-title">${escapeHtml(acc.title)} <span class="tier-badge ${acc.tier}">${acc.tier}</span></div><div class="card-desc">${escapeHtml(acc.desc || '')}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="playClickSound(); bookAccount('${acc.id}')"><i class="fa fa-bookmark"></i> ${t.bookTitle || 'Book'}</button><button class="action-btn buy" onclick="playClickSound(); buyAccount('${acc.id}')"><i class="fa fa-bolt"></i> ${t.buyTitle || 'Buy'}</button><button class="action-btn" onclick="playClickSound(); infoAccount('${acc.id}')"><i class="fa fa-info"></i> ${t.infoTitle || 'Info'}</button></div></div></div>`;
             }).join('');
-            
-            // Setup videos after rendering
             setTimeout(() => {
                 filtered.forEach(acc => {
                     if (acc.mediaType === 'video') {
                         const container = document.getElementById(`video-${acc.id}`);
-                        if (container) {
-                            setupVideoPlayer(container, acc.media);
-                        }
+                        if (container) setupVideoPlayer(container, acc.media);
                     }
                 });
             }, 100);
         }
         
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+        function renderContacts() {
+            const container = document.getElementById('contacts-container');
+            if (!container) return;
+            if (appState.contacts.length === 0) { container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>'; return; }
+            const t = translations[appState.currentLanguage || 'en'];
+            container.innerHTML = appState.contacts.map(c => {
+                let phone = c.phone.replace(/\D/g, '');
+                if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone;
+                return `<div class="account-card" style="padding:1.5rem;"><h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${escapeHtml(c.name)}</h3><p>${escapeHtml(c.desc || '')}</p><p><strong>+${phone}</strong></p><button class="action-btn buy" style="width:100%;" onclick="playClickSound(); window.open('https://wa.me/${phone}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.chatNow}</button></div>`;
+            }).join('');
         }
         
-        function filterAccounts(tier) {
-            currentFilter = tier;
-            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
-            renderAccounts();
+        function renderAdminContacts() {
+            const list = document.getElementById('admin-contacts-list');
+            if (!list) return;
+            if (appState.contacts.length === 0) { list.innerHTML = '<p>No contacts yet.</p>'; return; }
+            const t = translations[appState.currentLanguage] || translations.en;
+            list.innerHTML = appState.contacts.map(c => `<div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;"><div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fab fa-whatsapp"></i></div><div style="flex:1;"><strong>${escapeHtml(c.name)}</strong><div>+${c.phone}</div><div>${escapeHtml(c.desc || '')}</div></div><button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteContact('${c.id}')"><i class="fa fa-trash"></i> ${t.delete}</button></div>`).join('');
         }
-        
-        function switchScreen(screen) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(`${screen}-screen`).classList.add('active');
-            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`nav-${screen}`).classList.add('active');
-            
-            if (screen === 'accounts') renderAccounts();
-            if (screen === 'admin') {
-                if (isAdminLoggedIn) {
-                    document.getElementById('admin-login-section').classList.add('hidden');
-                    document.getElementById('admin-dashboard').classList.remove('hidden');
-                } else {
-                    document.getElementById('admin-login-section').classList.remove('hidden');
-                    document.getElementById('admin-dashboard').classList.add('hidden');
-                }
-            }
-        }
-        
-        // ============================================
-        // POCKETBASE DATA LOADING
-        // ============================================
-        async function loadAccountsFromPB() {
-            try {
-                const records = await pb.collection('accounts').getFullList({ sort: '-created' });
-                if (records && records.length) {
-                    accounts = records.map(r => ({
-                        id: r.id,
-                        title: r.title,
-                        desc: r.description,
-                        tier: r.tier,
-                        price_usd: r.price_usd,
-                        price_afn: r.price_afn,
-                        media: r.media ? pb.files.getUrl(r, r.media) : '',
-                        mediaType: r.mediaType || 'image'
-                    }));
-                    localStorage.setItem('gk_accounts', JSON.stringify(accounts));
-                    renderAccounts();
-                }
-            } catch(e) {
-                console.log('Using local accounts');
-            }
-        }
-        
-        // ============================================
-        // ADMIN FUNCTIONS
-        // ============================================
-        async function adminLogin() {
-            const email = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-password').value;
-            
-            try {
-                await pb.admins.authWithPassword(email, pass);
-                isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                await loadAccountsFromPB();
-            } catch(e) {
-                alert('Invalid credentials');
-            }
-        }
-        
-        function logout() {
-            pb.authStore.clear();
-            isAdminLoggedIn = false;
-            document.getElementById('admin-login-section').classList.remove('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
-            switchScreen('main');
-        }
-        
-        function previewMediaFromFile() {
-            const file = document.getElementById('account-media-file').files[0];
-            const preview = document.getElementById('media-preview');
-            const btn = document.getElementById('upload-btn');
-            
-            if (!file) {
-                btn.disabled = true;
-                preview.innerHTML = '<i class="fas fa-cloud-upload-alt"></i>';
-                return;
-            }
-            
-            const isVideo = file.type.startsWith('video/');
-            const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-            
-            if (file.size > maxSize) {
-                alert(`File too large. Max size: ${isVideo ? '200MB' : '10MB'}`);
-                btn.disabled = true;
-                return;
-            }
-            
-            btn.disabled = false;
-            const reader = new FileReader();
-            reader.onload = e => {
-                if (isVideo) {
-                    preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
-                } else {
-                    preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
-                }
-                currentMediaData = { type: isVideo ? 'video' : 'image', data: e.target.result };
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        async function uploadNewAccount() {
-            const tier = document.getElementById('account-tier').value;
-            const title = document.getElementById('account-title').value.trim();
-            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
-            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
-            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
-            const file = document.getElementById('account-media-file').files[0];
-            
-            if (!tier || !title || !priceUsd || !priceAfn || !file) {
-                alert('Please fill all fields');
-                return;
-            }
-            
-            const isVideo = file.type.startsWith('video/');
-            
-            try {
-                const formData = new FormData();
-                formData.append('title', title);
-                formData.append('description', desc);
-                formData.append('tier', tier);
-                formData.append('price_usd', priceUsd);
-                formData.append('price_afn', priceAfn);
-                formData.append('media', file);
-                formData.append('mediaType', isVideo ? 'video' : 'image');
-                
-                const record = await pb.collection('accounts').create(formData);
-                const newAccount = {
-                    id: record.id,
-                    title,
-                    desc,
-                    tier,
-                    price_usd: priceUsd,
-                    price_afn: priceAfn,
-                    media: pb.files.getUrl(record, record.media),
-                    mediaType: isVideo ? 'video' : 'image'
-                };
-                
-                accounts.unshift(newAccount);
-                localStorage.setItem('gk_accounts', JSON.stringify(accounts));
-                renderAccounts();
-                alert('✅ Uploaded successfully!');
-                closeModal('add-account-modal');
-                
-                // Reset form
-                document.getElementById('account-title').value = '';
-                document.getElementById('account-description').value = '';
-                document.getElementById('account-price-usd').value = '';
-                document.getElementById('account-price-afn').value = '';
-                document.getElementById('account-media-file').value = '';
-                document.getElementById('media-preview').innerHTML = '<i class="fas fa-cloud-upload-alt"></i>';
-                
-            } catch(e) {
-                alert('Upload failed: ' + e.message);
-            }
-        }
-        
-        function showAddAccountModal() {
-            openModal('add-account-modal');
-        }
-        
-        function buyAccount(id) {
-            const acc = accounts.find(a => a.id === id);
-            if (!acc) return;
-            alert(`Buying: ${acc.title}\nPrice: $${acc.price_usd}\nContact: WhatsApp +93793066322`);
-            window.open('https://wa.me/93793066322?text=I want to buy: ' + acc.title, '_blank');
-        }
-        
-        function infoAccount(id) {
-            const acc = accounts.find(a => a.id === id);
-            if (!acc) return;
-            alert(`Title: ${acc.title}\nDescription: ${acc.desc}\nPrice: $${acc.price_usd} / ${acc.price_afn} AFN`);
-        }
-        
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-        
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-        
-        function openFullscreenImage(src) {
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.right = '0';
-            modal.style.bottom = '0';
-            modal.style.background = 'rgba(0,0,0,0.95)';
-            modal.style.zIndex = '10000';
-            modal.style.display = 'flex';
-            modal.style.alignItems = 'center';
-            modal.style.justifyContent = 'center';
-            modal.style.cursor = 'pointer';
-            
-            const img = document.createElement('img');
-            img.src = src;
-            img.style.maxWidth = '90%';
-            img.style.maxHeight = '90%';
-            img.style.objectFit = 'contain';
-            
-            modal.appendChild(img);
-            modal.onclick = () => modal.remove();
-            document.body.appendChild(modal);
-        }
-        
-        // ============================================
-        // ADS SLIDER
-        // ============================================
-        let ads = [];
         
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
-            
-            if (ads.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>';
-                return;
-            }
-            
+            if (appState.ads.length === 0) { container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; return; }
             let slides = '';
-            ads.forEach((ad, i) => {
+            appState.ads.forEach((ad, i) => {
                 if (ad.type === 'video') {
-                    slides += `<div class="slide"><div id="ad-video-${i}" style="width:100%; height:100%;"></div><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
+                    slides += `<div class="slide" data-ad-index="${i}"><div id="ad-video-${i}" style="width:100%; height:100%;"></div><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
                 } else {
-                    slides += `<div class="slide"><img src="${ad.data}" alt="ad"><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
+                    slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${escapeHtml(ad.caption)}</div></div>`;
                 }
             });
-            
             let dots = '';
-            ads.forEach((_, i) => {
-                dots += `<span class="dot ${i === 0 ? 'active' : ''}" onclick="jumpToSlide(${i})"></span>`;
-            });
-            
-            container.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-track" id="slider-track">${slides}</div>
-                    <div class="slider-dots">${dots}</div>
-                </div>
-            `;
-            
-            // Setup videos in ads
+            appState.ads.forEach((_, i) => dots += `<span class="dot ${i === 0 ? 'active' : ''}" onclick="playClickSound(); jumpToSlide(${i})"></span>`);
+            container.innerHTML = `<div class="slider-container"><div class="slider-track" id="slider-track">${slides}</div><div class="slider-dots">${dots}</div></div>`;
             setTimeout(() => {
-                ads.forEach((ad, i) => {
+                appState.ads.forEach((ad, i) => {
                     if (ad.type === 'video') {
                         const videoDiv = document.getElementById(`ad-video-${i}`);
                         if (videoDiv) {
@@ -1060,82 +2109,483 @@
                     }
                 });
             }, 100);
-            
-            // Auto slide
-            let autoSlide = setInterval(() => {
-                const track = document.getElementById('slider-track');
-                if (!track || ads.length === 0) return;
-                const slideWidth = track.clientWidth;
-                const currentIndex = Math.round(track.scrollLeft / slideWidth);
-                const nextIndex = (currentIndex + 1) % ads.length;
-                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                document.querySelectorAll('.dot').forEach((d, i) => {
-                    d.classList.toggle('active', i === nextIndex);
-                });
-            }, 3000);
-        }
-        
-        function jumpToSlide(idx) {
             const track = document.getElementById('slider-track');
             if (track) {
-                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                track.addEventListener('scroll', () => {
+                    const idx = Math.round(track.scrollLeft / track.clientWidth);
+                    document.querySelectorAll('.dot').forEach((d, j) => d.classList.toggle('active', j === idx));
+                });
             }
+            startAutoSlide();
+        }
+        
+        function startAutoSlide() {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            appState.autoSlideInterval = setInterval(() => {
+                const track = document.getElementById('slider-track');
+                if (!track || appState.ads.length === 0) return;
+                const slideWidth = track.clientWidth;
+                const currentIndex = Math.round(track.scrollLeft / slideWidth);
+                const nextIndex = (currentIndex + 1) % appState.ads.length;
+                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
+                document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === nextIndex));
+            }, 2000);
+        }
+        
+        function jumpToSlide(idx) { const track = document.getElementById('slider-track'); if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' }); }
+        
+        function renderAdminAccounts() {
+            const list = document.getElementById('admin-accounts-list');
+            if (!list) return;
+            if (appState.accounts.length === 0) { list.innerHTML = '<p>No accounts yet.</p>'; return; }
+            const t = translations[appState.currentLanguage] || translations.en;
+            list.innerHTML = appState.accounts.map(acc => `<div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;"><div style="width:60px; height:60px; border-radius:10px; background:#000; display:flex; align-items:center; justify-content:center;">${acc.mediaType === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}</div><div style="flex:1;"><strong>${escapeHtml(acc.title)}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span><div>$${acc.price_usd} / ${acc.price_afn} AFN</div></div><button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> ${t.delete}</button></div>`).join('');
+        }
+        
+        function renderAdminAds() {
+            const list = document.getElementById('admin-ads-list');
+            if (!list) return;
+            if (appState.ads.length === 0) { list.innerHTML = '<p>No ads yet.</p>'; return; }
+            const t = translations[appState.currentLanguage] || translations.en;
+            list.innerHTML = appState.ads.map((ad, i) => `<div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;"><div style="width:60px; height:60px; border-radius:10px; background:#000; display:flex; align-items:center; justify-content:center;">${ad.type === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}</div><div style="flex:1;"><strong>${escapeHtml(ad.caption || 'No caption')}</strong><div>${ad.type}</div></div><button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="playClickSound(); deleteAd(${i})"><i class="fa fa-trash"></i> ${t.delete}</button></div>`).join('');
+        }
+        
+        function renderBookRequests() {
+            const list = document.getElementById('admin-book-requests-list');
+            if (!list) return;
+            if (appState.bookRequests.length === 0) { list.innerHTML = '<p>No book requests yet.</p>'; return; }
+            const t = translations[appState.currentLanguage || 'en'];
+            list.innerHTML = appState.bookRequests.map(req => `<div class="book-request-item"><p><span class="label">${t.accountsStat}:</span> ${escapeHtml(req.account_title)}</p><p><span class="label">${t.yourName}:</span> ${escapeHtml(req.user_name)}</p><p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p><button class="btn-wa" onclick="playClickSound(); window.open('https://wa.me/${req.whatsapp}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.contactViaWA}</button></div>`).join('');
+        }
+        
+        // ============================================
+        // POCKETBASE DATA LOADING
+        // ============================================
+        async function loadAccountsFromPB() {
+            if (!isConnected) return;
+            try {
+                const records = await pb.collection('accounts').getFullList({ sort: '-created' });
+                if (records && records.length) {
+                    appState.accounts = records.map(r => ({
+                        id: r.id, title: r.title, desc: r.description, tier: r.tier,
+                        price_usd: r.price_usd, price_afn: r.price_afn,
+                        media: r.media ? pb.files.getUrl(r, r.media) : '',
+                        mediaType: r.mediaType || 'image'
+                    }));
+                    renderAccounts();
+                }
+            } catch(e) { console.log('Using local accounts'); }
+        }
+        
+        async function loadContactsFromPB() {
+            if (!isConnected) return;
+            try {
+                const records = await pb.collection('contacts').getFullList();
+                if (records && records.length) {
+                    appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description }));
+                    renderContacts();
+                }
+            } catch(e) {}
+        }
+        
+        async function loadSettingsFromPB() {
+            if (!isConnected) return;
+            try {
+                const records = await pb.collection('settings').getFullList();
+                const usdt = records.find(r => r.key === 'usdt_address');
+                if (usdt) { appState.usdtAddress = usdt.value; document.getElementById('current-usdt-address').innerText = usdt.value; }
+            } catch(e) {}
+        }
+        
+        // ============================================
+        // ACTION FUNCTIONS
+        // ============================================
+        function filterAccounts(tier) {
+            appState.currentFilter = tier;
+            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
+            renderAccounts();
+        }
+        
+        function switchScreen(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screen + '-screen').classList.add('active');
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
+            if (screen === 'main') document.getElementById('nav-main').classList.add('active');
+            else if (screen === 'contact') document.getElementById('nav-contact').classList.add('active');
+            else if (screen === 'admin') document.getElementById('nav-admin').classList.add('active');
+            if (screen === 'accounts') renderAccounts();
+            if (screen === 'contact') renderContacts();
+            if (screen === 'admin' && appState.isAdminLoggedIn) {
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                renderBookRequests();
+            } else if (screen === 'admin' && !appState.isAdminLoggedIn) {
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                document.getElementById('admin-login-section').classList.remove('hidden');
+            }
+        }
+        
+        function previewMediaFromFile() {
+            const file = document.getElementById('account-media-file').files[0];
+            const preview = document.getElementById('media-preview');
+            const btn = document.getElementById('upload-btn');
+            if (!file) { btn.disabled = true; preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>'; return; }
+            const isVideo = file.type.startsWith('video/');
+            const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (file.size > maxSize) { alert(`File too large. Max size: ${isVideo ? '200MB' : '10MB'}`); btn.disabled = true; return; }
+            btn.disabled = false;
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                appState.currentMediaData = { type: isVideo ? 'video' : 'image', data: e.target.result };
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function previewAdMedia() {
+            const file = document.getElementById('ad-media-file').files[0];
+            const preview = document.getElementById('ad-preview');
+            if (!file) { preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>'; return; }
+            const isVideo = file.type.startsWith('video/');
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;"></video>`;
+                else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                appState.currentAdData = { type: isVideo ? 'video' : 'image', data: e.target.result };
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function uploadNewAccount() {
+            const tier = document.getElementById('account-tier').value;
+            const title = document.getElementById('account-title').value.trim();
+            const desc = document.getElementById('account-description').value.trim() || 'Premium PUBG account';
+            const priceUsd = parseFloat(document.getElementById('account-price-usd').value);
+            const priceAfn = parseInt(document.getElementById('account-price-afn').value);
+            const file = document.getElementById('account-media-file').files[0];
+            if (!tier || !title || !priceUsd || !priceAfn || !file) { alert('Please fill all fields'); return; }
+            const isVideo = file.type.startsWith('video/');
+            const progress = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            progress.classList.add('active');
+            let progressInt = 0;
+            const interval = setInterval(() => { progressInt += 5; if (progressInt >= 100) progressInt = 100; progressBar.style.width = progressInt + '%'; }, 200);
+            try {
+                if (isConnected) {
+                    const formData = new FormData();
+                    formData.append('title', title); formData.append('description', desc); formData.append('tier', tier);
+                    formData.append('price_usd', priceUsd); formData.append('price_afn', priceAfn);
+                    formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
+                    const record = await pb.collection('accounts').create(formData);
+                    const newAccount = {
+                        id: record.id, title, desc, tier, price_usd: priceUsd, price_afn: priceAfn,
+                        media: pb.files.getUrl(record, record.media), mediaType: isVideo ? 'video' : 'image'
+                    };
+                    appState.accounts.unshift(newAccount);
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                    addNotification('📱 New Account Added!', `${title} - $${priceUsd} added!`, record.id);
+                    renderAccounts();
+                    alert('✅ Uploaded successfully!');
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const newAccount = {
+                            id: 'local_' + Date.now(), title, desc, tier, price_usd: priceUsd, price_afn: priceAfn,
+                            media: e.target.result, mediaType: isVideo ? 'video' : 'image'
+                        };
+                        appState.accounts.unshift(newAccount);
+                        localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                        addNotification('📱 New Account Added (Offline)', `${title} - $${priceUsd} added locally!`);
+                        renderAccounts();
+                        alert('✅ Saved locally!');
+                    };
+                    reader.readAsDataURL(file);
+                }
+                closeModal('add-account-modal');
+                document.getElementById('account-tier').value = '';
+                document.getElementById('account-title').value = '';
+                document.getElementById('account-description').value = '';
+                document.getElementById('account-price-usd').value = '';
+                document.getElementById('account-price-afn').value = '';
+                document.getElementById('account-media-file').value = '';
+                document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            } catch(e) { alert('Upload failed: ' + e.message); }
+            finally { clearInterval(interval); progress.classList.remove('active'); progressBar.style.width = '0%'; document.getElementById('upload-btn').disabled = false; }
+        }
+        
+        function showAddAccountModal() { openModal('add-account-modal'); }
+        function showManageAccountsModal() { renderAdminAccounts(); openModal('manage-accounts-modal'); }
+        function showManageContactsModal() { renderAdminContacts(); initPhoneInput(); openModal('manage-contacts-modal'); }
+        function showManageAdsModal() { renderAdminAds(); openModal('manage-ads-modal'); }
+        function showEditUsdtModal() { openModal('edit-usdt-modal'); }
+        
+        function saveUsdtAddress() {
+            const newAddr = document.getElementById('new-usdt-address').value.trim();
+            if (!newAddr) { alert('Enter address'); return; }
+            appState.usdtAddress = newAddr;
+            localStorage.setItem('gk_usdt_address', newAddr);
+            document.getElementById('current-usdt-address').innerText = newAddr;
+            closeModal('edit-usdt-modal');
+            alert('USDT address updated');
+        }
+        
+        async function deleteAccount(id) {
+            if (!confirm('Delete this account?')) return;
+            if (isConnected && appState.isAdminLoggedIn && !id.startsWith('local_')) {
+                try { await pb.collection('accounts').delete(id); } catch(e) {}
+            }
+            appState.accounts = appState.accounts.filter(a => a.id !== id);
+            localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+            renderAccounts();
+            if (appState.isAdminLoggedIn) document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            alert('Deleted');
+        }
+        
+        function saveNewContact() {
+            const name = document.getElementById('contact-name').value.trim();
+            const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
+            const desc = document.getElementById('contact-desc').value.trim();
+            if (!name || !phone) { alert('Please enter name and phone'); return; }
+            const newContact = { id: 'c' + Date.now(), name, phone, desc };
+            appState.contacts.push(newContact);
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+            renderContacts();
+            renderAdminContacts();
+            document.getElementById('contact-name').value = '';
+            document.getElementById('contact-phone').value = '';
+            document.getElementById('contact-desc').value = '';
+            alert('Contact saved');
+        }
+        
+        function deleteContact(id) {
+            if (!confirm('Delete contact?')) return;
+            appState.contacts = appState.contacts.filter(c => c.id !== id);
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+            renderContacts();
+            renderAdminContacts();
+        }
+        
+        function saveNewAd() {
+            if (!appState.currentAdData) { alert('Please select media'); return; }
+            const caption = document.getElementById('ad-caption').value.trim();
+            appState.ads.push({ ...appState.currentAdData, caption });
+            localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+            renderAdsSlider();
+            renderAdminAds();
+            document.getElementById('ad-type').value = 'image';
+            document.getElementById('ad-media-file').value = '';
+            document.getElementById('ad-caption').value = '';
+            document.getElementById('ad-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            appState.currentAdData = null;
+            alert('Ad added');
+        }
+        
+        function deleteAd(index) {
+            if (!confirm('Delete ad?')) return;
+            appState.ads.splice(index, 1);
+            localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
+            renderAdsSlider();
+            renderAdminAds();
+        }
+        
+        function bookAccount(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            const t = translations[appState.currentLanguage || 'en'];
+            document.getElementById('book-modal-body').innerHTML = `<p><strong>${escapeHtml(acc.title)}</strong> - $${acc.price_usd}</p><input type="text" id="book-name" class="input" placeholder="${t.yourName}"><input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber}">`;
+            openModal('book-modal');
+            setTimeout(() => {
+                const input = document.getElementById('book-phone');
+                if (input) {
+                    if (appState.bookPhoneInput) { try { appState.bookPhoneInput.destroy(); } catch(e) {} }
+                    appState.bookPhoneInput = intlTelInput(input, { initialCountry: 'af', separateDialCode: true, utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+                }
+            }, 200);
+        }
+        
+        function submitBook() {
+            const name = document.getElementById('book-name')?.value;
+            let phone = '';
+            if (appState.bookPhoneInput) {
+                const number = appState.bookPhoneInput.getNumber();
+                if (number) phone = number.replace(/\D/g, '');
+                else { alert('Enter valid phone'); return; }
+            } else {
+                phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+                if (!phone) { alert('Enter phone'); return; }
+            }
+            if (!name) { alert('Enter name'); return; }
+            const req = { id: Date.now(), account_id: appState.currentAccount.id, account_title: appState.currentAccount.title, user_name: name, whatsapp: phone, date: new Date().toISOString() };
+            appState.bookRequests.push(req);
+            localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
+            alert('Booking submitted!');
+            closeModal('book-modal');
+        }
+        
+        function buyAccount(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            appState.currentAccount = acc;
+            document.getElementById('buy-modal-body').innerHTML = `<p><strong>${escapeHtml(acc.title)}</strong> - $${acc.price_usd}</p><p>Send USDT (TRC20) to:</p><code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code><button class="btn" onclick="copyUsdt()">Copy address</button>`;
+            openModal('buy-modal');
+        }
+        
+        function confirmBuyWhatsApp() {
+            if (!appState.currentAccount) return;
+            const msg = `I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}`;
+            window.open(`https://wa.me/93793066322?text=${encodeURIComponent(msg)}`, '_blank');
+            closeModal('buy-modal');
+        }
+        
+        function copyUsdt() { navigator.clipboard.writeText(appState.usdtAddress); alert('Copied'); }
+        
+        function infoAccount(id) {
+            const acc = appState.accounts.find(a => a.id === id);
+            if (!acc) return;
+            document.getElementById('info-modal-body').innerHTML = `<p><strong>${escapeHtml(acc.title)}</strong></p><p>${escapeHtml(acc.desc || 'Premium PUBG account')}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`;
+            openModal('info-modal');
+        }
+        
+        async function adminLogin() {
+            const email = document.getElementById('admin-email').value;
+            const pass = document.getElementById('admin-password').value;
+            const btn = document.querySelector('#admin-login-section .action-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner"></span>';
+            btn.disabled = true;
+            try {
+                await pb.admins.authWithPassword(email, pass);
+                appState.isAdminLoggedIn = true;
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                await loadAccountsFromPB();
+                await loadContactsFromPB();
+                await loadSettingsFromPB();
+                document.getElementById('admin-account-count').innerText = appState.accounts.length;
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                document.getElementById('online-user-count').innerText = appState.onlineCount;
+                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                renderBookRequests();
+            } catch(e) { document.getElementById('admin-error').innerText = 'Invalid credentials'; }
+            finally { btn.innerHTML = original; btn.disabled = false; }
+        }
+        
+        function logout() {
+            pb.authStore.clear();
+            appState.isAdminLoggedIn = false;
+            document.getElementById('admin-login-section').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            switchScreen('main');
+        }
+        
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function initPhoneInput() {
+            const input = document.querySelector('#contact-phone');
+            if (input && !appState.phoneInput) {
+                appState.phoneInput = intlTelInput(input, { initialCountry: 'af', separateDialCode: true, utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+            }
+        }
+        
+        function trackVisitor() {
+            fetch('https://api.ipify.org?format=json').then(r => r.json()).then(data => {
+                const minute = Math.floor(Date.now() / 60000);
+                const sessionId = data.ip + '_' + minute;
+                appState.uniqueVisitors.add(sessionId);
+                const fiveMinsAgo = Math.floor((Date.now() - 5 * 60 * 1000) / 60000);
+                let count = 0;
+                appState.uniqueVisitors.forEach(id => { if (parseInt(id.split('_')[1]) >= fiveMinsAgo) count++; });
+                appState.onlineCount = Math.max(1, count);
+                updateOnlineStatus(isConnected ? 'connected' : 'offline');
+            }).catch(() => { appState.onlineCount = Math.floor(Math.random() * 5) + 1; updateOnlineStatus(isConnected ? 'connected' : 'offline'); });
         }
         
         // ============================================
         // INITIALIZATION
         // ============================================
-        // Load sample ads
-        ads = [
-            { type: 'image', data: 'https://via.placeholder.com/800x450/ec4899/white?text=GK+Store', caption: 'Welcome to GK Store!' },
-            { type: 'image', data: 'https://via.placeholder.com/800x450/8b5cf6/white?text=Best+PUBG+Accounts', caption: 'Best PUBG Accounts' }
-        ];
-        
+        const savedLang = localStorage.getItem('gk_language') || 'en';
+        applyTranslation(savedLang);
         renderAdsSlider();
-        loadAccountsFromPB();
+        renderContacts();
+        renderAccounts();
+        document.getElementById('nav-main').classList.add('active');
+        trackVisitor();
+        setInterval(trackVisitor, 30000);
+        loadNotifications();
         
         // PWA Installation
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const installBtn = document.createElement('button');
-            installBtn.className = 'install-btn-fixed';
-            installBtn.innerHTML = '<i class="fas fa-download"></i> Install App';
-            installBtn.onclick = () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(() => {
-                        deferredPrompt = null;
-                        installBtn.remove();
-                    });
-                }
-            };
-            document.body.appendChild(installBtn);
-        });
+        function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
+        function isAndroid() { return /Android/.test(navigator.userAgent); }
+        function isAppInstalled() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
         
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+        function closeIOSBanner() {
+            const banner = document.getElementById('ios-install-banner');
+            if (banner) banner.style.display = 'none';
+            sessionStorage.setItem('ios_banner_closed', 'true');
         }
         
-        // Set active nav
-        document.getElementById('nav-main').classList.add('active');
+        window.closeIOSBanner = closeIOSBanner;
         
-        // Make functions global
-        window.playClickSound = playClickSound;
-        window.switchScreen = switchScreen;
-        window.filterAccounts = filterAccounts;
-        window.buyAccount = buyAccount;
-        window.infoAccount = infoAccount;
-        window.adminLogin = adminLogin;
-        window.logout = logout;
-        window.showAddAccountModal = showAddAccountModal;
-        window.uploadNewAccount = uploadNewAccount;
-        window.previewMediaFromFile = previewMediaFromFile;
-        window.closeModal = closeModal;
-        window.openFullscreenImage = openFullscreenImage;
-        window.jumpToSlide = jumpToSlide;
+        setTimeout(() => {
+            if (!isAppInstalled() && isIOS() && !sessionStorage.getItem('ios_banner_closed')) {
+                const banner = document.getElementById('ios-install-banner');
+                if (banner) banner.style.display = 'block';
+                setTimeout(() => {
+                    if (banner && banner.style.display !== 'none') {
+                        banner.style.opacity = '0';
+                        setTimeout(() => { if (banner) banner.style.display = 'none'; }, 500);
+                    }
+                }, 8000);
+            } else if (!isAppInstalled() && isAndroid() && !sessionStorage.getItem('banner_closed')) {
+                if (appState.deferredPrompt) {
+                    document.getElementById('install-banner').style.display = 'flex';
+                    document.getElementById('install-button').style.display = 'flex';
+                }
+            }
+        }, 2000);
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            if (!isIOS()) {
+                e.preventDefault();
+                appState.deferredPrompt = e;
+                if (!isAppInstalled()) {
+                    document.getElementById('install-banner').style.display = 'flex';
+                    document.getElementById('install-button').style.display = 'flex';
+                }
+            }
+        });
+        
+        window.installApp = function() {
+            if (isIOS()) {
+                const instructions = document.getElementById('install-instructions');
+                instructions.innerHTML = `<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span></div><div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span></div>`;
+                openModal('install-modal');
+            } else if (appState.deferredPrompt) {
+                appState.deferredPrompt.prompt();
+                appState.deferredPrompt.userChoice.then(() => {
+                    document.getElementById('install-banner').style.display = 'none';
+                    document.getElementById('install-button').style.display = 'none';
+                    appState.deferredPrompt = null;
+                });
+            } else {
+                const instructions = document.getElementById('install-instructions');
+                instructions.innerHTML = `<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span></span></div><div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span></div>`;
+                openModal('install-modal');
+            }
+        };
+        
+        window.closeInstallBanner = function() {
+            document.getElementById('install-banner').style.display = 'none';
+            sessionStorage.setItem('banner_closed', 'true');
+        };
     </script>
 </body>
 </html>
