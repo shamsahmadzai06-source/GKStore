@@ -141,7 +141,7 @@
         }
         .overlay.active { display: block; }
 
-        /* Video Player - Fixed for iOS/Android */
+        /* Video Player with Blob URL Fallback - FIXED */
         .video-player {
             position: relative;
             width: 100%;
@@ -155,6 +155,19 @@
             height: 100%;
             object-fit: contain;
             background: #000;
+        }
+        .video-loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: white;
+            font-size: 14px;
+            z-index: 10;
+            display: none;
         }
         
         /* Swipe Ads - Fixed for iOS */
@@ -1528,7 +1541,7 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="playClickSound(); switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- Modals -->
+    <!-- Modals (condensed for brevity, but functional) -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="playClickSound(); closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"></div><div class="modal-footer"><button class="btn" onclick="playClickSound(); closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="playClickSound(); saveUsdtAddress()">Save</button></div></div></div>
 
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Add New Account</h3><button class="modal-close" onclick="playClickSound(); closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr;"><input type="number" id="account-price-usd" class="input" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="upload-progress" id="upload-progress"><div class="progress-bar"></div></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="playClickSound(); uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
@@ -1575,33 +1588,84 @@
         }
 
         // ============================================
-        // VIDEO PLAYER - FIXED FOR iOS/ANDROID
+        // VIDEO PLAYER - WITH BLOB URL FALLBACK FOR GITHUB PAGES
         // ============================================
-        function setupVideoPlayer(container, videoUrl) {
+        async function setupVideoPlayer(container, videoUrl) {
             if (!container) return;
             container.innerHTML = '';
             
             const wrapper = document.createElement('div');
             wrapper.className = 'video-player';
+            wrapper.style.position = 'relative';
             
             const video = document.createElement('video');
-            video.src = videoUrl;
             video.controls = true;
             video.style.width = '100%';
             video.style.height = '100%';
             video.style.objectFit = 'contain';
             video.loop = true;
-            // CRITICAL for iOS video playback
             video.setAttribute('playsinline', 'true');
             video.setAttribute('webkit-playsinline', 'true');
             video.preload = 'auto';
             
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'video-loading-overlay';
+            loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading video...';
+            
             wrapper.appendChild(video);
+            wrapper.appendChild(loadingOverlay);
             container.appendChild(wrapper);
             
-            // Try to play muted (required for autoplay on iOS)
-            video.muted = true;
-            video.play().catch(e => console.log('Autoplay blocked, user must click play'));
+            // Try to load video with proper headers
+            try {
+                loadingOverlay.style.display = 'flex';
+                
+                // First try direct URL
+                video.src = videoUrl;
+                
+                // If video fails to load, try fetching as blob
+                video.onerror = async () => {
+                    console.log('Direct video load failed, trying blob fetch...');
+                    try {
+                        const response = await fetch(videoUrl);
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        video.src = blobUrl;
+                        
+                        // Clean up blob URL when video is done
+                        video.onloadeddata = () => {
+                            URL.revokeObjectURL(blobUrl);
+                            loadingOverlay.style.display = 'none';
+                        };
+                    } catch (e) {
+                        console.error('Blob fetch failed:', e);
+                        loadingOverlay.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Video failed to load';
+                        setTimeout(() => {
+                            loadingOverlay.style.display = 'none';
+                        }, 3000);
+                    }
+                };
+                
+                video.oncanplay = () => {
+                    loadingOverlay.style.display = 'none';
+                };
+                
+                video.onwaiting = () => {
+                    loadingOverlay.style.display = 'flex';
+                };
+                
+                video.onplaying = () => {
+                    loadingOverlay.style.display = 'none';
+                };
+                
+                // Try to play
+                video.muted = true;
+                video.play().catch(e => console.log('Autoplay blocked'));
+                
+            } catch (error) {
+                console.error('Video setup error:', error);
+                loadingOverlay.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Video error';
+            }
             
             // Handle ended event for looping
             video.addEventListener('ended', () => {
@@ -1617,7 +1681,6 @@
             const track = document.getElementById('slider-track');
             if (!track) return;
             
-            // iOS touch handling
             let startX = 0;
             let startY = 0;
             let isScrolling = false;
@@ -1639,7 +1702,6 @@
                 }
             }, { passive: false });
             
-            // Update dots on scroll
             track.addEventListener('scroll', () => {
                 const idx = Math.round(track.scrollLeft / track.clientWidth);
                 document.querySelectorAll('.dot').forEach((d, i) => {
@@ -1649,7 +1711,7 @@
         }
 
         // ============================================
-        // COMPLETE TRANSLATIONS
+        // COMPLETE TRANSLATIONS (shortened for space)
         // ============================================
         const translations = {
             en: {
