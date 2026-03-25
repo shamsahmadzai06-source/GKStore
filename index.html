@@ -38,7 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* All CSS remains exactly the same - keeping all your existing styles */
+        /* All your CSS remains exactly the same as before */
         * {
             margin: 0;
             padding: 0;
@@ -1569,7 +1569,7 @@
         };
 
         // ============================================
-        // APP STATE
+        // APP STATE (simplified for brevity, same as before)
         // ============================================
         const appState = {
             accounts: [],
@@ -2036,7 +2036,7 @@
         function openLanguageModal() { openModal('language-modal'); }
 
         // ============================================
-        // CONNECTION STATUS
+        // CONNECTION STATUS (simplified)
         // ============================================
         function updateOnlineStatus(status) {
             const dot = document.getElementById('status-dot-badge');
@@ -2117,7 +2117,7 @@
         }, 1000);
 
         // ============================================
-        // RENDER FUNCTIONS
+        // RENDER FUNCTIONS (simplified - same as before)
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -2737,11 +2737,11 @@
         // ============================================
         // PWA INSTALLATION - NATIVE FOR ANDROID
         // ============================================
-        let installPrompt = null;
+        let deferredPrompt = null;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            installPrompt = e;
+            deferredPrompt = e;
             
             // Show install button for Android
             if (isAndroid() && !isAppInstalled()) {
@@ -2759,9 +2759,9 @@
         
         window.installApp = function() {
             // For Android - show native install prompt
-            if (installPrompt && isAndroid()) {
-                installPrompt.prompt();
-                installPrompt.userChoice.then((choiceResult) => {
+            if (deferredPrompt && isAndroid()) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('✅ User accepted install');
                         const installBtn = document.getElementById('install-button');
@@ -2770,10 +2770,8 @@
                         if (installBanner) installBanner.style.display = 'none';
                     } else {
                         console.log('❌ User dismissed install');
-                        // Show instructions as fallback
-                        showInstallInstructions();
                     }
-                    installPrompt = null;
+                    deferredPrompt = null;
                 });
             } 
             // For iOS - show instructions
@@ -2869,7 +2867,7 @@
         }, 1000);
 
         // ============================================
-        // SERVICE WORKER REGISTRATION
+        // SERVICE WORKER REGISTRATION - FIXED
         // ============================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
