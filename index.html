@@ -420,7 +420,7 @@
             color: var(--success);
         }
 
-        /* Swipe Ads Container - FIXED */
+        /* Swipe Ads Container - FIXED with all slides inside one swipe container */
         .swipe-ads {
             width: 100%;
             border-radius: 1.5rem;
@@ -430,45 +430,32 @@
             position: relative;
         }
 
-        .slider-container {
+        .swipe-container {
             position: relative;
             width: 100%;
             overflow: hidden;
             touch-action: pan-y pinch-zoom;
         }
 
-        .slider-track {
+        .swipe-wrapper {
             display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            background: #000;
+            transition: transform 0.3s ease-out;
             cursor: grab;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
         }
 
-        .slider-track:active {
+        .swipe-wrapper:active {
             cursor: grabbing;
         }
 
-        .slider-track::-webkit-scrollbar {
-            display: none;
-        }
-
-        .slide {
+        .swipe-slide {
             flex: 0 0 100%;
-            scroll-snap-align: start;
             position: relative;
             aspect-ratio: 16/9;
             background: #000;
             user-select: none;
-            -webkit-user-select: none;
         }
 
-        .slide img, .slide video {
+        .swipe-slide img, .swipe-slide video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -487,7 +474,7 @@
             pointer-events: none;
         }
 
-        .slider-dots {
+        .swipe-dots {
             display: flex;
             justify-content: center;
             gap: 8px;
@@ -497,7 +484,7 @@
             z-index: 5;
         }
 
-        .dot {
+        .swipe-dot {
             width: 8px;
             height: 8px;
             border-radius: 10px;
@@ -506,13 +493,13 @@
             cursor: pointer;
         }
 
-        .dot.active {
+        .swipe-dot.active {
             background: var(--primary);
             width: 24px;
         }
 
         /* Navigation arrows for desktop */
-        .slider-nav {
+        .swipe-nav {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
@@ -529,25 +516,25 @@
             backdrop-filter: blur(5px);
         }
 
-        .slider-nav:hover {
+        .swipe-nav:hover {
             background: var(--primary);
         }
 
-        .slider-nav.prev {
+        .swipe-nav.prev {
             left: 10px;
         }
 
-        .slider-nav.next {
+        .swipe-nav.next {
             right: 10px;
         }
 
-        .slider-nav i {
+        .swipe-nav i {
             color: white;
             font-size: 20px;
         }
 
         @media (max-width: 768px) {
-            .slider-nav {
+            .swipe-nav {
                 display: none;
             }
         }
@@ -1216,7 +1203,7 @@
                 <!-- INFO CARDS -->
                 <div class="info-cards" id="info-cards"></div>
                 
-                <!-- SWIPE ADS - PROPER SWIPE CONTAINER -->
+                <!-- SWIPE ADS - PROPER SWIPE CONTAINER with all slides inside -->
                 <div class="swipe-ads" id="ads-slider"></div>
                 
                 <button class="cta-button" onclick="switchScreen('accounts')">
@@ -1307,7 +1294,7 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- All Modals -->
+    <!-- All Modals (keeping exactly as before) -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-edit"></i> Edit USDT Address</h3><button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"><p style="color:var(--text-secondary); font-size:0.8rem;">Make sure it's a valid TRC20 address</p></div><div class="modal-footer"><button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="saveUsdtAddress()">Save</button></div></div></div>
     
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-plus-circle"></i> Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="video-hint"><i class="fa fa-info-circle"></i> Max video size: 200MB. <i class="fa fa-apple"></i> iOS optimized playback</div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><div class="progress-text" id="progress-text"></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
@@ -1490,7 +1477,13 @@
             deferredPrompt: null,
             isConnected: false,
             isRefreshing: false,
-            refreshInterval: null
+            refreshInterval: null,
+            currentSlide: 0,
+            slideCount: 0,
+            isDraggingSwipe: false,
+            startX: 0,
+            currentTranslate: 0,
+            startTranslate: 0
         };
 
         // Load from localStorage
@@ -1525,6 +1518,214 @@
                     <div class="card-desc">${card.desc}</div>
                 </div>
             `).join('');
+        }
+
+        // ============================================
+        // SWIPE ADS - PROPER SWIPE CONTAINER
+        // ============================================
+        function renderAdsSlider() {
+            const container = document.getElementById('ads-slider');
+            if (!container) return;
+            
+            if (appState.ads.length === 0) { 
+                container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; 
+                return; 
+            }
+            
+            appState.slideCount = appState.ads.length;
+            
+            let slides = '';
+            appState.ads.forEach((ad, index) => {
+                if (ad.type === 'video') {
+                    slides += `
+                        <div class="swipe-slide" data-index="${index}">
+                            <video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                            <div class="slide-caption">${ad.caption || ''}</div>
+                        </div>
+                    `;
+                } else {
+                    slides += `
+                        <div class="swipe-slide" data-index="${index}">
+                            <img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer; width:100%; height:100%; object-fit:cover;">
+                            <div class="slide-caption">${ad.caption || ''}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            let dots = '';
+            for (let i = 0; i < appState.ads.length; i++) {
+                dots += `<span class="swipe-dot ${i === 0 ? 'active' : ''}" data-slide="${i}" onclick="goToSlide(${i})"></span>`;
+            }
+            
+            container.innerHTML = `
+                <div class="swipe-container" id="swipe-container">
+                    <div class="swipe-wrapper" id="swipe-wrapper">
+                        ${slides}
+                    </div>
+                    <div class="swipe-nav prev" onclick="prevSlide()">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="swipe-nav next" onclick="nextSlide()">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                    <div class="swipe-dots" id="swipe-dots">
+                        ${dots}
+                    </div>
+                </div>
+            `;
+            
+            // Initialize swipe functionality
+            initSwipe();
+            
+            // Start auto slide
+            startAutoSlide();
+        }
+        
+        function initSwipe() {
+            const wrapper = document.getElementById('swipe-wrapper');
+            const container = document.getElementById('swipe-container');
+            if (!wrapper || !container) return;
+            
+            // Set initial transform
+            updateSlideTransform(0);
+            
+            // Touch events for mobile swipe
+            wrapper.addEventListener('touchstart', onTouchStart, { passive: false });
+            wrapper.addEventListener('touchmove', onTouchMove, { passive: false });
+            wrapper.addEventListener('touchend', onTouchEnd);
+            
+            // Mouse events for desktop drag
+            wrapper.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+        
+        function updateSlideTransform(index) {
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (!wrapper) return;
+            const slideWidth = wrapper.clientWidth / appState.slideCount;
+            const translateX = -index * slideWidth;
+            wrapper.style.transform = `translateX(${translateX}px)`;
+            appState.currentSlide = index;
+            
+            // Update dots
+            document.querySelectorAll('.swipe-dot').forEach((dot, i) => {
+                if (i === index) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function onTouchStart(e) {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            appState.isDraggingSwipe = true;
+            appState.startX = e.touches[0].clientX;
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (wrapper) {
+                const style = window.getComputedStyle(wrapper);
+                const matrix = new WebKitCSSMatrix(style.transform);
+                appState.startTranslate = matrix.m41;
+            }
+            e.preventDefault();
+        }
+        
+        function onTouchMove(e) {
+            if (!appState.isDraggingSwipe) return;
+            const currentX = e.touches[0].clientX;
+            const diffX = currentX - appState.startX;
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (wrapper) {
+                wrapper.style.transform = `translateX(${appState.startTranslate + diffX}px)`;
+                wrapper.style.transition = 'none';
+            }
+            e.preventDefault();
+        }
+        
+        function onTouchEnd() {
+            if (!appState.isDraggingSwipe) return;
+            appState.isDraggingSwipe = false;
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (!wrapper) return;
+            
+            wrapper.style.transition = 'transform 0.3s ease-out';
+            const slideWidth = wrapper.clientWidth / appState.slideCount;
+            const currentTranslate = parseFloat(wrapper.style.transform.replace('translateX(', '').replace('px)', ''));
+            const newIndex = Math.round(-currentTranslate / slideWidth);
+            const finalIndex = Math.max(0, Math.min(appState.slideCount - 1, newIndex));
+            
+            updateSlideTransform(finalIndex);
+            startAutoSlide();
+        }
+        
+        function onMouseDown(e) {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            appState.isDraggingSwipe = true;
+            appState.startX = e.clientX;
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (wrapper) {
+                const style = window.getComputedStyle(wrapper);
+                const matrix = new WebKitCSSMatrix(style.transform);
+                appState.startTranslate = matrix.m41;
+            }
+            e.preventDefault();
+        }
+        
+        function onMouseMove(e) {
+            if (!appState.isDraggingSwipe) return;
+            const currentX = e.clientX;
+            const diffX = currentX - appState.startX;
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (wrapper) {
+                wrapper.style.transform = `translateX(${appState.startTranslate + diffX}px)`;
+                wrapper.style.transition = 'none';
+            }
+        }
+        
+        function onMouseUp() {
+            if (!appState.isDraggingSwipe) return;
+            appState.isDraggingSwipe = false;
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (!wrapper) return;
+            
+            wrapper.style.transition = 'transform 0.3s ease-out';
+            const slideWidth = wrapper.clientWidth / appState.slideCount;
+            const currentTranslate = parseFloat(wrapper.style.transform.replace('translateX(', '').replace('px)', ''));
+            const newIndex = Math.round(-currentTranslate / slideWidth);
+            const finalIndex = Math.max(0, Math.min(appState.slideCount - 1, newIndex));
+            
+            updateSlideTransform(finalIndex);
+            startAutoSlide();
+        }
+        
+        window.goToSlide = function(index) {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            updateSlideTransform(index);
+            startAutoSlide();
+        };
+        
+        window.nextSlide = function() {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            const nextIndex = (appState.currentSlide + 1) % appState.slideCount;
+            updateSlideTransform(nextIndex);
+            startAutoSlide();
+        };
+        
+        window.prevSlide = function() {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            const prevIndex = (appState.currentSlide - 1 + appState.slideCount) % appState.slideCount;
+            updateSlideTransform(prevIndex);
+            startAutoSlide();
+        };
+        
+        function startAutoSlide() {
+            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
+            appState.autoSlideInterval = setInterval(() => {
+                const nextIndex = (appState.currentSlide + 1) % appState.slideCount;
+                updateSlideTransform(nextIndex);
+            }, 2000);
         }
 
         // ============================================
@@ -1803,151 +2004,6 @@
                     <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})"><i class="fa fa-trash"></i> ${t.delete}</button>
                 </div>
             `).join('');
-        }
-
-        // ============================================
-        // SWIPE ADS - PROPER IMPLEMENTATION
-        // ============================================
-        function renderAdsSlider() {
-            const container = document.getElementById('ads-slider');
-            if (!container) return;
-            
-            if (appState.ads.length === 0) { 
-                container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; 
-                return; 
-            }
-            
-            let slides = '';
-            appState.ads.forEach((ad, index) => {
-                if (ad.type === 'video') {
-                    slides += `
-                        <div class="slide" data-index="${index}">
-                            <video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-                            <div class="slide-caption">${ad.caption || ''}</div>
-                        </div>
-                    `;
-                } else {
-                    slides += `
-                        <div class="slide" data-index="${index}">
-                            <img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer; width:100%; height:100%; object-fit:cover;">
-                            <div class="slide-caption">${ad.caption || ''}</div>
-                        </div>
-                    `;
-                }
-            });
-            
-            let dots = '';
-            appState.ads.forEach((_, idx) => {
-                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" data-slide="${idx}" onclick="jumpToSlide(${idx})"></span>`;
-            });
-            
-            container.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-track" id="slider-track">
-                        ${slides}
-                    </div>
-                    <div class="slider-nav prev" onclick="prevSlide()">
-                        <i class="fas fa-chevron-left"></i>
-                    </div>
-                    <div class="slider-nav next" onclick="nextSlide()">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                    <div class="slider-dots">
-                        ${dots}
-                    </div>
-                </div>
-            `;
-            
-            // Set up scroll event listener for swipe detection
-            const track = document.getElementById('slider-track');
-            if (track) {
-                track.addEventListener('scroll', function() {
-                    const slideWidth = track.clientWidth;
-                    const scrollLeft = track.scrollLeft;
-                    const currentIndex = Math.round(scrollLeft / slideWidth);
-                    updateDots(currentIndex);
-                });
-                
-                // Enable touch swipe
-                let startX, startScrollLeft;
-                track.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].clientX;
-                    startScrollLeft = track.scrollLeft;
-                });
-                
-                track.addEventListener('touchmove', (e) => {
-                    if (!startX) return;
-                    const diffX = e.touches[0].clientX - startX;
-                    track.scrollLeft = startScrollLeft - diffX;
-                });
-            }
-            
-            startAutoSlide();
-        }
-        
-        function updateDots(index) {
-            const dots = document.querySelectorAll('.dot');
-            dots.forEach((dot, i) => {
-                if (i === index) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
-        }
-        
-        window.jumpToSlide = function(idx) {
-            const track = document.getElementById('slider-track');
-            if (track && appState.ads.length > 0) {
-                const slideWidth = track.clientWidth;
-                track.scrollTo({ left: idx * slideWidth, behavior: 'smooth' });
-                updateDots(idx);
-                resetAutoSlide();
-            }
-        };
-        
-        window.nextSlide = function() {
-            const track = document.getElementById('slider-track');
-            if (track && appState.ads.length > 0) {
-                const slideWidth = track.clientWidth;
-                const currentIndex = Math.round(track.scrollLeft / slideWidth);
-                const nextIndex = (currentIndex + 1) % appState.ads.length;
-                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                updateDots(nextIndex);
-                resetAutoSlide();
-            }
-        };
-        
-        window.prevSlide = function() {
-            const track = document.getElementById('slider-track');
-            if (track && appState.ads.length > 0) {
-                const slideWidth = track.clientWidth;
-                const currentIndex = Math.round(track.scrollLeft / slideWidth);
-                const prevIndex = (currentIndex - 1 + appState.ads.length) % appState.ads.length;
-                track.scrollTo({ left: prevIndex * slideWidth, behavior: 'smooth' });
-                updateDots(prevIndex);
-                resetAutoSlide();
-            }
-        };
-        
-        function resetAutoSlide() {
-            if (appState.autoSlideInterval) {
-                clearInterval(appState.autoSlideInterval);
-                startAutoSlide();
-            }
-        }
-        
-        function startAutoSlide() {
-            if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
-            appState.autoSlideInterval = setInterval(() => {
-                const track = document.getElementById('slider-track');
-                if (!track || appState.ads.length === 0) return;
-                const slideWidth = track.clientWidth;
-                const currentIndex = Math.round(track.scrollLeft / slideWidth);
-                const nextIndex = (currentIndex + 1) % appState.ads.length;
-                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
-                updateDots(nextIndex);
-            }, 2000);
         }
 
         function renderBookRequests() {
