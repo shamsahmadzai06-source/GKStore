@@ -1,5 +1,5 @@
 // GK Store Service Worker
-const CACHE_NAME = 'gk-store-v1';
+const CACHE_NAME = 'gk-store-v2';
 const urlsToCache = [
   '/GKStore/',
   '/GKStore/index.html',
