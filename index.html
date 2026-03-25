@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     
-    <!-- PWA Required Meta Tags - CRITICAL -->
+    <!-- PWA Required Meta Tags -->
     <meta name="theme-color" content="#ec4899">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,6 +30,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* All CSS styles - same as before */
         * {
             margin: 0;
             padding: 0;
@@ -362,6 +363,7 @@
             color: var(--text-secondary);
         }
 
+        /* Notification Center */
         .notification-center {
             position: fixed;
             top: 70px;
@@ -426,6 +428,7 @@
             margin-top: 4px;
         }
 
+        /* Info Cards Swipe */
         .info-swipe-container {
             width: 100%;
             border-radius: 1.5rem;
@@ -581,6 +584,7 @@
             .info-swipe-nav { display: none; }
         }
 
+        /* Swipe Ads */
         .swipe-ads {
             width: 100%;
             border-radius: 1.5rem;
@@ -1082,7 +1086,8 @@
         </div>
     </div>
 
-    <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="installApp()">
+    <!-- Install Button - Always visible and ready -->
+    <button class="install-btn-fixed" id="install-button" style="display: flex;" onclick="installApp()">
         <i class="fas fa-download"></i> <span id="install-text">Install GK Store</span>
         <i class="fas fa-mobile-alt"></i>
     </button>
@@ -1181,7 +1186,7 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- Modals (condensed but functional) -->
+    <!-- Modals -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"><p>Make sure it's a valid TRC20 address</p></div><div class="modal-footer"><button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="saveUsdtAddress()">Save</button></div></div></div>
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr;"><input type="number" id="account-price-usd" class="input" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button></div><div class="modal-body"><div id="admin-accounts-list"></div></div></div></div>
@@ -1289,7 +1294,126 @@
 
         if (appState.contacts.length === 0) appState.contacts = [{ id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' }];
 
-        // Render Info Cards
+        // ============================================
+        // SERVICE WORKER REGISTRATION - IMMEDIATE
+        // ============================================
+        if ('serviceWorker' in navigator) {
+            // Register service worker immediately
+            navigator.serviceWorker.register('/GKStore/sw.js', { scope: '/GKStore/' })
+                .then(registration => {
+                    console.log('✅ ServiceWorker registered:', registration.scope);
+                    // Force the service worker to become active immediately
+                    if (registration.installing) {
+                        registration.installing.postMessage({ action: 'skipWaiting' });
+                    }
+                })
+                .catch(error => console.log('❌ ServiceWorker registration failed:', error));
+        }
+
+        // ============================================
+        // PWA INSTALLATION - NATIVE FOR ANDROID (IMMEDIATE)
+        // ============================================
+        let deferredPrompt = null;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('✅ beforeinstallprompt event captured - Android native install ready');
+            
+            // Show install button for Android
+            if (isAndroid()) {
+                const installBtn = document.getElementById('install-button');
+                const installBanner = document.getElementById('install-banner');
+                if (installBtn) {
+                    installBtn.style.display = 'flex';
+                    const installTextSpan = document.getElementById('install-text');
+                    if (installTextSpan) installTextSpan.textContent = 'Install App';
+                }
+                if (installBanner) installBanner.style.display = 'flex';
+                console.log('✅ Install button ready - will trigger native install prompt immediately when clicked');
+            }
+        });
+        
+        window.installApp = function() {
+            console.log('installApp called, deferredPrompt exists:', !!deferredPrompt);
+            
+            // For Android - show native install prompt (REAL APP INSTALLATION)
+            if (deferredPrompt && isAndroid()) {
+                console.log('Showing native Android install prompt');
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('✅ User accepted the install prompt - App installed like native app!');
+                        const installBtn = document.getElementById('install-button');
+                        const installBanner = document.getElementById('install-banner');
+                        if (installBtn) installBtn.style.display = 'none';
+                        if (installBanner) installBanner.style.display = 'none';
+                        showNotification('🎉 App Installed!', 'GK Store is now on your home screen as a native app', 'success');
+                    } else {
+                        console.log('❌ User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            } 
+            // For iOS - show instructions
+            else if (isIOS()) {
+                console.log('iOS: Showing install instructions');
+                const instructionsDiv = document.getElementById('install-instructions');
+                if (instructionsDiv) {
+                    instructionsDiv.innerHTML = `
+                        <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span></div>
+                        <div class="install-step"><span class="step-number">2</span><span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span></div>
+                        <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span></div>
+                    `;
+                }
+                openModal('install-modal');
+            }
+            // For other browsers
+            else {
+                console.log('No deferredPrompt, showing instructions');
+                const instructionsDiv = document.getElementById('install-instructions');
+                if (instructionsDiv) {
+                    instructionsDiv.innerHTML = `
+                        <div class="install-step"><span class="step-number">1</span><span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span></div>
+                        <div class="install-step"><span class="step-number">2</span><span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span></div>
+                    `;
+                }
+                openModal('install-modal');
+            }
+        };
+        
+        window.closeInstallBanner = function() { 
+            const banner = document.getElementById('install-banner');
+            if (banner) banner.style.display = 'none'; 
+            sessionStorage.setItem('banner_closed', 'true'); 
+        };
+        
+        // Make sure install button is visible immediately
+        const installBtn = document.getElementById('install-button');
+        if (installBtn) {
+            installBtn.style.display = 'flex';
+            const installTextSpan = document.getElementById('install-text');
+            if (isAndroid() && installTextSpan) {
+                installTextSpan.textContent = 'Install App';
+            } else if (isIOS() && installTextSpan) {
+                installTextSpan.textContent = 'Add to Home Screen';
+            } else if (installTextSpan) {
+                installTextSpan.textContent = 'Install GK Store';
+            }
+        }
+
+        // Show banner for Android
+        if (isAndroid() && !sessionStorage.getItem('banner_closed')) {
+            const installBanner = document.getElementById('install-banner');
+            if (installBanner) installBanner.style.display = 'flex';
+        }
+
+        // ============================================
+        // REST OF YOUR APP CODE (keep all your existing functions)
+        // ============================================
+        // Note: To keep this response within limits, I'm including the essential render functions
+        // You must keep all your existing render functions from your original code
+        
         function renderInfoCardsSwipe() {
             const container = document.getElementById('info-swipe-container');
             if (!container) return;
@@ -1305,7 +1429,7 @@
             updateInfoSlideTransform(0);
             startInfoAutoSlide();
         }
-
+        
         function updateInfoSlideTransform(index) {
             const wrapper = document.getElementById('info-swipe-wrapper');
             if (!wrapper) return;
@@ -1314,13 +1438,12 @@
             appState.currentInfoSlide = index;
             document.querySelectorAll('.info-swipe-dot').forEach((dot, i) => { if (i === index) dot.classList.add('active'); else dot.classList.remove('active'); });
         }
-
+        
         function startInfoAutoSlide() { if (appState.infoAutoSlideInterval) clearInterval(appState.infoAutoSlideInterval); appState.infoAutoSlideInterval = setInterval(() => { updateInfoSlideTransform((appState.currentInfoSlide + 1) % appState.infoSlideCount); }, 2000); }
         window.goToInfoSlide = function(index) { if (appState.infoAutoSlideInterval) clearInterval(appState.infoAutoSlideInterval); updateInfoSlideTransform(index); startInfoAutoSlide(); };
         window.nextInfoSlide = function() { if (appState.infoAutoSlideInterval) clearInterval(appState.infoAutoSlideInterval); updateInfoSlideTransform((appState.currentInfoSlide + 1) % appState.infoSlideCount); startInfoAutoSlide(); };
         window.prevInfoSlide = function() { if (appState.infoAutoSlideInterval) clearInterval(appState.infoAutoSlideInterval); updateInfoSlideTransform((appState.currentInfoSlide - 1 + appState.infoSlideCount) % appState.infoSlideCount); startInfoAutoSlide(); };
 
-        // Render Media Ads
         function renderMediaAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
@@ -1335,7 +1458,7 @@
             updateMediaSlideTransform(0);
             startMediaAutoSlide();
         }
-
+        
         function updateMediaSlideTransform(index) {
             const wrapper = document.getElementById('media-swipe-wrapper');
             if (!wrapper) return;
@@ -1344,13 +1467,12 @@
             appState.currentMediaSlide = index;
             document.querySelectorAll('.swipe-dot').forEach((dot, i) => { if (i === index) dot.classList.add('active'); else dot.classList.remove('active'); });
         }
-
+        
         function startMediaAutoSlide() { if (appState.mediaAutoSlideInterval) clearInterval(appState.mediaAutoSlideInterval); appState.mediaAutoSlideInterval = setInterval(() => { updateMediaSlideTransform((appState.currentMediaSlide + 1) % appState.mediaSlideCount); }, 2000); }
         window.goToMediaSlide = function(index) { if (appState.mediaAutoSlideInterval) clearInterval(appState.mediaAutoSlideInterval); updateMediaSlideTransform(index); startMediaAutoSlide(); };
         window.nextMediaSlide = function() { if (appState.mediaAutoSlideInterval) clearInterval(appState.mediaAutoSlideInterval); updateMediaSlideTransform((appState.currentMediaSlide + 1) % appState.mediaSlideCount); startMediaAutoSlide(); };
         window.prevMediaSlide = function() { if (appState.mediaAutoSlideInterval) clearInterval(appState.mediaAutoSlideInterval); updateMediaSlideTransform((appState.currentMediaSlide - 1 + appState.mediaSlideCount) % appState.mediaSlideCount); startMediaAutoSlide(); };
 
-        // Translation
         function applyTranslation(lang) {
             const t = translations[lang] || translations.en;
             document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if (t[key]) el.textContent = t[key]; });
@@ -1366,10 +1488,10 @@
             if (contactBtn) { const span = contactBtn.querySelector('span'); if (span) span.textContent = t.contact; }
             if (adminBtn) { const span = adminBtn.querySelector('span'); if (span) span.textContent = t.admin; }
         }
+        
         function setLanguage(lang) { applyTranslation(lang); closeModal('language-modal'); }
         function openLanguageModal() { openModal('language-modal'); }
 
-        // Connection
         function updateOnlineStatus(status) {
             const dot = document.getElementById('status-dot-badge'), text = document.getElementById('status-text-badge'), countSpan = document.getElementById('online-count-badge');
             if (dot) { if (status === 'connected') { dot.className = 'status-dot-badge connected'; if (text) text.textContent = 'Online'; appState.isConnected = true; } else if (status === 'offline') { dot.className = 'status-dot-badge offline'; if (text) text.textContent = 'Offline'; appState.isConnected = false; } else { dot.className = 'status-dot-badge'; if (text) text.textContent = 'Connecting...'; } }
@@ -1404,7 +1526,6 @@
         function updateZoomLevelDisplay() { const zoomEl = document.getElementById('zoom-level'); if (zoomEl) zoomEl.innerText = Math.round(zoomLevel * 100) + '%'; }
         window.closeFullscreenImage = function() { const modal = document.getElementById('fullscreen-image-modal'); if (modal) { modal.style.display = 'none'; resetZoom(); } };
 
-        // Render Accounts
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
             if (!grid) return;
@@ -1460,7 +1581,6 @@
             list.innerHTML = appState.bookRequests.map(req => `<div class="book-request-item"><p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p><p><span class="label">${t.yourName}:</span> ${req.user_name}</p><p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p><button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.contactViaWA}</button></div>`).join('');
         }
 
-        // PocketBase Loading
         async function loadAccountsFromPB() {
             if (!appState.isConnected) return;
             try {
@@ -1478,7 +1598,6 @@
         async function loadContactsFromPB() { if (!appState.isConnected) return; try { const records = await pb.collection('contacts').getFullList(); if (records && records.length > 0) { appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description })); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); renderContacts(); } } catch (error) {} }
         async function loadSettingsFromPB() { if (!appState.isConnected) return; try { const records = await pb.collection('settings').getFullList(); const usdt = records.find(r => r.key === 'usdt_address'); if (usdt) { appState.usdtAddress = usdt.value; const usdtEl = document.getElementById('current-usdt-address'); if (usdtEl) usdtEl.innerText = usdt.value; } } catch (error) {} }
 
-        // Contact Management
         window.saveNewContact = async function() {
             const name = document.getElementById('contact-name')?.value.trim();
             let phone = document.getElementById('contact-phone')?.value.trim().replace(/\D/g, '');
@@ -1501,7 +1620,6 @@
             renderContacts(); renderAdminContacts(); showNotification('🗑️ Contact Deleted', 'Contact removed', 'warning'); alert('✅ Contact deleted!');
         };
 
-        // Upload Account
         window.uploadNewAccount = async function() {
             const tier = document.getElementById('account-tier').value;
             const title = document.getElementById('account-title').value.trim();
@@ -1528,7 +1646,6 @@
             } catch (error) { alert('Upload failed: ' + (error.message || 'Unknown error')); if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = 'UPLOAD'; } if (progressContainer) progressContainer.classList.remove('active'); if (progressBar) progressBar.style.width = '0%'; }
         };
 
-        // Action Functions
         window.filterAccounts = function(tier) { appState.currentFilter = tier; document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active')); const activeBtn = document.querySelector(`.tier-tab[data-tier="${tier}"]`); if (activeBtn) activeBtn.classList.add('active'); renderAccounts(); };
         window.switchScreen = function(screen) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1586,7 +1703,6 @@
         window.openModal = function(id) { const modal = document.getElementById(id); if (modal) modal.classList.remove('hidden'); };
         window.closeModal = function(id) { const modal = document.getElementById(id); if (modal) modal.classList.add('hidden'); };
 
-        // Track Visitor
         function trackVisitor() {
             fetch('https://api.ipify.org?format=json').then(r => r.json()).then(data => {
                 const minute = Math.floor(Date.now() / 60000);
@@ -1599,124 +1715,6 @@
             }).catch(() => { appState.onlineCount = Math.floor(Math.random() * 5) + 1; updateOnlineStatus(appState.isConnected ? 'connected' : 'offline'); });
         }
 
-        // ============================================
-        // PWA INSTALLATION - NATIVE FOR ANDROID
-        // ============================================
-        let deferredPrompt = null;
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('✅ beforeinstallprompt event captured - Android native install ready');
-            
-            // Show install button for Android
-            if (isAndroid() && !window.matchMedia('(display-mode: standalone)').matches) {
-                const installBtn = document.getElementById('install-button');
-                const installBanner = document.getElementById('install-banner');
-                if (installBtn) {
-                    installBtn.style.display = 'flex';
-                    const installTextSpan = document.getElementById('install-text');
-                    if (installTextSpan) installTextSpan.textContent = 'Install App';
-                }
-                if (installBanner) installBanner.style.display = 'flex';
-                console.log('✅ Install button shown for Android - will trigger native install prompt');
-            }
-        });
-        
-        window.installApp = function() {
-            console.log('installApp called, deferredPrompt exists:', !!deferredPrompt);
-            
-            // For Android - show native install prompt (REAL APP INSTALLATION)
-            if (deferredPrompt && isAndroid()) {
-                console.log('Showing native Android install prompt');
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ User accepted the install prompt - App installed like native app!');
-                        const installBtn = document.getElementById('install-button');
-                        const installBanner = document.getElementById('install-banner');
-                        if (installBtn) installBtn.style.display = 'none';
-                        if (installBanner) installBanner.style.display = 'none';
-                        showNotification('🎉 App Installed!', 'GK Store is now on your home screen as a native app', 'success');
-                    } else {
-                        console.log('❌ User dismissed the install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            } 
-            // For iOS - show instructions (iOS doesn't support native install prompts)
-            else if (isIOS()) {
-                console.log('iOS: Showing install instructions');
-                const instructionsDiv = document.getElementById('install-instructions');
-                if (instructionsDiv) {
-                    instructionsDiv.innerHTML = `
-                        <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span></div>
-                        <div class="install-step"><span class="step-number">2</span><span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span></div>
-                        <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span></div>
-                    `;
-                }
-                openModal('install-modal');
-            }
-            // For other browsers or if prompt not available
-            else {
-                console.log('No deferredPrompt or not Android, showing instructions');
-                const instructionsDiv = document.getElementById('install-instructions');
-                if (instructionsDiv) {
-                    if (isAndroid()) {
-                        instructionsDiv.innerHTML = `
-                            <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span></div>
-                            <div class="install-step"><span class="step-number">2</span><span class="step-text">Tap <span class="platform-badge"><i class="fas fa-download"></i> Install App</span></span></div>
-                            <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span></div>
-                        `;
-                    } else {
-                        instructionsDiv.innerHTML = `
-                            <div class="install-step"><span class="step-number">1</span><span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span></div>
-                            <div class="install-step"><span class="step-number">2</span><span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span></div>
-                        `;
-                    }
-                }
-                openModal('install-modal');
-            }
-        };
-        
-        window.closeInstallBanner = function() { 
-            const banner = document.getElementById('install-banner');
-            if (banner) banner.style.display = 'none'; 
-            sessionStorage.setItem('banner_closed', 'true'); 
-        };
-        
-        // Show install button for Android if not installed
-        setTimeout(() => {
-            if (!window.matchMedia('(display-mode: standalone)').matches) {
-                const installBtn = document.getElementById('install-button');
-                if (installBtn) {
-                    installBtn.style.display = 'flex';
-                    const installTextSpan = document.getElementById('install-text');
-                    if (isAndroid() && installTextSpan) {
-                        installTextSpan.textContent = 'Install App';
-                        console.log('Android: Install button shown - ready for native install');
-                    } else if (isIOS() && installTextSpan) {
-                        installTextSpan.textContent = 'Add to Home Screen';
-                    } else if (installTextSpan) {
-                        installTextSpan.textContent = 'Install GK Store';
-                    }
-                }
-                if (isAndroid() && !sessionStorage.getItem('banner_closed')) {
-                    const installBanner = document.getElementById('install-banner');
-                    if (installBanner) installBanner.style.display = 'flex';
-                }
-            }
-        }, 1000);
-        
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/GKStore/sw.js', { scope: '/GKStore/' })
-                    .then(registration => console.log('✅ ServiceWorker registered:', registration.scope))
-                    .catch(error => console.log('❌ ServiceWorker registration failed:', error));
-            });
-        }
-        
         // Initialization
         const savedLang = localStorage.getItem('gk_language') || 'en';
         appState.currentLanguage = savedLang;
