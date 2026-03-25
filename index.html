@@ -38,7 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* All CSS remains exactly as before - keeping all styles */
+        /* All CSS remains exactly the same - keeping all your existing styles */
         * {
             margin: 0;
             padding: 0;
@@ -887,7 +887,7 @@
             50% { transform: translateX(-50%) translateY(-8px); }
         }
 
-        /* Fullscreen Image Modal with Pinch-to-Zoom */
+        /* Fullscreen Image Modal */
         .fullscreen-modal {
             position: fixed;
             top: 0;
@@ -949,11 +949,6 @@
             transition: all 0.3s;
         }
         
-        .fullscreen-modal .close-btn:hover {
-            background: var(--primary);
-            transform: scale(1.1);
-        }
-        
         .zoom-controls {
             position: absolute;
             bottom: 30px;
@@ -978,11 +973,6 @@
             height: 40px;
             border-radius: 50%;
             transition: all 0.3s;
-        }
-        
-        .zoom-controls button:hover {
-            background: var(--primary);
-            transform: scale(1.1);
         }
         
         .zoom-controls .zoom-level {
@@ -1113,7 +1103,7 @@
         </div>
     </div>
 
-    <!-- Install Button - Fixed (Native install for Android) -->
+    <!-- Install Button - Fixed -->
     <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="installApp()">
         <i class="fas fa-download"></i> <span id="install-text">Install GK Store</span>
         <i class="fas fa-mobile-alt"></i>
@@ -2747,11 +2737,11 @@
         // ============================================
         // PWA INSTALLATION - NATIVE FOR ANDROID
         // ============================================
-        let installPromptEvent = null;
+        let installPrompt = null;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            installPromptEvent = e;
+            installPrompt = e;
             
             // Show install button for Android
             if (isAndroid() && !isAppInstalled()) {
@@ -2759,6 +2749,7 @@
                 const installBanner = document.getElementById('install-banner');
                 if (installBtn) installBtn.style.display = 'flex';
                 if (installBanner) installBanner.style.display = 'flex';
+                console.log('✅ Install prompt ready for Android');
             }
         });
         
@@ -2768,9 +2759,9 @@
         
         window.installApp = function() {
             // For Android - show native install prompt
-            if (installPromptEvent && isAndroid()) {
-                installPromptEvent.prompt();
-                installPromptEvent.userChoice.then((choiceResult) => {
+            if (installPrompt && isAndroid()) {
+                installPrompt.prompt();
+                installPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('✅ User accepted install');
                         const installBtn = document.getElementById('install-button');
@@ -2779,8 +2770,10 @@
                         if (installBanner) installBanner.style.display = 'none';
                     } else {
                         console.log('❌ User dismissed install');
+                        // Show instructions as fallback
+                        showInstallInstructions();
                     }
-                    installPromptEvent = null;
+                    installPrompt = null;
                 });
             } 
             // For iOS - show instructions
@@ -2876,6 +2869,21 @@
         }, 1000);
 
         // ============================================
+        // SERVICE WORKER REGISTRATION
+        // ============================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/GKStore/sw.js', { scope: '/GKStore/' })
+                    .then(registration => {
+                        console.log('✅ ServiceWorker registered successfully:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('❌ ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
         const savedLang = localStorage.getItem('gk_language') || 'en';
@@ -2887,16 +2895,6 @@
         renderAccounts();
         trackVisitor();
         setInterval(trackVisitor, 60000);
-        
-        // Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                for(let registration of registrations) {
-                    registration.unregister();
-                }
-            });
-            navigator.serviceWorker.register('/GKStore/sw.js', { scope: '/GKStore/' }).catch(console.log);
-        }
     </script>
 </body>
 </html>
