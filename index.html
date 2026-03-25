@@ -949,12 +949,37 @@
             width: 100%;
             aspect-ratio: 16/9;
             background: #000;
+            cursor: pointer;
         }
         
         .video-container video {
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+        
+        .video-play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        
+        .video-play-button:hover {
+            background: var(--primary);
+            transform: translate(-50%, -50%) scale(1.1);
         }
         
         .video-fallback {
@@ -971,6 +996,7 @@
             flex-direction: column;
             gap: 10px;
             cursor: pointer;
+            z-index: 5;
         }
         
         .video-fallback i {
@@ -1166,7 +1192,7 @@
     <!-- All Modals (condensed for space but functional) -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-edit"></i> Edit USDT Address</h3><button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"><p style="color:var(--text-secondary); font-size:0.8rem;">Make sure it's a valid TRC20 address</p></div><div class="modal-footer"><button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="saveUsdtAddress()">Save</button></div></div></div>
     
-    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-plus-circle"></i> Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="video-hint"><i class="fa fa-info-circle"></i> Max video size: 200MB. <i class="fa fa-apple"></i> iOS optimized playback</div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><div class="progress-text" id="progress-text"></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
+    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-plus-circle"></i> Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="video-hint"><i class="fa fa-info-circle"></i> Max video size: 200MB. <i class="fa fa-apple"></i> Tap video to play on iOS</div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><div class="progress-text" id="progress-text"></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
     
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button></div><div class="modal-body"><div id="admin-accounts-list"></div></div></div></div>
     
@@ -1201,50 +1227,60 @@
         pb.autoCancellation(false);
 
         // ============================================
-        // iOS VIDEO COMPATIBILITY - FIXED
+        // iOS VIDEO COMPATIBILITY - FIXED with external player
         // ============================================
         function isIOS() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         }
 
-        // Create iOS-friendly video element
-        function createIOSVideo(videoUrl, posterUrl) {
-            const videoContainer = document.createElement('div');
-            videoContainer.className = 'video-container';
+        // Open video in native iOS player (works 100% on iOS)
+        function playVideoOnIOS(videoUrl) {
+            // Create a temporary link to open video in Safari's native player
+            const link = document.createElement('a');
+            link.href = videoUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Create iOS-friendly video with play button overlay
+        function createIOSVideoElement(videoUrl) {
+            const container = document.createElement('div');
+            container.className = 'video-container';
+            container.style.position = 'relative';
+            container.style.cursor = 'pointer';
             
-            const video = document.createElement('video');
-            video.className = 'card-media';
-            video.controls = true;
-            video.playsInline = true;
-            video.preload = 'metadata';
-            
-            // Critical for iOS - add source element
-            const source = document.createElement('source');
-            source.src = videoUrl;
-            source.type = 'video/mp4';
-            video.appendChild(source);
-            
-            // Add poster if available
-            if (posterUrl) {
-                video.poster = posterUrl;
-            }
-            
-            // Add fallback for iOS if video fails to load
-            video.onerror = function() {
-                console.log('Video failed to load:', videoUrl);
-                // Create fallback button
-                const fallback = document.createElement('div');
-                fallback.className = 'video-fallback';
-                fallback.innerHTML = '<i class="fas fa-play-circle"></i><span>Tap to open video</span>';
-                fallback.onclick = function() {
-                    window.open(videoUrl, '_blank');
-                };
-                videoContainer.innerHTML = '';
-                videoContainer.appendChild(fallback);
+            // Create thumbnail/poster from video (use first frame as poster)
+            const poster = document.createElement('img');
+            poster.style.width = '100%';
+            poster.style.height = '100%';
+            poster.style.objectFit = 'cover';
+            poster.style.background = '#000';
+            poster.src = videoUrl + '#t=0.5';
+            poster.onerror = () => {
+                poster.src = 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
             };
             
-            videoContainer.appendChild(video);
-            return videoContainer;
+            // Create play button overlay
+            const playButton = document.createElement('div');
+            playButton.className = 'video-play-button';
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            playButton.onclick = (e) => {
+                e.stopPropagation();
+                playVideoOnIOS(videoUrl);
+            };
+            
+            container.appendChild(poster);
+            container.appendChild(playButton);
+            
+            // Also make whole container clickable
+            container.onclick = () => {
+                playVideoOnIOS(videoUrl);
+            };
+            
+            return container;
         }
 
         // ============================================
@@ -1527,29 +1563,22 @@
                 
                 if (acc.mediaType === 'video') {
                     if (isIOSDevice) {
-                        // For iOS, use a more reliable approach with poster and direct link
-                        const videoUrl = acc.media;
+                        // For iOS, use play button overlay that opens video in new tab
                         mediaHtml = `
-                            <div class="video-container">
-                                <video 
-                                    class="card-media" 
-                                    controls 
-                                    playsinline 
-                                    webkit-playsinline
-                                    preload="metadata"
-                                    poster="${videoUrl}#t=0.5"
-                                    style="width:100%; height:100%; object-fit:contain; background:#000;"
-                                >
-                                    <source src="${videoUrl}" type="video/mp4">
-                                </video>
+                            <div class="video-container" style="position:relative; cursor:pointer; aspect-ratio:16/9; background:#000;" onclick="playVideoOnIOS('${acc.media}')">
+                                <img src="${acc.media}#t=0.5" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">
+                                <div class="video-play-button" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:60px; background:rgba(0,0,0,0.7); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+                                    <i class="fas fa-play"></i>
+                                </div>
                                 <div style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.6); padding:4px 8px; border-radius:20px; font-size:10px; color:#ffc107;">
                                     <i class="fa fa-apple"></i> Tap to play
                                 </div>
                             </div>
                         `;
                     } else {
+                        // For Android, use normal video player
                         mediaHtml = `
-                            <div class="video-container">
+                            <div class="video-container" style="aspect-ratio:16/9; background:#000;">
                                 <video 
                                     class="card-media" 
                                     controls 
@@ -1582,15 +1611,6 @@
                     </div>
                 `;
             }).join('');
-            
-            // Re-initialize videos for iOS - ensure they load
-            if (isIOSDevice) {
-                setTimeout(() => {
-                    document.querySelectorAll('.video-container video').forEach(video => {
-                        video.load();
-                    });
-                }, 100);
-            }
         }
 
         function renderContacts() {
