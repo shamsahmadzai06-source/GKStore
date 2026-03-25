@@ -38,7 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* All your existing CSS - keeping exactly as is */
+        /* All your existing CSS */
         * {
             margin: 0;
             padding: 0;
@@ -949,64 +949,12 @@
             width: 100%;
             aspect-ratio: 16/9;
             background: #000;
-            cursor: pointer;
         }
         
         .video-container video {
             width: 100%;
             height: 100%;
             object-fit: contain;
-        }
-        
-        .video-play-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s;
-            z-index: 10;
-        }
-        
-        .video-play-button:hover {
-            background: var(--primary);
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-        
-        .video-fallback {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            color: white;
-            flex-direction: column;
-            gap: 10px;
-            cursor: pointer;
-            z-index: 5;
-        }
-        
-        .video-fallback i {
-            font-size: 48px;
-            color: var(--primary);
-        }
-        
-        .video-fallback span {
-            font-size: 12px;
-            color: var(--text-secondary);
         }
         
         .install-instructions {
@@ -1189,10 +1137,10 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- All Modals (condensed for space but functional) -->
+    <!-- All Modals -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-edit"></i> Edit USDT Address</h3><button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"><p style="color:var(--text-secondary); font-size:0.8rem;">Make sure it's a valid TRC20 address</p></div><div class="modal-footer"><button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="saveUsdtAddress()">Save</button></div></div></div>
     
-    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-plus-circle"></i> Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="video-hint"><i class="fa fa-info-circle"></i> Max video size: 200MB. <i class="fa fa-apple"></i> Tap video to play on iOS</div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><div class="progress-text" id="progress-text"></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
+    <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-plus-circle"></i> Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="video-hint"><i class="fa fa-info-circle"></i> Max video size: 200MB. <i class="fa fa-apple"></i> iOS optimized playback</div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><div class="progress-text" id="progress-text"></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
     
     <div id="manage-accounts-modal" class="modal-overlay hidden" onclick="closeModal('manage-accounts-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="closeModal('manage-accounts-modal')">&times;</button></div><div class="modal-body"><div id="admin-accounts-list"></div></div></div></div>
     
@@ -1227,64 +1175,14 @@
         pb.autoCancellation(false);
 
         // ============================================
-        // iOS VIDEO COMPATIBILITY - FIXED with external player
+        // iOS VIDEO COMPATIBILITY - CORRECT FIX
         // ============================================
         function isIOS() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         }
 
-        // Open video in native iOS player (works 100% on iOS)
-        function playVideoOnIOS(videoUrl) {
-            // Create a temporary link to open video in Safari's native player
-            const link = document.createElement('a');
-            link.href = videoUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Create iOS-friendly video with play button overlay
-        function createIOSVideoElement(videoUrl) {
-            const container = document.createElement('div');
-            container.className = 'video-container';
-            container.style.position = 'relative';
-            container.style.cursor = 'pointer';
-            
-            // Create thumbnail/poster from video (use first frame as poster)
-            const poster = document.createElement('img');
-            poster.style.width = '100%';
-            poster.style.height = '100%';
-            poster.style.objectFit = 'cover';
-            poster.style.background = '#000';
-            poster.src = videoUrl + '#t=0.5';
-            poster.onerror = () => {
-                poster.src = 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';
-            };
-            
-            // Create play button overlay
-            const playButton = document.createElement('div');
-            playButton.className = 'video-play-button';
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
-            playButton.onclick = (e) => {
-                e.stopPropagation();
-                playVideoOnIOS(videoUrl);
-            };
-            
-            container.appendChild(poster);
-            container.appendChild(playButton);
-            
-            // Also make whole container clickable
-            container.onclick = () => {
-                playVideoOnIOS(videoUrl);
-            };
-            
-            return container;
-        }
-
         // ============================================
-        // COMPLETE TRANSLATIONS (All 3 languages)
+        // COMPLETE TRANSLATIONS
         // ============================================
         const translations = {
             en: {
@@ -1539,7 +1437,7 @@
         window.closeFullscreenImage = function() { document.getElementById('fullscreen-image-modal').style.display = 'none'; resetZoom(); };
 
         // ============================================
-        // RENDER FUNCTIONS - FIXED iOS VIDEO
+        // RENDER FUNCTIONS - FIXED iOS VIDEO WITH muted playsinline controls
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1562,35 +1460,25 @@
                 let mediaHtml;
                 
                 if (acc.mediaType === 'video') {
-                    if (isIOSDevice) {
-                        // For iOS, use play button overlay that opens video in new tab
-                        mediaHtml = `
-                            <div class="video-container" style="position:relative; cursor:pointer; aspect-ratio:16/9; background:#000;" onclick="playVideoOnIOS('${acc.media}')">
-                                <img src="${acc.media}#t=0.5" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400'">
-                                <div class="video-play-button" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:60px; background:rgba(0,0,0,0.7); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
-                                    <i class="fas fa-play"></i>
-                                </div>
-                                <div style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.6); padding:4px 8px; border-radius:20px; font-size:10px; color:#ffc107;">
-                                    <i class="fa fa-apple"></i> Tap to play
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        // For Android, use normal video player
-                        mediaHtml = `
-                            <div class="video-container" style="aspect-ratio:16/9; background:#000;">
-                                <video 
-                                    class="card-media" 
-                                    controls 
-                                    preload="metadata"
-                                    poster="${acc.media}#t=0.5"
-                                    style="width:100%; height:100%; object-fit:contain; background:#000;"
-                                >
-                                    <source src="${acc.media}" type="video/mp4">
-                                </video>
-                            </div>
-                        `;
-                    }
+                    // The correct combination for iOS: muted + playsinline + controls
+                    // muted is required for autoplay on iOS, but users can unmute
+                    mediaHtml = `
+                        <div class="video-container">
+                            <video 
+                                class="card-media" 
+                                controls
+                                playsinline
+                                ${isIOSDevice ? 'webkit-playsinline' : ''}
+                                muted
+                                preload="metadata"
+                                poster="${acc.media}#t=0.5"
+                                style="width:100%; height:100%; object-fit:contain; background:#000;"
+                            >
+                                <source src="${acc.media}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    `;
                 } else {
                     mediaHtml = `<img src="${acc.media}" class="card-media" alt="${acc.title}" loading="lazy" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer; object-fit:contain; background:#000;" onerror="this.src='https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400';">`;
                 }
@@ -1667,7 +1555,7 @@
             const t = translations[appState.currentLanguage] || translations.en;
             list.innerHTML = appState.accounts.map(acc => `
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline></video>` : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`}
+                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline muted style="background:#000;"></video>` : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`}
                     <div style="flex:1;"><strong>${acc.title}</strong><span class="tier-badge ${acc.tier}">${acc.tier}</span><div>$${acc.price_usd} / ${acc.price_afn} AFN</div></div>
                     <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> ${t.delete}</button>
                 </div>
@@ -1695,7 +1583,7 @@
             const t = translations[appState.currentLanguage] || translations.en;
             list.innerHTML = appState.ads.map((ad, index) => `
                 <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">${ad.type === 'video' ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline></video>` : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`}</div>
+                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">${ad.type === 'video' ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline muted></video>` : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`}</div>
                     <div style="flex:1;"><strong>${ad.caption || 'No caption'}</strong><div style="font-size:0.7rem;">${ad.type}</div></div>
                     <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})"><i class="fa fa-trash"></i> ${t.delete}</button>
                 </div>
@@ -1849,7 +1737,7 @@
                 uploadBtn.disabled = false;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline></video>`;
+                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`;
                     else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
                 };
                 reader.readAsDataURL(file);
@@ -1864,7 +1752,7 @@
                 const isVideo = file.type.startsWith('video/');
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline></video>`;
+                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`;
                     else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
                     appState.currentAdData = { type: isVideo ? 'video' : 'image', data: e.target.result };
                 };
