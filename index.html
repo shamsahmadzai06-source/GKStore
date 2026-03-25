@@ -420,7 +420,7 @@
             color: var(--success);
         }
 
-        /* Swipe Ads Container - FIXED with all slides inside one swipe container */
+        /* Swipe Ads Container - ONE CONTAINER */
         .swipe-ads {
             width: 100%;
             border-radius: 1.5rem;
@@ -434,12 +434,11 @@
             position: relative;
             width: 100%;
             overflow: hidden;
-            touch-action: pan-y pinch-zoom;
         }
 
         .swipe-wrapper {
             display: flex;
-            transition: transform 0.3s ease-out;
+            transition: transform 0.5s ease-out;
             cursor: grab;
         }
 
@@ -1203,7 +1202,7 @@
                 <!-- INFO CARDS -->
                 <div class="info-cards" id="info-cards"></div>
                 
-                <!-- SWIPE ADS - PROPER SWIPE CONTAINER with all slides inside -->
+                <!-- SWIPE ADS - ONE CONTAINER -->
                 <div class="swipe-ads" id="ads-slider"></div>
                 
                 <button class="cta-button" onclick="switchScreen('accounts')">
@@ -1294,7 +1293,7 @@
         <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="admin">Admin</span></button>
     </div>
 
-    <!-- All Modals (keeping exactly as before) -->
+    <!-- All Modals -->
     <div id="edit-usdt-modal" class="modal-overlay hidden" onclick="closeModal('edit-usdt-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-edit"></i> Edit USDT Address</h3><button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input" value="TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY"><p style="color:var(--text-secondary); font-size:0.8rem;">Make sure it's a valid TRC20 address</p></div><div class="modal-footer"><button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="saveUsdtAddress()">Save</button></div></div></div>
     
     <div id="add-account-modal" class="modal-overlay hidden" onclick="closeModal('add-account-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fa fa-plus-circle"></i> Add New Account</h3><button class="modal-close" onclick="closeModal('add-account-modal')">&times;</button></div><div class="modal-body"><select id="account-tier" class="input"><option value="">-- Select Tier --</option><option value="small">Small PUBG ($10-$500)</option><option value="medium">Medium PUBG ($500-$1000)</option><option value="big">Big PUBG ($1000-$100000)</option></select><input type="text" id="account-title" class="input" placeholder="Account Title"><textarea id="account-description" class="input" rows="2" placeholder="Description"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="number" id="account-price-usd" class="input" step="0.01" placeholder="USD Price"><input type="number" id="account-price-afn" class="input" placeholder="AFN Price"></div><div class="media-preview" id="media-preview"><i class="fa fa-cloud-upload-alt"></i></div><div class="video-hint"><i class="fa fa-info-circle"></i> Max video size: 200MB. <i class="fa fa-apple"></i> iOS optimized playback</div><div class="upload-progress" id="upload-progress"><div class="progress-bar" id="progress-bar"></div></div><div class="progress-text" id="progress-text"></div><input type="file" id="account-media-file" class="input" accept="image/*,video/*" onchange="previewMediaFromFile()"><button class="upload-btn" id="upload-btn" onclick="uploadNewAccount()" disabled>UPLOAD</button></div></div></div>
@@ -1482,7 +1481,6 @@
             slideCount: 0,
             isDraggingSwipe: false,
             startX: 0,
-            currentTranslate: 0,
             startTranslate: 0
         };
 
@@ -1521,7 +1519,7 @@
         }
 
         // ============================================
-        // SWIPE ADS - PROPER SWIPE CONTAINER
+        // SWIPE ADS - ONE CONTAINER WITH AUTO SLIDE
         // ============================================
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
@@ -1533,6 +1531,7 @@
             }
             
             appState.slideCount = appState.ads.length;
+            appState.currentSlide = 0;
             
             let slides = '';
             appState.ads.forEach((ad, index) => {
@@ -1575,30 +1574,10 @@
                 </div>
             `;
             
-            // Initialize swipe functionality
-            initSwipe();
-            
-            // Start auto slide
-            startAutoSlide();
-        }
-        
-        function initSwipe() {
-            const wrapper = document.getElementById('swipe-wrapper');
-            const container = document.getElementById('swipe-container');
-            if (!wrapper || !container) return;
-            
-            // Set initial transform
+            // Initialize
             updateSlideTransform(0);
-            
-            // Touch events for mobile swipe
-            wrapper.addEventListener('touchstart', onTouchStart, { passive: false });
-            wrapper.addEventListener('touchmove', onTouchMove, { passive: false });
-            wrapper.addEventListener('touchend', onTouchEnd);
-            
-            // Mouse events for desktop drag
-            wrapper.addEventListener('mousedown', onMouseDown);
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
+            initSwipeEvents();
+            startAutoSlide();
         }
         
         function updateSlideTransform(index) {
@@ -1619,6 +1598,21 @@
             });
         }
         
+        function initSwipeEvents() {
+            const wrapper = document.getElementById('swipe-wrapper');
+            if (!wrapper) return;
+            
+            // Touch events
+            wrapper.addEventListener('touchstart', onTouchStart, { passive: false });
+            wrapper.addEventListener('touchmove', onTouchMove, { passive: false });
+            wrapper.addEventListener('touchend', onTouchEnd);
+            
+            // Mouse events
+            wrapper.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+        
         function onTouchStart(e) {
             if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
             appState.isDraggingSwipe = true;
@@ -1628,6 +1622,7 @@
                 const style = window.getComputedStyle(wrapper);
                 const matrix = new WebKitCSSMatrix(style.transform);
                 appState.startTranslate = matrix.m41;
+                wrapper.style.transition = 'none';
             }
             e.preventDefault();
         }
@@ -1639,7 +1634,6 @@
             const wrapper = document.getElementById('swipe-wrapper');
             if (wrapper) {
                 wrapper.style.transform = `translateX(${appState.startTranslate + diffX}px)`;
-                wrapper.style.transition = 'none';
             }
             e.preventDefault();
         }
@@ -1650,7 +1644,7 @@
             const wrapper = document.getElementById('swipe-wrapper');
             if (!wrapper) return;
             
-            wrapper.style.transition = 'transform 0.3s ease-out';
+            wrapper.style.transition = 'transform 0.5s ease-out';
             const slideWidth = wrapper.clientWidth / appState.slideCount;
             const currentTranslate = parseFloat(wrapper.style.transform.replace('translateX(', '').replace('px)', ''));
             const newIndex = Math.round(-currentTranslate / slideWidth);
@@ -1669,6 +1663,7 @@
                 const style = window.getComputedStyle(wrapper);
                 const matrix = new WebKitCSSMatrix(style.transform);
                 appState.startTranslate = matrix.m41;
+                wrapper.style.transition = 'none';
             }
             e.preventDefault();
         }
@@ -1680,7 +1675,6 @@
             const wrapper = document.getElementById('swipe-wrapper');
             if (wrapper) {
                 wrapper.style.transform = `translateX(${appState.startTranslate + diffX}px)`;
-                wrapper.style.transition = 'none';
             }
         }
         
@@ -1690,7 +1684,7 @@
             const wrapper = document.getElementById('swipe-wrapper');
             if (!wrapper) return;
             
-            wrapper.style.transition = 'transform 0.3s ease-out';
+            wrapper.style.transition = 'transform 0.5s ease-out';
             const slideWidth = wrapper.clientWidth / appState.slideCount;
             const currentTranslate = parseFloat(wrapper.style.transform.replace('translateX(', '').replace('px)', ''));
             const newIndex = Math.round(-currentTranslate / slideWidth);
