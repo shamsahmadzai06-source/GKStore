@@ -38,7 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* All existing CSS - keeping exactly as before */
+        /* All CSS remains exactly as before - keeping all styles */
         * {
             margin: 0;
             padding: 0;
@@ -1113,7 +1113,7 @@
         </div>
     </div>
 
-    <!-- Install Button - Fixed -->
+    <!-- Install Button - Fixed (Native install for Android) -->
     <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="installApp()">
         <i class="fas fa-download"></i> <span id="install-text">Install GK Store</span>
         <i class="fas fa-mobile-alt"></i>
@@ -2747,25 +2747,11 @@
         // ============================================
         // PWA INSTALLATION - NATIVE FOR ANDROID
         // ============================================
-        // Force check for install prompt on Android
-        window.addEventListener('load', () => {
-            if (isAndroid() && !isAppInstalled()) {
-                // Try to trigger beforeinstallprompt by checking if the app can be installed
-                // This helps ensure the event fires
-                setTimeout(() => {
-                    const installBtn = document.getElementById('install-button');
-                    if (installBtn) {
-                        installBtn.style.display = 'flex';
-                        const installTextSpan = document.getElementById('install-text');
-                        if (installTextSpan) installTextSpan.textContent = 'Install App';
-                    }
-                }, 2000);
-            }
-        });
+        let installPromptEvent = null;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            appState.deferredPrompt = e;
+            installPromptEvent = e;
             
             // Show install button for Android
             if (isAndroid() && !isAppInstalled()) {
@@ -2782,9 +2768,9 @@
         
         window.installApp = function() {
             // For Android - show native install prompt
-            if (appState.deferredPrompt && isAndroid()) {
-                appState.deferredPrompt.prompt();
-                appState.deferredPrompt.userChoice.then((choiceResult) => {
+            if (installPromptEvent && isAndroid()) {
+                installPromptEvent.prompt();
+                installPromptEvent.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('✅ User accepted install');
                         const installBtn = document.getElementById('install-button');
@@ -2793,10 +2779,8 @@
                         if (installBanner) installBanner.style.display = 'none';
                     } else {
                         console.log('❌ User dismissed install');
-                        // Show instructions as fallback
-                        showInstallInstructions();
                     }
-                    appState.deferredPrompt = null;
+                    installPromptEvent = null;
                 });
             } 
             // For iOS - show instructions
@@ -2836,7 +2820,7 @@
                         </div>
                         <div class="install-step">
                             <span class="step-number">2</span>
-                            <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-download"></i> Install App</span> or <span class="platform-badge">Add to Home Screen</span></span>
+                            <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-download"></i> Install App</span></span>
                         </div>
                         <div class="install-step">
                             <span class="step-number">3</span>
