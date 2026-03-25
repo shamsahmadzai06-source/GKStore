@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gk-store-v3';
+const CACHE_NAME = 'gk-store-v1';
 const urlsToCache = [
   '/GKStore/',
   '/GKStore/index.html',
@@ -38,7 +38,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
-      if (response) return response;
+      if (response) {
+        return response;
+      }
       return fetch(event.request);
     })
   );
