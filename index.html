@@ -84,7 +84,6 @@
             }
         }
 
-        /* Install Banner */
         .install-banner {
             background: var(--gradient-primary);
             color: white;
@@ -330,7 +329,7 @@
             color: var(--text-secondary);
         }
 
-        /* Info Cards - New Feature */
+        /* Info Cards */
         .info-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -421,33 +420,38 @@
             color: var(--success);
         }
 
-        /* Card specific colors */
-        .info-card:nth-child(1) .card-icon i { color: #f59e0b; }
-        .info-card:nth-child(2) .card-icon i { color: #10b981; }
-        .info-card:nth-child(3) .card-icon i { color: #3b82f6; }
-        .info-card:nth-child(4) .card-icon i { color: #8b5cf6; }
-
+        /* Swipe Ads Container - FIXED */
         .swipe-ads {
             width: 100%;
-            border-radius: 2rem;
+            border-radius: 1.5rem;
             overflow: hidden;
             background: var(--surface);
             border: 1px solid var(--border);
+            position: relative;
         }
 
         .slider-container {
             position: relative;
             width: 100%;
+            overflow: hidden;
+            touch-action: pan-y pinch-zoom;
         }
 
         .slider-track {
             display: flex;
-            overflow-x: hidden;
+            overflow-x: auto;
             scroll-snap-type: x mandatory;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
-            background: #111;
+            background: #000;
+            cursor: grab;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .slider-track:active {
+            cursor: grabbing;
         }
 
         .slider-track::-webkit-scrollbar {
@@ -460,12 +464,15 @@
             position: relative;
             aspect-ratio: 16/9;
             background: #000;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .slide img, .slide video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            pointer-events: none;
         }
 
         .slide-caption {
@@ -477,6 +484,7 @@
             color: white;
             padding: 2rem 1rem 1rem;
             font-weight: 600;
+            pointer-events: none;
         }
 
         .slider-dots {
@@ -485,6 +493,8 @@
             gap: 8px;
             padding: 12px;
             background: var(--surface-light);
+            position: relative;
+            z-index: 5;
         }
 
         .dot {
@@ -499,6 +509,47 @@
         .dot.active {
             background: var(--primary);
             width: 24px;
+        }
+
+        /* Navigation arrows for desktop */
+        .slider-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        .slider-nav:hover {
+            background: var(--primary);
+        }
+
+        .slider-nav.prev {
+            left: 10px;
+        }
+
+        .slider-nav.next {
+            right: 10px;
+        }
+
+        .slider-nav i {
+            color: white;
+            font-size: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .slider-nav {
+                display: none;
+            }
         }
 
         .cta-button {
@@ -1162,12 +1213,10 @@
                 
                 <div class="sub-head main-subtitle" data-i18n="mainSubtitle">Secure · Instant delivery</div>
                 
-                <!-- INFO CARDS - NEW FEATURE -->
-                <div class="info-cards" id="info-cards">
-                    <!-- Will be populated by JavaScript with translations -->
-                </div>
+                <!-- INFO CARDS -->
+                <div class="info-cards" id="info-cards"></div>
                 
-                <!-- SWIPE ADS - MOVED ABOVE CTA BUTTON -->
+                <!-- SWIPE ADS - PROPER SWIPE CONTAINER -->
                 <div class="swipe-ads" id="ads-slider"></div>
                 
                 <button class="cta-button" onclick="switchScreen('accounts')">
@@ -1303,7 +1352,7 @@
         }
 
         // ============================================
-        // INFO CARDS TRANSLATIONS - NEW FEATURE
+        // INFO CARDS TRANSLATIONS
         // ============================================
         const infoCardsData = {
             en: [
@@ -1411,28 +1460,6 @@
         };
 
         // ============================================
-        // RENDER INFO CARDS FUNCTION
-        // ============================================
-        function renderInfoCards() {
-            const container = document.getElementById('info-cards');
-            if (!container) return;
-            
-            const lang = appState.currentLanguage || 'en';
-            const cards = infoCardsData[lang] || infoCardsData.en;
-            
-            container.innerHTML = cards.map(card => `
-                <div class="info-card">
-                    <div class="card-icon">
-                        <i class="fas ${card.icon}"></i>
-                    </div>
-                    <div class="card-badge">${card.badge}</div>
-                    <div class="card-title">${card.title}</div>
-                    <div class="card-desc">${card.desc}</div>
-                </div>
-            `).join('');
-        }
-
-        // ============================================
         // APP STATE
         // ============================================
         const appState = {
@@ -1475,10 +1502,29 @@
             if (localStorage.getItem('gk_usdt_address')) appState.usdtAddress = localStorage.getItem('gk_usdt_address');
         } catch(e) {}
 
-        // Add default contact if none exist
         if (appState.contacts.length === 0) {
             appState.contacts = [{ id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' }];
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+        }
+
+        // ============================================
+        // RENDER INFO CARDS
+        // ============================================
+        function renderInfoCards() {
+            const container = document.getElementById('info-cards');
+            if (!container) return;
+            const lang = appState.currentLanguage || 'en';
+            const cards = infoCardsData[lang] || infoCardsData.en;
+            container.innerHTML = cards.map(card => `
+                <div class="info-card">
+                    <div class="card-icon">
+                        <i class="fas ${card.icon}"></i>
+                    </div>
+                    <div class="card-badge">${card.badge}</div>
+                    <div class="card-title">${card.title}</div>
+                    <div class="card-desc">${card.desc}</div>
+                </div>
+            `).join('');
         }
 
         // ============================================
@@ -1494,10 +1540,7 @@
             document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
             appState.currentLanguage = lang;
             localStorage.setItem('gk_language', lang);
-            
-            // Render info cards with new language
             renderInfoCards();
-            
             renderAccounts();
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
@@ -1762,43 +1805,150 @@
             `).join('');
         }
 
+        // ============================================
+        // SWIPE ADS - PROPER IMPLEMENTATION
+        // ============================================
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
+            
             if (appState.ads.length === 0) { 
                 container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; 
                 return; 
             }
+            
             let slides = '';
-            appState.ads.forEach((ad) => {
+            appState.ads.forEach((ad, index) => {
                 if (ad.type === 'video') {
-                    slides += `<div class="slide"><video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover;"></video><div class="slide-caption">${ad.caption}</div></div>`;
+                    slides += `
+                        <div class="slide" data-index="${index}">
+                            <video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                            <div class="slide-caption">${ad.caption || ''}</div>
+                        </div>
+                    `;
                 } else {
-                    slides += `<div class="slide"><img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer;"><div class="slide-caption">${ad.caption}</div></div>`;
+                    slides += `
+                        <div class="slide" data-index="${index}">
+                            <img src="${ad.data}" alt="ad" onclick="openFullscreenImage('${ad.data}')" style="cursor:pointer; width:100%; height:100%; object-fit:cover;">
+                            <div class="slide-caption">${ad.caption || ''}</div>
+                        </div>
+                    `;
                 }
             });
+            
             let dots = '';
-            appState.ads.forEach((_, idx) => { dots += `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(${idx})"></span>`; });
-            container.innerHTML = `<div class="slider-container"><div class="slider-track" id="slider-track">${slides}</div><div class="slider-dots">${dots}</div></div>`;
+            appState.ads.forEach((_, idx) => {
+                dots += `<span class="dot ${idx === 0 ? 'active' : ''}" data-slide="${idx}" onclick="jumpToSlide(${idx})"></span>`;
+            });
+            
+            container.innerHTML = `
+                <div class="slider-container">
+                    <div class="slider-track" id="slider-track">
+                        ${slides}
+                    </div>
+                    <div class="slider-nav prev" onclick="prevSlide()">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="slider-nav next" onclick="nextSlide()">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                    <div class="slider-dots">
+                        ${dots}
+                    </div>
+                </div>
+            `;
+            
+            // Set up scroll event listener for swipe detection
             const track = document.getElementById('slider-track');
-            if (track) track.addEventListener('scroll', function() { const idx = Math.round(track.scrollLeft / track.clientWidth); document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx)); });
+            if (track) {
+                track.addEventListener('scroll', function() {
+                    const slideWidth = track.clientWidth;
+                    const scrollLeft = track.scrollLeft;
+                    const currentIndex = Math.round(scrollLeft / slideWidth);
+                    updateDots(currentIndex);
+                });
+                
+                // Enable touch swipe
+                let startX, startScrollLeft;
+                track.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startScrollLeft = track.scrollLeft;
+                });
+                
+                track.addEventListener('touchmove', (e) => {
+                    if (!startX) return;
+                    const diffX = e.touches[0].clientX - startX;
+                    track.scrollLeft = startScrollLeft - diffX;
+                });
+            }
+            
             startAutoSlide();
         }
-
+        
+        function updateDots(index) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, i) => {
+                if (i === index) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        window.jumpToSlide = function(idx) {
+            const track = document.getElementById('slider-track');
+            if (track && appState.ads.length > 0) {
+                const slideWidth = track.clientWidth;
+                track.scrollTo({ left: idx * slideWidth, behavior: 'smooth' });
+                updateDots(idx);
+                resetAutoSlide();
+            }
+        };
+        
+        window.nextSlide = function() {
+            const track = document.getElementById('slider-track');
+            if (track && appState.ads.length > 0) {
+                const slideWidth = track.clientWidth;
+                const currentIndex = Math.round(track.scrollLeft / slideWidth);
+                const nextIndex = (currentIndex + 1) % appState.ads.length;
+                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
+                updateDots(nextIndex);
+                resetAutoSlide();
+            }
+        };
+        
+        window.prevSlide = function() {
+            const track = document.getElementById('slider-track');
+            if (track && appState.ads.length > 0) {
+                const slideWidth = track.clientWidth;
+                const currentIndex = Math.round(track.scrollLeft / slideWidth);
+                const prevIndex = (currentIndex - 1 + appState.ads.length) % appState.ads.length;
+                track.scrollTo({ left: prevIndex * slideWidth, behavior: 'smooth' });
+                updateDots(prevIndex);
+                resetAutoSlide();
+            }
+        };
+        
+        function resetAutoSlide() {
+            if (appState.autoSlideInterval) {
+                clearInterval(appState.autoSlideInterval);
+                startAutoSlide();
+            }
+        }
+        
         function startAutoSlide() {
             if (appState.autoSlideInterval) clearInterval(appState.autoSlideInterval);
             appState.autoSlideInterval = setInterval(() => {
                 const track = document.getElementById('slider-track');
                 if (!track || appState.ads.length === 0) return;
-                const idx = (Math.round(track.scrollLeft / track.clientWidth) + 1) % appState.ads.length;
-                track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+                const slideWidth = track.clientWidth;
+                const currentIndex = Math.round(track.scrollLeft / slideWidth);
+                const nextIndex = (currentIndex + 1) % appState.ads.length;
+                track.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
+                updateDots(nextIndex);
             }, 2000);
         }
-
-        window.jumpToSlide = function(idx) {
-            const track = document.getElementById('slider-track');
-            if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
-        };
 
         function renderBookRequests() {
             const list = document.getElementById('admin-book-requests-list');
@@ -2290,7 +2440,7 @@
         }
 
         // ============================================
-        // PWA INSTALLATION - FOR BOTH iOS AND ANDROID
+        // PWA INSTALLATION
         // ============================================
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
