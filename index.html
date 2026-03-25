@@ -38,7 +38,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* Keep all your existing CSS exactly as is */
         * {
             margin: 0;
             padding: 0;
@@ -61,6 +60,9 @@
             --gradient-small: linear-gradient(135deg, #10b981, #059669);
             --gradient-medium: linear-gradient(135deg, #f59e0b, #d97706);
             --gradient-big: linear-gradient(135deg, #ef4444, #dc2626);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
         }
 
         body {
@@ -82,6 +84,7 @@
             }
         }
 
+        /* Install Banner */
         .install-banner {
             background: var(--gradient-primary);
             color: white;
@@ -255,7 +258,7 @@
         #main-screen .main-layout {
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.5rem;
         }
 
         .title-section {
@@ -264,7 +267,7 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .big-title {
@@ -327,24 +330,102 @@
             color: var(--text-secondary);
         }
 
-        .cta-button {
-            background: var(--gradient-primary);
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            padding: 1.2rem 1.5rem;
-            border-radius: 60px;
+        /* Info Cards - New Feature */
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .info-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
             width: 100%;
-            max-width: 500px;
-            margin: 1.5rem auto;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .info-card:hover::before {
+            left: 100%;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.3);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(236, 72, 153, 0.1);
+            border-radius: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            box-shadow: 0 10px 30px rgba(236,72,153,0.4);
-            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
         }
+
+        .info-card:hover .card-icon {
+            background: var(--gradient-primary);
+            transform: scale(1.1);
+        }
+
+        .card-icon i {
+            font-size: 1.8rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover .card-icon i {
+            color: white;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        /* Card specific colors */
+        .info-card:nth-child(1) .card-icon i { color: #f59e0b; }
+        .info-card:nth-child(2) .card-icon i { color: #10b981; }
+        .info-card:nth-child(3) .card-icon i { color: #3b82f6; }
+        .info-card:nth-child(4) .card-icon i { color: #8b5cf6; }
 
         .swipe-ads {
             width: 100%;
@@ -418,6 +499,30 @@
         .dot.active {
             background: var(--primary);
             width: 24px;
+        }
+
+        .cta-button {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 1.2rem 1.5rem;
+            border-radius: 60px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(236,72,153,0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.02);
         }
 
         .tier-header {
@@ -633,10 +738,10 @@
         .install-btn-fixed {
             position: fixed;
             bottom: 80px;
-            left: 0;
-            right: 0;
-            margin: 0 auto;
-            width: fit-content;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            min-width: 200px;
             z-index: 9999;
             background: var(--gradient-primary);
             color: white;
@@ -649,6 +754,7 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 12px;
             border: 2px solid rgba(255,255,255,0.2);
             transition: all 0.3s ease;
@@ -657,8 +763,8 @@
         }
 
         @keyframes pulse-install {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-8px); }
         }
 
         .iti {
@@ -767,14 +873,6 @@
             cursor: pointer;
             transition: 0.2s;
             width: 100%;
-        }
-        .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(236,72,153,0.4);
-        }
-        .upload-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .loading-spinner {
@@ -1001,6 +1099,19 @@
             margin: 0 4px;
             border: 1px solid var(--border);
         }
+
+        @media (max-width: 768px) {
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+            .big-title {
+                font-size: 1.8rem;
+            }
+            .cta-button {
+                font-size: 1.2rem;
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body dir="ltr">
@@ -1030,9 +1141,10 @@
         </div>
     </div>
 
-    <!-- Install Button -->
+    <!-- Install Button - Fixed -->
     <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="installApp()">
         <i class="fas fa-download"></i> <span id="install-text">Install GK Store</span>
+        <i class="fas fa-mobile-alt"></i>
     </button>
 
     <div class="container">
@@ -1047,12 +1159,22 @@
                         <span id="online-count-badge" class="online-count-badge">0</span>
                     </div>
                 </div>
+                
                 <div class="sub-head main-subtitle" data-i18n="mainSubtitle">Secure · Instant delivery</div>
+                
+                <!-- INFO CARDS - NEW FEATURE -->
+                <div class="info-cards" id="info-cards">
+                    <!-- Will be populated by JavaScript with translations -->
+                </div>
+                
+                <!-- SWIPE ADS - MOVED ABOVE CTA BUTTON -->
+                <div class="swipe-ads" id="ads-slider"></div>
+                
                 <button class="cta-button" onclick="switchScreen('accounts')">
                     <i class="fa fa-gamepad"></i> <span class="cta-text" data-i18n="cta">Click to see PUBG account</span>
                 </button>
-                <div class="swipe-ads" id="ads-slider"></div>
-                <p class="slider-hint" style="color:var(--text-secondary); text-align:center;" data-i18n="sliderHint">— swipe ads (auto change 2s) —</p>
+                
+                <p class="slider-hint" style="color:var(--text-secondary); text-align:center; font-size:0.7rem;" data-i18n="sliderHint">— swipe ads (auto change 2s) —</p>
             </div>
         </div>
 
@@ -1181,6 +1303,30 @@
         }
 
         // ============================================
+        // INFO CARDS TRANSLATIONS - NEW FEATURE
+        // ============================================
+        const infoCardsData = {
+            en: [
+                { icon: 'fa-video', title: 'Video Playback Issue?', desc: 'If the video does not play in the app, please contact us immediately.', badge: 'Support 24/7' },
+                { icon: 'fa-shield-alt', title: '100% Guarantee', desc: 'We offer a full guarantee on all accounts. Full refund if any issue.', badge: 'Trusted' },
+                { icon: 'fa-clock', title: '1 Month Warranty', desc: 'Full warranty for 1 month on all accounts purchased.', badge: 'Warranty' },
+                { icon: 'fa-link', title: 'Link Change Guarantee', desc: 'Link change guaranteed until the link is changed successfully.', badge: 'Secure' }
+            ],
+            ps: [
+                { icon: 'fa-video', title: 'د ویډیو پلی کولو ستونزه؟', desc: 'که چیرې ویډیو په اپلیکیشن کې نه پلی کیږي، مهرباني وکړئ سمدلاسه موږ سره اړیکه ونیسئ.', badge: '۲۴/۷ ملاتړ' },
+                { icon: 'fa-shield-alt', title: '۱۰۰٪ تضمین', desc: 'موږ په ټولو اکاونټونو بشپړ تضمین وړاندې کوو. که کومه ستونزه وي، بشپړ پیسې بیرته.', badge: 'باورمن' },
+                { icon: 'fa-clock', title: 'د ۱ میاشتې ضمانت', desc: 'په ټولو پیرودل شوي اکاونټونو کې د ۱ میاشتې بشپړ ضمانت.', badge: 'ضمانت' },
+                { icon: 'fa-link', title: 'د لینک بدلون تضمین', desc: 'تر هغه چې لینک په بریالیتوب سره بدل شوی نه وي، د لینک بدلون تضمین کیږي.', badge: 'خوندي' }
+            ],
+            fa: [
+                { icon: 'fa-video', title: 'مشکل پخش ویدیو؟', desc: 'اگر ویدیو در برنامه پخش نمی‌شود، لطفاً فوراً با ما تماس بگیرید.', badge: 'پشتیبانی ۲۴/۷' },
+                { icon: 'fa-shield-alt', title: '۱۰۰٪ گارانتی', desc: 'ما گارانتی کامل روی همه اکانت‌ها ارائه می‌دهیم. در صورت هرگونه مشکل، وجه کامل بازگردانده می‌شود.', badge: 'معتبر' },
+                { icon: 'fa-clock', title: 'گارانتی ۱ ماهه', desc: 'گارانتی کامل ۱ ماهه روی تمام اکانت‌های خریداری شده.', badge: 'گارانتی' },
+                { icon: 'fa-link', title: 'تضمین تغییر لینک', desc: 'تغییر لینک تضمین شده تا زمانی که لینک با موفقیت تغییر کند.', badge: 'امن' }
+            ]
+        };
+
+        // ============================================
         // COMPLETE TRANSLATIONS
         // ============================================
         const translations = {
@@ -1265,6 +1411,28 @@
         };
 
         // ============================================
+        // RENDER INFO CARDS FUNCTION
+        // ============================================
+        function renderInfoCards() {
+            const container = document.getElementById('info-cards');
+            if (!container) return;
+            
+            const lang = appState.currentLanguage || 'en';
+            const cards = infoCardsData[lang] || infoCardsData.en;
+            
+            container.innerHTML = cards.map(card => `
+                <div class="info-card">
+                    <div class="card-icon">
+                        <i class="fas ${card.icon}"></i>
+                    </div>
+                    <div class="card-badge">${card.badge}</div>
+                    <div class="card-title">${card.title}</div>
+                    <div class="card-desc">${card.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
         // APP STATE
         // ============================================
         const appState = {
@@ -1326,6 +1494,10 @@
             document.body.dir = (lang === 'ps' || lang === 'fa') ? 'rtl' : 'ltr';
             appState.currentLanguage = lang;
             localStorage.setItem('gk_language', lang);
+            
+            // Render info cards with new language
+            renderInfoCards();
+            
             renderAccounts();
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
@@ -1689,10 +1861,8 @@
         }
 
         // ============================================
-        // CONTACT MANAGEMENT - FIXED
+        // CONTACT MANAGEMENT
         // ============================================
-        
-        // Save contact to PocketBase and localStorage
         window.saveNewContact = async function() {
             const nameInput = document.getElementById('contact-name');
             const phoneInput = document.getElementById('contact-phone');
@@ -1707,7 +1877,6 @@
                 return; 
             }
             
-            // Ensure phone has country code (default to 93 for Afghanistan)
             if (!phone.startsWith('93') && phone.length <= 9) {
                 phone = '93' + phone;
             }
@@ -1719,13 +1888,9 @@
                 desc: desc 
             };
             
-            // Add to local state
             appState.contacts.push(newContact);
-            
-            // Save to localStorage
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
             
-            // Save to PocketBase if connected
             if (appState.isConnected && appState.isAdminLoggedIn) {
                 try {
                     const record = await pb.collection('contacts').create({
@@ -1733,81 +1898,41 @@
                         phone: phone,
                         description: desc
                     });
-                    // Update the contact ID with the one from PocketBase
                     newContact.id = record.id;
                     appState.contacts = appState.contacts.map(c => c.id === newContact.id ? newContact : c);
                     localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                    console.log('✅ Contact saved to PocketBase');
                 } catch (error) {
                     console.error('Error saving contact to PocketBase:', error);
-                    alert('⚠️ Contact saved locally only. Will sync when online.');
                 }
             }
             
-            // Clear form
             if (nameInput) nameInput.value = '';
             if (phoneInput) phoneInput.value = '';
             if (descTextarea) descTextarea.value = '';
             
-            // Re-render contacts
             renderContacts();
             renderAdminContacts();
-            
             alert('✅ Contact added successfully!');
         };
         
-        // Delete contact from PocketBase and localStorage
         window.deleteContact = async function(id) {
             if (!confirm('Delete this contact?')) return;
             
-            // Find the contact to delete
-            const contactToDelete = appState.contacts.find(c => c.id === id);
-            
-            // Delete from PocketBase if connected and it's a server record
             if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('c')) {
                 try {
                     await pb.collection('contacts').delete(id);
-                    console.log('✅ Contact deleted from PocketBase');
                 } catch (error) {
                     console.error('Error deleting from PocketBase:', error);
                 }
             }
             
-            // Remove from local state
             appState.contacts = appState.contacts.filter(c => c.id !== id);
-            
-            // Save to localStorage
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
             
-            // Re-render
             renderContacts();
             renderAdminContacts();
-            
             alert('✅ Contact deleted successfully!');
         };
-        
-        // Sync all contacts to PocketBase (useful for offline changes)
-        async function syncContactsToServer() {
-            if (!appState.isConnected || !appState.isAdminLoggedIn) return;
-            
-            for (const contact of appState.contacts) {
-                // Skip if already has a server ID (not local)
-                if (contact.id && !contact.id.startsWith('c')) continue;
-                
-                try {
-                    const record = await pb.collection('contacts').create({
-                        name: contact.name,
-                        phone: contact.phone,
-                        description: contact.desc || ''
-                    });
-                    contact.id = record.id;
-                    console.log(`✅ Synced contact: ${contact.name}`);
-                } catch (error) {
-                    console.error('Error syncing contact:', error);
-                }
-            }
-            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-        }
 
         // ============================================
         // UPLOAD FUNCTION
@@ -2165,7 +2290,7 @@
         }
 
         // ============================================
-        // PWA INSTALLATION
+        // PWA INSTALLATION - FOR BOTH iOS AND ANDROID
         // ============================================
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -2178,7 +2303,9 @@
             }
         });
         
-        function isAppInstalled() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+        function isAppInstalled() { 
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; 
+        }
         
         window.installApp = function() {
             if (appState.deferredPrompt) { 
@@ -2190,12 +2317,40 @@
         };
         
         function showInstallInstructions() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const instructionsDiv = document.getElementById('install-instructions');
             if (instructionsDiv) {
-                instructionsDiv.innerHTML = isIOS ? 
-                    '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Share <i class="fas fa-share-alt"></i></span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Add to Home Screen"</span></div>' :
-                    '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Menu (3 dots)</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Install App"</span></div>';
+                if (isIOSDevice) {
+                    instructionsDiv.innerHTML = `
+                        <div class="install-step">
+                            <span class="step-number">1</span>
+                            <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span>
+                        </div>
+                        <div class="install-step">
+                            <span class="step-number">2</span>
+                            <span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span>
+                        </div>
+                        <div class="install-step">
+                            <span class="step-number">3</span>
+                            <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
+                        </div>
+                    `;
+                } else {
+                    instructionsDiv.innerHTML = `
+                        <div class="install-step">
+                            <span class="step-number">1</span>
+                            <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span>
+                        </div>
+                        <div class="install-step">
+                            <span class="step-number">2</span>
+                            <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-download"></i> Install App</span> or <span class="platform-badge">Add to Home Screen</span></span>
+                        </div>
+                        <div class="install-step">
+                            <span class="step-number">3</span>
+                            <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
+                        </div>
+                    `;
+                }
             }
             openModal('install-modal');
         }
@@ -2226,6 +2381,8 @@
         // INITIALIZATION
         // ============================================
         const savedLang = localStorage.getItem('gk_language') || 'en';
+        appState.currentLanguage = savedLang;
+        renderInfoCards();
         applyTranslation(savedLang);
         renderAdsSlider();
         renderContacts();
