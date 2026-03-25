@@ -1,7 +1,5 @@
-// GK Store Service Worker - Simple and Clean
+// GK Store Service Worker
 const CACHE_NAME = 'gk-store-v1';
-
-// List of files to cache
 const urlsToCache = [
   '/GKStore/',
   '/GKStore/index.html',
@@ -10,7 +8,6 @@ const urlsToCache = [
   'https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js'
 ];
 
-// Install event - cache assets
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');
   event.waitUntil(
@@ -19,11 +16,9 @@ self.addEventListener('install', (event) => {
       return cache.addAll(urlsToCache);
     })
   );
-  // Activate immediately
   self.skipWaiting();
 });
 
-// Activate event - take control immediately
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating...');
   event.waitUntil(
@@ -38,29 +33,16 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  // Take control of all clients immediately
   return self.clients.claim();
 });
 
-// Fetch event - network first, cache fallback
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Don't cache if not a success
-        if (!response || response.status !== 200) {
-          return response;
-        }
-        // Clone the response
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+    caches.match(event.request).then((response) => {
+      if (response) {
         return response;
-      })
-      .catch(() => {
-        // If network fails, try cache
-        return caches.match(event.request);
-      })
+      }
+      return fetch(event.request);
+    })
   );
 });
