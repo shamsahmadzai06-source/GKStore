@@ -23,7 +23,7 @@
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
     
-    <!-- Manifest File -->
+    <!-- Manifest File - CRITICAL for PWA -->
     <link rel="manifest" href="/GKStore/manifest.json">
     
     <title>GK Store · PUBG accounts</title>
@@ -38,6 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* All existing CSS - keeping exactly as before */
         * {
             margin: 0;
             padding: 0;
@@ -886,7 +887,7 @@
             50% { transform: translateX(-50%) translateY(-8px); }
         }
 
-        /* Fullscreen Image Modal with Pinch-to-Zoom like Facebook */
+        /* Fullscreen Image Modal with Pinch-to-Zoom */
         .fullscreen-modal {
             position: fixed;
             top: 0;
@@ -1112,7 +1113,7 @@
         </div>
     </div>
 
-    <!-- Install Button - Fixed (Native install for Android, instructions for iOS) -->
+    <!-- Install Button - Fixed -->
     <button class="install-btn-fixed" id="install-button" style="display: none;" onclick="installApp()">
         <i class="fas fa-download"></i> <span id="install-text">Install GK Store</span>
         <i class="fas fa-mobile-alt"></i>
@@ -1279,7 +1280,7 @@
         pb.autoCancellation(false);
 
         // ============================================
-        // iOS VIDEO COMPATIBILITY
+        // PLATFORM DETECTION
         // ============================================
         function isIOS() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -1290,7 +1291,7 @@
         }
 
         // ============================================
-        // IMAGE ZOOM FUNCTIONALITY (Like Facebook)
+        // IMAGE ZOOM FUNCTIONALITY
         // ============================================
         let zoomLevel = 1;
         let panX = 0;
@@ -1494,7 +1495,7 @@
         };
 
         // ============================================
-        // COMPLETE TRANSLATIONS
+        // COMPLETE TRANSLATIONS (EN, PS, FA)
         // ============================================
         const translations = {
             en: {
@@ -2744,13 +2745,29 @@
         }
 
         // ============================================
-        // PWA INSTALLATION - NATIVE FOR ANDROID, INSTRUCTIONS FOR iOS
+        // PWA INSTALLATION - NATIVE FOR ANDROID
         // ============================================
+        // Force check for install prompt on Android
+        window.addEventListener('load', () => {
+            if (isAndroid() && !isAppInstalled()) {
+                // Try to trigger beforeinstallprompt by checking if the app can be installed
+                // This helps ensure the event fires
+                setTimeout(() => {
+                    const installBtn = document.getElementById('install-button');
+                    if (installBtn) {
+                        installBtn.style.display = 'flex';
+                        const installTextSpan = document.getElementById('install-text');
+                        if (installTextSpan) installTextSpan.textContent = 'Install App';
+                    }
+                }, 2000);
+            }
+        });
+        
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             appState.deferredPrompt = e;
             
-            // Only show install button for Android when prompt is available
+            // Show install button for Android
             if (isAndroid() && !isAppInstalled()) {
                 const installBtn = document.getElementById('install-button');
                 const installBanner = document.getElementById('install-banner');
@@ -2774,11 +2791,19 @@
                         const installBanner = document.getElementById('install-banner');
                         if (installBtn) installBtn.style.display = 'none';
                         if (installBanner) installBanner.style.display = 'none';
+                    } else {
+                        console.log('❌ User dismissed install');
+                        // Show instructions as fallback
+                        showInstallInstructions();
                     }
                     appState.deferredPrompt = null;
                 });
             } 
             // For iOS - show instructions
+            else if (isIOS()) {
+                showInstallInstructions();
+            }
+            // For other browsers or if prompt not available
             else {
                 showInstallInstructions();
             }
@@ -2803,7 +2828,7 @@
                             <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
                         </div>
                     `;
-                } else {
+                } else if (isAndroid()) {
                     instructionsDiv.innerHTML = `
                         <div class="install-step">
                             <span class="step-number">1</span>
@@ -2816,6 +2841,17 @@
                         <div class="install-step">
                             <span class="step-number">3</span>
                             <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
+                        </div>
+                    `;
+                } else {
+                    instructionsDiv.innerHTML = `
+                        <div class="install-step">
+                            <span class="step-number">1</span>
+                            <span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span>
+                        </div>
+                        <div class="install-step">
+                            <span class="step-number">2</span>
+                            <span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span>
                         </div>
                     `;
                 }
@@ -2840,7 +2876,7 @@
                     
                     if (isAndroid()) {
                         if (installTextSpan) installTextSpan.textContent = 'Install App';
-                    } else if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                    } else if (isIOS()) {
                         if (installTextSpan) installTextSpan.textContent = 'Add to Home Screen';
                     } else {
                         if (installTextSpan) installTextSpan.textContent = 'Install GK Store';
