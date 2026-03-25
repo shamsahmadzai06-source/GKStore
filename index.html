@@ -38,7 +38,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* All your existing CSS */
         * {
             margin: 0;
             padding: 0;
@@ -72,7 +71,6 @@
             padding-bottom: 80px;
         }
 
-        /* PWA Standalone Mode Styles */
         @media all and (display-mode: standalone) {
             body {
                 padding-top: env(safe-area-inset-top);
@@ -1175,7 +1173,7 @@
         pb.autoCancellation(false);
 
         // ============================================
-        // iOS VIDEO COMPATIBILITY - CORRECT FIX
+        // iOS VIDEO COMPATIBILITY
         // ============================================
         function isIOS() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -1324,6 +1322,18 @@
             renderAccounts();
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
+            
+            // Update bottom nav text
+            const contactBtn = document.getElementById('nav-contact');
+            const adminBtn = document.getElementById('nav-admin');
+            if (contactBtn) {
+                const span = contactBtn.querySelector('span');
+                if (span) span.textContent = t.contact;
+            }
+            if (adminBtn) {
+                const span = adminBtn.querySelector('span');
+                if (span) span.textContent = t.admin;
+            }
         }
 
         function setLanguage(lang) { applyTranslation(lang); closeModal('language-modal'); }
@@ -1337,17 +1347,19 @@
             const text = document.getElementById('status-text-badge');
             const countSpan = document.getElementById('online-count-badge');
             
-            if (status === 'connected') {
-                dot.className = 'status-dot-badge connected';
-                text.textContent = 'Online';
-                appState.isConnected = true;
-            } else if (status === 'offline') {
-                dot.className = 'status-dot-badge offline';
-                text.textContent = 'Offline';
-                appState.isConnected = false;
-            } else {
-                dot.className = 'status-dot-badge';
-                text.textContent = 'Connecting...';
+            if (dot) {
+                if (status === 'connected') {
+                    dot.className = 'status-dot-badge connected';
+                    if (text) text.textContent = 'Online';
+                    appState.isConnected = true;
+                } else if (status === 'offline') {
+                    dot.className = 'status-dot-badge offline';
+                    if (text) text.textContent = 'Offline';
+                    appState.isConnected = false;
+                } else {
+                    dot.className = 'status-dot-badge';
+                    if (text) text.textContent = 'Connecting...';
+                }
             }
             
             if (countSpan) countSpan.textContent = appState.onlineCount;
@@ -1400,7 +1412,7 @@
 
         function toggleAutoRefresh() {
             const toggle = document.getElementById('auto-refresh-toggle');
-            appState.autoRefreshEnabled = toggle.checked;
+            if (toggle) appState.autoRefreshEnabled = toggle.checked;
         }
 
         setTimeout(() => {
@@ -1416,16 +1428,19 @@
         window.openFullscreenImage = function(src) {
             const modal = document.getElementById('fullscreen-image-modal');
             const img = document.getElementById('fullscreen-image');
-            img.src = src;
-            modal.style.display = 'flex';
-            zoomLevel = 1; panX = 0; panY = 0;
-            updateImageTransform();
+            if (modal && img) {
+                img.src = src;
+                modal.style.display = 'flex';
+                zoomLevel = 1; panX = 0; panY = 0;
+                updateImageTransform();
+            }
         };
         
         function updateImageTransform() {
             const img = document.getElementById('fullscreen-image');
+            const zoomEl = document.getElementById('zoom-level');
             if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-            document.getElementById('zoom-level').innerText = zoomLevel.toFixed(1) + 'x';
+            if (zoomEl) zoomEl.innerText = zoomLevel.toFixed(1) + 'x';
         }
         
         window.zoomImage = function(dir) {
@@ -1434,10 +1449,14 @@
         };
         
         window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); };
-        window.closeFullscreenImage = function() { document.getElementById('fullscreen-image-modal').style.display = 'none'; resetZoom(); };
+        window.closeFullscreenImage = function() { 
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal) modal.style.display = 'none'; 
+            resetZoom(); 
+        };
 
         // ============================================
-        // RENDER FUNCTIONS - FIXED iOS VIDEO WITH muted playsinline controls
+        // RENDER FUNCTIONS
         // ============================================
         function renderAccounts() {
             const grid = document.getElementById('accounts-grid');
@@ -1460,8 +1479,6 @@
                 let mediaHtml;
                 
                 if (acc.mediaType === 'video') {
-                    // The correct combination for iOS: muted + playsinline + controls
-                    // muted is required for autoplay on iOS, but users can unmute
                     mediaHtml = `
                         <div class="video-container">
                             <video 
@@ -1666,9 +1683,11 @@
             const progressBar = document.getElementById('progress-bar');
             const progressContainer = document.getElementById('upload-progress');
             const uploadBtn = document.getElementById('upload-btn');
-            progressContainer.classList.add('active');
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+            if (progressContainer) progressContainer.classList.add('active');
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+            }
             
             try {
                 const formData = new FormData();
@@ -1677,22 +1696,26 @@
                 formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
                 
                 const record = await pb.collection('accounts').create(formData);
-                progressBar.style.width = '100%';
+                if (progressBar) progressBar.style.width = '100%';
                 setTimeout(() => {
                     closeModal('add-account-modal');
                     loadAccountsFromPB();
                     alert('✅ Account uploaded successfully!');
-                    uploadBtn.disabled = false;
-                    uploadBtn.innerHTML = 'UPLOAD';
-                    progressContainer.classList.remove('active');
-                    progressBar.style.width = '0%';
+                    if (uploadBtn) {
+                        uploadBtn.disabled = false;
+                        uploadBtn.innerHTML = 'UPLOAD';
+                    }
+                    if (progressContainer) progressContainer.classList.remove('active');
+                    if (progressBar) progressBar.style.width = '0%';
                 }, 500);
             } catch (error) {
                 alert('Upload failed: ' + (error.message || 'Unknown error'));
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = 'UPLOAD';
-                progressContainer.classList.remove('active');
-                progressBar.style.width = '0%';
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = 'UPLOAD';
+                }
+                if (progressContainer) progressContainer.classList.remove('active');
+                if (progressBar) progressBar.style.width = '0%';
             }
         };
 
@@ -1702,28 +1725,50 @@
         window.filterAccounts = function(tier) {
             appState.currentFilter = tier;
             document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.tier-tab[data-tier="${tier}"]`).classList.add('active');
+            const activeBtn = document.querySelector(`.tier-tab[data-tier="${tier}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
             renderAccounts();
         };
 
         window.switchScreen = function(screen) {
+            // Hide all screens
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screen + '-screen').classList.add('active');
-            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`nav-${screen === 'main' ? 'main' : screen}`).classList.add('active');
+            const targetScreen = document.getElementById(screen + '-screen');
+            if (targetScreen) targetScreen.classList.add('active');
+            
+            // Update bottom nav active state
+            const navButtons = document.querySelectorAll('.bottom-nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            
+            let activeNavId = 'nav-main';
+            if (screen === 'contact') activeNavId = 'nav-contact';
+            if (screen === 'admin') activeNavId = 'nav-admin';
+            
+            const activeNav = document.getElementById(activeNavId);
+            if (activeNav) activeNav.classList.add('active');
+            
+            // Render content based on screen
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
             if (screen === 'admin' && appState.isAdminLoggedIn) {
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
-                document.getElementById('online-user-count').innerText = appState.onlineCount;
-                document.getElementById('current-usdt-address').innerText = appState.usdtAddress;
+                const dashboard = document.getElementById('admin-dashboard');
+                const loginSection = document.getElementById('admin-login-section');
+                if (dashboard) dashboard.classList.remove('hidden');
+                if (loginSection) loginSection.classList.add('hidden');
+                const accountCount = document.getElementById('admin-account-count');
+                const bookingsCount = document.getElementById('admin-bookings-count');
+                const onlineUser = document.getElementById('online-user-count');
+                const usdtAddress = document.getElementById('current-usdt-address');
+                if (accountCount) accountCount.innerText = appState.accounts.length;
+                if (bookingsCount) bookingsCount.innerText = appState.bookRequests.length;
+                if (onlineUser) onlineUser.innerText = appState.onlineCount;
+                if (usdtAddress) usdtAddress.innerText = appState.usdtAddress;
                 renderBookRequests();
             } else if (screen === 'admin' && !appState.isAdminLoggedIn) {
-                document.getElementById('admin-dashboard').classList.add('hidden');
-                document.getElementById('admin-login-section').classList.remove('hidden');
+                const dashboard = document.getElementById('admin-dashboard');
+                const loginSection = document.getElementById('admin-login-section');
+                if (dashboard) dashboard.classList.add('hidden');
+                if (loginSection) loginSection.classList.remove('hidden');
             }
         };
 
@@ -1731,29 +1776,35 @@
             const fileInput = document.getElementById('account-media-file');
             const preview = document.getElementById('media-preview');
             const uploadBtn = document.getElementById('upload-btn');
-            if (fileInput.files && fileInput.files[0]) {
+            if (fileInput && fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
-                uploadBtn.disabled = false;
+                if (uploadBtn) uploadBtn.disabled = false;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`;
-                    else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                    if (preview) {
+                        if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`;
+                        else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                    }
                 };
                 reader.readAsDataURL(file);
-            } else { uploadBtn.disabled = true; }
+            } else if (uploadBtn) { 
+                uploadBtn.disabled = true; 
+            }
         };
 
         window.previewAdMedia = function() {
             const fileInput = document.getElementById('ad-media-file');
             const preview = document.getElementById('ad-preview');
-            if (fileInput.files && fileInput.files[0]) {
+            if (fileInput && fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 const isVideo = file.type.startsWith('video/');
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`;
-                    else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                    if (preview) {
+                        if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`;
+                        else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`;
+                    }
                     appState.currentAdData = { type: isVideo ? 'video' : 'image', data: e.target.result };
                 };
                 reader.readAsDataURL(file);
@@ -1761,15 +1812,27 @@
         };
 
         window.showAddAccountModal = function() {
-            document.getElementById('account-tier').value = '';
-            document.getElementById('account-title').value = '';
-            document.getElementById('account-description').value = '';
-            document.getElementById('account-price-usd').value = '';
-            document.getElementById('account-price-afn').value = '';
-            document.getElementById('account-media-file').value = '';
-            document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
-            document.getElementById('upload-progress').classList.remove('active');
-            document.getElementById('upload-btn').disabled = true;
+            const tierSelect = document.getElementById('account-tier');
+            const titleInput = document.getElementById('account-title');
+            const descTextarea = document.getElementById('account-description');
+            const priceUsdInput = document.getElementById('account-price-usd');
+            const priceAfnInput = document.getElementById('account-price-afn');
+            const mediaFile = document.getElementById('account-media-file');
+            const preview = document.getElementById('media-preview');
+            const progressContainer = document.getElementById('upload-progress');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            if (tierSelect) tierSelect.value = '';
+            if (titleInput) titleInput.value = '';
+            if (descTextarea) descTextarea.value = '';
+            if (priceUsdInput) priceUsdInput.value = '';
+            if (priceAfnInput) priceAfnInput.value = '';
+            if (mediaFile) mediaFile.value = '';
+            if (preview) preview.innerHTML = '<i class="fa fa-cloud-upload-alt"></i>';
+            if (progressContainer) progressContainer.classList.remove('active');
+            if (uploadBtn) uploadBtn.disabled = true;
+            appState.uploadRetryCount = 0;
+            appState.currentMediaData = null;
             openModal('add-account-modal');
         };
 
@@ -1779,11 +1842,14 @@
         window.showEditUsdtModal = function() { openModal('edit-usdt-modal'); };
         
         window.saveUsdtAddress = function() {
-            const newAddress = document.getElementById('new-usdt-address').value.trim();
+            const newAddressInput = document.getElementById('new-usdt-address');
+            if (!newAddressInput) return;
+            const newAddress = newAddressInput.value.trim();
             if (!newAddress) { alert('Please enter address'); return; }
             appState.usdtAddress = newAddress;
             localStorage.setItem('gk_usdt_address', newAddress);
-            document.getElementById('current-usdt-address').innerText = newAddress;
+            const currentAddress = document.getElementById('current-usdt-address');
+            if (currentAddress) currentAddress.innerText = newAddress;
             closeModal('edit-usdt-modal');
             alert('USDT address updated');
         };
@@ -1794,21 +1860,27 @@
             localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
             renderAccounts();
             renderAdminAccounts();
-            if (appState.isAdminLoggedIn) document.getElementById('admin-account-count').innerText = appState.accounts.length;
+            const accountCount = document.getElementById('admin-account-count');
+            if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length;
             alert('Account deleted');
         };
 
         window.saveNewContact = function() {
-            const name = document.getElementById('contact-name').value.trim();
-            const phone = document.getElementById('contact-phone').value.trim().replace(/\D/g, '');
-            const desc = document.getElementById('contact-desc').value.trim();
+            const nameInput = document.getElementById('contact-name');
+            const phoneInput = document.getElementById('contact-phone');
+            const descTextarea = document.getElementById('contact-desc');
+            
+            const name = nameInput ? nameInput.value.trim() : '';
+            const phone = phoneInput ? phoneInput.value.trim().replace(/\D/g, '') : '';
+            const desc = descTextarea ? descTextarea.value.trim() : '';
+            
             if (!name || !phone) { alert('Please enter name and phone'); return; }
             const newContact = { id: 'c' + Date.now(), name, phone, desc };
             appState.contacts.push(newContact);
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            document.getElementById('contact-name').value = '';
-            document.getElementById('contact-phone').value = '';
-            document.getElementById('contact-desc').value = '';
+            if (nameInput) nameInput.value = '';
+            if (phoneInput) phoneInput.value = '';
+            if (descTextarea) descTextarea.value = '';
             renderContacts();
             renderAdminContacts();
             alert('Contact added');
@@ -1825,7 +1897,8 @@
 
         window.saveNewAd = function() {
             if (!appState.currentAdData) { alert('Please select media'); return; }
-            const caption = document.getElementById('ad-caption').value;
+            const captionInput = document.getElementById('ad-caption');
+            const caption = captionInput ? captionInput.value : '';
             appState.ads.push({ type: appState.currentAdData.type, data: appState.currentAdData.data, caption });
             localStorage.setItem('gk_ads', JSON.stringify(appState.ads));
             renderAdsSlider();
@@ -1848,18 +1921,23 @@
             if (!acc) return;
             appState.currentAccount = acc;
             const t = translations[appState.currentLanguage || 'en'];
-            document.getElementById('book-modal-body').innerHTML = `
-                <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
-                <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
-                <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
-                <input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber} (e.g., 93793066322)">
-            `;
+            const modalBody = document.getElementById('book-modal-body');
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p>
+                    <p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p>
+                    <input type="text" id="book-name" class="input" placeholder="${t.yourName}">
+                    <input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber} (e.g., 93793066322)">
+                `;
+            }
             openModal('book-modal');
         };
 
         window.submitBook = function() {
-            const name = document.getElementById('book-name')?.value;
-            const phone = document.getElementById('book-phone')?.value.replace(/\D/g, '');
+            const nameInput = document.getElementById('book-name');
+            const phoneInput = document.getElementById('book-phone');
+            const name = nameInput ? nameInput.value : '';
+            const phone = phoneInput ? phoneInput.value.replace(/\D/g, '') : '';
             if (!name || !phone) { alert('Please fill all fields'); return; }
             appState.bookRequests.push({ id: Date.now(), account_id: appState.currentAccount.id, account_title: appState.currentAccount.title, user_name: name, whatsapp: phone, date: new Date().toISOString() });
             localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
@@ -1871,12 +1949,15 @@
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
             appState.currentAccount = acc;
-            document.getElementById('buy-modal-body').innerHTML = `
-                <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
-                <p>Send exact USDT (TRC20) to:</p>
-                <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code>
-                <button class="btn" onclick="copyUsdt()">Copy address</button>
-            `;
+            const modalBody = document.getElementById('buy-modal-body');
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <p><strong>${acc.title}</strong> — $${acc.price_usd}</p>
+                    <p>Send exact USDT (TRC20) to:</p>
+                    <code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code>
+                    <button class="btn" onclick="copyUsdt()">Copy address</button>
+                `;
+            }
             openModal('buy-modal');
         };
 
@@ -1892,21 +1973,30 @@
         window.infoAccount = function(id) {
             const acc = appState.accounts.find(a => a.id === id);
             if (!acc) return;
-            document.getElementById('info-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>${acc.desc || 'Premium PUBG account'}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`;
+            const modalBody = document.getElementById('info-modal-body');
+            if (modalBody) {
+                modalBody.innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>${acc.desc || 'Premium PUBG account'}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`;
+            }
             openModal('info-modal');
         };
 
         window.adminLogin = async function() {
-            const email = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-password').value;
+            const emailInput = document.getElementById('admin-email');
+            const passInput = document.getElementById('admin-password');
+            const email = emailInput ? emailInput.value : '';
+            const pass = passInput ? passInput.value : '';
             if (!email || !pass) { alert('Enter credentials'); return; }
             try {
                 await pb.admins.authWithPassword(email, pass);
                 appState.isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('admin-account-count').innerText = appState.accounts.length;
-                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length;
+                const loginSection = document.getElementById('admin-login-section');
+                const dashboard = document.getElementById('admin-dashboard');
+                if (loginSection) loginSection.classList.add('hidden');
+                if (dashboard) dashboard.classList.remove('hidden');
+                const accountCount = document.getElementById('admin-account-count');
+                const bookingsCount = document.getElementById('admin-bookings-count');
+                if (accountCount) accountCount.innerText = appState.accounts.length;
+                if (bookingsCount) bookingsCount.innerText = appState.bookRequests.length;
                 renderBookRequests();
             } catch (error) { alert('Login failed'); }
         };
@@ -1914,13 +2004,22 @@
         window.logout = function() {
             pb.authStore.clear();
             appState.isAdminLoggedIn = false;
-            document.getElementById('admin-login-section').classList.remove('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
+            const loginSection = document.getElementById('admin-login-section');
+            const dashboard = document.getElementById('admin-dashboard');
+            if (loginSection) loginSection.classList.remove('hidden');
+            if (dashboard) dashboard.classList.add('hidden');
             switchScreen('main');
         };
 
-        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); };
-        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
+        window.openModal = function(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.remove('hidden');
+        };
+        
+        window.closeModal = function(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('hidden');
+        };
 
         // ============================================
         // TRACK VISITOR
@@ -1945,32 +2044,55 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             appState.deferredPrompt = e;
-            if (!isAppInstalled()) { document.getElementById('install-button').style.display = 'flex'; document.getElementById('install-banner').style.display = 'flex'; }
+            if (!isAppInstalled()) { 
+                const installBtn = document.getElementById('install-button');
+                const installBanner = document.getElementById('install-banner');
+                if (installBtn) installBtn.style.display = 'flex'; 
+                if (installBanner) installBanner.style.display = 'flex'; 
+            }
         });
         
         function isAppInstalled() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
         
         window.installApp = function() {
-            if (appState.deferredPrompt) { appState.deferredPrompt.prompt(); appState.deferredPrompt.userChoice.then(() => { appState.deferredPrompt = null; }); }
-            else { showInstallInstructions(); }
+            if (appState.deferredPrompt) { 
+                appState.deferredPrompt.prompt(); 
+                appState.deferredPrompt.userChoice.then(() => { appState.deferredPrompt = null; }); 
+            } else { 
+                showInstallInstructions(); 
+            }
         };
         
         function showInstallInstructions() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            document.getElementById('install-instructions').innerHTML = isIOS ? 
-                '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Share <i class="fas fa-share-alt"></i></span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Add to Home Screen"</span></div>' :
-                '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Menu (3 dots)</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Install App"</span></div>';
+            const instructionsDiv = document.getElementById('install-instructions');
+            if (instructionsDiv) {
+                instructionsDiv.innerHTML = isIOS ? 
+                    '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Share <i class="fas fa-share-alt"></i></span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Add to Home Screen"</span></div>' :
+                    '<div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Menu (3 dots)</span></div><div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Install App"</span></div>';
+            }
             openModal('install-modal');
         }
         
-        window.closeInstallBanner = function() { document.getElementById('install-banner').style.display = 'none'; sessionStorage.setItem('banner_closed', 'true'); };
+        window.closeInstallBanner = function() { 
+            const banner = document.getElementById('install-banner');
+            if (banner) banner.style.display = 'none'; 
+            sessionStorage.setItem('banner_closed', 'true'); 
+        };
         
-        if (isAppInstalled()) { document.getElementById('install-button').style.display = 'none'; document.getElementById('install-banner').style.display = 'none'; }
+        if (isAppInstalled()) { 
+            const installBtn = document.getElementById('install-button');
+            const installBanner = document.getElementById('install-banner');
+            if (installBtn) installBtn.style.display = 'none'; 
+            if (installBanner) installBanner.style.display = 'none'; 
+        }
         
         setTimeout(() => {
             if (!isAppInstalled() && !sessionStorage.getItem('banner_closed') && appState.deferredPrompt) {
-                document.getElementById('install-button').style.display = 'flex';
-                document.getElementById('install-banner').style.display = 'flex';
+                const installBtn = document.getElementById('install-button');
+                const installBanner = document.getElementById('install-banner');
+                if (installBtn) installBtn.style.display = 'flex';
+                if (installBanner) installBanner.style.display = 'flex';
             }
         }, 2000);
 
