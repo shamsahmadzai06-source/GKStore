@@ -1,4 +1,3 @@
-// GK Store Service Worker
 const CACHE_NAME = 'gk-store-v1';
 const urlsToCache = [
   '/GKStore/',
