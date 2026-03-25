@@ -38,6 +38,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* Keep all your existing CSS exactly as is */
         * {
             margin: 0;
             padding: 0;
@@ -1268,7 +1269,7 @@
         // ============================================
         const appState = {
             accounts: [],
-            contacts: [{ id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' }],
+            contacts: [],
             ads: [],
             bookRequests: [],
             uniqueVisitors: new Set(),
@@ -1306,6 +1307,12 @@
             if (localStorage.getItem('gk_usdt_address')) appState.usdtAddress = localStorage.getItem('gk_usdt_address');
         } catch(e) {}
 
+        // Add default contact if none exist
+        if (appState.contacts.length === 0) {
+            appState.contacts = [{ id: 'c1', name: 'Support 1', phone: '93793066322', desc: '24/7 support' }];
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+        }
+
         // ============================================
         // TRANSLATION FUNCTIONS
         // ============================================
@@ -1323,7 +1330,6 @@
             renderContacts();
             if (appState.isAdminLoggedIn) renderBookRequests();
             
-            // Update bottom nav text
             const contactBtn = document.getElementById('nav-contact');
             const adminBtn = document.getElementById('nav-admin');
             if (contactBtn) {
@@ -1521,7 +1527,10 @@
         function renderContacts() {
             const container = document.getElementById('contacts-container');
             if (!container) return;
-            if (appState.contacts.length === 0) { container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>'; return; }
+            if (appState.contacts.length === 0) { 
+                container.innerHTML = '<div style="padding:2rem; text-align:center;">No contacts</div>'; 
+                return; 
+            }
             const t = translations[appState.currentLanguage || 'en'];
             container.innerHTML = appState.contacts.map(contact => {
                 let cleanPhone = contact.phone.replace(/\D/g, '');
@@ -1530,10 +1539,64 @@
             }).join('');
         }
 
+        function renderAdminContacts() {
+            const list = document.getElementById('admin-contacts-list');
+            if (!list) return;
+            if (appState.contacts.length === 0) { 
+                list.innerHTML = '<p style="color:var(--text-secondary);">No contacts yet.</p>'; 
+                return; 
+            }
+            const t = translations[appState.currentLanguage] || translations.en;
+            list.innerHTML = appState.contacts.map(contact => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fab fa-whatsapp"></i></div>
+                    <div style="flex:1;">
+                        <strong>${contact.name}</strong>
+                        <div>+${contact.phone}</div>
+                        <div style="font-size:0.7rem;">${contact.desc || ''}</div>
+                    </div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')">
+                        <i class="fa fa-trash"></i> ${t.delete}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminAccounts() {
+            const list = document.getElementById('admin-accounts-list');
+            if (!list) return;
+            if (appState.accounts.length === 0) { list.innerHTML = '<p>No accounts yet.</p>'; return; }
+            const t = translations[appState.currentLanguage] || translations.en;
+            list.innerHTML = appState.accounts.map(acc => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline muted style="background:#000;"></video>` : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`}
+                    <div style="flex:1;"><strong>${acc.title}</strong><span class="tier-badge ${acc.tier}">${acc.tier}</span><div>$${acc.price_usd} / ${acc.price_afn} AFN</div></div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> ${t.delete}</button>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminAds() {
+            const list = document.getElementById('admin-ads-list');
+            if (!list) return;
+            if (appState.ads.length === 0) { list.innerHTML = '<p>No ads yet.</p>'; return; }
+            const t = translations[appState.currentLanguage] || translations.en;
+            list.innerHTML = appState.ads.map((ad, index) => `
+                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
+                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">${ad.type === 'video' ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline muted></video>` : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`}</div>
+                    <div style="flex:1;"><strong>${ad.caption || 'No caption'}</strong><div style="font-size:0.7rem;">${ad.type}</div></div>
+                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})"><i class="fa fa-trash"></i> ${t.delete}</button>
+                </div>
+            `).join('');
+        }
+
         function renderAdsSlider() {
             const container = document.getElementById('ads-slider');
             if (!container) return;
-            if (appState.ads.length === 0) { container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; return; }
+            if (appState.ads.length === 0) { 
+                container.innerHTML = '<div style="text-align:center; padding:1rem;">No ads available</div>'; 
+                return; 
+            }
             let slides = '';
             appState.ads.forEach((ad) => {
                 if (ad.type === 'video') {
@@ -1564,48 +1627,6 @@
             const track = document.getElementById('slider-track');
             if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
         };
-
-        function renderAdminAccounts() {
-            const list = document.getElementById('admin-accounts-list');
-            if (!list) return;
-            if (appState.accounts.length === 0) { list.innerHTML = '<p>No accounts yet.</p>'; return; }
-            const t = translations[appState.currentLanguage] || translations.en;
-            list.innerHTML = appState.accounts.map(acc => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    ${acc.mediaType === 'video' ? `<video src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" controls playsinline muted style="background:#000;"></video>` : `<img src="${acc.media}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;" onclick="openFullscreenImage('${acc.media}')" style="cursor:pointer;">`}
-                    <div style="flex:1;"><strong>${acc.title}</strong><span class="tier-badge ${acc.tier}">${acc.tier}</span><div>$${acc.price_usd} / ${acc.price_afn} AFN</div></div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAccount('${acc.id}')"><i class="fa fa-trash"></i> ${t.delete}</button>
-                </div>
-            `).join('');
-        }
-
-        function renderAdminContacts() {
-            const list = document.getElementById('admin-contacts-list');
-            if (!list) return;
-            if (appState.contacts.length === 0) { list.innerHTML = '<p>No contacts yet.</p>'; return; }
-            const t = translations[appState.currentLanguage] || translations.en;
-            list.innerHTML = appState.contacts.map(contact => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="background:#25D366; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fab fa-whatsapp"></i></div>
-                    <div style="flex:1;"><strong>${contact.name}</strong><div>+${contact.phone}</div><div style="font-size:0.7rem;">${contact.desc || ''}</div></div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteContact('${contact.id}')"><i class="fa fa-trash"></i> ${t.delete}</button>
-                </div>
-            `).join('');
-        }
-
-        function renderAdminAds() {
-            const list = document.getElementById('admin-ads-list');
-            if (!list) return;
-            if (appState.ads.length === 0) { list.innerHTML = '<p>No ads yet.</p>'; return; }
-            const t = translations[appState.currentLanguage] || translations.en;
-            list.innerHTML = appState.ads.map((ad, index) => `
-                <div class="account-card" style="display:flex; align-items:center; gap:1rem; padding:1rem; margin-bottom:0.5rem;">
-                    <div style="width:60px; height:60px; border-radius:10px; overflow:hidden;">${ad.type === 'video' ? `<video src="${ad.data}" style="width:100%; height:100%; object-fit:cover;" playsinline muted></video>` : `<img src="${ad.data}" style="width:100%; height:100%; object-fit:cover;">`}</div>
-                    <div style="flex:1;"><strong>${ad.caption || 'No caption'}</strong><div style="font-size:0.7rem;">${ad.type}</div></div>
-                    <button class="action-btn" style="background:#ef4444; color:white; padding:0.4rem 1rem;" onclick="deleteAd(${index})"><i class="fa fa-trash"></i> ${t.delete}</button>
-                </div>
-            `).join('');
-        }
 
         function renderBookRequests() {
             const list = document.getElementById('admin-book-requests-list');
@@ -1646,8 +1667,9 @@
             if (!appState.isConnected) return;
             try {
                 const records = await pb.collection('contacts').getFullList();
-                if (records && records.length) {
+                if (records && records.length > 0) {
                     appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description }));
+                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
                     renderContacts();
                 }
             } catch (error) {}
@@ -1658,8 +1680,133 @@
             try {
                 const records = await pb.collection('settings').getFullList();
                 const usdt = records.find(r => r.key === 'usdt_address');
-                if (usdt) { appState.usdtAddress = usdt.value; document.getElementById('current-usdt-address').innerText = usdt.value; }
+                if (usdt) { 
+                    appState.usdtAddress = usdt.value; 
+                    const usdtEl = document.getElementById('current-usdt-address');
+                    if (usdtEl) usdtEl.innerText = usdt.value;
+                }
             } catch (error) {}
+        }
+
+        // ============================================
+        // CONTACT MANAGEMENT - FIXED
+        // ============================================
+        
+        // Save contact to PocketBase and localStorage
+        window.saveNewContact = async function() {
+            const nameInput = document.getElementById('contact-name');
+            const phoneInput = document.getElementById('contact-phone');
+            const descTextarea = document.getElementById('contact-desc');
+            
+            const name = nameInput ? nameInput.value.trim() : '';
+            let phone = phoneInput ? phoneInput.value.trim().replace(/\D/g, '') : '';
+            const desc = descTextarea ? descTextarea.value.trim() : '';
+            
+            if (!name || !phone) { 
+                alert('Please enter name and phone'); 
+                return; 
+            }
+            
+            // Ensure phone has country code (default to 93 for Afghanistan)
+            if (!phone.startsWith('93') && phone.length <= 9) {
+                phone = '93' + phone;
+            }
+            
+            const newContact = { 
+                id: 'c' + Date.now(), 
+                name: name, 
+                phone: phone, 
+                desc: desc 
+            };
+            
+            // Add to local state
+            appState.contacts.push(newContact);
+            
+            // Save to localStorage
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+            
+            // Save to PocketBase if connected
+            if (appState.isConnected && appState.isAdminLoggedIn) {
+                try {
+                    const record = await pb.collection('contacts').create({
+                        name: name,
+                        phone: phone,
+                        description: desc
+                    });
+                    // Update the contact ID with the one from PocketBase
+                    newContact.id = record.id;
+                    appState.contacts = appState.contacts.map(c => c.id === newContact.id ? newContact : c);
+                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+                    console.log('✅ Contact saved to PocketBase');
+                } catch (error) {
+                    console.error('Error saving contact to PocketBase:', error);
+                    alert('⚠️ Contact saved locally only. Will sync when online.');
+                }
+            }
+            
+            // Clear form
+            if (nameInput) nameInput.value = '';
+            if (phoneInput) phoneInput.value = '';
+            if (descTextarea) descTextarea.value = '';
+            
+            // Re-render contacts
+            renderContacts();
+            renderAdminContacts();
+            
+            alert('✅ Contact added successfully!');
+        };
+        
+        // Delete contact from PocketBase and localStorage
+        window.deleteContact = async function(id) {
+            if (!confirm('Delete this contact?')) return;
+            
+            // Find the contact to delete
+            const contactToDelete = appState.contacts.find(c => c.id === id);
+            
+            // Delete from PocketBase if connected and it's a server record
+            if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('c')) {
+                try {
+                    await pb.collection('contacts').delete(id);
+                    console.log('✅ Contact deleted from PocketBase');
+                } catch (error) {
+                    console.error('Error deleting from PocketBase:', error);
+                }
+            }
+            
+            // Remove from local state
+            appState.contacts = appState.contacts.filter(c => c.id !== id);
+            
+            // Save to localStorage
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+            
+            // Re-render
+            renderContacts();
+            renderAdminContacts();
+            
+            alert('✅ Contact deleted successfully!');
+        };
+        
+        // Sync all contacts to PocketBase (useful for offline changes)
+        async function syncContactsToServer() {
+            if (!appState.isConnected || !appState.isAdminLoggedIn) return;
+            
+            for (const contact of appState.contacts) {
+                // Skip if already has a server ID (not local)
+                if (contact.id && !contact.id.startsWith('c')) continue;
+                
+                try {
+                    const record = await pb.collection('contacts').create({
+                        name: contact.name,
+                        phone: contact.phone,
+                        description: contact.desc || ''
+                    });
+                    contact.id = record.id;
+                    console.log(`✅ Synced contact: ${contact.name}`);
+                } catch (error) {
+                    console.error('Error syncing contact:', error);
+                }
+            }
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
         }
 
         // ============================================
@@ -1673,12 +1820,18 @@
             const priceAfn = parseInt(document.getElementById('account-price-afn').value);
             const fileInput = document.getElementById('account-media-file');
             
-            if (!tier || !title || !priceUsd || !priceAfn || !fileInput.files[0]) { alert('Please fill all fields'); return; }
+            if (!tier || !title || !priceUsd || !priceAfn || !fileInput.files[0]) { 
+                alert('Please fill all fields'); 
+                return; 
+            }
             
             const file = fileInput.files[0];
             const isVideo = file.type.startsWith('video/');
             const maxSize = isVideo ? 200 * 1024 * 1024 : 10 * 1024 * 1024;
-            if (file.size > maxSize) { alert(`File too large. Max ${isVideo ? '200MB' : '10MB'}`); return; }
+            if (file.size > maxSize) { 
+                alert(`File too large. Max ${isVideo ? '200MB' : '10MB'}`); 
+                return; 
+            }
             
             const progressBar = document.getElementById('progress-bar');
             const progressContainer = document.getElementById('upload-progress');
@@ -1691,9 +1844,13 @@
             
             try {
                 const formData = new FormData();
-                formData.append('title', title); formData.append('description', desc); formData.append('tier', tier);
-                formData.append('price_usd', priceUsd); formData.append('price_afn', priceAfn);
-                formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
+                formData.append('title', title); 
+                formData.append('description', desc); 
+                formData.append('tier', tier);
+                formData.append('price_usd', priceUsd); 
+                formData.append('price_afn', priceAfn);
+                formData.append('media', file); 
+                formData.append('mediaType', isVideo ? 'video' : 'image');
                 
                 const record = await pb.collection('accounts').create(formData);
                 if (progressBar) progressBar.style.width = '100%';
@@ -1731,12 +1888,10 @@
         };
 
         window.switchScreen = function(screen) {
-            // Hide all screens
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const targetScreen = document.getElementById(screen + '-screen');
             if (targetScreen) targetScreen.classList.add('active');
             
-            // Update bottom nav active state
             const navButtons = document.querySelectorAll('.bottom-nav-btn');
             navButtons.forEach(btn => btn.classList.remove('active'));
             
@@ -1747,7 +1902,6 @@
             const activeNav = document.getElementById(activeNavId);
             if (activeNav) activeNav.classList.add('active');
             
-            // Render content based on screen
             if (screen === 'accounts') renderAccounts();
             if (screen === 'contact') renderContacts();
             if (screen === 'admin' && appState.isAdminLoggedIn) {
@@ -1764,6 +1918,7 @@
                 if (onlineUser) onlineUser.innerText = appState.onlineCount;
                 if (usdtAddress) usdtAddress.innerText = appState.usdtAddress;
                 renderBookRequests();
+                renderAdminContacts();
             } else if (screen === 'admin' && !appState.isAdminLoggedIn) {
                 const dashboard = document.getElementById('admin-dashboard');
                 const loginSection = document.getElementById('admin-login-section');
@@ -1863,36 +2018,6 @@
             const accountCount = document.getElementById('admin-account-count');
             if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length;
             alert('Account deleted');
-        };
-
-        window.saveNewContact = function() {
-            const nameInput = document.getElementById('contact-name');
-            const phoneInput = document.getElementById('contact-phone');
-            const descTextarea = document.getElementById('contact-desc');
-            
-            const name = nameInput ? nameInput.value.trim() : '';
-            const phone = phoneInput ? phoneInput.value.trim().replace(/\D/g, '') : '';
-            const desc = descTextarea ? descTextarea.value.trim() : '';
-            
-            if (!name || !phone) { alert('Please enter name and phone'); return; }
-            const newContact = { id: 'c' + Date.now(), name, phone, desc };
-            appState.contacts.push(newContact);
-            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            if (nameInput) nameInput.value = '';
-            if (phoneInput) phoneInput.value = '';
-            if (descTextarea) descTextarea.value = '';
-            renderContacts();
-            renderAdminContacts();
-            alert('Contact added');
-        };
-
-        window.deleteContact = function(id) {
-            if (confirm('Delete this contact?')) {
-                appState.contacts = appState.contacts.filter(c => c.id !== id);
-                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-                renderContacts();
-                renderAdminContacts();
-            }
         };
 
         window.saveNewAd = function() {
@@ -1998,6 +2123,7 @@
                 if (accountCount) accountCount.innerText = appState.accounts.length;
                 if (bookingsCount) bookingsCount.innerText = appState.bookRequests.length;
                 renderBookRequests();
+                renderAdminContacts();
             } catch (error) { alert('Login failed'); }
         };
 
