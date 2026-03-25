@@ -18,6 +18,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll(urlsToCache);
     })
   );
+  // Force the waiting service worker to become active
   self.skipWaiting();
 });
 
@@ -36,7 +37,8 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  // Take control of all clients immediately
+  return self.clients.claim();
 });
 
 // Fetch event - serve from cache, fallback to network
@@ -47,6 +49,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       }
       return fetch(event.request).then((response) => {
+        // Don't cache if not a success
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
@@ -57,33 +60,5 @@ self.addEventListener('fetch', (event) => {
         return response;
       });
     })
-  );
-});
-
-// Handle offline fallback
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/GKStore/index.html');
-      })
-    );
-  }
-});
-
-// Push notification (optional)
-self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data.text(),
-    icon: 'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png',
-    badge: 'https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-72-72.png',
-    vibrate: [200, 100, 200],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    }
-  };
-  event.waitUntil(
-    self.registration.showNotification('GK Store', options)
   );
 });
