@@ -21,7 +21,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
     
     <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/GKStore/manifest.json">
     
     <title>GK Store · PUBG accounts</title>
     
@@ -30,7 +30,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* ===== ALL YOUR EXISTING STYLES GO HERE (keep exactly as original) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -1208,9 +1207,10 @@
 
         function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
         function isAndroid() { return /Android/.test(navigator.userAgent); }
+        function isChrome() { return /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - DIRECT INSTALL ONLY
+        // PWA INSTALLATION - DIRECT INSTALL
         // ============================================
         let deferredPrompt = null;
         
@@ -1230,13 +1230,11 @@
         window.installApp = function() {
             console.log('installApp called - attempting direct installation');
             
-            // Check if already installed
             if (window.matchMedia('(display-mode: standalone)').matches) {
                 alert('✅ App is already installed on your device!');
                 return;
             }
             
-            // DIRECT INSTALL - use beforeinstallprompt if available
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
@@ -1254,18 +1252,7 @@
                     deferredPrompt = null;
                 });
             } else {
-                // No deferred prompt - try alternative direct install method
-                if ('getInstalledRelatedApps' in navigator) {
-                    navigator.getInstalledRelatedApps().then(relatedApps => {
-                        if (relatedApps.length > 0) {
-                            alert('App is already installed!');
-                            return;
-                        }
-                    });
-                }
-                
-                // For browsers that support manifest but no beforeinstallprompt yet
-                alert('Please wait a moment and try again. The install prompt will appear when ready.\n\nIf issue persists, please use Chrome browser on Android for best experience.');
+                alert('Please wait a moment and try again.\n\nIf issue persists, please use Chrome browser on Android for best experience.');
             }
         };
         
@@ -1275,7 +1262,6 @@
             sessionStorage.setItem('banner_closed', 'true');
         };
         
-        // Show install button for Android
         if (isAndroid() && !window.matchMedia('(display-mode: standalone)').matches) {
             setTimeout(() => {
                 const installBtn = document.getElementById('install-button');
@@ -1346,7 +1332,7 @@
         function clearAllNotifications() { notificationsList = []; notificationCount = 0; updateNotificationBadge(); document.querySelectorAll('.notification').forEach(n => n.remove()); showNotification('Cleared', 'All notifications cleared', 'info'); }
 
         // ============================================
-        // INFO CARDS DATA
+        // INFO CARDS DATA WITH TRANSLATIONS
         // ============================================
         const infoCardsData = {
             en: [
@@ -1370,7 +1356,7 @@
         };
 
         // ============================================
-        // TRANSLATIONS (EN, PS, FA)
+        // COMPLETE TRANSLATIONS (EN, PS, FA)
         // ============================================
         const translations = {
             en: {
@@ -1383,15 +1369,6 @@
                 accountsStat: 'accounts', bookingsStat: 'book requests', bookRequestsTitle: '📋 Book Requests',
                 addAccountBtn: 'Add New Account', manageAccountsBtn: 'Manage Accounts',
                 manageContactsBtn: 'Manage Contacts', manageAdsBtn: 'Manage Swipe Ads', logoutBtn: 'Logout',
-                addModalTitle: 'Add New Account', selectTier: '-- Select Tier --',
-                smallTier: 'Small PUBG ($10-$500)', mediumTier: 'Medium PUBG ($500-$1000)', bigTier: 'Big PUBG ($1000-$100000)',
-                mediaLabel: 'Account Media (Image or Video) *', uploadBtn: 'UPLOAD',
-                manageModalTitle: 'Manage Accounts', existingAccounts: '📋 Existing Accounts',
-                manageContactsTitle: 'Manage Contacts', addContact: '➕ Add New Contact',
-                whatsappNumberLabel: 'WhatsApp Number with Country Code', saveContactBtn: 'Save Contact',
-                existingContacts: '📋 Existing Contacts', manageAdsTitle: 'Manage Swipe Ads',
-                addAd: '➕ Add New Ad', imageOption: 'Image', videoOption: 'Video',
-                adMediaLabel: 'Ad Media *', addAdBtn: 'Add Ad', currentAds: '📋 Current Ads',
                 bookTitle: 'Book account', cancel: 'Cancel', confirm: 'Confirm booking',
                 buyTitle: 'Buy with USDT', confirmWA: 'Confirm via WhatsApp', infoTitle: 'Account details',
                 selectLang: 'Select language', yourName: 'Your name', whatsappNumber: 'WhatsApp number',
@@ -1409,15 +1386,6 @@
                 accountsStat: 'اکونټونه', bookingsStat: 'بوک غوښتنې', bookRequestsTitle: '📋 د بوک غوښتنې',
                 addAccountBtn: 'نوی اکونټ اضافه کړئ', manageAccountsBtn: 'اکونټونه مدیریت کړئ',
                 manageContactsBtn: 'اړیکې مدیریت کړئ', manageAdsBtn: 'اعلانونه مدیریت کړئ', logoutBtn: 'وتل',
-                addModalTitle: 'نوی اکونټ اضافه کړئ', selectTier: '-- کچه وټاکئ --',
-                smallTier: 'وړوکی PUBG ($10-$500)', mediumTier: 'منځنی PUBG ($500-$1000)', bigTier: 'لوی PUBG ($1000-$100000)',
-                mediaLabel: 'د اکونټ رسنیز فایل *', uploadBtn: 'پورته کول',
-                manageModalTitle: 'اکونټونه مدیریت کړئ', existingAccounts: '📋 شته اکونټونه',
-                manageContactsTitle: 'اړیکې مدیریت کړئ', addContact: '➕ نوې اړیکه',
-                whatsappNumberLabel: 'د WhatsApp شمېره', saveContactBtn: 'خوندي کړئ',
-                existingContacts: '📋 شته اړیکې', manageAdsTitle: 'اعلانونه مدیریت کړئ',
-                addAd: '➕ نوی اعلان', imageOption: 'انځور', videoOption: 'ویډیو',
-                adMediaLabel: 'د اعلان رسنۍ *', addAdBtn: 'اعلان اضافه کړئ', currentAds: '📋 اوسني اعلانونه',
                 bookTitle: 'اکونټ بوک کړئ', cancel: 'لغوه', confirm: 'تایید',
                 buyTitle: 'د USDT سره واخلئ', confirmWA: 'په WhatsApp تایید کړئ', infoTitle: 'د اکونټ معلومات',
                 selectLang: 'ژبه وټاکئ', yourName: 'ستاسو نوم', whatsappNumber: 'WhatsApp شمېره',
@@ -1435,15 +1403,6 @@
                 accountsStat: 'اکونت ها', bookingsStat: 'درخواست‌های رزرو', bookRequestsTitle: '📋 درخواست‌های رزرو',
                 addAccountBtn: 'افزودن اکونت جدید', manageAccountsBtn: 'مدیریت اکونت ها',
                 manageContactsBtn: 'مدیریت مخاطبان', manageAdsBtn: 'مدیریت تبلیغات', logoutBtn: 'خروج',
-                addModalTitle: 'افزودن اکونت جدید', selectTier: '-- سطح را انتخاب کنید --',
-                smallTier: 'کوچک PUBG ($10-$500)', mediumTier: 'متوسط PUBG ($500-$1000)', bigTier: 'بزرگ PUBG ($1000-$100000)',
-                mediaLabel: 'رسانه اکونت (تصویر یا ویدیو) *', uploadBtn: 'آپلود',
-                manageModalTitle: 'مدیریت اکونت ها', existingAccounts: '📋 اکونت های موجود',
-                manageContactsTitle: 'مدیریت مخاطبان', addContact: '➕ افزودن مخاطب جدید',
-                whatsappNumberLabel: 'شماره WhatsApp با کد کشور', saveContactBtn: 'ذخیره مخاطب',
-                existingContacts: '📋 مخاطبان موجود', manageAdsTitle: 'مدیریت تبلیغات',
-                addAd: '➕ افزودن تبلیغ جدید', imageOption: 'تصویر', videoOption: 'ویدیو',
-                adMediaLabel: 'رسانه تبلیغ *', addAdBtn: 'افزودن تبلیغ', currentAds: '📋 تبلیغات فعلی',
                 bookTitle: 'رزرو اکونت', cancel: 'لغو', confirm: 'تایید رزرو',
                 buyTitle: 'خرید با USDT', confirmWA: 'تایید از طریق WhatsApp', infoTitle: 'جزئیات اکونت',
                 selectLang: 'انتخاب زبان', yourName: 'نام شما', whatsappNumber: 'شماره WhatsApp',
@@ -1459,11 +1418,10 @@
         const appState = {
             accounts: [], contacts: [], ads: [], bookRequests: [], uniqueVisitors: new Set(), onlineCount: 0,
             currentFilter: 'all', isAdminLoggedIn: false, currentAccount: null, currentMediaData: null, currentAdData: null,
-            phoneInput: null, bookPhoneInput: null, usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
-            currentLanguage: 'en', autoSlideInterval: null, infoAutoSlideInterval: null, uploadRetryCount: 0,
+            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY',
+            currentLanguage: 'en', autoSlideInterval: null, infoAutoSlideInterval: null,
             autoRefreshEnabled: true, isConnected: false, isRefreshing: false, refreshInterval: null,
-            currentInfoSlide: 0, infoSlideCount: 4, currentMediaSlide: 0, mediaSlideCount: 0,
-            isDraggingSwipe: false, startX: 0, startTranslate: 0
+            currentInfoSlide: 0, infoSlideCount: 4, currentMediaSlide: 0, mediaSlideCount: 0
         };
 
         // Load from localStorage
@@ -1557,6 +1515,7 @@
             if (contactBtn) { const span = contactBtn.querySelector('span'); if (span) span.textContent = t.contact; }
             if (adminBtn) { const span = adminBtn.querySelector('span'); if (span) span.textContent = t.admin; }
         }
+        
         function setLanguage(lang) { applyTranslation(lang); closeModal('language-modal'); }
         function openLanguageModal() { openModal('language-modal'); }
 
@@ -1595,7 +1554,7 @@
         // ============================================
         // ZOOM FUNCTIONS
         // ============================================
-        let zoomLevel = 1, panX = 0, panY = 0, isDraggingZoom = false, startX = 0, startY = 0, lastX = 0, lastY = 0, initialDistance = 0, initialZoom = 1;
+        let zoomLevel = 1, panX = 0, panY = 0;
         window.openFullscreenImage = function(src) { const modal = document.getElementById('fullscreen-image-modal'), img = document.getElementById('fullscreen-image'); if (modal && img) { img.src = src; modal.style.display = 'flex'; resetZoom(); } };
         window.zoomImage = function(dir) { let newZoom = zoomLevel + (dir === 'in' ? 0.25 : -0.25); newZoom = Math.max(1, Math.min(5, newZoom)); if (newZoom !== zoomLevel) { zoomLevel = newZoom; if (zoomLevel === 1) { panX = 0; panY = 0; } updateImageTransform(); updateZoomLevelDisplay(); } };
         window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); updateZoomLevelDisplay(); };
@@ -1658,7 +1617,7 @@
             if (!list) return;
             if (appState.bookRequests.length === 0) { list.innerHTML = '<p>No book requests yet.</p>'; return; }
             const t = translations[appState.currentLanguage || 'en'];
-            list.innerHTML = appState.bookRequests.map(req => `<div class="book-request-item"><p><span class="label">${t.accountsStat}:</span> ${req.account_title}</p><p><span class="label">${t.yourName}:</span> ${req.user_name}</p><p><span class="label">${t.whatsappNumber}:</span> +${req.whatsapp}</p><button class="btn-wa" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.contactViaWA}</button></div>`).join('');
+            list.innerHTML = appState.bookRequests.map(req => `<div class="book-request-item" style="padding:0.8rem; border-bottom:1px solid var(--border);"><p><strong>${t.accountsStat}:</strong> ${req.account_title}</p><p><strong>${t.yourName}:</strong> ${req.user_name}</p><p><strong>${t.whatsappNumber}:</strong> +${req.whatsapp}</p><button class="action-btn buy" style="margin-top:0.5rem;" onclick="window.open('https://wa.me/${req.whatsapp}', '_blank')"><i class="fab fa-whatsapp"></i> ${t.contactViaWA}</button></div>`).join('');
         }
 
         // ============================================
@@ -1669,10 +1628,8 @@
             try {
                 const records = await pb.collection('accounts').getFullList({ $autoCancel: false, sort: '-created' });
                 if (records && records.length > 0) {
-                    const previousCount = appState.accounts.length;
                     appState.accounts = records.map(record => ({ id: record.id, title: record.title, desc: record.description, tier: record.tier, price_usd: record.price_usd, price_afn: record.price_afn, media: record.mediaType === 'video' ? `${PB_URL}/api/files/accounts/${record.id}/${record.media}` : pb.files.getUrl(record, record.media), mediaType: record.mediaType || 'image' }));
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    if (appState.accounts.length > previousCount && previousCount > 0) { const newAccount = appState.accounts[0]; showNotification('📢 New Account Added!', `${newAccount.title} - $${newAccount.price_usd}`, 'success'); }
                     renderAccounts();
                 }
             } catch (error) { console.log('Load accounts error:', error); }
@@ -1733,6 +1690,7 @@
         };
 
         window.filterAccounts = function(tier) { appState.currentFilter = tier; document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active')); const activeBtn = document.querySelector(`.tier-tab[data-tier="${tier}"]`); if (activeBtn) activeBtn.classList.add('active'); renderAccounts(); };
+        
         window.switchScreen = function(screen) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const targetScreen = document.getElementById(screen + '-screen');
@@ -1763,29 +1721,45 @@
                 if (loginSection) loginSection.classList.remove('hidden');
             }
         };
+        
         window.previewMediaFromFile = function() {
             const fileInput = document.getElementById('account-media-file'), preview = document.getElementById('media-preview'), uploadBtn = document.getElementById('upload-btn');
             if (fileInput && fileInput.files && fileInput.files[0]) { const file = fileInput.files[0], isVideo = file.type.startsWith('video/'); if (uploadBtn) uploadBtn.disabled = false; const reader = new FileReader(); reader.onload = function(e) { if (preview) { if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`; else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`; } }; reader.readAsDataURL(file); } else if (uploadBtn) uploadBtn.disabled = true; };
+        
         window.previewAdMedia = function() {
             const fileInput = document.getElementById('ad-media-file'), preview = document.getElementById('ad-preview');
             if (fileInput && fileInput.files && fileInput.files[0]) { const file = fileInput.files[0], isVideo = file.type.startsWith('video/'); const reader = new FileReader(); reader.onload = function(e) { if (preview) { if (isVideo) preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:200px;" playsinline muted></video>`; else preview.innerHTML = `<img src="${e.target.result}" style="max-height:200px;">`; } appState.currentAdData = { type: isVideo ? 'video' : 'image', data: e.target.result }; }; reader.readAsDataURL(file); } };
-        window.showAddAccountModal = function() { document.getElementById('account-tier').value = ''; document.getElementById('account-title').value = ''; document.getElementById('account-description').value = ''; document.getElementById('account-price-usd').value = ''; document.getElementById('account-price-afn').value = ''; document.getElementById('account-media-file').value = ''; document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>'; document.getElementById('upload-progress').classList.remove('active'); document.getElementById('upload-btn').disabled = true; appState.uploadRetryCount = 0; appState.currentMediaData = null; openModal('add-account-modal'); };
+        
+        window.showAddAccountModal = function() { document.getElementById('account-tier').value = ''; document.getElementById('account-title').value = ''; document.getElementById('account-description').value = ''; document.getElementById('account-price-usd').value = ''; document.getElementById('account-price-afn').value = ''; document.getElementById('account-media-file').value = ''; document.getElementById('media-preview').innerHTML = '<i class="fa fa-cloud-upload-alt"></i>'; document.getElementById('upload-progress').classList.remove('active'); document.getElementById('upload-btn').disabled = true; openModal('add-account-modal'); };
         window.showManageAccountsModal = function() { renderAdminAccounts(); openModal('manage-accounts-modal'); };
         window.showManageContactsModal = function() { renderAdminContacts(); openModal('manage-contacts-modal'); };
         window.showManageAdsModal = function() { renderAdminAds(); openModal('manage-ads-modal'); };
         window.showEditUsdtModal = function() { openModal('edit-usdt-modal'); };
+        
         window.saveUsdtAddress = function() { const newAddress = document.getElementById('new-usdt-address').value.trim(); if (!newAddress) { alert('Please enter address'); return; } appState.usdtAddress = newAddress; localStorage.setItem('gk_usdt_address', newAddress); document.getElementById('current-usdt-address').innerText = newAddress; closeModal('edit-usdt-modal'); showNotification('💳 USDT Address Updated', 'New payment address saved', 'success'); alert('USDT address updated'); };
+        
         window.deleteAccount = async function(id) { if (!confirm('Delete this account?')) return; const accountToDelete = appState.accounts.find(a => a.id === id); appState.accounts = appState.accounts.filter(a => a.id !== id); localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); renderAccounts(); renderAdminAccounts(); const accountCount = document.getElementById('admin-account-count'); if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed', 'warning'); alert('Account deleted'); };
+        
         window.saveNewAd = function() { if (!appState.currentAdData) { alert('Please select media'); return; } const caption = document.getElementById('ad-caption')?.value || ''; appState.ads.push({ type: appState.currentAdData.type, data: appState.currentAdData.data, caption }); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAdsSlider(); renderAdminAds(); closeModal('manage-ads-modal'); showNotification('📢 New Ad Added', 'Swipe ad has been added', 'success'); alert('Ad added'); };
+        
         window.deleteAd = function(index) { if (confirm('Delete this ad?')) { appState.ads.splice(index, 1); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAdsSlider(); renderAdminAds(); showNotification('🗑️ Ad Deleted', 'Ad removed from slider', 'warning'); } };
+        
         window.bookAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; appState.currentAccount = acc; const t = translations[appState.currentLanguage || 'en']; document.getElementById('book-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p><input type="text" id="book-name" class="input" placeholder="${t.yourName}"><input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber} (e.g., 93793066322)">`; openModal('book-modal'); };
+        
         window.submitBook = function() { const name = document.getElementById('book-name')?.value, phone = document.getElementById('book-phone')?.value.replace(/\D/g, ''); if (!name || !phone) { alert('Please fill all fields'); return; } appState.bookRequests.push({ id: Date.now(), account_id: appState.currentAccount.id, account_title: appState.currentAccount.title, user_name: name, whatsapp: phone, date: new Date().toISOString() }); localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests)); showNotification('📘 New Booking Request', `${name} wants to book ${appState.currentAccount.title}`, 'info'); alert('✅ Booking submitted! We will contact you.'); closeModal('book-modal'); };
+        
         window.buyAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; appState.currentAccount = acc; document.getElementById('buy-modal-body').innerHTML = `<p><strong>${acc.title}</strong> — $${acc.price_usd}</p><p>Send exact USDT (TRC20) to:</p><code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code><button class="btn" onclick="copyUsdt()">Copy address</button>`; openModal('buy-modal'); };
+        
         window.confirmBuyWhatsApp = function() { if (!appState.currentAccount) return; window.open(`https://wa.me/93793066322?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}`)}`, '_blank'); closeModal('buy-modal'); };
+        
         window.copyUsdt = function() { navigator.clipboard.writeText(appState.usdtAddress); alert('Copied!'); };
+        
         window.infoAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; document.getElementById('info-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>${acc.desc || 'Premium PUBG account'}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`; openModal('info-modal'); };
+        
         window.adminLogin = async function() { const email = document.getElementById('admin-email').value, pass = document.getElementById('admin-password').value; if (!email || !pass) { alert('Enter credentials'); return; } try { await pb.admins.authWithPassword(email, pass); appState.isAdminLoggedIn = true; document.getElementById('admin-login-section').classList.add('hidden'); document.getElementById('admin-dashboard').classList.remove('hidden'); document.getElementById('admin-account-count').innerText = appState.accounts.length; document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length; renderBookRequests(); renderAdminContacts(); showNotification('🔐 Admin Login', 'Welcome back!', 'success'); } catch (error) { alert('Login failed'); } };
+        
         window.logout = function() { pb.authStore.clear(); appState.isAdminLoggedIn = false; document.getElementById('admin-login-section').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); switchScreen('main'); showNotification('👋 Logged Out', 'See you soon!', 'info'); };
+        
         window.openModal = function(id) { const modal = document.getElementById(id); if (modal) modal.classList.remove('hidden'); };
         window.closeModal = function(id) { const modal = document.getElementById(id); if (modal) modal.classList.add('hidden'); };
 
