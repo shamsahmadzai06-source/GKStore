@@ -21,7 +21,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-512-512.png">
     
     <link rel="apple-touch-icon" href="https://shamsahmadzai06-source.github.io/GKStore/android-launchericon-192-192.png">
-    <link rel="manifest" href="/GKStore/manifest.json">
+    <link rel="manifest" href="manifest.json">
     
     <title>GK Store · PUBG accounts</title>
     
@@ -1210,14 +1210,14 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - DIRECT NATIVE INSTALL (FIXED)
+        // PWA INSTALLATION - NATIVE ANDROID INSTALL DIALOG
         // ============================================
         let deferredPrompt = null;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            console.log('✅ beforeinstallprompt captured - ready for direct install');
+            console.log('✅ beforeinstallprompt captured - ready for native install');
             
             const installBtn = document.getElementById('install-button');
             if (installBtn) {
@@ -1228,7 +1228,7 @@
         });
         
         window.installApp = function() {
-            console.log('installApp called - attempting direct installation');
+            console.log('installApp called - attempting native install');
             
             if (window.matchMedia('(display-mode: standalone)').matches) {
                 alert('✅ App is already installed on your device!');
@@ -1251,12 +1251,12 @@
                     deferredPrompt = null;
                 });
             } else {
-                // This only shows if the browser doesn't support beforeinstallprompt
-                // (like when testing locally or not on HTTPS)
+                console.log('No deferredPrompt available. The site may not meet PWA criteria or was already installed.');
+                // Show a helpful message - this should not appear when PWA is properly configured
                 if (isAndroid()) {
-                    alert('Please use Chrome browser on Android for one-tap installation.\n\nIf you are already on Chrome, please ensure the site is served over HTTPS.');
+                    alert('Please wait a moment and try again. Make sure you are using Chrome and the site is loaded over HTTPS.');
                 } else {
-                    alert('Your browser does not support app installation. Please use Chrome on Android.');
+                    alert('Installation is only supported on Android devices using Chrome browser.');
                 }
             }
         };
@@ -1279,7 +1279,7 @@
         // ============================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/GKStore/sw.js', { scope: '/GKStore/' })
+                navigator.serviceWorker.register('sw.js')
                     .then(registration => console.log('✅ ServiceWorker registered:', registration.scope))
                     .catch(error => console.log('❌ ServiceWorker registration failed:', error));
             });
