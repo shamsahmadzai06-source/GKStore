@@ -30,7 +30,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* ALL YOUR ORIGINAL STYLES - KEEP EXACTLY AS YOU HAD THEM */
         * {
             margin: 0;
             padding: 0;
@@ -942,8 +941,15 @@
             max-height: 100%;
             object-fit: contain;
             transform-origin: center center;
-            transition: transform 0.1s ease-out;
+            transition: transform 0.05s linear;
             will-change: transform;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        #fullscreen-image:active {
+            cursor: grabbing;
         }
         
         .fullscreen-modal .close-btn {
@@ -1211,7 +1217,7 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - DIRECT NATIVE INSTALL (FIXED)
+        // PWA INSTALLATION - DIRECT NATIVE INSTALL (NO ALERTS)
         // ============================================
         let deferredPrompt = null;
         
@@ -1232,7 +1238,6 @@
             console.log('installApp called - attempting direct native install');
             
             if (window.matchMedia('(display-mode: standalone)').matches) {
-                alert('✅ App is already installed on your device!');
                 return;
             }
             
@@ -1251,13 +1256,6 @@
                     }
                     deferredPrompt = null;
                 });
-            } else {
-                // This only shows if the browser doesn't support beforeinstallprompt
-                if (isAndroid()) {
-                    alert('Please wait a moment and try again.\n\nMake sure you are using Chrome and the site is loaded over HTTPS.');
-                } else {
-                    alert('Installation is only supported on Android devices using Chrome browser.');
-                }
             }
         };
         
@@ -1584,15 +1582,176 @@
         setTimeout(() => { testConnection(); startAutoRefresh(); }, 1000);
 
         // ============================================
-        // ZOOM FUNCTIONS
+        // ZOOM FUNCTIONS - FACEBOOK STYLE (Pinch & Drag)
         // ============================================
-        let zoomLevel = 1, panX = 0, panY = 0, isDraggingZoom = false, startX = 0, startY = 0, lastX = 0, lastY = 0, initialDistance = 0, initialZoom = 1;
-        window.openFullscreenImage = function(src) { const modal = document.getElementById('fullscreen-image-modal'), img = document.getElementById('fullscreen-image'); if (modal && img) { img.src = src; modal.style.display = 'flex'; resetZoom(); } };
-        window.zoomImage = function(dir) { let newZoom = zoomLevel + (dir === 'in' ? 0.25 : -0.25); newZoom = Math.max(1, Math.min(5, newZoom)); if (newZoom !== zoomLevel) { zoomLevel = newZoom; if (zoomLevel === 1) { panX = 0; panY = 0; } updateImageTransform(); updateZoomLevelDisplay(); } };
-        window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); updateZoomLevelDisplay(); };
-        function updateImageTransform() { const img = document.getElementById('fullscreen-image'); if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`; }
-        function updateZoomLevelDisplay() { const zoomEl = document.getElementById('zoom-level'); if (zoomEl) zoomEl.innerText = Math.round(zoomLevel * 100) + '%'; }
-        window.closeFullscreenImage = function() { const modal = document.getElementById('fullscreen-image-modal'); if (modal) { modal.style.display = 'none'; resetZoom(); } };
+        let zoomLevel = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let dragStartX = 0, dragStartY = 0;
+        let initialPinchDistance = 0;
+        let initialPinchZoom = 1;
+        
+        const fullscreenImg = document.getElementById('fullscreen-image');
+        const zoomLevelDisplay = document.getElementById('zoom-level');
+        
+        function updateImageTransform() {
+            if (fullscreenImg) {
+                fullscreenImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            }
+        }
+        
+        function updateZoomDisplay() {
+            if (zoomLevelDisplay) zoomLevelDisplay.innerText = Math.round(zoomLevel * 100) + '%';
+        }
+        
+        window.resetZoom = function() {
+            zoomLevel = 1;
+            panX = 0;
+            panY = 0;
+            updateImageTransform();
+            updateZoomDisplay();
+        };
+        
+        window.zoomImage = function(direction) {
+            let newZoom = zoomLevel + (direction === 'in' ? 0.25 : -0.25);
+            newZoom = Math.max(1, Math.min(5, newZoom));
+            if (newZoom !== zoomLevel) {
+                zoomLevel = newZoom;
+                if (zoomLevel === 1) {
+                    panX = 0;
+                    panY = 0;
+                } else {
+                    const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
+                    const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
+                    panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+                    panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+                }
+                updateImageTransform();
+                updateZoomDisplay();
+            }
+        };
+        
+        // Touch handlers for pinch and drag
+        function handleTouchStart(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialPinchDistance = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+                initialPinchZoom = zoomLevel;
+            } else if (e.touches.length === 1 && zoomLevel > 1) {
+                isDragging = true;
+                dragStartX = e.touches[0].clientX - panX;
+                dragStartY = e.touches[0].clientY - panY;
+                if (fullscreenImg) fullscreenImg.style.cursor = 'grabbing';
+            }
+        }
+        
+        function handleTouchMove(e) {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+                let newZoom = initialPinchZoom * (currentDistance / initialPinchDistance);
+                newZoom = Math.max(1, Math.min(5, newZoom));
+                if (newZoom !== zoomLevel) {
+                    zoomLevel = newZoom;
+                    if (zoomLevel === 1) {
+                        panX = 0;
+                        panY = 0;
+                    } else {
+                        const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
+                        const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
+                        panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+                        panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+                    }
+                    updateImageTransform();
+                    updateZoomDisplay();
+                }
+            } else if (e.touches.length === 1 && isDragging && zoomLevel > 1) {
+                e.preventDefault();
+                panX = e.touches[0].clientX - dragStartX;
+                panY = e.touches[0].clientY - dragStartY;
+                const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
+                const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
+                panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+                panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+                updateImageTransform();
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            if (e.touches.length < 2) initialPinchDistance = 0;
+            if (e.touches.length === 0) {
+                isDragging = false;
+                if (fullscreenImg) fullscreenImg.style.cursor = 'grab';
+            }
+        }
+        
+        // Mouse handlers for desktop drag
+        let isMouseDragging = false;
+        let mouseStartX = 0, mouseStartY = 0;
+        
+        function handleMouseDown(e) {
+            if (zoomLevel > 1) {
+                isMouseDragging = true;
+                mouseStartX = e.clientX - panX;
+                mouseStartY = e.clientY - panY;
+                if (fullscreenImg) fullscreenImg.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        }
+        
+        function handleMouseMove(e) {
+            if (isMouseDragging && zoomLevel > 1) {
+                panX = e.clientX - mouseStartX;
+                panY = e.clientY - mouseStartY;
+                const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
+                const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
+                panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+                panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+                updateImageTransform();
+            }
+        }
+        
+        function handleMouseUp() {
+            isMouseDragging = false;
+            if (fullscreenImg) fullscreenImg.style.cursor = 'grab';
+        }
+        
+        window.openFullscreenImage = function(src) {
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal && fullscreenImg) {
+                fullscreenImg.src = src;
+                modal.style.display = 'flex';
+                resetZoom();
+                fullscreenImg.style.cursor = 'grab';
+            }
+        };
+        
+        window.closeFullscreenImage = function() {
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                resetZoom();
+            }
+        };
+        
+        // Attach event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal) {
+                modal.addEventListener('touchstart', handleTouchStart, { passive: false });
+                modal.addEventListener('touchmove', handleTouchMove, { passive: false });
+                modal.addEventListener('touchend', handleTouchEnd);
+                modal.addEventListener('touchcancel', handleTouchEnd);
+                modal.addEventListener('mousedown', handleMouseDown);
+                modal.addEventListener('mousemove', handleMouseMove);
+                modal.addEventListener('mouseup', handleMouseUp);
+            }
+        });
 
         // ============================================
         // RENDER ACCOUNTS & CONTACTS
