@@ -943,6 +943,11 @@
             transform-origin: center center;
             transition: transform 0.1s ease-out;
             will-change: transform;
+            cursor: grab;
+        }
+        
+        #fullscreen-image:active {
+            cursor: grabbing;
         }
         
         .fullscreen-modal .close-btn {
@@ -1455,7 +1460,7 @@
             isDraggingSwipe: false, startX: 0, startTranslate: 0
         };
 
-        // Load from localStorage (fallback when offline)
+        // Load from localStorage
         try {
             if (localStorage.getItem('gk_accounts')) appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             if (localStorage.getItem('gk_contacts')) appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
@@ -1582,15 +1587,186 @@
         setTimeout(() => { testConnection(); startAutoRefresh(); }, 1000);
 
         // ============================================
-        // ZOOM FUNCTIONS
+        // ZOOM FUNCTIONS - FACEBOOK STYLE PINCH & DRAG
         // ============================================
-        let zoomLevel = 1, panX = 0, panY = 0, isDraggingZoom = false, startX = 0, startY = 0, lastX = 0, lastY = 0, initialDistance = 0, initialZoom = 1;
-        window.openFullscreenImage = function(src) { const modal = document.getElementById('fullscreen-image-modal'), img = document.getElementById('fullscreen-image'); if (modal && img) { img.src = src; modal.style.display = 'flex'; resetZoom(); } };
-        window.zoomImage = function(dir) { let newZoom = zoomLevel + (dir === 'in' ? 0.25 : -0.25); newZoom = Math.max(1, Math.min(5, newZoom)); if (newZoom !== zoomLevel) { zoomLevel = newZoom; if (zoomLevel === 1) { panX = 0; panY = 0; } updateImageTransform(); updateZoomLevelDisplay(); } };
-        window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); updateZoomLevelDisplay(); };
-        function updateImageTransform() { const img = document.getElementById('fullscreen-image'); if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`; }
-        function updateZoomLevelDisplay() { const zoomEl = document.getElementById('zoom-level'); if (zoomEl) zoomEl.innerText = Math.round(zoomLevel * 100) + '%'; }
-        window.closeFullscreenImage = function() { const modal = document.getElementById('fullscreen-image-modal'); if (modal) { modal.style.display = 'none'; resetZoom(); } };
+        let zoomLevel = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDraggingZoom = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let lastPanX = 0;
+        let lastPanY = 0;
+        let initialPinchDistance = 0;
+        let initialPinchZoom = 1;
+        
+        const fullscreenImg = document.getElementById('fullscreen-image');
+        const zoomLevelDisplay = document.getElementById('zoom-level');
+        
+        // Reset zoom function
+        window.resetZoom = function() {
+            zoomLevel = 1;
+            panX = 0;
+            panY = 0;
+            updateImageTransform();
+            if (zoomLevelDisplay) zoomLevelDisplay.innerText = '100%';
+        };
+        
+        // Zoom in/out with buttons
+        window.zoomImage = function(direction) {
+            let newZoom = zoomLevel + (direction === 'in' ? 0.25 : -0.25);
+            newZoom = Math.max(1, Math.min(5, newZoom));
+            if (newZoom !== zoomLevel) {
+                zoomLevel = newZoom;
+                if (zoomLevel === 1) {
+                    panX = 0;
+                    panY = 0;
+                }
+                updateImageTransform();
+                if (zoomLevelDisplay) zoomLevelDisplay.innerText = Math.round(zoomLevel * 100) + '%';
+            }
+        };
+        
+        function updateImageTransform() {
+            if (fullscreenImg) {
+                fullscreenImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            }
+        }
+        
+        // Pinch zoom for touch devices
+        function handleTouchStart(e) {
+            if (e.touches.length === 2) {
+                // Pinch zoom start
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialPinchDistance = Math.hypot(
+                    touch1.clientX - touch2.clientX,
+                    touch1.clientY - touch2.clientY
+                );
+                initialPinchZoom = zoomLevel;
+            } else if (e.touches.length === 1 && zoomLevel > 1) {
+                // Pan start when zoomed in
+                isDraggingZoom = true;
+                dragStartX = e.touches[0].clientX - panX;
+                dragStartY = e.touches[0].clientY - panY;
+                lastPanX = panX;
+                lastPanY = panY;
+            }
+        }
+        
+        function handleTouchMove(e) {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
+                // Pinch zoom
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = Math.hypot(
+                    touch1.clientX - touch2.clientX,
+                    touch1.clientY - touch2.clientY
+                );
+                let newZoom = initialPinchZoom * (currentDistance / initialPinchDistance);
+                newZoom = Math.max(1, Math.min(5, newZoom));
+                
+                if (newZoom !== zoomLevel) {
+                    zoomLevel = newZoom;
+                    if (zoomLevel === 1) {
+                        panX = 0;
+                        panY = 0;
+                    }
+                    updateImageTransform();
+                    if (zoomLevelDisplay) zoomLevelDisplay.innerText = Math.round(zoomLevel * 100) + '%';
+                }
+            } else if (e.touches.length === 1 && isDraggingZoom && zoomLevel > 1) {
+                // Pan
+                e.preventDefault();
+                panX = e.touches[0].clientX - dragStartX;
+                panY = e.touches[0].clientY - dragStartY;
+                
+                // Constrain pan to prevent going too far
+                const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
+                const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
+                panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+                panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+                
+                updateImageTransform();
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            if (e.touches.length < 2) {
+                initialPinchDistance = 0;
+            }
+            if (e.touches.length === 0) {
+                isDraggingZoom = false;
+                initialPinchDistance = 0;
+            }
+        }
+        
+        // Mouse drag for desktop
+        let isMouseDragging = false;
+        let mouseStartX = 0;
+        let mouseStartY = 0;
+        
+        function handleMouseDown(e) {
+            if (zoomLevel > 1) {
+                isMouseDragging = true;
+                mouseStartX = e.clientX - panX;
+                mouseStartY = e.clientY - panY;
+                fullscreenImg.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        }
+        
+        function handleMouseMove(e) {
+            if (isMouseDragging && zoomLevel > 1) {
+                panX = e.clientX - mouseStartX;
+                panY = e.clientY - mouseStartY;
+                const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
+                const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
+                panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+                panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+                updateImageTransform();
+            }
+        }
+        
+        function handleMouseUp() {
+            isMouseDragging = false;
+            if (fullscreenImg) fullscreenImg.style.cursor = 'grab';
+        }
+        
+        // Open fullscreen image with zoom capabilities
+        window.openFullscreenImage = function(src) {
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal && fullscreenImg) {
+                fullscreenImg.src = src;
+                modal.style.display = 'flex';
+                resetZoom();
+                fullscreenImg.style.cursor = 'grab';
+            }
+        };
+        
+        window.closeFullscreenImage = function() {
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                resetZoom();
+            }
+        };
+        
+        // Add event listeners when modal opens
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('fullscreen-image-modal');
+            if (modal) {
+                modal.addEventListener('touchstart', handleTouchStart, { passive: false });
+                modal.addEventListener('touchmove', handleTouchMove, { passive: false });
+                modal.addEventListener('touchend', handleTouchEnd);
+                modal.addEventListener('touchcancel', handleTouchEnd);
+                modal.addEventListener('mousedown', handleMouseDown);
+                modal.addEventListener('mousemove', handleMouseMove);
+                modal.addEventListener('mouseup', handleMouseUp);
+            }
+        });
 
         // ============================================
         // RENDER ACCOUNTS & CONTACTS
@@ -1651,7 +1827,7 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING - FIXED TO SYNC PROPERLY
+        // POCKETBASE DATA LOADING - FIXED TO DELETE FROM SERVER
         // ============================================
         async function loadAccountsFromPB() {
             if (!appState.isConnected) return;
@@ -1670,6 +1846,11 @@
                     }));
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     renderAccounts();
+                    // Update admin count if logged in
+                    if (appState.isAdminLoggedIn) {
+                        const accountCount = document.getElementById('admin-account-count');
+                        if (accountCount) accountCount.innerText = appState.accounts.length;
+                    }
                 }
             } catch (error) { console.log('Load accounts error:', error); }
         }
@@ -1700,7 +1881,7 @@
         }
 
         // ============================================
-        // CONTACT & ACCOUNT MANAGEMENT - FIXED TO SYNC WITH POCKETBASE
+        // CONTACT & ACCOUNT MANAGEMENT - FIXED TO DELETE FROM SERVER
         // ============================================
         window.saveNewContact = async function() {
             const name = document.getElementById('contact-name')?.value.trim();
@@ -1843,7 +2024,6 @@
             showNotification('💳 USDT Address Updated', 'New payment address saved', 'success'); 
             alert('USDT address updated');
             
-            // Also save to PocketBase if connected
             if (appState.isConnected && appState.isAdminLoggedIn) {
                 try {
                     const records = await pb.collection('settings').getFullList();
@@ -1864,9 +2044,12 @@
             const accountToDelete = appState.accounts.find(a => a.id === id); 
             
             try {
-                if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('temp')) {
+                // Delete from PocketBase FIRST
+                if (appState.isConnected && appState.isAdminLoggedIn && id && !id.startsWith('temp')) {
+                    console.log('Deleting from PocketBase:', id);
                     await pb.collection('accounts').delete(id);
                 }
+                // Then remove from local state
                 appState.accounts = appState.accounts.filter(a => a.id !== id); 
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
                 renderAccounts(); 
@@ -1874,9 +2057,14 @@
                 const accountCount = document.getElementById('admin-account-count'); 
                 if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; 
                 showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed', 'warning'); 
-                alert('Account deleted');
+                alert('✅ Account permanently deleted from server!');
             } catch (error) {
+                console.error('Delete error:', error);
                 alert('Error deleting account: ' + error.message);
+                // If PocketBase delete fails, still remove from local
+                appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                renderAccounts();
             }
         };
         
@@ -1898,7 +2086,6 @@
             appState.bookRequests.push(booking); 
             localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests)); 
             
-            // Save to PocketBase if connected and admin is logged in
             if (appState.isConnected && appState.isAdminLoggedIn) {
                 try {
                     await pb.collection('bookings').create({
@@ -1934,7 +2121,6 @@
                 document.getElementById('admin-account-count').innerText = appState.accounts.length; 
                 document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length; 
                 
-                // Load bookings from PocketBase
                 try {
                     const records = await pb.collection('bookings').getFullList({ sort: '-created' });
                     if (records && records.length > 0) {
