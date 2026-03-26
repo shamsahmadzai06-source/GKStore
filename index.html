@@ -30,7 +30,6 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* ALL YOUR ORIGINAL STYLES - KEEP EXACTLY AS YOU HAD THEM */
         * {
             margin: 0;
             padding: 0;
@@ -1211,7 +1210,7 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - DIRECT NATIVE INSTALL
+        // PWA INSTALLATION - DIRECT NATIVE INSTALL (FIXED)
         // ============================================
         let deferredPrompt = null;
         
@@ -1252,8 +1251,8 @@
                     deferredPrompt = null;
                 });
             } else {
-                console.log('No install prompt available yet. The site may still be loading PWA criteria.');
-                showNotification('Please wait', 'The install option will appear when ready', 'info');
+                console.log('No install prompt available - PWA criteria may not be met yet');
+                showNotification('Installation Ready', 'The install option will appear when the site is fully loaded', 'info');
             }
         };
         
@@ -1775,28 +1774,39 @@
                 return;
             }
             
-            console.log('Attempting to delete account from PocketBase:', id, accountToDelete.title);
+            console.log('========== DELETE ACCOUNT ==========');
+            console.log('Account ID:', id);
+            console.log('Account Title:', accountToDelete.title);
             console.log('Admin logged in:', appState.isAdminLoggedIn);
             console.log('Connected to server:', appState.isConnected);
             
+            // Check if we can delete from server
+            if (!appState.isAdminLoggedIn) {
+                alert('❌ Please login as admin first to delete from server!');
+                return;
+            }
+            
+            if (!appState.isConnected) {
+                alert('❌ Not connected to PocketBase server. Please check your connection.\n\nAccount removed from local only.');
+                // Still remove from local
+                appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                renderAccounts();
+                renderAdminAccounts();
+                const accountCount = document.getElementById('admin-account-count'); 
+                if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length;
+                alert('✅ Account removed from local storage only (offline mode).');
+                return;
+            }
+            
             try {
-                // FIRST: Delete from PocketBase server
-                if (appState.isAdminLoggedIn && appState.isConnected) {
-                    console.log('Deleting from PocketBase server...');
-                    const result = await pb.collection('accounts').delete(id);
-                    console.log('Delete result:', result);
-                    if (result) {
-                        console.log('✅ Account deleted from PocketBase server!');
-                        showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
-                    } else {
-                        throw new Error('Delete returned false');
-                    }
-                } else {
-                    console.log('Not logged in as admin or offline - deleting from local only');
-                    showNotification('⚠️ Offline Mode', 'Account removed from local storage only', 'warning');
-                }
+                // Delete from PocketBase server
+                console.log('Deleting from PocketBase server...');
+                await pb.collection('accounts').delete(id);
+                console.log('✅ Account deleted from PocketBase server successfully!');
+                showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
                 
-                // SECOND: Remove from local state
+                // Remove from local state
                 appState.accounts = appState.accounts.filter(a => a.id !== id); 
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
                 
