@@ -941,15 +941,8 @@
             max-height: 100%;
             object-fit: contain;
             transform-origin: center center;
-            transition: transform 0.05s linear;
+            transition: transform 0.1s ease-out;
             will-change: transform;
-            cursor: grab;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        
-        #fullscreen-image:active {
-            cursor: grabbing;
         }
         
         .fullscreen-modal .close-btn {
@@ -1217,7 +1210,7 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - DIRECT NATIVE INSTALL (NO ALERTS)
+        // PWA INSTALLATION - DIRECT NATIVE INSTALL
         // ============================================
         let deferredPrompt = null;
         
@@ -1582,176 +1575,15 @@
         setTimeout(() => { testConnection(); startAutoRefresh(); }, 1000);
 
         // ============================================
-        // ZOOM FUNCTIONS - FACEBOOK STYLE (Pinch & Drag)
+        // ZOOM FUNCTIONS
         // ============================================
-        let zoomLevel = 1;
-        let panX = 0;
-        let panY = 0;
-        let isDragging = false;
-        let dragStartX = 0, dragStartY = 0;
-        let initialPinchDistance = 0;
-        let initialPinchZoom = 1;
-        
-        const fullscreenImg = document.getElementById('fullscreen-image');
-        const zoomLevelDisplay = document.getElementById('zoom-level');
-        
-        function updateImageTransform() {
-            if (fullscreenImg) {
-                fullscreenImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-            }
-        }
-        
-        function updateZoomDisplay() {
-            if (zoomLevelDisplay) zoomLevelDisplay.innerText = Math.round(zoomLevel * 100) + '%';
-        }
-        
-        window.resetZoom = function() {
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
-            updateImageTransform();
-            updateZoomDisplay();
-        };
-        
-        window.zoomImage = function(direction) {
-            let newZoom = zoomLevel + (direction === 'in' ? 0.25 : -0.25);
-            newZoom = Math.max(1, Math.min(5, newZoom));
-            if (newZoom !== zoomLevel) {
-                zoomLevel = newZoom;
-                if (zoomLevel === 1) {
-                    panX = 0;
-                    panY = 0;
-                } else {
-                    const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
-                    const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
-                    panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
-                    panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
-                }
-                updateImageTransform();
-                updateZoomDisplay();
-            }
-        };
-        
-        // Touch handlers for pinch and drag
-        function handleTouchStart(e) {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                initialPinchDistance = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
-                initialPinchZoom = zoomLevel;
-            } else if (e.touches.length === 1 && zoomLevel > 1) {
-                isDragging = true;
-                dragStartX = e.touches[0].clientX - panX;
-                dragStartY = e.touches[0].clientY - panY;
-                if (fullscreenImg) fullscreenImg.style.cursor = 'grabbing';
-            }
-        }
-        
-        function handleTouchMove(e) {
-            if (e.touches.length === 2 && initialPinchDistance > 0) {
-                e.preventDefault();
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                const currentDistance = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
-                let newZoom = initialPinchZoom * (currentDistance / initialPinchDistance);
-                newZoom = Math.max(1, Math.min(5, newZoom));
-                if (newZoom !== zoomLevel) {
-                    zoomLevel = newZoom;
-                    if (zoomLevel === 1) {
-                        panX = 0;
-                        panY = 0;
-                    } else {
-                        const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
-                        const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
-                        panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
-                        panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
-                    }
-                    updateImageTransform();
-                    updateZoomDisplay();
-                }
-            } else if (e.touches.length === 1 && isDragging && zoomLevel > 1) {
-                e.preventDefault();
-                panX = e.touches[0].clientX - dragStartX;
-                panY = e.touches[0].clientY - dragStartY;
-                const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
-                const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
-                panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
-                panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
-                updateImageTransform();
-            }
-        }
-        
-        function handleTouchEnd(e) {
-            if (e.touches.length < 2) initialPinchDistance = 0;
-            if (e.touches.length === 0) {
-                isDragging = false;
-                if (fullscreenImg) fullscreenImg.style.cursor = 'grab';
-            }
-        }
-        
-        // Mouse handlers for desktop drag
-        let isMouseDragging = false;
-        let mouseStartX = 0, mouseStartY = 0;
-        
-        function handleMouseDown(e) {
-            if (zoomLevel > 1) {
-                isMouseDragging = true;
-                mouseStartX = e.clientX - panX;
-                mouseStartY = e.clientY - panY;
-                if (fullscreenImg) fullscreenImg.style.cursor = 'grabbing';
-                e.preventDefault();
-            }
-        }
-        
-        function handleMouseMove(e) {
-            if (isMouseDragging && zoomLevel > 1) {
-                panX = e.clientX - mouseStartX;
-                panY = e.clientY - mouseStartY;
-                const maxPanX = (fullscreenImg ? fullscreenImg.clientWidth * (zoomLevel - 1) / 2 : 200);
-                const maxPanY = (fullscreenImg ? fullscreenImg.clientHeight * (zoomLevel - 1) / 2 : 200);
-                panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
-                panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
-                updateImageTransform();
-            }
-        }
-        
-        function handleMouseUp() {
-            isMouseDragging = false;
-            if (fullscreenImg) fullscreenImg.style.cursor = 'grab';
-        }
-        
-        window.openFullscreenImage = function(src) {
-            const modal = document.getElementById('fullscreen-image-modal');
-            if (modal && fullscreenImg) {
-                fullscreenImg.src = src;
-                modal.style.display = 'flex';
-                resetZoom();
-                fullscreenImg.style.cursor = 'grab';
-            }
-        };
-        
-        window.closeFullscreenImage = function() {
-            const modal = document.getElementById('fullscreen-image-modal');
-            if (modal) {
-                modal.style.display = 'none';
-                resetZoom();
-            }
-        };
-        
-        // Attach event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('fullscreen-image-modal');
-            if (modal) {
-                modal.addEventListener('touchstart', handleTouchStart, { passive: false });
-                modal.addEventListener('touchmove', handleTouchMove, { passive: false });
-                modal.addEventListener('touchend', handleTouchEnd);
-                modal.addEventListener('touchcancel', handleTouchEnd);
-                modal.addEventListener('mousedown', handleMouseDown);
-                modal.addEventListener('mousemove', handleMouseMove);
-                modal.addEventListener('mouseup', handleMouseUp);
-            }
-        });
+        let zoomLevel = 1, panX = 0, panY = 0, isDraggingZoom = false, startX = 0, startY = 0, lastX = 0, lastY = 0, initialDistance = 0, initialZoom = 1;
+        window.openFullscreenImage = function(src) { const modal = document.getElementById('fullscreen-image-modal'), img = document.getElementById('fullscreen-image'); if (modal && img) { img.src = src; modal.style.display = 'flex'; resetZoom(); } };
+        window.zoomImage = function(dir) { let newZoom = zoomLevel + (dir === 'in' ? 0.25 : -0.25); newZoom = Math.max(1, Math.min(5, newZoom)); if (newZoom !== zoomLevel) { zoomLevel = newZoom; if (zoomLevel === 1) { panX = 0; panY = 0; } updateImageTransform(); updateZoomLevelDisplay(); } };
+        window.resetZoom = function() { zoomLevel = 1; panX = 0; panY = 0; updateImageTransform(); updateZoomLevelDisplay(); };
+        function updateImageTransform() { const img = document.getElementById('fullscreen-image'); if (img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`; }
+        function updateZoomLevelDisplay() { const zoomEl = document.getElementById('zoom-level'); if (zoomEl) zoomEl.innerText = Math.round(zoomLevel * 100) + '%'; }
+        window.closeFullscreenImage = function() { const modal = document.getElementById('fullscreen-image-modal'); if (modal) { modal.style.display = 'none'; resetZoom(); } };
 
         // ============================================
         // RENDER ACCOUNTS & CONTACTS
@@ -1925,7 +1757,41 @@
         window.showManageAdsModal = function() { renderAdminAds(); openModal('manage-ads-modal'); };
         window.showEditUsdtModal = function() { openModal('edit-usdt-modal'); };
         window.saveUsdtAddress = function() { const newAddress = document.getElementById('new-usdt-address').value.trim(); if (!newAddress) { alert('Please enter address'); return; } appState.usdtAddress = newAddress; localStorage.setItem('gk_usdt_address', newAddress); document.getElementById('current-usdt-address').innerText = newAddress; closeModal('edit-usdt-modal'); showNotification('💳 USDT Address Updated', 'New payment address saved', 'success'); alert('USDT address updated'); };
-        window.deleteAccount = async function(id) { if (!confirm('Delete this account?')) return; const accountToDelete = appState.accounts.find(a => a.id === id); appState.accounts = appState.accounts.filter(a => a.id !== id); localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); renderAccounts(); renderAdminAccounts(); const accountCount = document.getElementById('admin-account-count'); if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed', 'warning'); alert('Account deleted'); };
+        
+        // ============================================
+        // DELETE ACCOUNT - FIXED TO DELETE FROM POCKETBASE SERVER
+        // ============================================
+        window.deleteAccount = async function(id) { 
+            if (!confirm('Delete this account permanently from server?')) return; 
+            const accountToDelete = appState.accounts.find(a => a.id === id); 
+            
+            try {
+                // First delete from PocketBase server
+                if (appState.isConnected && appState.isAdminLoggedIn && id && !id.startsWith('temp')) {
+                    console.log('Deleting account from PocketBase server:', id);
+                    await pb.collection('accounts').delete(id);
+                    console.log('✅ Account deleted from server successfully');
+                }
+                // Then remove from local state
+                appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
+                renderAccounts(); 
+                renderAdminAccounts(); 
+                const accountCount = document.getElementById('admin-account-count'); 
+                if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; 
+                showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed from server', 'warning'); 
+                alert('✅ Account permanently deleted from server!');
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('Error deleting account: ' + error.message);
+                // Even if server delete fails, remove from local to avoid confusion
+                appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                renderAccounts();
+                renderAdminAccounts();
+            }
+        };
+        
         window.saveNewAd = function() { if (!appState.currentAdData) { alert('Please select media'); return; } const caption = document.getElementById('ad-caption')?.value || ''; appState.ads.push({ type: appState.currentAdData.type, data: appState.currentAdData.data, caption }); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAdsSlider(); renderAdminAds(); closeModal('manage-ads-modal'); showNotification('📢 New Ad Added', 'Swipe ad has been added', 'success'); alert('Ad added'); };
         window.deleteAd = function(index) { if (confirm('Delete this ad?')) { appState.ads.splice(index, 1); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAdsSlider(); renderAdminAds(); showNotification('🗑️ Ad Deleted', 'Ad removed from slider', 'warning'); } };
         window.bookAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; appState.currentAccount = acc; const t = translations[appState.currentLanguage || 'en']; document.getElementById('book-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p><input type="text" id="book-name" class="input" placeholder="${t.yourName}"><input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber} (e.g., 93793066322)">`; openModal('book-modal'); };
