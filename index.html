@@ -1251,8 +1251,6 @@
                     deferredPrompt = null;
                 });
             } else {
-                console.log('No deferredPrompt available. The site may not meet PWA criteria or was already installed.');
-                // Show a helpful message - this should not appear when PWA is properly configured
                 if (isAndroid()) {
                     alert('Please wait a moment and try again. Make sure you are using Chrome and the site is loaded over HTTPS.');
                 } else {
@@ -1457,7 +1455,7 @@
             isDraggingSwipe: false, startX: 0, startTranslate: 0
         };
 
-        // Load from localStorage
+        // Load from localStorage (fallback when offline)
         try {
             if (localStorage.getItem('gk_accounts')) appState.accounts = JSON.parse(localStorage.getItem('gk_accounts'));
             if (localStorage.getItem('gk_contacts')) appState.contacts = JSON.parse(localStorage.getItem('gk_contacts'));
@@ -1653,27 +1651,56 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING
+        // POCKETBASE DATA LOADING - FIXED TO SYNC PROPERLY
         // ============================================
         async function loadAccountsFromPB() {
             if (!appState.isConnected) return;
             try {
                 const records = await pb.collection('accounts').getFullList({ $autoCancel: false, sort: '-created' });
                 if (records && records.length > 0) {
-                    const previousCount = appState.accounts.length;
-                    appState.accounts = records.map(record => ({ id: record.id, title: record.title, desc: record.description, tier: record.tier, price_usd: record.price_usd, price_afn: record.price_afn, media: record.mediaType === 'video' ? `${PB_URL}/api/files/accounts/${record.id}/${record.media}` : pb.files.getUrl(record, record.media), mediaType: record.mediaType || 'image' }));
+                    appState.accounts = records.map(record => ({ 
+                        id: record.id, 
+                        title: record.title, 
+                        desc: record.description, 
+                        tier: record.tier, 
+                        price_usd: record.price_usd, 
+                        price_afn: record.price_afn, 
+                        media: record.mediaType === 'video' ? `${PB_URL}/api/files/accounts/${record.id}/${record.media}` : pb.files.getUrl(record, record.media), 
+                        mediaType: record.mediaType || 'image' 
+                    }));
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    if (appState.accounts.length > previousCount && previousCount > 0) { const newAccount = appState.accounts[0]; showNotification('📢 New Account Added!', `${newAccount.title} - $${newAccount.price_usd}`, 'success'); }
                     renderAccounts();
                 }
             } catch (error) { console.log('Load accounts error:', error); }
         }
 
-        async function loadContactsFromPB() { if (!appState.isConnected) return; try { const records = await pb.collection('contacts').getFullList(); if (records && records.length > 0) { appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description })); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); renderContacts(); } } catch (error) {} }
-        async function loadSettingsFromPB() { if (!appState.isConnected) return; try { const records = await pb.collection('settings').getFullList(); const usdt = records.find(r => r.key === 'usdt_address'); if (usdt) { appState.usdtAddress = usdt.value; const usdtEl = document.getElementById('current-usdt-address'); if (usdtEl) usdtEl.innerText = usdt.value; } } catch (error) {} }
+        async function loadContactsFromPB() { 
+            if (!appState.isConnected) return; 
+            try { 
+                const records = await pb.collection('contacts').getFullList(); 
+                if (records && records.length > 0) { 
+                    appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description })); 
+                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); 
+                    renderContacts(); 
+                } 
+            } catch (error) {} 
+        }
+        
+        async function loadSettingsFromPB() { 
+            if (!appState.isConnected) return; 
+            try { 
+                const records = await pb.collection('settings').getFullList(); 
+                const usdt = records.find(r => r.key === 'usdt_address'); 
+                if (usdt) { 
+                    appState.usdtAddress = usdt.value; 
+                    const usdtEl = document.getElementById('current-usdt-address'); 
+                    if (usdtEl) usdtEl.innerText = usdt.value; 
+                } 
+            } catch (error) {} 
+        }
 
         // ============================================
-        // CONTACT & ACCOUNT MANAGEMENT
+        // CONTACT & ACCOUNT MANAGEMENT - FIXED TO SYNC WITH POCKETBASE
         // ============================================
         window.saveNewContact = async function() {
             const name = document.getElementById('contact-name')?.value.trim();
@@ -1681,20 +1708,44 @@
             const desc = document.getElementById('contact-desc')?.value.trim();
             if (!name || !phone) { alert('Please enter name and phone'); return; }
             if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone;
-            const newContact = { id: 'c' + Date.now(), name, phone, desc };
-            appState.contacts.push(newContact);
-            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            if (appState.isConnected && appState.isAdminLoggedIn) { try { const record = await pb.collection('contacts').create({ name, phone, description: desc }); newContact.id = record.id; appState.contacts = appState.contacts.map(c => c.id === newContact.id ? newContact : c); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); } catch (error) {} }
-            document.getElementById('contact-name').value = ''; document.getElementById('contact-phone').value = ''; document.getElementById('contact-desc').value = '';
-            renderContacts(); renderAdminContacts(); showNotification('✅ Contact Added', `${name} added to contacts`, 'success'); alert('✅ Contact added successfully!');
+            
+            try {
+                if (appState.isConnected && appState.isAdminLoggedIn) {
+                    const record = await pb.collection('contacts').create({ name, phone, description: desc });
+                    const newContact = { id: record.id, name, phone, desc };
+                    appState.contacts.push(newContact);
+                } else {
+                    const newContact = { id: 'c' + Date.now(), name, phone, desc };
+                    appState.contacts.push(newContact);
+                }
+                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+                document.getElementById('contact-name').value = ''; 
+                document.getElementById('contact-phone').value = ''; 
+                document.getElementById('contact-desc').value = '';
+                renderContacts(); 
+                renderAdminContacts(); 
+                showNotification('✅ Contact Added', `${name} added to contacts`, 'success'); 
+                alert('✅ Contact added successfully!');
+            } catch (error) {
+                alert('Error adding contact: ' + error.message);
+            }
         };
         
         window.deleteContact = async function(id) {
             if (!confirm('Delete this contact?')) return;
-            if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('c')) { try { await pb.collection('contacts').delete(id); } catch (error) {} }
-            appState.contacts = appState.contacts.filter(c => c.id !== id);
-            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            renderContacts(); renderAdminContacts(); showNotification('🗑️ Contact Deleted', 'Contact removed', 'warning'); alert('✅ Contact deleted!');
+            try {
+                if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('c')) {
+                    await pb.collection('contacts').delete(id);
+                }
+                appState.contacts = appState.contacts.filter(c => c.id !== id);
+                localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
+                renderContacts(); 
+                renderAdminContacts(); 
+                showNotification('🗑️ Contact Deleted', 'Contact removed', 'warning'); 
+                alert('✅ Contact deleted!');
+            } catch (error) {
+                alert('Error deleting contact: ' + error.message);
+            }
         };
 
         window.uploadNewAccount = async function() {
@@ -1713,14 +1764,30 @@
             if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.innerHTML = '<span class="loading-spinner"></span> Uploading...'; }
             try {
                 const formData = new FormData();
-                formData.append('title', title); formData.append('description', desc); formData.append('tier', tier);
-                formData.append('price_usd', priceUsd); formData.append('price_afn', priceAfn);
-                formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
+                formData.append('title', title); 
+                formData.append('description', desc); 
+                formData.append('tier', tier);
+                formData.append('price_usd', priceUsd); 
+                formData.append('price_afn', priceAfn);
+                formData.append('media', file); 
+                formData.append('mediaType', isVideo ? 'video' : 'image');
                 const record = await pb.collection('accounts').create(formData);
                 if (progressBar) progressBar.style.width = '100%';
                 showNotification('🎉 New Account Uploaded!', `${title} - $${priceUsd}`, 'success');
-                setTimeout(() => { closeModal('add-account-modal'); loadAccountsFromPB(); alert('✅ Account uploaded successfully!'); if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = 'UPLOAD'; } if (progressContainer) progressContainer.classList.remove('active'); if (progressBar) progressBar.style.width = '0%'; }, 500);
-            } catch (error) { alert('Upload failed: ' + (error.message || 'Unknown error')); if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = 'UPLOAD'; } if (progressContainer) progressContainer.classList.remove('active'); if (progressBar) progressBar.style.width = '0%'; }
+                await loadAccountsFromPB();
+                setTimeout(() => { 
+                    closeModal('add-account-modal'); 
+                    alert('✅ Account uploaded successfully!'); 
+                    if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = 'UPLOAD'; } 
+                    if (progressContainer) progressContainer.classList.remove('active'); 
+                    if (progressBar) progressBar.style.width = '0%'; 
+                }, 500);
+            } catch (error) { 
+                alert('Upload failed: ' + (error.message || 'Unknown error')); 
+                if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = 'UPLOAD'; } 
+                if (progressContainer) progressContainer.classList.remove('active'); 
+                if (progressBar) progressBar.style.width = '0%'; 
+            }
         };
 
         window.filterAccounts = function(tier) { appState.currentFilter = tier; document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active')); const activeBtn = document.querySelector(`.tier-tab[data-tier="${tier}"]`); if (activeBtn) activeBtn.classList.add('active'); renderAccounts(); };
@@ -1765,18 +1832,143 @@
         window.showManageContactsModal = function() { renderAdminContacts(); openModal('manage-contacts-modal'); };
         window.showManageAdsModal = function() { renderAdminAds(); openModal('manage-ads-modal'); };
         window.showEditUsdtModal = function() { openModal('edit-usdt-modal'); };
-        window.saveUsdtAddress = function() { const newAddress = document.getElementById('new-usdt-address').value.trim(); if (!newAddress) { alert('Please enter address'); return; } appState.usdtAddress = newAddress; localStorage.setItem('gk_usdt_address', newAddress); document.getElementById('current-usdt-address').innerText = newAddress; closeModal('edit-usdt-modal'); showNotification('💳 USDT Address Updated', 'New payment address saved', 'success'); alert('USDT address updated'); };
-        window.deleteAccount = async function(id) { if (!confirm('Delete this account?')) return; const accountToDelete = appState.accounts.find(a => a.id === id); appState.accounts = appState.accounts.filter(a => a.id !== id); localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); renderAccounts(); renderAdminAccounts(); const accountCount = document.getElementById('admin-account-count'); if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed', 'warning'); alert('Account deleted'); };
+        
+        window.saveUsdtAddress = async function() { 
+            const newAddress = document.getElementById('new-usdt-address').value.trim(); 
+            if (!newAddress) { alert('Please enter address'); return; } 
+            appState.usdtAddress = newAddress; 
+            localStorage.setItem('gk_usdt_address', newAddress); 
+            document.getElementById('current-usdt-address').innerText = newAddress; 
+            closeModal('edit-usdt-modal'); 
+            showNotification('💳 USDT Address Updated', 'New payment address saved', 'success'); 
+            alert('USDT address updated');
+            
+            // Also save to PocketBase if connected
+            if (appState.isConnected && appState.isAdminLoggedIn) {
+                try {
+                    const records = await pb.collection('settings').getFullList();
+                    const existing = records.find(r => r.key === 'usdt_address');
+                    if (existing) {
+                        await pb.collection('settings').update(existing.id, { value: newAddress });
+                    } else {
+                        await pb.collection('settings').create({ key: 'usdt_address', value: newAddress });
+                    }
+                } catch (error) {
+                    console.log('Failed to save to PocketBase:', error);
+                }
+            }
+        };
+        
+        window.deleteAccount = async function(id) { 
+            if (!confirm('Delete this account?')) return; 
+            const accountToDelete = appState.accounts.find(a => a.id === id); 
+            
+            try {
+                if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('temp')) {
+                    await pb.collection('accounts').delete(id);
+                }
+                appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
+                renderAccounts(); 
+                renderAdminAccounts(); 
+                const accountCount = document.getElementById('admin-account-count'); 
+                if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; 
+                showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed', 'warning'); 
+                alert('Account deleted');
+            } catch (error) {
+                alert('Error deleting account: ' + error.message);
+            }
+        };
+        
         window.saveNewAd = function() { if (!appState.currentAdData) { alert('Please select media'); return; } const caption = document.getElementById('ad-caption')?.value || ''; appState.ads.push({ type: appState.currentAdData.type, data: appState.currentAdData.data, caption }); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAdsSlider(); renderAdminAds(); closeModal('manage-ads-modal'); showNotification('📢 New Ad Added', 'Swipe ad has been added', 'success'); alert('Ad added'); };
         window.deleteAd = function(index) { if (confirm('Delete this ad?')) { appState.ads.splice(index, 1); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAdsSlider(); renderAdminAds(); showNotification('🗑️ Ad Deleted', 'Ad removed from slider', 'warning'); } };
         window.bookAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; appState.currentAccount = acc; const t = translations[appState.currentLanguage || 'en']; document.getElementById('book-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>Price: $${acc.price_usd} / ${acc.price_afn} AFN</p><input type="text" id="book-name" class="input" placeholder="${t.yourName}"><input type="tel" id="book-phone" class="input" placeholder="${t.whatsappNumber} (e.g., 93793066322)">`; openModal('book-modal'); };
-        window.submitBook = function() { const name = document.getElementById('book-name')?.value, phone = document.getElementById('book-phone')?.value.replace(/\D/g, ''); if (!name || !phone) { alert('Please fill all fields'); return; } appState.bookRequests.push({ id: Date.now(), account_id: appState.currentAccount.id, account_title: appState.currentAccount.title, user_name: name, whatsapp: phone, date: new Date().toISOString() }); localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests)); showNotification('📘 New Booking Request', `${name} wants to book ${appState.currentAccount.title}`, 'info'); alert('✅ Booking submitted! We will contact you.'); closeModal('book-modal'); };
+        
+        window.submitBook = async function() { 
+            const name = document.getElementById('book-name')?.value, phone = document.getElementById('book-phone')?.value.replace(/\D/g, ''); 
+            if (!name || !phone) { alert('Please fill all fields'); return; } 
+            const booking = { 
+                id: Date.now(), 
+                account_id: appState.currentAccount.id, 
+                account_title: appState.currentAccount.title, 
+                user_name: name, 
+                whatsapp: phone, 
+                date: new Date().toISOString() 
+            };
+            appState.bookRequests.push(booking); 
+            localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests)); 
+            
+            // Save to PocketBase if connected and admin is logged in
+            if (appState.isConnected && appState.isAdminLoggedIn) {
+                try {
+                    await pb.collection('bookings').create({
+                        account_id: appState.currentAccount.id,
+                        account_title: appState.currentAccount.title,
+                        user_name: name,
+                        whatsapp: phone,
+                        date: new Date().toISOString()
+                    });
+                } catch (error) {
+                    console.log('Failed to save booking to PocketBase:', error);
+                }
+            }
+            
+            showNotification('📘 New Booking Request', `${name} wants to book ${appState.currentAccount.title}`, 'info'); 
+            alert('✅ Booking submitted! We will contact you.'); 
+            closeModal('book-modal'); 
+        };
+        
         window.buyAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; appState.currentAccount = acc; document.getElementById('buy-modal-body').innerHTML = `<p><strong>${acc.title}</strong> — $${acc.price_usd}</p><p>Send exact USDT (TRC20) to:</p><code style="display:block; background:#2a2a36; padding:1rem; border-radius:1rem;">${appState.usdtAddress}</code><button class="btn" onclick="copyUsdt()">Copy address</button>`; openModal('buy-modal'); };
         window.confirmBuyWhatsApp = function() { if (!appState.currentAccount) return; window.open(`https://wa.me/93793066322?text=${encodeURIComponent(`I want to buy: ${appState.currentAccount.title} for $${appState.currentAccount.price_usd}`)}`, '_blank'); closeModal('buy-modal'); };
         window.copyUsdt = function() { navigator.clipboard.writeText(appState.usdtAddress); alert('Copied!'); };
         window.infoAccount = function(id) { const acc = appState.accounts.find(a => a.id === id); if (!acc) return; document.getElementById('info-modal-body').innerHTML = `<p><strong>${acc.title}</strong> <span class="tier-badge ${acc.tier}">${acc.tier}</span></p><p>${acc.desc || 'Premium PUBG account'}</p><p>💰 $${acc.price_usd} / ${acc.price_afn} AFN</p>`; openModal('info-modal'); };
-        window.adminLogin = async function() { const email = document.getElementById('admin-email').value, pass = document.getElementById('admin-password').value; if (!email || !pass) { alert('Enter credentials'); return; } try { await pb.admins.authWithPassword(email, pass); appState.isAdminLoggedIn = true; document.getElementById('admin-login-section').classList.add('hidden'); document.getElementById('admin-dashboard').classList.remove('hidden'); document.getElementById('admin-account-count').innerText = appState.accounts.length; document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length; renderBookRequests(); renderAdminContacts(); showNotification('🔐 Admin Login', 'Welcome back!', 'success'); } catch (error) { alert('Login failed'); } };
-        window.logout = function() { pb.authStore.clear(); appState.isAdminLoggedIn = false; document.getElementById('admin-login-section').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); switchScreen('main'); showNotification('👋 Logged Out', 'See you soon!', 'info'); };
+        
+        window.adminLogin = async function() { 
+            const email = document.getElementById('admin-email').value, pass = document.getElementById('admin-password').value; 
+            if (!email || !pass) { alert('Enter credentials'); return; } 
+            try { 
+                await pb.admins.authWithPassword(email, pass); 
+                appState.isAdminLoggedIn = true; 
+                document.getElementById('admin-login-section').classList.add('hidden'); 
+                document.getElementById('admin-dashboard').classList.remove('hidden'); 
+                document.getElementById('admin-account-count').innerText = appState.accounts.length; 
+                document.getElementById('admin-bookings-count').innerText = appState.bookRequests.length; 
+                
+                // Load bookings from PocketBase
+                try {
+                    const records = await pb.collection('bookings').getFullList({ sort: '-created' });
+                    if (records && records.length > 0) {
+                        appState.bookRequests = records.map(r => ({
+                            id: r.id,
+                            account_id: r.account_id,
+                            account_title: r.account_title,
+                            user_name: r.user_name,
+                            whatsapp: r.whatsapp,
+                            date: r.date
+                        }));
+                        localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests));
+                    }
+                } catch (error) {
+                    console.log('Failed to load bookings:', error);
+                }
+                
+                renderBookRequests(); 
+                renderAdminContacts(); 
+                showNotification('🔐 Admin Login', 'Welcome back!', 'success'); 
+            } catch (error) { 
+                alert('Login failed'); 
+            } 
+        };
+        
+        window.logout = function() { 
+            pb.authStore.clear(); 
+            appState.isAdminLoggedIn = false; 
+            document.getElementById('admin-login-section').classList.remove('hidden'); 
+            document.getElementById('admin-dashboard').classList.add('hidden'); 
+            switchScreen('main'); 
+            showNotification('👋 Logged Out', 'See you soon!', 'info'); 
+        };
+        
         window.openModal = function(id) { const modal = document.getElementById(id); if (modal) modal.classList.remove('hidden'); };
         window.closeModal = function(id) { const modal = document.getElementById(id); if (modal) modal.classList.add('hidden'); };
 
