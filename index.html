@@ -1191,6 +1191,7 @@
     <div id="buy-modal" class="modal-overlay hidden" onclick="closeModal('buy-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>💳 Buy with USDT</h3><button class="modal-close" onclick="closeModal('buy-modal')">&times;</button></div><div class="modal-body" id="buy-modal-body"></div><div class="modal-footer"><button class="btn" onclick="closeModal('buy-modal')">Cancel</button><button class="whatsapp-btn" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button></div></div></div>
     <div id="info-modal" class="modal-overlay hidden" onclick="closeModal('info-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>ℹ️ Account details</h3><button class="modal-close" onclick="closeModal('info-modal')">&times;</button></div><div class="modal-body" id="info-modal-body"></div></div></div>
     <div id="language-modal" class="modal-overlay hidden" onclick="closeModal('language-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3>Select language</h3><button class="modal-close" onclick="closeModal('language-modal')">&times;</button></div><div class="modal-body"><button class="btn" onclick="setLanguage('en')">🇺🇸 English</button><button class="btn" onclick="setLanguage('ps')">🇦🇫 پښتو</button><button class="btn" onclick="setLanguage('fa')">🇮🇷 فارسی</button></div></div></div>
+    <div id="install-modal" class="modal-overlay hidden" onclick="closeModal('install-modal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-header"><h3><i class="fas fa-download"></i> Install as App</h3><button class="modal-close" onclick="closeModal('install-modal')">&times;</button></div><div class="modal-body" id="install-modal-body"></div><div class="modal-footer"><button class="btn" onclick="closeModal('install-modal')">Close</button></div></div></div>
     <div id="fullscreen-image-modal" class="fullscreen-modal"><div class="fullscreen-content"><button class="close-btn" onclick="closeFullscreenImage()">&times;</button><div class="fullscreen-image-container"><img id="fullscreen-image" src="" alt="Fullscreen"></div><div class="zoom-controls"><button onclick="zoomImage('out')"><i class="fa fa-search-minus"></i></button><span class="zoom-level" id="zoom-level">1.0x</span><button onclick="zoomImage('in')"><i class="fa fa-search-plus"></i></button><button onclick="resetZoom()"><i class="fa fa-undo"></i></button></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
@@ -1209,14 +1210,14 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - NATIVE ANDROID INSTALL DIALOG
+        // PWA INSTALLATION - DIRECT NATIVE INSTALL (FIXED)
         // ============================================
         let deferredPrompt = null;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            console.log('✅ beforeinstallprompt captured - ready for native install');
+            console.log('✅ beforeinstallprompt captured - ready for direct install');
             
             const installBtn = document.getElementById('install-button');
             if (installBtn) {
@@ -1227,7 +1228,7 @@
         });
         
         window.installApp = function() {
-            console.log('installApp called - attempting native install');
+            console.log('installApp called - attempting direct installation');
             
             if (window.matchMedia('(display-mode: standalone)').matches) {
                 alert('✅ App is already installed on your device!');
@@ -1250,13 +1251,12 @@
                     deferredPrompt = null;
                 });
             } else {
-                // For browsers that don't support beforeinstallprompt, show helpful message
+                // This only shows if the browser doesn't support beforeinstallprompt
+                // (like when testing locally or not on HTTPS)
                 if (isAndroid()) {
-                    alert('Please use Chrome browser on Android for one-tap installation.\n\nYou can also add to home screen via browser menu.');
-                } else if (isIOS()) {
-                    alert('Tap Share button, then "Add to Home Screen" to install GK Store on your iPhone/iPad.');
+                    alert('Please use Chrome browser on Android for one-tap installation.\n\nIf you are already on Chrome, please ensure the site is served over HTTPS.');
                 } else {
-                    alert('Your browser does not support app installation. Please use Chrome on Android or Safari on iOS.');
+                    alert('Your browser does not support app installation. Please use Chrome on Android.');
                 }
             }
         };
