@@ -30,7 +30,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
-        /* ALL YOUR ORIGINAL STYLES GO HERE - KEEP EVERYTHING AS YOU HAD IT */
+        /* ALL YOUR ORIGINAL STYLES - KEEP EXACTLY AS YOU HAD THEM */
         * {
             margin: 0;
             padding: 0;
@@ -1232,6 +1232,7 @@
             console.log('installApp called - attempting direct native install');
             
             if (window.matchMedia('(display-mode: standalone)').matches) {
+                showNotification('Already Installed', 'App is already on your home screen', 'info');
                 return;
             }
             
@@ -1250,6 +1251,9 @@
                     }
                     deferredPrompt = null;
                 });
+            } else {
+                console.log('No install prompt available yet. The site may still be loading PWA criteria.');
+                showNotification('Please wait', 'The install option will appear when ready', 'info');
             }
         };
         
@@ -1263,7 +1267,7 @@
             setTimeout(() => {
                 const installBtn = document.getElementById('install-button');
                 if (installBtn) installBtn.style.display = 'flex';
-            }, 500);
+            }, 1000);
         }
 
         // ============================================
@@ -1776,46 +1780,39 @@
             console.log('Connected to server:', appState.isConnected);
             
             try {
-                // Make sure we are logged in and connected
-                if (!appState.isAdminLoggedIn) {
-                    alert('❌ Please login as admin first to delete from server!');
-                    return;
-                }
-                
-                if (!appState.isConnected) {
-                    alert('❌ Not connected to PocketBase server. Please check your connection.');
-                    return;
-                }
-                
-                // Delete from PocketBase server
-                console.log('Deleting from PocketBase server...');
-                const result = await pb.collection('accounts').delete(id);
-                console.log('Delete result:', result);
-                
-                if (result) {
-                    console.log('✅ Account deleted from PocketBase server successfully!');
-                    showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
-                    
-                    // Then remove from local state
-                    appState.accounts = appState.accounts.filter(a => a.id !== id); 
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
-                    
-                    // Refresh all UI
-                    renderAccounts(); 
-                    if (document.getElementById('admin-accounts-list')) {
-                        renderAdminAccounts(); 
+                // FIRST: Delete from PocketBase server
+                if (appState.isAdminLoggedIn && appState.isConnected) {
+                    console.log('Deleting from PocketBase server...');
+                    const result = await pb.collection('accounts').delete(id);
+                    console.log('Delete result:', result);
+                    if (result) {
+                        console.log('✅ Account deleted from PocketBase server!');
+                        showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
+                    } else {
+                        throw new Error('Delete returned false');
                     }
-                    
-                    // Update admin count
-                    const accountCount = document.getElementById('admin-account-count'); 
-                    if (accountCount && appState.isAdminLoggedIn) {
-                        accountCount.innerText = appState.accounts.length; 
-                    }
-                    
-                    alert('✅ Account permanently deleted from server!');
                 } else {
-                    throw new Error('Delete failed - no result');
+                    console.log('Not logged in as admin or offline - deleting from local only');
+                    showNotification('⚠️ Offline Mode', 'Account removed from local storage only', 'warning');
                 }
+                
+                // SECOND: Remove from local state
+                appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
+                
+                // Refresh all UI
+                renderAccounts(); 
+                if (document.getElementById('admin-accounts-list')) {
+                    renderAdminAccounts(); 
+                }
+                
+                // Update admin count
+                const accountCount = document.getElementById('admin-account-count'); 
+                if (accountCount && appState.isAdminLoggedIn) {
+                    accountCount.innerText = appState.accounts.length; 
+                }
+                
+                alert('✅ Account permanently deleted from server!');
                 
             } catch (error) {
                 console.error('Delete error details:', error);
