@@ -30,6 +30,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* ALL YOUR ORIGINAL STYLES GO HERE - KEEP EVERYTHING AS YOU HAD IT */
         * {
             margin: 0;
             padding: 0;
@@ -1771,36 +1772,50 @@
             }
             
             console.log('Attempting to delete account from PocketBase:', id, accountToDelete.title);
+            console.log('Admin logged in:', appState.isAdminLoggedIn);
+            console.log('Connected to server:', appState.isConnected);
             
             try {
-                // Delete from PocketBase server FIRST
-                if (appState.isConnected && appState.isAdminLoggedIn) {
-                    console.log('Deleting from PocketBase server...');
-                    await pb.collection('accounts').delete(id);
+                // Make sure we are logged in and connected
+                if (!appState.isAdminLoggedIn) {
+                    alert('❌ Please login as admin first to delete from server!');
+                    return;
+                }
+                
+                if (!appState.isConnected) {
+                    alert('❌ Not connected to PocketBase server. Please check your connection.');
+                    return;
+                }
+                
+                // Delete from PocketBase server
+                console.log('Deleting from PocketBase server...');
+                const result = await pb.collection('accounts').delete(id);
+                console.log('Delete result:', result);
+                
+                if (result) {
                     console.log('✅ Account deleted from PocketBase server successfully!');
                     showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
+                    
+                    // Then remove from local state
+                    appState.accounts = appState.accounts.filter(a => a.id !== id); 
+                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
+                    
+                    // Refresh all UI
+                    renderAccounts(); 
+                    if (document.getElementById('admin-accounts-list')) {
+                        renderAdminAccounts(); 
+                    }
+                    
+                    // Update admin count
+                    const accountCount = document.getElementById('admin-account-count'); 
+                    if (accountCount && appState.isAdminLoggedIn) {
+                        accountCount.innerText = appState.accounts.length; 
+                    }
+                    
+                    alert('✅ Account permanently deleted from server!');
                 } else {
-                    console.log('Not logged in as admin or offline - deleting from local only');
-                    showNotification('⚠️ Offline Mode', 'Account removed from local storage only', 'warning');
+                    throw new Error('Delete failed - no result');
                 }
-                
-                // Then remove from local state
-                appState.accounts = appState.accounts.filter(a => a.id !== id); 
-                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
-                
-                // Refresh all UI
-                renderAccounts(); 
-                if (document.getElementById('admin-accounts-list')) {
-                    renderAdminAccounts(); 
-                }
-                
-                // Update admin count
-                const accountCount = document.getElementById('admin-account-count'); 
-                if (accountCount && appState.isAdminLoggedIn) {
-                    accountCount.innerText = appState.accounts.length; 
-                }
-                
-                alert('✅ Account permanently deleted from server!');
                 
             } catch (error) {
                 console.error('Delete error details:', error);
@@ -1810,6 +1825,8 @@
                     alert('❌ Not authorized to delete from server. Please login as admin first.\n\nAccount removed from local view only.');
                 } else if (error.message && error.message.includes('record')) {
                     alert('❌ Account not found on server or already deleted.\n\nRemoved from local view.');
+                } else if (error.status === 404) {
+                    alert('❌ Account not found on server.\n\nRemoved from local view.');
                 } else {
                     alert('❌ Error deleting from server: ' + (error.message || 'Unknown error') + '\n\nAccount removed from local view only.');
                 }
