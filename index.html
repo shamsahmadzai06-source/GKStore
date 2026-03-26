@@ -1762,33 +1762,65 @@
         // DELETE ACCOUNT - FIXED TO DELETE FROM POCKETBASE SERVER
         // ============================================
         window.deleteAccount = async function(id) { 
-            if (!confirm('Delete this account permanently from server?')) return; 
-            const accountToDelete = appState.accounts.find(a => a.id === id); 
+            if (!confirm('⚠️ Delete this account permanently from server? This cannot be undone!')) return; 
+            const accountToDelete = appState.accounts.find(a => a.id === id);
+            
+            if (!accountToDelete) {
+                alert('Account not found!');
+                return;
+            }
+            
+            console.log('Attempting to delete account from PocketBase:', id, accountToDelete.title);
             
             try {
-                // First delete from PocketBase server
-                if (appState.isConnected && appState.isAdminLoggedIn && id && !id.startsWith('temp')) {
-                    console.log('Deleting account from PocketBase server:', id);
+                // Delete from PocketBase server FIRST
+                if (appState.isConnected && appState.isAdminLoggedIn) {
+                    console.log('Deleting from PocketBase server...');
                     await pb.collection('accounts').delete(id);
-                    console.log('✅ Account deleted from server successfully');
+                    console.log('✅ Account deleted from PocketBase server successfully!');
+                    showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
+                } else {
+                    console.log('Not logged in as admin or offline - deleting from local only');
+                    showNotification('⚠️ Offline Mode', 'Account removed from local storage only', 'warning');
                 }
+                
                 // Then remove from local state
                 appState.accounts = appState.accounts.filter(a => a.id !== id); 
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
+                
+                // Refresh all UI
                 renderAccounts(); 
-                renderAdminAccounts(); 
+                if (document.getElementById('admin-accounts-list')) {
+                    renderAdminAccounts(); 
+                }
+                
+                // Update admin count
                 const accountCount = document.getElementById('admin-account-count'); 
-                if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; 
-                showNotification('🗑️ Account Deleted', accountToDelete?.title || 'Account removed from server', 'warning'); 
+                if (accountCount && appState.isAdminLoggedIn) {
+                    accountCount.innerText = appState.accounts.length; 
+                }
+                
                 alert('✅ Account permanently deleted from server!');
+                
             } catch (error) {
-                console.error('Delete error:', error);
-                alert('Error deleting account: ' + error.message);
-                // Even if server delete fails, remove from local to avoid confusion
+                console.error('Delete error details:', error);
+                
+                // Show specific error message
+                if (error.message && error.message.includes('auth')) {
+                    alert('❌ Not authorized to delete from server. Please login as admin first.\n\nAccount removed from local view only.');
+                } else if (error.message && error.message.includes('record')) {
+                    alert('❌ Account not found on server or already deleted.\n\nRemoved from local view.');
+                } else {
+                    alert('❌ Error deleting from server: ' + (error.message || 'Unknown error') + '\n\nAccount removed from local view only.');
+                }
+                
+                // Still remove from local to avoid showing deleted accounts
                 appState.accounts = appState.accounts.filter(a => a.id !== id); 
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 renderAccounts();
-                renderAdminAccounts();
+                if (document.getElementById('admin-accounts-list')) {
+                    renderAdminAccounts();
+                }
             }
         };
         
