@@ -1210,25 +1210,30 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - ONE CLICK NATIVE INSTALL (NO WAITING)
+        // PWA INSTALLATION - FIXED to work immediately
         // ============================================
         let deferredPrompt = null;
+        let installButtonReady = false;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            installButtonReady = true;
             console.log('✅ beforeinstallprompt captured - ready for native install');
             
             const installBtn = document.getElementById('install-button');
             const installBanner = document.getElementById('install-banner');
             if (installBtn) installBtn.style.display = 'flex';
             if (installBanner) installBanner.style.display = 'flex';
+            const installText = document.getElementById('install-text');
+            if (installText && isAndroid()) installText.textContent = '📲 Install App';
         });
         
         window.installApp = function() {
-            console.log('installApp called - one click native install');
+            console.log('installApp called - attempting direct native install');
             
             if (window.matchMedia('(display-mode: standalone)').matches) {
+                showNotification('Already Installed', 'App is already on your home screen', 'info');
                 return;
             }
             
@@ -1248,8 +1253,23 @@
                     deferredPrompt = null;
                 });
             } else {
-                // For iOS only - show instructions
-                if (isIOS()) {
+                console.log('No deferredPrompt yet - checking if install is available');
+                
+                // Check if we're on Android and show helpful message
+                if (isAndroid()) {
+                    if (!installButtonReady) {
+                        showNotification('Install Ready', 'Please wait a moment and try again. The install option will appear shortly.', 'info');
+                        // Try to trigger the install prompt after a short delay
+                        setTimeout(() => {
+                            if (deferredPrompt) {
+                                installApp();
+                            }
+                        }, 2000);
+                    } else {
+                        showNotification('Install Available', 'The install option is now ready. Please click the install button again.', 'info');
+                    }
+                } else if (isIOS()) {
+                    // iOS requires manual Add to Home Screen
                     const instructions = document.getElementById('install-modal-body');
                     if (instructions) {
                         instructions.innerHTML = `
@@ -1271,7 +1291,7 @@
             sessionStorage.setItem('banner_closed', 'true');
         };
         
-        // Show install button immediately for Android (no waiting)
+        // Show install button immediately for Android (the button will be there, but the prompt may take a moment)
         if (isAndroid() && !window.matchMedia('(display-mode: standalone)').matches) {
             const installBtn = document.getElementById('install-button');
             if (installBtn) installBtn.style.display = 'flex';
