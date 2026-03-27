@@ -1210,161 +1210,84 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - FIXED for Android direct install
+        // PWA INSTALLATION - DIRECT NATIVE INSTALL (IMMEDIATE)
         // ============================================
         let deferredPrompt = null;
         
-        // Check if already installed as PWA
-        function isAppInstalled() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
-        }
-
-        // Hide install UI if already installed
-        if (isAppInstalled()) {
-            const installBtn = document.getElementById('install-button');
-            const installBanner = document.getElementById('install-banner');
-            if (installBtn) installBtn.style.display = 'none';
-            if (installBanner) installBanner.style.display = 'none';
-        }
-
-        // Listen for beforeinstallprompt event (Android Chrome)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('✅ beforeinstallprompt captured - ready for native install');
             
-            // Show install UI if not installed
-            if (!isAppInstalled()) {
-                const installBtn = document.getElementById('install-button');
-                const installBanner = document.getElementById('install-banner');
-                const installText = document.getElementById('install-text');
-                if (installBtn) installBtn.style.display = 'flex';
-                if (installBanner) installBanner.style.display = 'flex';
-                if (installText && isAndroid()) installText.textContent = 'Install on Android';
-            }
-        });
-
-        // Listen for app installed event
-        window.addEventListener('appinstalled', (e) => {
-            console.log('✅ GK Store installed successfully!');
             const installBtn = document.getElementById('install-button');
             const installBanner = document.getElementById('install-banner');
-            if (installBtn) installBtn.style.display = 'none';
-            if (installBanner) installBanner.style.display = 'none';
-            deferredPrompt = null;
+            if (installBtn) installBtn.style.display = 'flex';
+            if (installBanner) installBanner.style.display = 'flex';
+            const installText = document.getElementById('install-text');
+            if (installText && isAndroid()) installText.textContent = '📲 Install App';
         });
-
-        // Main install function - DIRECT native install for Android
+        
         window.installApp = function() {
             console.log('installApp called - attempting direct native install');
             
-            if (isAppInstalled()) {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
                 showNotification('Already Installed', 'App is already on your home screen', 'info');
                 return;
             }
             
             if (deferredPrompt) {
-                // Show the native install prompt
                 deferredPrompt.prompt();
-                
-                // Wait for user's choice
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ User accepted install');
+                        console.log('✅ App installed successfully!');
                         const installBtn = document.getElementById('install-button');
                         const installBanner = document.getElementById('install-banner');
                         if (installBtn) installBtn.style.display = 'none';
                         if (installBanner) installBanner.style.display = 'none';
                         showNotification('🎉 Installation Complete!', 'GK Store is now on your home screen', 'success');
                     } else {
-                        console.log('❌ User dismissed install');
+                        console.log('❌ User cancelled installation');
                     }
                     deferredPrompt = null;
                 });
             } else {
-                // For iOS or if prompt not available, show instructions
-                showInstallInstructions();
+                // Show install instructions only if no deferredPrompt
+                const isIOSDevice = isIOS();
+                const instructions = document.getElementById('install-modal-body');
+                if (instructions) {
+                    if (isIOSDevice) {
+                        instructions.innerHTML = `
+                            <div class="install-instructions">
+                                <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Share <i class="fas fa-share-alt"></i> button</span></div>
+                                <div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Add to Home Screen"</span></div>
+                                <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap "Add" to install</span></div>
+                            </div>
+                        `;
+                    } else if (isAndroid()) {
+                        instructions.innerHTML = `
+                            <div class="install-instructions">
+                                <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap menu (⋮) in Chrome</span></div>
+                                <div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Install App"</span></div>
+                                <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap "Install" to confirm</span></div>
+                            </div>
+                        `;
+                    }
+                    openModal('install-modal');
+                }
             }
         };
-
-        // Close install banner
+        
         window.closeInstallBanner = function() {
             const banner = document.getElementById('install-banner');
             if (banner) banner.style.display = 'none';
             sessionStorage.setItem('banner_closed', 'true');
         };
-
-        // Show install instructions
-        function showInstallInstructions() {
-            const instructions = document.getElementById('install-modal-body');
-            if (!instructions) return;
-            
-            const isIOSDevice = isIOS();
-            const isAndroidDevice = isAndroid();
-            
-            if (isIOSDevice) {
-                instructions.innerHTML = `
-                    <div class="install-instructions">
-                        <div class="install-step">
-                            <span class="step-number">1</span>
-                            <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-share-alt"></i> Share</span> button</span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">2</span>
-                            <span class="step-text">Scroll down and tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Add to Home Screen</span></span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">3</span>
-                            <span class="step-text">Tap <span class="platform-badge">Add</span> in the top right</span>
-                        </div>
-                    </div>
-                `;
-            } else if (isAndroidDevice) {
-                instructions.innerHTML = `
-                    <div class="install-instructions">
-                        <div class="install-step">
-                            <span class="step-number">1</span>
-                            <span class="step-text">Tap the <span class="platform-badge"><i class="fas fa-ellipsis-v"></i> Menu</span> button (3 dots)</span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">2</span>
-                            <span class="step-text">Tap <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install App</span></span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">3</span>
-                            <span class="step-text">Tap <span class="platform-badge">Install</span> to confirm</span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                instructions.innerHTML = `
-                    <div class="install-instructions">
-                        <div class="install-step">
-                            <span class="step-number">1</span>
-                            <span class="step-text">Click the <span class="platform-badge"><i class="fas fa-plus-circle"></i> Install</span> icon in address bar</span>
-                        </div>
-                        <div class="install-step">
-                            <span class="step-number">2</span>
-                            <span class="step-text">Click <span class="platform-badge">Install</span> in the popup</span>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            openModal('install-modal');
+        
+        // Show install button immediately for Android
+        if (isAndroid() && !window.matchMedia('(display-mode: standalone)').matches) {
+            const installBtn = document.getElementById('install-button');
+            if (installBtn) installBtn.style.display = 'flex';
         }
-
-        // Show install button after delay if not installed
-        setTimeout(() => {
-            if (!isAppInstalled() && !sessionStorage.getItem('banner_closed')) {
-                const isAndroidDevice = isAndroid();
-                if (isAndroidDevice || deferredPrompt) {
-                    const installBtn = document.getElementById('install-button');
-                    if (installBtn) installBtn.style.display = 'flex';
-                }
-            }
-        }, 2000);
 
         // ============================================
         // SERVICE WORKER REGISTRATION
@@ -1877,7 +1800,6 @@
             console.log('Admin logged in:', appState.isAdminLoggedIn);
             console.log('Connected to server:', appState.isConnected);
             
-            // Check if we can delete from server
             if (!appState.isAdminLoggedIn) {
                 alert('❌ Please login as admin first to delete from server!');
                 return;
@@ -1894,12 +1816,10 @@
             }
             
             try {
-                // FIRST: Verify the record exists in PocketBase
                 console.log('Checking if record exists in PocketBase...');
                 const checkRecord = await pb.collection('accounts').getOne(id);
                 console.log('✅ Record found in PocketBase:', checkRecord.id, checkRecord.title);
                 
-                // SECOND: Delete from PocketBase server
                 console.log('Deleting from PocketBase server...');
                 const result = await pb.collection('accounts').delete(id);
                 console.log('Delete result:', result);
@@ -1908,21 +1828,13 @@
                     console.log('✅ Account deleted from PocketBase server successfully!');
                     showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
                     
-                    // THIRD: Remove from local state
                     appState.accounts = appState.accounts.filter(a => a.id !== id); 
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
-                    
-                    // Refresh all UI
                     renderAccounts(); 
-                    if (document.getElementById('admin-accounts-list')) {
-                        renderAdminAccounts(); 
-                    }
+                    if (document.getElementById('admin-accounts-list')) renderAdminAccounts(); 
                     
-                    // Update admin count
                     const accountCount = document.getElementById('admin-account-count'); 
-                    if (accountCount && appState.isAdminLoggedIn) {
-                        accountCount.innerText = appState.accounts.length; 
-                    }
+                    if (accountCount && appState.isAdminLoggedIn) accountCount.innerText = appState.accounts.length; 
                     
                     alert('✅ Account permanently deleted from server!');
                 } else {
@@ -1932,27 +1844,18 @@
             } catch (error) {
                 console.error('Delete error details:', error);
                 
-                // Show specific error message
                 let errorMsg = '';
-                if (error.status === 401) {
-                    errorMsg = '❌ Authentication failed. Please logout and login again as admin.';
-                } else if (error.status === 403) {
-                    errorMsg = '❌ You don\'t have permission to delete this account.';
-                } else if (error.status === 404) {
-                    errorMsg = '❌ Account not found on server. It may have been already deleted.';
-                } else {
-                    errorMsg = '❌ Error deleting from server: ' + (error.message || 'Unknown error');
-                }
+                if (error.status === 401) errorMsg = '❌ Authentication failed. Please logout and login again as admin.';
+                else if (error.status === 403) errorMsg = '❌ You don\'t have permission to delete this account.';
+                else if (error.status === 404) errorMsg = '❌ Account not found on server. It may have been already deleted.';
+                else errorMsg = '❌ Error deleting from server: ' + (error.message || 'Unknown error');
                 
                 alert(errorMsg + '\n\nAccount removed from local view only.');
                 
-                // Still remove from local to avoid confusion
                 appState.accounts = appState.accounts.filter(a => a.id !== id); 
                 localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                 renderAccounts();
-                if (document.getElementById('admin-accounts-list')) {
-                    renderAdminAccounts();
-                }
+                if (document.getElementById('admin-accounts-list')) renderAdminAccounts();
             }
         };
         
