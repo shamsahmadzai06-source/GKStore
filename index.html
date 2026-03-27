@@ -1210,7 +1210,7 @@
         function isAndroid() { return /Android/.test(navigator.userAgent); }
 
         // ============================================
-        // PWA INSTALLATION - DIRECT NATIVE INSTALL (IMMEDIATE)
+        // PWA INSTALLATION - ONE CLICK NATIVE INSTALL (NO WAITING)
         // ============================================
         let deferredPrompt = null;
         
@@ -1223,15 +1223,12 @@
             const installBanner = document.getElementById('install-banner');
             if (installBtn) installBtn.style.display = 'flex';
             if (installBanner) installBanner.style.display = 'flex';
-            const installText = document.getElementById('install-text');
-            if (installText && isAndroid()) installText.textContent = '📲 Install App';
         });
         
         window.installApp = function() {
-            console.log('installApp called - attempting direct native install');
+            console.log('installApp called - one click native install');
             
             if (window.matchMedia('(display-mode: standalone)').matches) {
-                showNotification('Already Installed', 'App is already on your home screen', 'info');
                 return;
             }
             
@@ -1251,24 +1248,15 @@
                     deferredPrompt = null;
                 });
             } else {
-                // Show install instructions only if no deferredPrompt
-                const isIOSDevice = isIOS();
-                const instructions = document.getElementById('install-modal-body');
-                if (instructions) {
-                    if (isIOSDevice) {
+                // For iOS only - show instructions
+                if (isIOS()) {
+                    const instructions = document.getElementById('install-modal-body');
+                    if (instructions) {
                         instructions.innerHTML = `
                             <div class="install-instructions">
                                 <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap Share <i class="fas fa-share-alt"></i> button</span></div>
                                 <div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Add to Home Screen"</span></div>
                                 <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap "Add" to install</span></div>
-                            </div>
-                        `;
-                    } else if (isAndroid()) {
-                        instructions.innerHTML = `
-                            <div class="install-instructions">
-                                <div class="install-step"><span class="step-number">1</span><span class="step-text">Tap menu (⋮) in Chrome</span></div>
-                                <div class="install-step"><span class="step-number">2</span><span class="step-text">Tap "Install App"</span></div>
-                                <div class="install-step"><span class="step-number">3</span><span class="step-text">Tap "Install" to confirm</span></div>
                             </div>
                         `;
                     }
@@ -1283,7 +1271,7 @@
             sessionStorage.setItem('banner_closed', 'true');
         };
         
-        // Show install button immediately for Android
+        // Show install button immediately for Android (no waiting)
         if (isAndroid() && !window.matchMedia('(display-mode: standalone)').matches) {
             const installBtn = document.getElementById('install-button');
             if (installBtn) installBtn.style.display = 'flex';
