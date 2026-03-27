@@ -30,6 +30,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* ALL YOUR ORIGINAL STYLES - KEEP EXACTLY AS YOU HAD THEM */
         * {
             margin: 0;
             padding: 0;
@@ -1775,11 +1776,10 @@
             console.log('Account Title:', accountToDelete.title);
             console.log('Admin logged in:', appState.isAdminLoggedIn);
             console.log('Connected to server:', appState.isConnected);
-            console.log('PocketBase auth token:', pb.authStore.token ? 'Yes (has token)' : 'No token');
             
             // Check if we can delete from server
             if (!appState.isAdminLoggedIn) {
-                alert('❌ Please login as admin first to delete from server!\n\nClick Admin tab and login with your credentials.');
+                alert('❌ Please login as admin first to delete from server!');
                 return;
             }
             
@@ -1794,22 +1794,12 @@
             }
             
             try {
-                // First verify the record exists in PocketBase
+                // FIRST: Verify the record exists in PocketBase
                 console.log('Checking if record exists in PocketBase...');
-                try {
-                    const checkRecord = await pb.collection('accounts').getOne(id);
-                    console.log('✅ Record found in PocketBase:', checkRecord.id, checkRecord.title);
-                } catch (checkError) {
-                    console.log('❌ Record not found in PocketBase:', checkError);
-                    alert('⚠️ Account not found on server. It may have been already deleted.\n\nRemoving from local storage.');
-                    appState.accounts = appState.accounts.filter(a => a.id !== id); 
-                    localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
-                    renderAccounts();
-                    renderAdminAccounts();
-                    return;
-                }
+                const checkRecord = await pb.collection('accounts').getOne(id);
+                console.log('✅ Record found in PocketBase:', checkRecord.id, checkRecord.title);
                 
-                // Delete from PocketBase server
+                // SECOND: Delete from PocketBase server
                 console.log('Deleting from PocketBase server...');
                 const result = await pb.collection('accounts').delete(id);
                 console.log('Delete result:', result);
@@ -1818,7 +1808,7 @@
                     console.log('✅ Account deleted from PocketBase server successfully!');
                     showNotification('🗑️ Account Deleted', `${accountToDelete.title} removed from server`, 'success');
                     
-                    // Remove from local state
+                    // THIRD: Remove from local state
                     appState.accounts = appState.accounts.filter(a => a.id !== id); 
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
                     
@@ -1836,28 +1826,20 @@
                     
                     alert('✅ Account permanently deleted from server!');
                 } else {
-                    throw new Error('Delete returned false - server may not have deleted the record');
+                    throw new Error('Delete returned false');
                 }
                 
             } catch (error) {
-                console.error('========== DELETE ERROR ==========');
-                console.error('Error details:', error);
-                console.error('Error message:', error.message);
-                console.error('Error status:', error.status);
-                console.error('Error data:', error.data);
+                console.error('Delete error details:', error);
                 
-                // Show specific error message based on error type
+                // Show specific error message
                 let errorMsg = '';
                 if (error.status === 401) {
                     errorMsg = '❌ Authentication failed. Please logout and login again as admin.';
                 } else if (error.status === 403) {
-                    errorMsg = '❌ You don\'t have permission to delete this account. Make sure you are logged in as admin.';
+                    errorMsg = '❌ You don\'t have permission to delete this account.';
                 } else if (error.status === 404) {
                     errorMsg = '❌ Account not found on server. It may have been already deleted.';
-                } else if (error.message && error.message.includes('auth')) {
-                    errorMsg = '❌ Not authorized. Please login as admin first.';
-                } else if (error.message && error.message.includes('record')) {
-                    errorMsg = '❌ Account record not found on server.';
                 } else {
                     errorMsg = '❌ Error deleting from server: ' + (error.message || 'Unknown error');
                 }
