@@ -30,6 +30,7 @@
     <script src="https://unpkg.com/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
     
     <style>
+        /* ALL YOUR ORIGINAL STYLES GO HERE - KEEP EXACTLY AS YOU HAD THEM */
         * {
             margin: 0;
             padding: 0;
@@ -1644,15 +1645,31 @@
         }
 
         // ============================================
-        // POCKETBASE DATA LOADING
+        // POCKETBASE DATA LOADING - FIXED COLLECTION NAME
         // ============================================
+        // IMPORTANT: The collection name is "Manage Accounts" (with space)
+        const COLLECTION_ACCOUNTS = 'Manage Accounts';
+        const COLLECTION_CONTACTS = 'contacts';
+        const COLLECTION_SETTINGS = 'settings';
+        
         async function loadAccountsFromPB() {
             if (!appState.isConnected) return;
             try {
-                const records = await pb.collection('accounts').getFullList({ $autoCancel: false, sort: '-created' });
+                console.log('Loading accounts from collection:', COLLECTION_ACCOUNTS);
+                const records = await pb.collection(COLLECTION_ACCOUNTS).getFullList({ $autoCancel: false, sort: '-created' });
+                console.log('Loaded records:', records.length);
                 if (records && records.length > 0) {
                     const previousCount = appState.accounts.length;
-                    appState.accounts = records.map(record => ({ id: record.id, title: record.title, desc: record.description, tier: record.tier, price_usd: record.price_usd, price_afn: record.price_afn, media: record.mediaType === 'video' ? `${PB_URL}/api/files/accounts/${record.id}/${record.media}` : pb.files.getUrl(record, record.media), mediaType: record.mediaType || 'image' }));
+                    appState.accounts = records.map(record => ({ 
+                        id: record.id, 
+                        title: record.title, 
+                        desc: record.description, 
+                        tier: record.tier, 
+                        price_usd: record.price_usd, 
+                        price_afn: record.price_afn, 
+                        media: record.mediaType === 'video' ? `${PB_URL}/api/files/${COLLECTION_ACCOUNTS}/${record.id}/${record.media}` : pb.files.getUrl(record, record.media), 
+                        mediaType: record.mediaType || 'image' 
+                    }));
                     localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
                     if (appState.accounts.length > previousCount && previousCount > 0) { const newAccount = appState.accounts[0]; showNotification('📢 New Account Added!', `${newAccount.title} - $${newAccount.price_usd}`, 'success'); }
                     renderAccounts();
@@ -1660,8 +1677,30 @@
             } catch (error) { console.log('Load accounts error:', error); }
         }
 
-        async function loadContactsFromPB() { if (!appState.isConnected) return; try { const records = await pb.collection('contacts').getFullList(); if (records && records.length > 0) { appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description })); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); renderContacts(); } } catch (error) {} }
-        async function loadSettingsFromPB() { if (!appState.isConnected) return; try { const records = await pb.collection('settings').getFullList(); const usdt = records.find(r => r.key === 'usdt_address'); if (usdt) { appState.usdtAddress = usdt.value; const usdtEl = document.getElementById('current-usdt-address'); if (usdtEl) usdtEl.innerText = usdt.value; } } catch (error) {} }
+        async function loadContactsFromPB() { 
+            if (!appState.isConnected) return; 
+            try { 
+                const records = await pb.collection(COLLECTION_CONTACTS).getFullList(); 
+                if (records && records.length > 0) { 
+                    appState.contacts = records.map(r => ({ id: r.id, name: r.name, phone: r.phone, desc: r.description })); 
+                    localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); 
+                    renderContacts(); 
+                } 
+            } catch (error) {} 
+        }
+        
+        async function loadSettingsFromPB() { 
+            if (!appState.isConnected) return; 
+            try { 
+                const records = await pb.collection(COLLECTION_SETTINGS).getFullList(); 
+                const usdt = records.find(r => r.key === 'usdt_address'); 
+                if (usdt) { 
+                    appState.usdtAddress = usdt.value; 
+                    const usdtEl = document.getElementById('current-usdt-address'); 
+                    if (usdtEl) usdtEl.innerText = usdt.value; 
+                } 
+            } catch (error) {} 
+        }
 
         // ============================================
         // CONTACT & ACCOUNT MANAGEMENT
@@ -1675,14 +1714,14 @@
             const newContact = { id: 'c' + Date.now(), name, phone, desc };
             appState.contacts.push(newContact);
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
-            if (appState.isConnected && appState.isAdminLoggedIn) { try { const record = await pb.collection('contacts').create({ name, phone, description: desc }); newContact.id = record.id; appState.contacts = appState.contacts.map(c => c.id === newContact.id ? newContact : c); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); } catch (error) {} }
+            if (appState.isConnected && appState.isAdminLoggedIn) { try { const record = await pb.collection(COLLECTION_CONTACTS).create({ name, phone, description: desc }); newContact.id = record.id; appState.contacts = appState.contacts.map(c => c.id === newContact.id ? newContact : c); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); } catch (error) {} }
             document.getElementById('contact-name').value = ''; document.getElementById('contact-phone').value = ''; document.getElementById('contact-desc').value = '';
             renderContacts(); renderAdminContacts(); showNotification('✅ Contact Added', `${name} added to contacts`, 'success'); alert('✅ Contact added successfully!');
         };
         
         window.deleteContact = async function(id) {
             if (!confirm('Delete this contact?')) return;
-            if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('c')) { try { await pb.collection('contacts').delete(id); } catch (error) {} }
+            if (appState.isConnected && appState.isAdminLoggedIn && !id.startsWith('c')) { try { await pb.collection(COLLECTION_CONTACTS).delete(id); } catch (error) {} }
             appState.contacts = appState.contacts.filter(c => c.id !== id);
             localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts));
             renderContacts(); renderAdminContacts(); showNotification('🗑️ Contact Deleted', 'Contact removed', 'warning'); alert('✅ Contact deleted!');
@@ -1707,7 +1746,7 @@
                 formData.append('title', title); formData.append('description', desc); formData.append('tier', tier);
                 formData.append('price_usd', priceUsd); formData.append('price_afn', priceAfn);
                 formData.append('media', file); formData.append('mediaType', isVideo ? 'video' : 'image');
-                const record = await pb.collection('accounts').create(formData);
+                const record = await pb.collection(COLLECTION_ACCOUNTS).create(formData);
                 if (progressBar) progressBar.style.width = '100%';
                 showNotification('🎉 New Account Uploaded!', `${title} - $${priceUsd}`, 'success');
                 setTimeout(() => { closeModal('add-account-modal'); loadAccountsFromPB(); alert('✅ Account uploaded successfully!'); if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = 'UPLOAD'; } if (progressContainer) progressContainer.classList.remove('active'); if (progressBar) progressBar.style.width = '0%'; }, 500);
@@ -1759,7 +1798,7 @@
         window.saveUsdtAddress = function() { const newAddress = document.getElementById('new-usdt-address').value.trim(); if (!newAddress) { alert('Please enter address'); return; } appState.usdtAddress = newAddress; localStorage.setItem('gk_usdt_address', newAddress); document.getElementById('current-usdt-address').innerText = newAddress; closeModal('edit-usdt-modal'); showNotification('💳 USDT Address Updated', 'New payment address saved', 'success'); alert('USDT address updated'); };
         
         // ============================================
-        // DELETE ACCOUNT - FIXED TO DELETE FROM POCKETBASE SERVER
+        // DELETE ACCOUNT - FIXED WITH CORRECT COLLECTION NAME
         // ============================================
         window.deleteAccount = async function(id) { 
             if (!confirm('⚠️ Delete this account permanently from server? This cannot be undone!')) return; 
@@ -1773,6 +1812,7 @@
             console.log('========== DELETE ACCOUNT ==========');
             console.log('Account ID:', id);
             console.log('Account Title:', accountToDelete.title);
+            console.log('Collection Name:', COLLECTION_ACCOUNTS);
             console.log('Admin logged in:', appState.isAdminLoggedIn);
             console.log('Connected to server:', appState.isConnected);
             
@@ -1795,12 +1835,12 @@
             try {
                 // FIRST: Verify the record exists in PocketBase
                 console.log('Checking if record exists in PocketBase...');
-                const checkRecord = await pb.collection('accounts').getOne(id);
+                const checkRecord = await pb.collection(COLLECTION_ACCOUNTS).getOne(id);
                 console.log('✅ Record found in PocketBase:', checkRecord.id, checkRecord.title);
                 
                 // SECOND: Delete from PocketBase server
                 console.log('Deleting from PocketBase server...');
-                const result = await pb.collection('accounts').delete(id);
+                const result = await pb.collection(COLLECTION_ACCOUNTS).delete(id);
                 console.log('Delete result:', result);
                 
                 if (result) {
