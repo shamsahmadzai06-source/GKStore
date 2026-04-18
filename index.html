@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#ec4899">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,6 +10,14 @@
     <meta name="application-name" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     <title>GK Store · PUBG & Electronics</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- App Icons - Create these images or use placeholders -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -184,7 +192,7 @@
         .status-dot-badge{width:12px;height:12px;border-radius:50%;background:#10b981;box-shadow:0 0 10px rgba(16,185,129,0.5)}
         .online-count-badge{color:var(--primary);font-weight:700;background:var(--surface-lighter);padding:2px 8px;border-radius:20px;margin-left:4px}
         body[dir="rtl"] .online-count-badge { margin-left: 0; margin-right: 4px; }
-        .sub-head{color:var(--text-secondary)}
+        .sub-head{color:var(--text-secondary);margin-bottom:0.5rem}
         .notification-center{position:fixed;top:70px;right:20px;z-index:2000;max-width:350px;width:calc(100% - 40px);pointer-events:none}
         body[dir="rtl"] .notification-center { right: auto; left: 20px; }
         .notification{border-radius:1rem;margin-bottom:10px;padding:1rem;border-left:4px solid var(--primary);box-shadow:0 10px 25px -5px rgba(0,0,0,0.3);transform:translateX(100%);animation:slideIn 0.3s forwards,fadeOut 0.3s 4.7s forwards;pointer-events:auto;cursor:pointer;display:flex;gap:12px}
@@ -194,6 +202,57 @@
         @keyframes slideInRTL{to{transform:translateX(0)}}
         @keyframes fadeOutRTL{to{opacity:0;visibility:hidden;transform:translateX(-100%)}}
         .notification-icon{width:40px;height:40px;background:var(--gradient-primary);border-radius:50%;display:flex;align-items:center;justify-content:center}
+        
+        /* NEWS TICKER STYLE ADS - Under secure tag */
+        .news-ticker {
+            background: rgba(22,22,31,0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(236,72,153,0.3);
+            margin: 0.5rem 0 0.5rem 0;
+            overflow: hidden;
+        }
+        .ticker-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .ticker-label {
+            background: var(--gradient-primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .ticker-content {
+            flex: 1;
+            overflow: hidden;
+        }
+        .ticker-scroll {
+            display: flex;
+            animation: tickerScroll 20s linear infinite;
+            white-space: nowrap;
+        }
+        .ticker-item {
+            display: inline-block;
+            padding: 0 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .ticker-item i {
+            color: var(--primary);
+            margin-right: 0.5rem;
+        }
+        @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-container:hover .ticker-scroll {
+            animation-play-state: paused;
+        }
         
         /* ROTATING PROMO CAROUSEL */
         .promo-carousel-container {
@@ -356,7 +415,7 @@
             box-shadow: 0 22px 38px rgba(0,0,0,0.45), 0 0 22px rgba(236,72,153,0.6);
         }
         
-        .swipe-ads{width:100%;border-radius:1.5rem;overflow:hidden;border:1px solid var(--border)}
+        .swipe-ads{width:100%;border-radius:1.5rem;overflow:hidden;border:1px solid var(--border);margin-top:0.5rem}
         .swipe-container{position:relative;width:100%;overflow:hidden}
         .swipe-wrapper{display:flex;transition:transform 0.5s ease-out;cursor:grab}
         .swipe-slide{flex:0 0 100%;position:relative;aspect-ratio:16/9;background:#000}
@@ -461,26 +520,6 @@
             background: var(--surface-lighter);
             border: 1px solid var(--border);
         }
-        
-        /* Fix button */
-        .fix-btn {
-            position: fixed;
-            bottom: 100px;
-            right: 10px;
-            z-index: 9999;
-            background: #ef4444;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 50px;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        .fix-btn:hover {
-            background: #dc2626;
-        }
     </style>
 </head>
 <body>
@@ -490,89 +529,200 @@
         <div class="bg-overlay-fallback"></div>
     </div>
     
-    <!-- Fix Button to Clear Broken Data -->
-    <button class="fix-btn" onclick="clearAllBrokenData()">
-        🔧 Fix Broken Images & Reset
-    </button>
-    
-    <div id="install-banner" class="install-banner" style="display:flex"><div class="banner-content"><div class="banner-icon"><i class="fas fa-download"></i></div><div class="banner-text"><strong>Install GK Store</strong><small>Tap to install native app</small></div></div><div class="banner-actions"><button class="banner-btn" id="bannerInstallBtn"><i class="fas fa-download"></i> Install Now</button><button class="banner-close" id="bannerCloseBtn"><i class="fas fa-times"></i></button></div></div>
+    <div id="install-banner" class="install-banner" style="display:flex">
+        <div class="banner-content">
+            <div class="banner-icon"><i class="fas fa-download"></i></div>
+            <div class="banner-text"><strong>Install GK Store</strong><small>Tap to install native app</small></div>
+        </div>
+        <div class="banner-actions">
+            <button class="banner-btn" id="bannerInstallBtn"><i class="fas fa-download"></i> Install Now</button>
+            <button class="banner-close" id="bannerCloseBtn"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
     <div class="notification-center" id="notification-center"></div>
-    <div class="top-nav"><div class="logo" onclick="switchScreen('main')"><div class="logo-icon">GK</div><span data-key="app_name">GK Store</span></div><div class="nav-actions"><button class="nav-btn notification-btn" onclick="showNotificationCenter()"><i class="fas fa-bell"></i><span id="notification-badge" class="notification-badge" style="display:none">0</span></button><button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span data-key="lang_btn">Lang</span></button></div></div>
+    <div class="top-nav">
+        <div class="logo" onclick="switchScreen('main')">
+            <div class="logo-icon">GK</div>
+            <span data-key="app_name">GK Store</span>
+        </div>
+        <div class="nav-actions">
+            <button class="nav-btn notification-btn" onclick="showNotificationCenter()"><i class="fas fa-bell"></i><span id="notification-badge" class="notification-badge" style="display:none">0</span></button>
+            <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i><span data-key="lang_btn">Lang</span></button>
+        </div>
+    </div>
     <button class="install-btn-fixed" id="install-button" style="display:flex" onclick="installApp()"><i class="fas fa-download"></i> Install App <i class="fas fa-mobile-alt"></i></button>
     <div class="container">
-        <div id="main-screen" class="screen active"><div class="main-layout"><div class="title-section"><h1 class="big-title" data-key="marketplace_title">GK Marketplace</h1><div class="online-status-badge"><div class="status-dot-badge"></div><span data-key="online">Online</span><span id="online-count-badge" class="online-count-badge">0</span></div></div><div class="sub-head" data-key="secure_tag">Secure · Instant delivery</div>
+        <div id="main-screen" class="screen active">
+            <div class="main-layout">
+                <div class="title-section">
+                    <h1 class="big-title" data-key="marketplace_title">GK Marketplace</h1>
+                    <div class="online-status-badge">
+                        <div class="status-dot-badge"></div>
+                        <span data-key="online">Online</span>
+                        <span id="online-count-badge" class="online-count-badge">0</span>
+                    </div>
+                </div>
+                <div class="sub-head" data-key="secure_tag">Secure · Instant delivery</div>
+                
+                <!-- NEWS TICKER ADS - Under secure tag -->
+                <div class="news-ticker">
+                    <div class="ticker-container">
+                        <span class="ticker-label"><i class="fas fa-bullhorn"></i> HOT 🔥</span>
+                        <div class="ticker-content">
+                            <div class="ticker-scroll">
+                                <span class="ticker-item"><i class="fas fa-gift"></i> 🎉 20% OFF on PUBG Accounts - Use Code: PUBG20</span>
+                                <span class="ticker-item"><i class="fas fa-mobile-alt"></i> 📱 iPhone 15 Pro Sale - Limited Stock!</span>
+                                <span class="ticker-item"><i class="fas fa-trophy"></i> 🏆 Premium Accounts - 30 Days Warranty</span>
+                                <span class="ticker-item"><i class="fas fa-shipping-fast"></i> 🚀 Free Delivery on Electronics</span>
+                                <span class="ticker-item"><i class="fas fa-gift"></i> 🎉 20% OFF on PUBG Accounts - Use Code: PUBG20</span>
+                                <span class="ticker-item"><i class="fas fa-mobile-alt"></i> 📱 iPhone 15 Pro Sale - Limited Stock!</span>
+                                <span class="ticker-item"><i class="fas fa-trophy"></i> 🏆 Premium Accounts - 30 Days Warranty</span>
+                                <span class="ticker-item"><i class="fas fa-shipping-fast"></i> 🚀 Free Delivery on Electronics</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="promo-carousel-container">
+                    <div class="promo-slider" id="promoSlider">
+                        <div class="promo-slide active" data-index="0">
+                            <div class="promo-card" onclick="switchScreen('accounts')">
+                                <div class="promo-icon"><i class="fas fa-shield-alt"></i></div>
+                                <div class="promo-title" data-key="promo1_title">100% Account Guarantee</div>
+                                <div class="promo-desc" data-key="promo1_desc">Every PUBG account fully verified, rare skins & instant delivery. 100% replacement guarantee.</div>
+                                <div class="promo-badge">🔥 Trusted by 1000+ gamers</div>
+                            </div>
+                        </div>
+                        <div class="promo-slide" data-index="1">
+                            <div class="promo-card" onclick="switchScreen('accounts')">
+                                <div class="promo-icon"><i class="fas fa-calendar-check"></i></div>
+                                <div class="promo-title" data-key="promo2_title">30 Days Warranty</div>
+                                <div class="promo-desc" data-key="promo2_desc">All PUBG accounts include 30 days warranty. Any issue? We replace or refund — hassle-free.</div>
+                                <div class="promo-badge">✅ 30-Day Protection</div>
+                            </div>
+                        </div>
+                        <div class="promo-slide" data-index="2">
+                            <div class="promo-card" onclick="switchScreen('contact')">
+                                <div class="promo-icon"><i class="fas fa-map-marker-alt"></i></div>
+                                <div class="promo-title" data-key="promo3_title">Visit Our Store</div>
+                                <div class="promo-desc" data-key="promo3_desc">Kabul - Gul Bahar Center, 3rd Floor, Shop Number C130 (VIP Mobile). Best deals on electronics!</div>
+                                <div class="promo-badge"><i class="fas fa-store"></i> Open 10AM - 8PM</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="carousel-dots" id="carouselDots"></div>
+                </div>
+                
+                <button class="cta-button" onclick="switchScreen('accounts')"><i class="fa fa-gamepad fa-fw"></i> <span data-key="pubg_btn">🔥 PUBG Accounts</span> <i class="fas fa-arrow-right"></i></button>
+                <button class="cta-button" style="margin-top:1rem" onclick="switchScreen('tools')"><i class="fa fa-store fa-fw"></i> <span data-key="shop_btn">⚡ Shop Electronics</span> <i class="fas fa-bolt"></i></button>
+                
+                <!-- Swipe Ads Section -->
+                <div class="swipe-ads" id="ads-slider"></div>
+            </div>
+        </div>
         
-        <div class="promo-carousel-container">
-            <div class="promo-slider" id="promoSlider">
-                <div class="promo-slide active" data-index="0">
-                    <div class="promo-card" onclick="switchScreen('accounts')">
-                        <div class="promo-icon"><i class="fas fa-shield-alt"></i></div>
-                        <div class="promo-title" data-key="promo1_title">100% Account Guarantee</div>
-                        <div class="promo-desc" data-key="promo1_desc">Every PUBG account fully verified, rare skins & instant delivery. 100% replacement guarantee.</div>
-                        <div class="promo-badge">🔥 Trusted by 1000+ gamers</div>
-                    </div>
+        <div id="accounts-screen" class="screen">
+            <h2 style="margin-bottom:1rem" data-key="pubg_title">🔥 PUBG Accounts</h2>
+            <div class="tier-header">
+                <button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')" data-key="all_tab">All</button>
+                <button class="tier-tab" data-tier="small" onclick="filterAccounts('small')" data-key="small_tab">Small</button>
+                <button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')" data-key="medium_tab">Medium</button>
+                <button class="tier-tab" data-tier="big" onclick="filterAccounts('big')" data-key="big_tab">Big</button>
+            </div>
+            <div id="accounts-grid" class="accounts-grid"><div style="text-align:center;padding:2rem"><i class="fas fa-spinner fa-spin"></i> Loading...</div></div>
+        </div>
+        
+        <div id="tools-screen" class="screen">
+            <h2 style="margin-bottom:0.5rem" data-key="shop_title">🛒 Electronics Shop</h2>
+            <div class="category-header" id="category-header">
+                <button class="category-tab active" data-cat="all" onclick="filterTools('all')" data-key="all_cat">All</button>
+                <button class="category-tab" data-cat="phone" onclick="filterTools('phone')"><i class="fas fa-mobile-alt"></i> <span data-key="phones_cat">Phones</span></button>
+                <button class="category-tab" data-cat="ipad" onclick="filterTools('ipad')"><i class="fas fa-tablet-alt"></i> <span data-key="ipad_cat">iPad</span></button>
+                <button class="category-tab" data-cat="computer" onclick="filterTools('computer')"><i class="fas fa-laptop"></i> <span data-key="computer_cat">Computer</span></button>
+                <button class="category-tab" data-cat="tv" onclick="filterTools('tv')"><i class="fas fa-tv"></i> <span data-key="tv_cat">TV</span></button>
+                <button class="category-tab" data-cat="other" onclick="filterTools('other')"><i class="fas fa-box"></i> <span data-key="other_cat">Others</span></button>
+            </div>
+            <div id="tools-grid" class="tools-grid"><div style="text-align:center;padding:2rem"><i class="fas fa-spinner fa-spin"></i> Loading shop items...</div></div>
+        </div>
+        
+        <div id="contact-screen" class="screen">
+            <h2 style="margin-bottom:1rem" data-key="contact_title">Contact & Support</h2>
+            <div class="account-card" style="margin-bottom:1rem; padding:1rem; background:rgba(236,72,153,0.1); border-left:4px solid #ec4899;">
+                <i class="fas fa-map-pin" style="color:#ec4899"></i> <strong data-key="store_address_label">📍 Store Address:</strong> <span data-key="store_address">Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span>
+            </div>
+            <div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr"></div>
+        </div>
+        
+        <div id="admin-screen" class="screen">
+            <h2 style="margin-bottom:1rem" data-key="admin_title">Admin Panel</h2>
+            <div style="max-width:600px;margin:0 auto">
+                <div id="admin-login-section" class="account-card" style="padding:1.5rem">
+                    <h3 data-key="admin_login_title">Admin Login</h3>
+                    <input type="password" id="admin-password" class="input" placeholder="Enter admin password">
+                    <button class="action-btn buy" style="width:100%" onclick="adminLogin()" data-key="login_btn">Login</button>
+                    <div id="admin-error" style="color:#ef4444;margin-top:0.5rem"></div>
+                    <p style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem">Password: <strong>admin123</strong></p>
                 </div>
-                <div class="promo-slide" data-index="1">
-                    <div class="promo-card" onclick="switchScreen('accounts')">
-                        <div class="promo-icon"><i class="fas fa-calendar-check"></i></div>
-                        <div class="promo-title" data-key="promo2_title">30 Days Warranty</div>
-                        <div class="promo-desc" data-key="promo2_desc">All PUBG accounts include 30 days warranty. Any issue? We replace or refund — hassle-free.</div>
-                        <div class="promo-badge">✅ 30-Day Protection</div>
+                <div id="admin-dashboard" class="hidden">
+                    <div class="account-card" style="padding:1rem;margin-bottom:1rem;display:flex;justify-content:space-between">
+                        <div><i class="fa fa-sync-alt"></i><span data-key="auto_refresh">Auto-refresh (60s)</span></div>
+                        <label><input type="checkbox" id="auto-refresh-toggle" checked onchange="toggleAutoRefresh()"></label>
                     </div>
-                </div>
-                <div class="promo-slide" data-index="2">
-                    <div class="promo-card" onclick="switchScreen('contact')">
-                        <div class="promo-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <div class="promo-title" data-key="promo3_title">Visit Our Store</div>
-                        <div class="promo-desc" data-key="promo3_desc">Kabul - Gul Bahar Center, 3rd Floor, Shop Number C130 (VIP Mobile). Best deals on electronics!</div>
-                        <div class="promo-badge"><i class="fas fa-store"></i> Open 10AM - 8PM</div>
+                    
+                    <!-- Analytics Dashboard Section -->
+                    <div class="account-card" style="padding:1rem;margin-bottom:1rem">
+                        <h3 style="margin-bottom:0.5rem">📊 Analytics & Monitoring</h3>
+                        <div class="analytics-stats">
+                            <div class="stat-card"><div class="stat-number" id="analytics-pageviews">0</div><div class="stat-label">Page Views</div></div>
+                            <div class="stat-card"><div class="stat-number" id="analytics-clicks">0</div><div class="stat-label">Product Clicks</div></div>
+                            <div class="stat-card"><div class="stat-number" id="analytics-conversions">0</div><div class="stat-label">Conversions</div></div>
+                            <div class="stat-card"><div class="stat-number" id="analytics-sessions">0</div><div class="stat-label">Sessions</div></div>
+                        </div>
+                        <button class="backup-btn secondary" style="width:100%;margin-top:0.5rem" onclick="showAnalyticsDetails()">View Detailed Analytics</button>
+                    </div>
+                    
+                    <!-- Backup & Sync Section -->
+                    <div class="account-card" style="padding:1rem;margin-bottom:1rem">
+                        <h3 style="margin-bottom:0.5rem">💾 Backup & Sync</h3>
+                        <div class="backup-buttons">
+                            <button class="backup-btn" onclick="exportLocalBackup()"><i class="fas fa-download"></i> Export Backup</button>
+                            <button class="backup-btn secondary" onclick="importLocalBackup()"><i class="fas fa-upload"></i> Import Backup</button>
+                        </div>
+                        <div id="backup-status" style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem"></div>
+                    </div>
+                    
+                    <div><div class="count" id="online-user-count">0</div><div data-key="online_now">ONLINE NOW</div></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin:1rem 0">
+                        <div class="account-card" style="padding:1rem;text-align:center"><span id="admin-account-count">0</span> <span data-key="accounts_label">Accounts</span></div>
+                        <div class="account-card" style="padding:1rem;text-align:center"><span id="admin-tools-count">0</span> <span data-key="products_label">Products</span></div>
+                        <div class="account-card" style="padding:1rem;text-align:center"><span id="admin-bookings-count">0</span> <span data-key="bookings_label">Bookings</span></div>
+                    </div>
+                    <div class="account-card" style="padding:1rem;margin:1rem 0"><h3 data-key="book_requests_title">📋 Book Requests</h3><div id="admin-book-requests-list"></div></div>
+                    <div class="account-card" style="padding:1rem;margin:1rem 0">
+                        <div style="display:flex;justify-content:space-between"><h3 data-key="usdt_title">💳 USDT Address</h3><button class="action-btn" style="padding:0.3rem 1rem" onclick="showEditUsdtModal()" data-key="edit_btn"><i class="fa fa-edit"></i> Edit</button></div>
+                        <code id="current-usdt-address" style="display:block;background:#2a2a36;padding:0.8rem;border-radius:1rem">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:0.8rem">
+                        <button class="action-btn buy" onclick="showAddAccountModal()" data-key="add_account_btn"><i class="fa fa-plus-circle"></i> Add PUBG Account</button>
+                        <button class="action-btn buy" onclick="showAddToolModal()" data-key="add_product_btn"><i class="fa fa-tools"></i> Add New Product</button>
+                        <button class="action-btn buy" onclick="showManageAccountsModal()" data-key="manage_accounts_btn"><i class="fa fa-edit"></i> Manage Accounts</button>
+                        <button class="action-btn buy" onclick="showManageToolsModal()" data-key="manage_products_btn"><i class="fa fa-box"></i> Manage Products</button>
+                        <button class="action-btn buy" onclick="showManageContactsModal()" data-key="manage_contacts_btn"><i class="fab fa-whatsapp"></i> Manage Contacts</button>
+                        <button class="action-btn buy" onclick="showManageAdsModal()" data-key="manage_ads_btn"><i class="fa fa-image"></i> Manage Ads</button>
+                        <button class="action-btn" onclick="logout()" data-key="logout_btn"><i class="fa fa-sign-out"></i> Logout</button>
                     </div>
                 </div>
             </div>
-            <div class="carousel-dots" id="carouselDots"></div>
         </div>
-        
-        <button class="cta-button" onclick="switchScreen('accounts')"><i class="fa fa-gamepad fa-fw"></i> <span data-key="pubg_btn">🔥 PUBG Accounts</span> <i class="fas fa-arrow-right"></i></button>
-        <button class="cta-button" style="margin-top:1rem" onclick="switchScreen('tools')"><i class="fa fa-store fa-fw"></i> <span data-key="shop_btn">⚡ Shop Electronics</span> <i class="fas fa-bolt"></i></button>
-        
-        <div class="swipe-ads" id="ads-slider"></div>
-        <p style="color:var(--text-secondary);text-align:center;font-size:0.7rem">— swipe ads —</p>
-        </div></div>
-        
-        <div id="accounts-screen" class="screen"><h2 style="margin-bottom:1rem" data-key="pubg_title">🔥 PUBG Accounts</h2><div class="tier-header"><button class="tier-tab active" data-tier="all" onclick="filterAccounts('all')" data-key="all_tab">All</button><button class="tier-tab" data-tier="small" onclick="filterAccounts('small')" data-key="small_tab">Small</button><button class="tier-tab" data-tier="medium" onclick="filterAccounts('medium')" data-key="medium_tab">Medium</button><button class="tier-tab" data-tier="big" onclick="filterAccounts('big')" data-key="big_tab">Big</button></div><div id="accounts-grid" class="accounts-grid"><div style="text-align:center;padding:2rem"><i class="fas fa-spinner fa-spin"></i> Loading...</div></div></div>
-        
-        <div id="tools-screen" class="screen"><h2 style="margin-bottom:0.5rem" data-key="shop_title">🛒 Electronics Shop</h2><div class="category-header" id="category-header"><button class="category-tab active" data-cat="all" onclick="filterTools('all')" data-key="all_cat">All</button><button class="category-tab" data-cat="phone" onclick="filterTools('phone')"><i class="fas fa-mobile-alt"></i> <span data-key="phones_cat">Phones</span></button><button class="category-tab" data-cat="ipad" onclick="filterTools('ipad')"><i class="fas fa-tablet-alt"></i> <span data-key="ipad_cat">iPad</span></button><button class="category-tab" data-cat="computer" onclick="filterTools('computer')"><i class="fas fa-laptop"></i> <span data-key="computer_cat">Computer</span></button><button class="category-tab" data-cat="tv" onclick="filterTools('tv')"><i class="fas fa-tv"></i> <span data-key="tv_cat">TV</span></button><button class="category-tab" data-cat="other" onclick="filterTools('other')"><i class="fas fa-box"></i> <span data-key="other_cat">Others</span></button></div><div id="tools-grid" class="tools-grid"><div style="text-align:center;padding:2rem"><i class="fas fa-spinner fa-spin"></i> Loading shop items...</div></div></div>
-        
-        <div id="contact-screen" class="screen"><h2 style="margin-bottom:1rem" data-key="contact_title">Contact & Support</h2><div class="account-card" style="margin-bottom:1rem; padding:1rem; background:rgba(236,72,153,0.1); border-left:4px solid #ec4899;"><i class="fas fa-map-pin" style="color:#ec4899"></i> <strong data-key="store_address_label">📍 Store Address:</strong> <span data-key="store_address">Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span></div><div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr"></div></div>
-        
-        <div id="admin-screen" class="screen"><h2 style="margin-bottom:1rem" data-key="admin_title">Admin Panel</h2><div style="max-width:600px;margin:0 auto"><div id="admin-login-section" class="account-card" style="padding:1.5rem"><h3 data-key="admin_login_title">Admin Login</h3><input type="password" id="admin-password" class="input" placeholder="Enter admin password"><button class="action-btn buy" style="width:100%" onclick="adminLogin()" data-key="login_btn">Login</button><div id="admin-error" style="color:#ef4444;margin-top:0.5rem"></div><p style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem">Password: <strong>admin123</strong></p></div><div id="admin-dashboard" class="hidden"><div class="account-card" style="padding:1rem;margin-bottom:1rem;display:flex;justify-content:space-between"><div><i class="fa fa-sync-alt"></i><span data-key="auto_refresh">Auto-refresh (60s)</span></div><label><input type="checkbox" id="auto-refresh-toggle" checked onchange="toggleAutoRefresh()"></label></div>
-        
-        <!-- Analytics Dashboard Section -->
-        <div class="account-card" style="padding:1rem;margin-bottom:1rem">
-            <h3 style="margin-bottom:0.5rem">📊 Analytics & Monitoring</h3>
-            <div class="analytics-stats">
-                <div class="stat-card"><div class="stat-number" id="analytics-pageviews">0</div><div class="stat-label">Page Views</div></div>
-                <div class="stat-card"><div class="stat-number" id="analytics-clicks">0</div><div class="stat-label">Product Clicks</div></div>
-                <div class="stat-card"><div class="stat-number" id="analytics-conversions">0</div><div class="stat-label">Conversions</div></div>
-                <div class="stat-card"><div class="stat-number" id="analytics-sessions">0</div><div class="stat-label">Sessions</div></div>
-            </div>
-            <button class="backup-btn secondary" style="width:100%;margin-top:0.5rem" onclick="showAnalyticsDetails()">View Detailed Analytics</button>
-        </div>
-        
-        <!-- Backup & Sync Section -->
-        <div class="account-card" style="padding:1rem;margin-bottom:1rem">
-            <h3 style="margin-bottom:0.5rem">💾 Backup & Sync</h3>
-            <div class="backup-buttons">
-                <button class="backup-btn" onclick="exportLocalBackup()"><i class="fas fa-download"></i> Export Backup</button>
-                <button class="backup-btn secondary" onclick="importLocalBackup()"><i class="fas fa-upload"></i> Import Backup</button>
-            </div>
-            <div id="backup-status" style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem"></div>
-        </div>
-        
-        <div><div class="count" id="online-user-count">0</div><div data-key="online_now">ONLINE NOW</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin:1rem 0"><div class="account-card" style="padding:1rem;text-align:center"><span id="admin-account-count">0</span> <span data-key="accounts_label">Accounts</span></div><div class="account-card" style="padding:1rem;text-align:center"><span id="admin-tools-count">0</span> <span data-key="products_label">Products</span></div><div class="account-card" style="padding:1rem;text-align:center"><span id="admin-bookings-count">0</span> <span data-key="bookings_label">Bookings</span></div></div><div class="account-card" style="padding:1rem;margin:1rem 0"><h3 data-key="book_requests_title">📋 Book Requests</h3><div id="admin-book-requests-list"></div></div><div class="account-card" style="padding:1rem;margin:1rem 0"><div style="display:flex;justify-content:space-between"><h3 data-key="usdt_title">💳 USDT Address</h3><button class="action-btn" style="padding:0.3rem 1rem" onclick="showEditUsdtModal()" data-key="edit_btn"><i class="fa fa-edit"></i> Edit</button></div><code id="current-usdt-address" style="display:block;background:#2a2a36;padding:0.8rem;border-radius:1rem">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code></div><div style="display:flex;flex-direction:column;gap:0.8rem"><button class="action-btn buy" onclick="showAddAccountModal()" data-key="add_account_btn"><i class="fa fa-plus-circle"></i> Add PUBG Account</button><button class="action-btn buy" onclick="showAddToolModal()" data-key="add_product_btn"><i class="fa fa-tools"></i> Add New Product</button><button class="action-btn buy" onclick="showManageAccountsModal()" data-key="manage_accounts_btn"><i class="fa fa-edit"></i> Manage Accounts</button><button class="action-btn buy" onclick="showManageToolsModal()" data-key="manage_products_btn"><i class="fa fa-box"></i> Manage Products</button><button class="action-btn buy" onclick="showManageContactsModal()" data-key="manage_contacts_btn"><i class="fab fa-whatsapp"></i> Manage Contacts</button><button class="action-btn buy" onclick="showManageAdsModal()" data-key="manage_ads_btn"><i class="fa fa-image"></i> Manage Ads</button><button class="action-btn" onclick="logout()" data-key="logout_btn"><i class="fa fa-sign-out"></i> Logout</button></div></div></div></div>
     </div>
     
-    <div class="bottom-nav"><button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span data-key="nav_home">Home</span></button><button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span data-key="nav_pubg">PUBG</span></button><button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span data-key="nav_shop">Shop</span></button><button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span data-key="nav_contact">Contact</span></button><button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-key="nav_admin">Admin</span></button></div>
+    <div class="bottom-nav">
+        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span data-key="nav_home">Home</span></button>
+        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span data-key="nav_pubg">PUBG</span></button>
+        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span data-key="nav_shop">Shop</span></button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span data-key="nav_contact">Contact</span></button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-key="nav_admin">Admin</span></button>
+    </div>
 
     <!-- Modals -->
     <div id="edit-usdt-modal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="closeModal('edit-usdt-modal')">&times;</button></div><div class="modal-body"><input type="text" id="new-usdt-address" class="input"></div><div class="modal-footer"><button class="btn" onclick="closeModal('edit-usdt-modal')">Cancel</button><button class="btn-primary" onclick="saveUsdtAddress()">Save</button></div></div></div>
@@ -590,19 +740,40 @@
     <div id="fullscreen-image-modal" class="fullscreen-modal"><div class="fullscreen-content"><button class="close-btn" onclick="closeFullscreenImage()">&times;</button><div class="fullscreen-image-container"><img id="fullscreen-image" src=""></div><div class="zoom-controls"><button onclick="zoomImage('out')"><i class="fa fa-search-minus"></i></button><span class="zoom-level" id="zoom-level">1.0x</span><button onclick="zoomImage('in')"><i class="fa fa-search-plus"></i></button><button onclick="resetZoom()"><i class="fa fa-undo"></i></button></div></div></div>
 
     <script>
-        // ========== FIX BROKEN DATA FUNCTION ==========
-        function clearAllBrokenData() {
-            if(confirm('⚠️ This will reset all products, accounts, and analytics to default. Continue?')) {
-                localStorage.removeItem('gk_accounts');
-                localStorage.removeItem('gk_tools');
-                localStorage.removeItem('gk_contacts');
-                localStorage.removeItem('gk_ads');
-                localStorage.removeItem('gk_bookings');
-                localStorage.removeItem('gk_analytics');
-                localStorage.removeItem('gk_usdt_address');
-                localStorage.removeItem('gk_language');
-                showNotification('Data Reset', 'All data has been reset to default. Page will reload.');
-                setTimeout(() => location.reload(), 1500);
+        // ========== CLEAR BROKEN DATA FUNCTION (No popup message) ==========
+        function clearBrokenData() {
+            // Check if there are broken Cloudflare URLs
+            let hasBrokenData = false;
+            if (appState.accounts) {
+                appState.accounts.forEach(acc => {
+                    if (acc.media && acc.media.includes('trycloudflare.com')) hasBrokenData = true;
+                });
+            }
+            if (appState.tools) {
+                appState.tools.forEach(tool => {
+                    if (tool.media && tool.media.includes('trycloudflare.com')) hasBrokenData = true;
+                });
+            }
+            
+            if (hasBrokenData) {
+                // Reset to default data silently
+                appState.accounts = [
+                    {id:'a1',tier:'small',title:'Starter Account',desc:'Basic account with rare skins',price_usd:25,price_afn:1750,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',mediaType:'image'},
+                    {id:'a2',tier:'medium',title:'Pro Account',desc:'Multiple rare skins + BP',price_usd:50,price_afn:3500,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',mediaType:'image'},
+                    {id:'a3',tier:'big',title:'Premium Account',desc:'Ultra rare skins + max BP',price_usd:100,price_afn:7000,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',mediaType:'image'}
+                ];
+                appState.tools = [
+                    {id:'t1',category:'phone',name:'iPhone 15 Pro',desc:'Latest iPhone with A17 chip',price_usd:999,price_afn:70000,media:'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&w=400',mediaType:'image'},
+                    {id:'t2',category:'phone',name:'Samsung Galaxy S24',desc:'Ultra premium Android',price_usd:899,price_afn:63000,media:'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&w=400',mediaType:'image'},
+                    {id:'t3',category:'ipad',name:'iPad Pro 12.9"',desc:'M2 chip, perfect for work',price_usd:1099,price_afn:77000,media:'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&w=400',mediaType:'image'},
+                    {id:'t4',category:'computer',name:'Gaming Laptop RTX 4060',desc:'High performance gaming',price_usd:1299,price_afn:91000,media:'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&w=400',mediaType:'image'},
+                    {id:'t5',category:'computer',name:'MacBook Pro M3',desc:'Apple latest laptop',price_usd:1599,price_afn:112000,media:'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&w=400',mediaType:'image'},
+                    {id:'t6',category:'tv',name:'Samsung 65" 4K Smart TV',desc:'Crystal clear display',price_usd:699,price_afn:49000,media:'https://images.pexels.com/photos/6782530/pexels-photo-6782530.jpeg?auto=compress&w=400',mediaType:'image'},
+                    {id:'t7',category:'other',name:'AirPods Pro 2',desc:'Noise cancellation',price_usd:199,price_afn:14000,media:'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg?auto=compress&w=400',mediaType:'image'}
+                ];
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts));
+                localStorage.setItem('gk_tools', JSON.stringify(appState.tools));
+                renderAll();
             }
         }
         
@@ -661,7 +832,6 @@
                 if (this.conversions.length > 50) this.conversions.pop();
                 this.saveToStorage();
                 this.updateDisplay();
-                showNotification('💰 Conversion Tracked', `${itemName} - $${amount}`);
             },
             trackSession() {
                 this.sessions.push({
@@ -913,8 +1083,24 @@
         setTimeout(createFloralBackground, 100);
         
         let deferredPrompt = null;
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-button').style.display = 'flex'; document.getElementById('install-banner').style.display = 'flex'; });
-        window.installApp = function() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt = null; }); } else alert('Tap Chrome menu → Install app'); };
+        window.addEventListener('beforeinstallprompt', (e) => { 
+            e.preventDefault(); 
+            deferredPrompt = e; 
+            document.getElementById('install-button').style.display = 'flex'; 
+            document.getElementById('install-banner').style.display = 'flex'; 
+        });
+        
+        window.installApp = function() { 
+            if(deferredPrompt) { 
+                deferredPrompt.prompt(); 
+                deferredPrompt.userChoice.then(()=>{ 
+                    deferredPrompt = null; 
+                }); 
+            } else { 
+                alert('Tap browser menu → Install app / Add to Home Screen'); 
+            } 
+        };
+        
         document.addEventListener('DOMContentLoaded', () => { 
             if(document.getElementById('bannerInstallBtn')) document.getElementById('bannerInstallBtn').onclick = () => installApp(); 
             if(document.getElementById('bannerCloseBtn')) document.getElementById('bannerCloseBtn').onclick = () => { document.getElementById('install-banner').style.display='none'; }; 
@@ -922,6 +1108,17 @@
             analyticsData.loadFromStorage();
             analyticsData.trackSession();
             analyticsData.updateDisplay();
+            
+            // Register Service Worker for native app install
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('✅ ServiceWorker registered successfully:', registration);
+                    })
+                    .catch(error => {
+                        console.log('❌ ServiceWorker registration failed:', error);
+                    });
+            }
         });
         
         // Default sample data
@@ -968,6 +1165,9 @@
             ];
             localStorage.setItem('gk_tools',JSON.stringify(appState.tools));
         }
+        
+        // Auto-fix broken Cloudflare URLs silently
+        clearBrokenData();
         
         // Carousel rotation
         let currentSlideIdx = 0;
