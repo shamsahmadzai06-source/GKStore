@@ -1,43 +1,26 @@
-{
-  "name": "GK Store",
-  "short_name": "GKStore",
-  "description": "PUBG Accounts & Electronics Store",
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#ec4899",
-  "background_color": "#0a0a0f",
-  "orientation": "portrait",
-  "scope": ".",
-  "icons": [
-    {
-      "src": "icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
-}
+const CACHE_NAME = 'gk-store-v3';
+const urlsToCache = ['./', './index.html'];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+  self.skipWaiting();
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request).catch(() => caches.match('./index.html'));
+    })
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(cacheNames.map(cache => {
+        if (cache !== CACHE_NAME) return caches.delete(cache);
+      }));
+    })
+  );
+  self.clients.claim();
+});
