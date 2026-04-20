@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gk-store-v8';
+const CACHE_NAME = 'gk-store-v11';
 const urlsToCache = [
   '.',
   'index.html',
