@@ -25,15 +25,8 @@
     <link rel="icon" type="image/png" sizes="192x192" href="android-launchericon-192-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="android-launchericon-512-512.png">
     
-    <!-- Font Awesome with fallback -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Fallback icons if Font Awesome fails */
-        .fa, .fas, .far, .fab {
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         :root {
@@ -1052,15 +1045,18 @@
         function openModal(id) { let m = document.getElementById(id); if (m) m.classList.remove('hidden'); }
         function closeModal(id) { let m = document.getElementById(id); if (m) m.classList.add('hidden'); }
         
-        // ========== PWA INSTALL ==========
+        // ========== PWA INSTALL - FIXED FOR ANDROID ==========
         let deferredPrompt;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            console.log('Install prompt detected');
+            console.log('Install prompt detected - ready to install');
             let installBtn = document.getElementById('installBtn');
-            if (installBtn) installBtn.style.display = 'flex';
+            if (installBtn) {
+                installBtn.style.display = 'flex';
+                installBtn.style.animation = 'pulse 1s infinite';
+            }
         });
         
         window.addEventListener('appinstalled', () => {
@@ -1068,6 +1064,7 @@
             let installBtn = document.getElementById('installBtn');
             if (installBtn) installBtn.style.display = 'none';
             deferredPrompt = null;
+            showNotif('Success', 'GK Store installed successfully!');
         });
         
         function installApp() {
@@ -1076,7 +1073,9 @@
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('User accepted install');
-                        showNotif('Installation', 'App is being installed');
+                        showNotif('Installation', 'Installing GK Store...');
+                    } else {
+                        console.log('User dismissed install');
                     }
                     deferredPrompt = null;
                     let installBtn = document.getElementById('installBtn');
@@ -1100,13 +1099,11 @@
         renderAll();
         updateActiveUsers();
         
-        // Show install button on page load if not installed
-        setTimeout(() => {
-            if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
-                let installBtn = document.getElementById('installBtn');
-                if (installBtn) installBtn.style.display = 'flex';
-            }
-        }, 2000);
+        // Check if app is already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            let installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.style.display = 'none';
+        }
     </script>
 </body>
 </html>
