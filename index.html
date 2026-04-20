@@ -61,7 +61,7 @@
         .account-card,.top-nav,.bottom-nav,.modal,.swipe-ads,.install-banner,.notification{background:rgba(26,26,26,0.9);border:1px solid rgba(231,76,60,0.3)}
         .top-nav,.bottom-nav{background:rgba(26,26,26,0.95);border-bottom:1px solid rgba(231,76,60,0.3)}
         .bottom-nav{border-top:1px solid rgba(231,76,60,0.3);position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:8px 16px;z-index:1000;padding-bottom:max(8px,env(safe-area-inset-bottom))}
-        .install-banner{background:var(--gradient-primary);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
+        .install-banner{background:var(--gradient-primary);color:#fff;padding:12px 16px;display:none;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
         .banner-content{display:flex;align-items:center;gap:12px}
         .banner-icon{width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
         .banner-text{font-weight:600}.banner-text small{font-size:12px;opacity:0.9;display:block}
@@ -85,9 +85,17 @@
         .status-dot-badge{width:12px;height:12px;border-radius:50%;background:#2ecc71;box-shadow:0 0 10px rgba(46,204,113,0.5)}
         .sub-head{color:var(--text-secondary);margin-bottom:15px;font-size:14px;border-left:3px solid var(--primary);padding-left:10px}
         body[dir="rtl"] .sub-head{border-left:none;border-right:3px solid var(--primary);padding-left:0;padding-right:10px}
-        .cta-button{background:var(--gradient-primary);border:none;color:#fff;font-size:1.3rem;font-weight:800;padding:1rem 1.5rem;border-radius:60px;width:100%;max-width:500px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:14px;cursor:pointer;transition:transform 0.2s}
+        .cta-button{background:var(--gradient-primary);border:none;color:#fff;font-size:1.3rem;font-weight:800;padding:1rem 1.5rem;border-radius:60px;width:100%;max-width:500px;margin:10px auto;display:flex;align-items:center;justify-content:center;gap:14px;cursor:pointer;transition:transform 0.2s}
         .cta-button:active{transform:scale(0.98)}
         .swipe-ads{width:100%;border-radius:1.5rem;overflow:hidden;margin-top:0.5rem}
+        .swipe-container{position:relative;width:100%;overflow:hidden}
+        .swipe-wrapper{display:flex;transition:transform 0.5s ease-out}
+        .swipe-slide{flex:0 0 100%;position:relative;aspect-ratio:16/9;background:#000}
+        .swipe-slide img,.swipe-slide video{width:100%;height:100%;object-fit:cover}
+        .slide-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.8));color:#fff;padding:1rem}
+        .swipe-dots{display:flex;justify-content:center;gap:8px;padding:12px;background:rgba(31,31,43,0.9)}
+        .swipe-dot{width:8px;height:8px;border-radius:10px;background:var(--text-secondary);cursor:pointer}
+        .swipe-dot.active{background:var(--primary);width:24px}
         .accounts-grid,.tools-grid{display:grid;gap:1rem;grid-template-columns:1fr}
         @media (min-width:640px){.accounts-grid,.tools-grid{grid-template-columns:repeat(2,1fr)}}
         .account-card,.tool-card{border-radius:1rem;overflow:hidden}
@@ -132,74 +140,74 @@
     <div class="bg-container"><img class="bg-image" src="backr.png" alt="GK Store Background"></div>
     <div class="overlay"></div>
     
-    <div id="install-banner" class="install-banner" style="display:none">
-        <div class="banner-content"><div class="banner-icon"><i class="fas fa-download"></i></div><div class="banner-text"><strong>Install GK Store</strong><small>Tap to install native app</small></div></div>
-        <div class="banner-actions"><button class="banner-btn" id="bannerInstallBtn"><i class="fas fa-download"></i> Install Now</button><button class="banner-close" id="bannerCloseBtn"><i class="fas fa-times"></i></button></div>
+    <div id="install-banner" class="install-banner">
+        <div class="banner-content"><div class="banner-icon"><i class="fas fa-download"></i></div><div class="banner-text"><strong data-key="install_title">Install GK Store</strong><small data-key="install_sub">Tap to install native app</small></div></div>
+        <div class="banner-actions"><button class="banner-btn" id="bannerInstallBtn"><i class="fas fa-download"></i> <span data-key="install_now">Install Now</span></button><button class="banner-close" id="bannerCloseBtn"><i class="fas fa-times"></i></button></div>
     </div>
     <div class="notification-center" id="notification-center"></div>
     <div class="top-nav">
-        <div class="logo" onclick="switchScreen('main')"><div class="logo-icon">GK</div><span>GK Store</span></div>
-        <div class="nav-actions"><button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i> Lang</button></div>
+        <div class="logo" onclick="switchScreen('main')"><div class="logo-icon">GK</div><span data-key="app_name">GK Store</span></div>
+        <div class="nav-actions"><button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i> <span data-key="lang_btn">Lang</span></button></div>
     </div>
-    <button class="install-btn-fixed" id="install-button" onclick="installApp()"><i class="fas fa-download"></i> Install</button>
+    <button class="install-btn-fixed" id="install-button" onclick="installApp()"><i class="fas fa-download"></i> <span data-key="install_app">Install</span></button>
     
     <div class="container">
         <div id="main-screen" class="screen active">
             <div class="main-layout">
                 <div class="title-section">
-                    <h1 class="big-title">GK Marketplace</h1>
+                    <h1 class="big-title" data-key="marketplace_title">GK Marketplace</h1>
                     <div class="online-status-badge">
                         <div class="status-dot-badge"></div>
-                        <span>Online</span>
+                        <span data-key="online">Online</span>
                         <span id="online-count-badge" class="online-count-badge">0</span>
                     </div>
                 </div>
-                <div class="sub-head">🔒 Secure · Instant delivery</div>
+                <div class="sub-head" data-key="secure_tag">🔒 Secure · Instant delivery</div>
                 
                 <div class="news-ticker-container">
                     <div class="news-ticker">
-                        <span class="ticker-label"><i class="fas fa-bullhorn"></i> BREAKING</span>
-                        <span class="ticker-message"><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
+                        <span class="ticker-label"><i class="fas fa-bullhorn"></i> <span data-key="breaking">BREAKING</span></span>
+                        <span class="ticker-message"><i class="fas fa-video"></i> <span data-key="news1">⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span></span>
                         <span class="ticker-separator">✦</span>
-                        <span class="ticker-message"><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
+                        <span class="ticker-message"><i class="fas fa-download"></i> <span data-key="news2">📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span></span>
                         <span class="ticker-separator">✦</span>
-                        <span class="ticker-message"><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
+                        <span class="ticker-message"><i class="fas fa-chrome"></i> <span data-key="news3">🔄 iOS video issue? Download file or use Chrome browser</span></span>
                         <span class="ticker-separator">✦</span>
-                        <span class="ticker-message"><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
+                        <span class="ticker-message"><i class="fas fa-video"></i> <span data-key="news1">⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span></span>
                         <span class="ticker-separator">✦</span>
-                        <span class="ticker-message"><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
+                        <span class="ticker-message"><i class="fas fa-download"></i> <span data-key="news2">📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span></span>
                         <span class="ticker-separator">✦</span>
-                        <span class="ticker-message"><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
+                        <span class="ticker-message"><i class="fas fa-chrome"></i> <span data-key="news3">🔄 iOS video issue? Download file or use Chrome browser</span></span>
                     </div>
                 </div>
                 
                 <div class="whatsapp-link-card" onclick="window.open('https://wa.me/93793066322?text=I want to know about 30 days link wash guarantee for PUBG account','_blank')">
-                    <div class="whatsapp-link-text"><i class="fab fa-whatsapp"></i><span>✅ in all pubg account 30 days link wash guarantee</span></div>
+                    <div class="whatsapp-link-text"><i class="fab fa-whatsapp"></i><span data-key="guarantee_text">✅ in all pubg account 30 days link wash guarantee</span></div>
                     <div class="whatsapp-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
                 
                 <div class="contact-link-card" onclick="switchScreen('contact')">
-                    <div class="contact-link-text"><i class="fas fa-info-circle"></i><span>ℹ️ if you want extra information contact us from contact button</span></div>
+                    <div class="contact-link-text"><i class="fas fa-info-circle"></i><span data-key="contact_info">ℹ️ if you want extra information contact us from contact button</span></div>
                     <div class="contact-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
                 
-                <button class="cta-button" onclick="switchScreen('accounts')"><i class="fa fa-gamepad"></i> 🔥 PUBG Accounts <i class="fas fa-arrow-right"></i></button>
-                <button class="cta-button" style="margin-top:1rem" onclick="switchScreen('tools')"><i class="fa fa-store"></i> ⚡ Shop Electronics <i class="fas fa-bolt"></i></button>
+                <button class="cta-button" onclick="switchScreen('accounts')"><i class="fa fa-gamepad"></i> <span data-key="pubg_btn">🔥 PUBG Accounts</span> <i class="fas fa-arrow-right"></i></button>
+                <button class="cta-button" style="margin-top:1rem" onclick="switchScreen('tools')"><i class="fa fa-store"></i> <span data-key="shop_btn">⚡ Shop Electronics</span> <i class="fas fa-bolt"></i></button>
                 <div class="swipe-ads" id="ads-slider"></div>
             </div>
         </div>
-        <div id="accounts-screen" class="screen"><h2 style="margin-bottom:1rem">🔥 PUBG Accounts</h2><div class="tier-header" id="tierHeader"></div><div id="accounts-grid" class="accounts-grid"></div></div>
-        <div id="tools-screen" class="screen"><h2 style="margin-bottom:0.5rem">🛒 Electronics Shop</h2><div class="category-header" id="categoryHeader"></div><div id="tools-grid" class="tools-grid"></div></div>
-        <div id="contact-screen" class="screen"><h2 style="margin-bottom:1rem">Contact & Support</h2><div class="account-card" style="margin-bottom:1rem; padding:1rem; background:rgba(231,76,60,0.1); border-left:4px solid #e74c3c;"><i class="fas fa-map-pin" style="color:#e74c3c"></i> <strong>📍 Store Address:</strong> <span>Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span></div><div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr"></div></div>
-        <div id="admin-screen" class="screen"><h2 style="margin-bottom:1rem">Admin Panel</h2><div style="max-width:600px;margin:0 auto"><div id="admin-login-section" class="account-card" style="padding:1.5rem"><h3>Admin Login</h3><input type="password" id="admin-password" class="input" placeholder="Enter admin password"><button class="action-btn buy" style="width:100%" onclick="adminLogin()">Login</button><div id="admin-error" style="color:#ef4444;margin-top:0.5rem"></div><p style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem">Password: <strong>admin123</strong></p></div><div id="admin-dashboard" class="hidden"><div class="account-card" style="padding:1rem;margin-bottom:1rem"><h3>📊 User Analytics <span style="font-size:12px;color:#2ecc71">(Admin Only)</span></h3><div class="admin-stats-grid"><div class="admin-stat-card"><div class="admin-stat-number" id="adminTotalVisitors">0</div><div class="admin-stat-label">Total Unique Visitors</div></div><div class="admin-stat-card"><div class="admin-stat-number" id="adminOnlineNow">0</div><div class="admin-stat-label">Online Now</div></div><div class="admin-stat-card"><div class="admin-stat-number" id="adminTotalPageViews">0</div><div class="admin-stat-label">Total Page Views</div></div><div class="admin-stat-card"><div class="admin-stat-number" id="adminTotalSessions">0</div><div class="admin-stat-label">Total Sessions</div></div></div><button class="backup-btn" onclick="resetAnalytics()" style="background:#ef4444">Reset Analytics</button></div><div class="account-card" style="padding:1rem;margin-bottom:1rem"><h3>💳 USDT Address</h3><code id="current-usdt-address" style="display:block;background:#2a2a36;padding:0.8rem;border-radius:1rem;word-break:break-all">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code><button class="action-btn" style="margin-top:8px" onclick="showEditUsdtModal()">Edit</button></div><div style="display:flex;flex-direction:column;gap:0.8rem"><button class="action-btn buy" onclick="showAddAccountModal()">Add PUBG Account</button><button class="action-btn buy" onclick="showAddToolModal()">Add Product</button><button class="action-btn buy" onclick="showManageAccountsModal()">Manage Accounts</button><button class="action-btn buy" onclick="showManageToolsModal()">Manage Products</button><button class="action-btn buy" onclick="showManageContactsModal()">Manage Contacts</button><button class="action-btn buy" onclick="showManageAdsModal()">Manage Ads</button><button class="action-btn" onclick="logout()">Logout</button></div></div></div></div>
+        <div id="accounts-screen" class="screen"><h2 style="margin-bottom:1rem" data-key="pubg_title">🔥 PUBG Accounts</h2><div class="tier-header" id="tierHeader"></div><div id="accounts-grid" class="accounts-grid"></div></div>
+        <div id="tools-screen" class="screen"><h2 style="margin-bottom:0.5rem" data-key="shop_title">🛒 Electronics Shop</h2><div class="category-header" id="categoryHeader"></div><div id="tools-grid" class="tools-grid"></div></div>
+        <div id="contact-screen" class="screen"><h2 style="margin-bottom:1rem" data-key="contact_title">Contact & Support</h2><div class="account-card" style="margin-bottom:1rem; padding:1rem; background:rgba(231,76,60,0.1); border-left:4px solid #e74c3c;"><i class="fas fa-map-pin" style="color:#e74c3c"></i> <strong data-key="store_address_label">📍 Store Address:</strong> <span data-key="store_address">Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span></div><div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr"></div></div>
+        <div id="admin-screen" class="screen"><h2 style="margin-bottom:1rem" data-key="admin_title">Admin Panel</h2><div style="max-width:600px;margin:0 auto"><div id="admin-login-section" class="account-card" style="padding:1.5rem"><h3 data-key="admin_login_title">Admin Login</h3><input type="password" id="admin-password" class="input" placeholder="Enter admin password"><button class="action-btn buy" style="width:100%" onclick="adminLogin()" data-key="login_btn">Login</button><div id="admin-error" style="color:#ef4444;margin-top:0.5rem"></div><p style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem">Password: <strong>admin123</strong></p></div><div id="admin-dashboard" class="hidden"><div class="account-card" style="padding:1rem;margin-bottom:1rem"><h3>📊 User Analytics <span style="font-size:12px;color:#2ecc71">(Admin Only)</span></h3><div class="admin-stats-grid"><div class="admin-stat-card"><div class="admin-stat-number" id="adminTotalVisitors">0</div><div class="admin-stat-label">Total Unique Visitors</div></div><div class="admin-stat-card"><div class="admin-stat-number" id="adminOnlineNow">0</div><div class="admin-stat-label">Online Now</div></div><div class="admin-stat-card"><div class="admin-stat-number" id="adminTotalPageViews">0</div><div class="admin-stat-label">Total Page Views</div></div><div class="admin-stat-card"><div class="admin-stat-number" id="adminTotalSessions">0</div><div class="admin-stat-label">Total Sessions</div></div></div><button class="backup-btn" onclick="resetAnalytics()" style="background:#ef4444">Reset Analytics</button></div><div class="account-card" style="padding:1rem;margin-bottom:1rem"><h3 data-key="usdt_title">💳 USDT Address</h3><code id="current-usdt-address" style="display:block;background:#2a2a36;padding:0.8rem;border-radius:1rem;word-break:break-all">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code><button class="action-btn" style="margin-top:8px" onclick="showEditUsdtModal()" data-key="edit_btn">Edit</button></div><div style="display:flex;flex-direction:column;gap:0.8rem"><button class="action-btn buy" onclick="showAddAccountModal()" data-key="add_account_btn">Add PUBG Account</button><button class="action-btn buy" onclick="showAddToolModal()" data-key="add_product_btn">Add Product</button><button class="action-btn buy" onclick="showManageAccountsModal()" data-key="manage_accounts_btn">Manage Accounts</button><button class="action-btn buy" onclick="showManageToolsModal()" data-key="manage_products_btn">Manage Products</button><button class="action-btn buy" onclick="showManageContactsModal()" data-key="manage_contacts_btn">Manage Contacts</button><button class="action-btn buy" onclick="showManageAdsModal()" data-key="manage_ads_btn">Manage Ads</button><button class="action-btn" onclick="logout()" data-key="logout_btn">Logout</button></div></div></div></div>
     </div>
     
     <div class="bottom-nav">
-        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
-        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span>PUBG</span></button>
-        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span>Shop</span></button>
-        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
-        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button>
+        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span data-key="nav_home">Home</span></button>
+        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span data-key="nav_pubg">PUBG</span></button>
+        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span data-key="nav_shop">Shop</span></button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span data-key="nav_contact">Contact</span></button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-key="nav_admin">Admin</span></button>
     </div>
 
     <!-- Modals -->
@@ -213,7 +221,7 @@
     <div id="book-modal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Book Item</h3><button class="modal-close" onclick="closeModal('book-modal')">&times;</button></div><div class="modal-body" id="book-modal-body"></div><div class="modal-footer"><button class="action-btn" onclick="closeModal('book-modal')">Cancel</button><button class="action-btn buy" onclick="submitBook()">Confirm</button></div></div></div>
     <div id="buy-modal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Buy with USDT</h3><button class="modal-close" onclick="closeModal('buy-modal')">&times;</button></div><div class="modal-body" id="buy-modal-body"></div><div class="modal-footer"><button class="action-btn" onclick="closeModal('buy-modal')">Cancel</button><button class="action-btn buy" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button></div></div></div>
     <div id="info-modal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Details</h3><button class="modal-close" onclick="closeModal('info-modal')">&times;</button></div><div class="modal-body" id="info-modal-body"></div></div></div>
-    <div id="language-modal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Select Language</h3><button class="modal-close" onclick="closeModal('language-modal')">&times;</button></div><div class="modal-body"><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('en')">🇬🇧 English</button><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('ps')">🇦🇫 پښتو</button><button class="action-btn" style="width:100%" onclick="setLanguage('fa')">🇮🇷 فارسی</button></div></div></div>
+    <div id="language-modal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3 data-key="lang_modal_title">Select Language</h3><button class="modal-close" onclick="closeModal('language-modal')">&times;</button></div><div class="modal-body"><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('en')">🇬🇧 English</button><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('ps')">🇦🇫 پښتو</button><button class="action-btn" style="width:100%" onclick="setLanguage('fa')">🇮🇷 فارسی</button></div></div></div>
     <div id="fullscreen-image-modal" class="fullscreen-modal"><div class="fullscreen-content"><button class="close-btn" onclick="closeFullscreenImage()">&times;</button><div class="fullscreen-image-container"><img id="fullscreen-image" src=""></div><div class="zoom-controls"><button onclick="zoomImage('out')"><i class="fa fa-search-minus"></i></button><span id="zoom-level">1.0x</span><button onclick="zoomImage('in')"><i class="fa fa-search-plus"></i></button><button onclick="resetZoom()"><i class="fa fa-undo"></i></button></div></div></div>
 
     <script>
@@ -248,125 +256,50 @@
             localStorage.setItem('gk_language', lang);
             applyTranslations();
             closeModal('language-modal');
-            showNotification('Language Updated', `Switched to ${lang === 'en' ? 'English' : lang === 'ps' ? 'پښتو' : 'فارسی'}`);
+            showNotification('Language Updated', lang === 'en' ? 'Switched to English' : (lang === 'ps' ? 'پښتو ته بدل شو' : 'به فارسی تغییر کرد'));
             renderAll();
         }
         
         function openLanguageModal() { openModal('language-modal'); }
         
         // ========== USER TRACKING (ADMIN ONLY) ==========
-        function getVisitorId() {
-            let id = localStorage.getItem('gk_visitor_id');
-            if (!id) {
-                id = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('gk_visitor_id', id);
+        let totalVisitors = parseInt(localStorage.getItem('gk_total_visitors') || '0');
+        let pageViews = parseInt(localStorage.getItem('gk_page_views') || '0');
+        
+        function registerVisitor() {
+            let visitorId = localStorage.getItem('gk_visitor_id');
+            if (!visitorId) {
+                visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                localStorage.setItem('gk_visitor_id', visitorId);
+                totalVisitors++;
+                localStorage.setItem('gk_total_visitors', totalVisitors);
             }
-            return id;
+            pageViews++;
+            localStorage.setItem('gk_page_views', pageViews);
+            updateAnalyticsDisplay();
         }
         
-        function getSessionId() {
-            let sessionId = sessionStorage.getItem('gk_session_id');
-            if (!sessionId) {
-                sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-                sessionStorage.setItem('gk_session_id', sessionId);
+        function updateAnalyticsDisplay() {
+            if (typeof appState !== 'undefined' && appState && appState.isAdminLoggedIn) {
+                const adminVisitors = document.getElementById('adminTotalVisitors');
+                const adminPageViews = document.getElementById('adminTotalPageViews');
+                if (adminVisitors) adminVisitors.innerText = totalVisitors;
+                if (adminPageViews) adminPageViews.innerText = pageViews;
             }
-            return sessionId;
         }
         
-        let userStats = {
-            uniqueVisitors: [],
-            activeSessions: {},
-            pageViews: 0,
-            totalVisitors: 0,
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('gk_user_stats');
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        this.uniqueVisitors = data.uniqueVisitors || [];
-                        this.pageViews = data.pageViews || 0;
-                        this.totalVisitors = this.uniqueVisitors.length;
-                    }
-                } catch(e) {}
-            },
-            saveToStorage() {
-                localStorage.setItem('gk_user_stats', JSON.stringify({
-                    uniqueVisitors: this.uniqueVisitors,
-                    pageViews: this.pageViews
-                }));
-            },
-            registerVisitor() {
-                const visitorId = getVisitorId();
-                const sessionId = getSessionId();
-                if (!this.uniqueVisitors.includes(visitorId)) {
-                    this.uniqueVisitors.push(visitorId);
-                    this.totalVisitors = this.uniqueVisitors.length;
-                    this.saveToStorage();
-                }
-                this.activeSessions[sessionId] = { id: sessionId, visitorId: visitorId, lastActive: Date.now() };
-                this.cleanupSessions();
-                this.saveToStorage();
-                this.updateDisplay();
-                this.startHeartbeat();
-            },
-            cleanupSessions() {
-                const now = Date.now();
-                for (let id in this.activeSessions) {
-                    if (now - this.activeSessions[id].lastActive > 300000) {
-                        delete this.activeSessions[id];
-                    }
-                }
-            },
-            startHeartbeat() {
-                if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-                this.heartbeatInterval = setInterval(() => {
-                    const sessionId = getSessionId();
-                    if (this.activeSessions[sessionId]) {
-                        this.activeSessions[sessionId].lastActive = Date.now();
-                        this.updateDisplay();
-                    }
-                }, 30000);
-            },
-            trackPageView() {
-                this.pageViews++;
-                this.saveToStorage();
-                this.updateDisplay();
-            },
-            getActiveCount() {
-                this.cleanupSessions();
-                return Object.keys(this.activeSessions).length;
-            },
-            updateDisplay() {
-                const onlineBadge = document.getElementById('online-count-badge');
-                if (onlineBadge) onlineBadge.innerText = this.getActiveCount();
-                if (typeof appState !== 'undefined' && appState && appState.isAdminLoggedIn) {
-                    const adminVisitors = document.getElementById('adminTotalVisitors');
-                    const adminOnline = document.getElementById('adminOnlineNow');
-                    const adminPageViews = document.getElementById('adminTotalPageViews');
-                    const adminSessions = document.getElementById('adminTotalSessions');
-                    if (adminVisitors) adminVisitors.innerText = this.totalVisitors;
-                    if (adminOnline) adminOnline.innerText = this.getActiveCount();
-                    if (adminPageViews) adminPageViews.innerText = this.pageViews;
-                    if (adminSessions) adminSessions.innerText = Object.keys(this.activeSessions).length;
-                }
-            },
-            reset() {
-                if (confirm('Reset all analytics data? This will clear all visitor statistics.')) {
-                    this.uniqueVisitors = [];
-                    this.activeSessions = {};
-                    this.pageViews = 0;
-                    this.totalVisitors = 0;
-                    this.saveToStorage();
-                    this.updateDisplay();
-                    showNotification('Analytics Reset', 'All statistics have been cleared');
-                }
+        function resetAnalytics() {
+            if (confirm('Reset all analytics data?')) {
+                totalVisitors = 0;
+                pageViews = 0;
+                localStorage.setItem('gk_total_visitors', '0');
+                localStorage.setItem('gk_page_views', '0');
+                updateAnalyticsDisplay();
+                showNotification('Analytics Reset', 'All statistics cleared');
             }
-        };
+        }
         
-        userStats.loadFromStorage();
-        userStats.registerVisitor();
-        
-        function resetAnalytics() { userStats.reset(); }
+        registerVisitor();
         
         // Fix iOS video playback
         function fixIOSVideos() {
@@ -381,7 +314,11 @@
         observer.observe(document.body, { childList: true, subtree: true });
         
         // App State
-        let appState = { accounts: [], tools: [], contacts: [], ads: [], bookRequests: [], currentFilter: 'all', currentCategory: 'all', isAdminLoggedIn: false, usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY', currentItem: null };
+        let appState = { 
+            accounts: [], tools: [], contacts: [], ads: [], bookRequests: [], 
+            currentFilter: 'all', currentCategory: 'all', isAdminLoggedIn: false, 
+            usdtAddress: 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY', currentItem: null 
+        };
         
         try {
             let a = localStorage.getItem('gk_accounts'); if (a) appState.accounts = JSON.parse(a);
@@ -411,46 +348,245 @@
             localStorage.setItem('gk_tools', JSON.stringify(appState.tools));
         }
         
-        function showNotification(t, m) { let c = document.getElementById('notification-center'); if (!c) return; let n = document.createElement('div'); n.className = 'notification'; n.innerHTML = `<div class="notification-icon"><i class="fas fa-info-circle"></i></div><div><strong>${t}</strong><br>${m}</div>`; c.appendChild(n); setTimeout(() => n.remove(), 3000); }
+        function showNotification(t, m) { 
+            let c = document.getElementById('notification-center'); 
+            if (!c) return; 
+            let n = document.createElement('div'); 
+            n.className = 'notification'; 
+            n.innerHTML = `<div class="notification-icon"><i class="fas fa-info-circle"></i></div><div><strong>${t}</strong><br>${m}</div>`; 
+            c.appendChild(n); 
+            setTimeout(() => n.remove(), 3000); 
+        }
+        
         function openModal(id) { let m = document.getElementById(id); if (m) m.classList.remove('hidden'); }
         function closeModal(id) { let m = document.getElementById(id); if (m) m.classList.add('hidden'); }
         
-        function renderAll() { renderAccounts(); renderTools(); renderContacts(); renderMediaAds(); renderTierTabs(); renderCategoryTabs(); userStats.updateDisplay(); fixIOSVideos(); }
-        function renderTierTabs() { let h = document.getElementById('tierHeader'); if (h) h.innerHTML = `<button class="tier-tab active" onclick="filterAccounts('all')">All</button><button class="tier-tab" onclick="filterAccounts('small')">Small</button><button class="tier-tab" onclick="filterAccounts('medium')">Medium</button><button class="tier-tab" onclick="filterAccounts('big')">Big</button>`; }
-        function renderCategoryTabs() { let h = document.getElementById('categoryHeader'); if (h) h.innerHTML = `<button class="category-tab active" onclick="filterTools('all')">All</button><button class="category-tab" onclick="filterTools('phone')"><i class="fas fa-mobile-alt"></i> Phones</button><button class="category-tab" onclick="filterTools('ipad')"><i class="fas fa-tablet-alt"></i> iPad</button><button class="category-tab" onclick="filterTools('computer')"><i class="fas fa-laptop"></i> Computer</button><button class="category-tab" onclick="filterTools('tv')"><i class="fas fa-tv"></i> TV</button><button class="category-tab" onclick="filterTools('other')"><i class="fas fa-box"></i> Others</button>`; }
+        function renderAll() { 
+            renderAccounts(); 
+            renderTools(); 
+            renderContacts(); 
+            renderMediaAds(); 
+            renderTierTabs(); 
+            renderCategoryTabs(); 
+            updateAnalyticsDisplay();
+            fixIOSVideos(); 
+        }
         
-        function renderAccounts() { let g = document.getElementById('accounts-grid'); if (!g) return; let f = appState.accounts.filter(a => appState.currentFilter === 'all' || a.tier === appState.currentFilter); g.innerHTML = f.map(acc => `<div class="account-card">${acc.mediaType === 'video' ? `<video class="card-media" controls playsinline webkit-playsinline preload="metadata"><source src="${acc.media}" type="video/mp4"></video>` : `<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')">`}<div class="card-content"><div class="card-title"><strong>${acc.title}</strong> <span style="background:${acc.tier === 'small' ? 'var(--gradient-small)' : acc.tier === 'medium' ? 'var(--gradient-medium)' : 'var(--gradient-big)'}; padding:2px 8px; border-radius:20px; font-size:10px">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})"><i class="fa fa-bookmark"></i> Book</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})"><i class="fa fa-bolt"></i> Buy</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})"><i class="fa fa-info"></i> Info</button></div></div></div>`).join(''); setTimeout(fixIOSVideos, 100); }
+        function renderTierTabs() { 
+            let h = document.getElementById('tierHeader'); 
+            if (h) h.innerHTML = `<button class="tier-tab active" onclick="filterAccounts('all')" data-key="all_tab">All</button><button class="tier-tab" onclick="filterAccounts('small')" data-key="small_tab">Small</button><button class="tier-tab" onclick="filterAccounts('medium')" data-key="medium_tab">Medium</button><button class="tier-tab" onclick="filterAccounts('big')" data-key="big_tab">Big</button>`; 
+            applyTranslations();
+        }
         
-        function renderTools() { let g = document.getElementById('tools-grid'); if (!g) return; let f = appState.tools.filter(t => appState.currentCategory === 'all' || t.category === appState.currentCategory); g.innerHTML = f.map(tool => `<div class="tool-card">${tool.mediaType === 'video' ? `<video class="card-media" controls playsinline webkit-playsinline preload="metadata"><source src="${tool.media}" type="video/mp4"></video>` : `<img src="${tool.media}" class="card-media" onclick="openFullscreenImage('${tool.media}')">`}<div class="card-content"><div class="card-title"><strong>${tool.name}</strong> <span style="background:${tool.category === 'phone' ? 'var(--gradient-phone)' : tool.category === 'ipad' ? 'var(--gradient-ipad)' : tool.category === 'computer' ? 'var(--gradient-computer)' : tool.category === 'tv' ? 'var(--gradient-tv)' : 'var(--gradient-other)'}; padding:2px 8px; border-radius:20px; font-size:10px">${tool.category === 'phone' ? '📱 Phone' : tool.category === 'ipad' ? '📟 iPad' : tool.category === 'computer' ? '💻 Computer' : tool.category === 'tv' ? '📺 TV' : '📦 Other'}</span></div><div class="card-desc">${tool.desc || 'Premium product'}</div><div class="price-row"><span class="usd-price">$${tool.price_usd}</span><span class="afn-price">${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})"><i class="fa fa-bookmark"></i> Book</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})"><i class="fa fa-bolt"></i> Buy</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc || 'Premium product'}',${tool.price_usd},${tool.price_afn})"><i class="fa fa-info"></i> Info</button></div></div></div>`).join(''); setTimeout(fixIOSVideos, 100); }
+        function renderCategoryTabs() { 
+            let h = document.getElementById('categoryHeader'); 
+            if (h) h.innerHTML = `<button class="category-tab active" onclick="filterTools('all')" data-key="all_cat">All</button><button class="category-tab" onclick="filterTools('phone')" data-key="phones_cat"><i class="fas fa-mobile-alt"></i> Phones</button><button class="category-tab" onclick="filterTools('ipad')" data-key="ipad_cat"><i class="fas fa-tablet-alt"></i> iPad</button><button class="category-tab" onclick="filterTools('computer')" data-key="computer_cat"><i class="fas fa-laptop"></i> Computer</button><button class="category-tab" onclick="filterTools('tv')" data-key="tv_cat"><i class="fas fa-tv"></i> TV</button><button class="category-tab" onclick="filterTools('other')" data-key="other_cat"><i class="fas fa-box"></i> Others</button>`; 
+            applyTranslations();
+        }
         
-        function renderContacts() { let c = document.getElementById('contacts-container'); if (c) c.innerHTML = appState.contacts.map(ct => { let ph = ct.phone.replace(/\D/g, ''); if (!ph.startsWith('93') && ph.length <= 9) ph = '93' + ph; return `<div class="account-card" style="padding:1rem"><h3><i class="fab fa-whatsapp" style="color:#25D366"></i> ${ct.name}</h3><p>${ct.desc || ''}</p><p><strong>+${ph}</strong></p><button class="action-btn buy" onclick="window.open('https://wa.me/${ph}','_blank')"><i class="fab fa-whatsapp"></i> Chat</button></div>`; }).join(''); }
+        function renderAccounts() { 
+            let g = document.getElementById('accounts-grid'); 
+            if (!g) return; 
+            let f = appState.accounts.filter(a => appState.currentFilter === 'all' || a.tier === appState.currentFilter); 
+            if (f.length === 0) { g.innerHTML = '<div style="text-align:center;padding:2rem">No accounts</div>'; return; }
+            g.innerHTML = f.map(acc => `<div class="account-card">${acc.mediaType === 'video' ? `<video class="card-media" controls playsinline webkit-playsinline preload="metadata"><source src="${acc.media}" type="video/mp4"></video>` : `<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')">`}<div class="card-content"><div class="card-title"><strong>${acc.title}</strong> <span style="background:${acc.tier === 'small' ? 'var(--gradient-small)' : acc.tier === 'medium' ? 'var(--gradient-medium)' : 'var(--gradient-big)'}; padding:2px 8px; border-radius:20px; font-size:10px">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})"><i class="fa fa-bookmark"></i> Book</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})"><i class="fa fa-bolt"></i> Buy</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})"><i class="fa fa-info"></i> Info</button></div></div></div>`).join(''); 
+            setTimeout(fixIOSVideos, 100); 
+        }
         
-        function renderMediaAds() { let c = document.getElementById('ads-slider'); if (!c) return; if (appState.ads.length === 0) { c.innerHTML = '<div style="padding:1rem;text-align:center">No ads</div>'; return; } c.innerHTML = `<div class="swipe-container"><div class="swipe-wrapper">${appState.ads.map(ad => `<div class="swipe-slide">${ad.type === 'video' ? `<video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>` : `<img src="${ad.data}" onclick="openFullscreenImage('${ad.data}')">`}<div class="slide-caption">${ad.caption || ''}</div></div>`).join('')}</div><div class="swipe-dots">${appState.ads.map((_, i) => `<span class="swipe-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></span>`).join('')}</div></div>`; setTimeout(fixIOSVideos, 100); }
+        function renderTools() { 
+            let g = document.getElementById('tools-grid'); 
+            if (!g) return; 
+            let f = appState.tools.filter(t => appState.currentCategory === 'all' || t.category === appState.currentCategory); 
+            if (f.length === 0) { g.innerHTML = '<div style="text-align:center;padding:2rem">No products</div>'; return; }
+            g.innerHTML = f.map(tool => `<div class="tool-card">${tool.mediaType === 'video' ? `<video class="card-media" controls playsinline webkit-playsinline preload="metadata"><source src="${tool.media}" type="video/mp4"></video>` : `<img src="${tool.media}" class="card-media" onclick="openFullscreenImage('${tool.media}')">`}<div class="card-content"><div class="card-title"><strong>${tool.name}</strong> <span style="background:${tool.category === 'phone' ? 'var(--gradient-phone)' : tool.category === 'ipad' ? 'var(--gradient-ipad)' : tool.category === 'computer' ? 'var(--gradient-computer)' : tool.category === 'tv' ? 'var(--gradient-tv)' : 'var(--gradient-other)'}; padding:2px 8px; border-radius:20px; font-size:10px">${tool.category === 'phone' ? '📱 Phone' : tool.category === 'ipad' ? '📟 iPad' : tool.category === 'computer' ? '💻 Computer' : tool.category === 'tv' ? '📺 TV' : '📦 Other'}</span></div><div class="card-desc">${tool.desc || 'Premium product'}</div><div class="price-row"><span class="usd-price">$${tool.price_usd}</span><span class="afn-price">${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})"><i class="fa fa-bookmark"></i> Book</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})"><i class="fa fa-bolt"></i> Buy</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc || 'Premium product'}',${tool.price_usd},${tool.price_afn})"><i class="fa fa-info"></i> Info</button></div></div></div>`).join(''); 
+            setTimeout(fixIOSVideos, 100); 
+        }
         
-        function renderAdminAccounts() { let l = document.getElementById('admin-accounts-list'); if (l) l.innerHTML = appState.accounts.map(acc => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><span><strong>${acc.title}</strong> (${acc.tier})</span><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteAccount('${acc.id}')">Delete</button></div>`).join(''); }
-        function renderAdminTools() { let l = document.getElementById('admin-tools-list'); if (l) l.innerHTML = appState.tools.map(t => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><span><strong>${t.name}</strong> (${t.category})</span><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteTool('${t.id}')">Delete</button></div>`).join(''); }
-        function renderAdminContacts() { let l = document.getElementById('admin-contacts-list'); if (l) l.innerHTML = appState.contacts.map(c => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><div><strong>${c.name}</strong><br>+${c.phone}</div><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteContact('${c.id}')">Delete</button></div>`).join(''); }
-        function renderAdminAds() { let l = document.getElementById('admin-ads-list'); if (l) l.innerHTML = appState.ads.map((ad, i) => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><span>${ad.caption || 'Ad'}</span><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteAd(${i})">Delete</button></div>`).join(''); }
+        function renderContacts() { 
+            let c = document.getElementById('contacts-container'); 
+            if (c) c.innerHTML = appState.contacts.map(ct => { 
+                let ph = ct.phone.replace(/\D/g, ''); 
+                if (!ph.startsWith('93') && ph.length <= 9) ph = '93' + ph; 
+                return `<div class="account-card" style="padding:1rem"><h3><i class="fab fa-whatsapp" style="color:#25D366"></i> ${ct.name}</h3><p>${ct.desc || ''}</p><p><strong>+${ph}</strong></p><button class="action-btn buy" onclick="window.open('https://wa.me/${ph}','_blank')"><i class="fab fa-whatsapp"></i> Chat</button></div>`; 
+            }).join(''); 
+        }
         
-        window.uploadNewAccount = function() { let tier = document.getElementById('account-tier').value, title = document.getElementById('account-title').value, desc = document.getElementById('account-description').value, usd = parseFloat(document.getElementById('account-price-usd').value), afn = parseInt(document.getElementById('account-price-afn').value), file = document.getElementById('account-media-file').files[0]; if (!tier || !title || !usd || !afn || !file) { alert('Fill all fields'); return; } let r = new FileReader(); r.onload = e => { let newAcc = { id: Date.now().toString(), tier, title, desc, price_usd: usd, price_afn: afn, media: e.target.result, mediaType: file.type.startsWith('video/') ? 'video' : 'image' }; appState.accounts.push(newAcc); localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); closeModal('add-account-modal'); renderAll(); showNotification('Success', 'Account added'); }; r.readAsDataURL(file); };
-        window.uploadNewTool = function() { let cat = document.getElementById('tool-category').value, name = document.getElementById('tool-name').value, desc = document.getElementById('tool-desc').value, usd = parseFloat(document.getElementById('tool-price-usd').value), afn = parseInt(document.getElementById('tool-price-afn').value), file = document.getElementById('tool-media-file').files[0]; if (!cat || !name || !usd || !afn || !file) { alert('Fill fields'); return; } let r = new FileReader(); r.onload = e => { let newTool = { id: Date.now().toString(), category: cat, name, desc, price_usd: usd, price_afn: afn, media: e.target.result, mediaType: file.type.startsWith('video/') ? 'video' : 'image' }; appState.tools.push(newTool); localStorage.setItem('gk_tools', JSON.stringify(appState.tools)); closeModal('add-tool-modal'); renderAll(); showNotification('Success', 'Product added'); }; r.readAsDataURL(file); };
+        function renderMediaAds() { 
+            let c = document.getElementById('ads-slider'); 
+            if (!c) return; 
+            if (appState.ads.length === 0) { c.innerHTML = '<div style="padding:1rem;text-align:center">No ads</div>'; return; } 
+            c.innerHTML = `<div class="swipe-container"><div class="swipe-wrapper">${appState.ads.map(ad => `<div class="swipe-slide">${ad.type === 'video' ? `<video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>` : `<img src="${ad.data}" onclick="openFullscreenImage('${ad.data}')">`}<div class="slide-caption">${ad.caption || ''}</div></div>`).join('')}</div><div class="swipe-dots">${appState.ads.map((_, i) => `<span class="swipe-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></span>`).join('')}</div></div>`; 
+            setTimeout(fixIOSVideos, 100); 
+        }
+        
+        function renderAdminAccounts() { 
+            let l = document.getElementById('admin-accounts-list'); 
+            if (l) l.innerHTML = appState.accounts.map(acc => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><span><strong>${acc.title}</strong> (${acc.tier})</span><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteAccount('${acc.id}')">Delete</button></div>`).join(''); 
+        }
+        
+        function renderAdminTools() { 
+            let l = document.getElementById('admin-tools-list'); 
+            if (l) l.innerHTML = appState.tools.map(t => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><span><strong>${t.name}</strong> (${t.category})</span><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteTool('${t.id}')">Delete</button></div>`).join(''); 
+        }
+        
+        function renderAdminContacts() { 
+            let l = document.getElementById('admin-contacts-list'); 
+            if (l) l.innerHTML = appState.contacts.map(c => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><div><strong>${c.name}</strong><br>+${c.phone}</div><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteContact('${c.id}')">Delete</button></div>`).join(''); 
+        }
+        
+        function renderAdminAds() { 
+            let l = document.getElementById('admin-ads-list'); 
+            if (l) l.innerHTML = appState.ads.map((ad, i) => `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid var(--border)"><span>${ad.caption || 'Ad'}</span><button class="action-btn" style="background:#ef4444;color:white;padding:0.3rem 0.8rem" onclick="deleteAd(${i})">Delete</button></div>`).join(''); 
+        }
+        
+        window.uploadNewAccount = function() { 
+            let tier = document.getElementById('account-tier').value, title = document.getElementById('account-title').value, desc = document.getElementById('account-description').value, usd = parseFloat(document.getElementById('account-price-usd').value), afn = parseInt(document.getElementById('account-price-afn').value), file = document.getElementById('account-media-file').files[0]; 
+            if (!tier || !title || !usd || !afn || !file) { alert('Fill all fields'); return; } 
+            let r = new FileReader(); 
+            r.onload = e => { 
+                let newAcc = { id: Date.now().toString(), tier, title, desc, price_usd: usd, price_afn: afn, media: e.target.result, mediaType: file.type.startsWith('video/') ? 'video' : 'image' }; 
+                appState.accounts.push(newAcc); 
+                localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); 
+                closeModal('add-account-modal'); 
+                renderAll(); 
+                showNotification('Success', 'Account added'); 
+            }; 
+            r.readAsDataURL(file); 
+        };
+        
+        window.uploadNewTool = function() { 
+            let cat = document.getElementById('tool-category').value, name = document.getElementById('tool-name').value, desc = document.getElementById('tool-desc').value, usd = parseFloat(document.getElementById('tool-price-usd').value), afn = parseInt(document.getElementById('tool-price-afn').value), file = document.getElementById('tool-media-file').files[0]; 
+            if (!cat || !name || !usd || !afn || !file) { alert('Fill fields'); return; } 
+            let r = new FileReader(); 
+            r.onload = e => { 
+                let newTool = { id: Date.now().toString(), category: cat, name, desc, price_usd: usd, price_afn: afn, media: e.target.result, mediaType: file.type.startsWith('video/') ? 'video' : 'image' }; 
+                appState.tools.push(newTool); 
+                localStorage.setItem('gk_tools', JSON.stringify(appState.tools)); 
+                closeModal('add-tool-modal'); 
+                renderAll(); 
+                showNotification('Success', 'Product added'); 
+            }; 
+            r.readAsDataURL(file); 
+        };
+        
         window.deleteAccount = function(id) { if (confirm('Delete this account?')) { appState.accounts = appState.accounts.filter(a => a.id !== id); localStorage.setItem('gk_accounts', JSON.stringify(appState.accounts)); renderAll(); showNotification('Deleted', 'Account removed'); } };
         window.deleteTool = function(id) { if (confirm('Delete this product?')) { appState.tools = appState.tools.filter(t => t.id !== id); localStorage.setItem('gk_tools', JSON.stringify(appState.tools)); renderAll(); showNotification('Deleted', 'Product removed'); } };
-        window.saveNewContact = function() { let name = document.getElementById('contact-name')?.value, phone = document.getElementById('contact-phone')?.value.replace(/\D/g, ''); if (!name || !phone) { alert('Enter name and phone'); return; } if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone; appState.contacts.push({ id: 'c' + Date.now(), name, phone, desc: document.getElementById('contact-desc')?.value }); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); renderAll(); closeModal('manage-contacts-modal'); showNotification('Success', 'Contact added'); };
+        
+        window.saveNewContact = function() { 
+            let name = document.getElementById('contact-name')?.value, phone = document.getElementById('contact-phone')?.value.replace(/\D/g, ''); 
+            if (!name || !phone) { alert('Enter name and phone'); return; } 
+            if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone; 
+            appState.contacts.push({ id: 'c' + Date.now(), name, phone, desc: document.getElementById('contact-desc')?.value }); 
+            localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); 
+            renderAll(); 
+            closeModal('manage-contacts-modal'); 
+            showNotification('Success', 'Contact added'); 
+        };
+        
         window.deleteContact = function(id) { if (confirm('Delete this contact?')) { appState.contacts = appState.contacts.filter(c => c.id !== id); localStorage.setItem('gk_contacts', JSON.stringify(appState.contacts)); renderAll(); } };
-        window.saveNewAd = function() { let file = document.getElementById('ad-media-file').files[0]; if (!file) { alert('Select media'); return; } let r = new FileReader(); r.onload = e => { appState.ads.push({ type: file.type.startsWith('video/') ? 'video' : 'image', data: e.target.result, caption: document.getElementById('ad-caption')?.value || '' }); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAds(); renderAdminAds(); closeModal('manage-ads-modal'); showNotification('Success', 'Ad added'); }; r.readAsDataURL(file); };
+        
+        window.saveNewAd = function() { 
+            let file = document.getElementById('ad-media-file').files[0]; 
+            if (!file) { alert('Select media'); return; } 
+            let r = new FileReader(); 
+            r.onload = e => { 
+                appState.ads.push({ type: file.type.startsWith('video/') ? 'video' : 'image', data: e.target.result, caption: document.getElementById('ad-caption')?.value || '' }); 
+                localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); 
+                renderMediaAds(); 
+                renderAdminAds(); 
+                closeModal('manage-ads-modal'); 
+                showNotification('Success', 'Ad added'); 
+            }; 
+            r.readAsDataURL(file); 
+        };
+        
         window.deleteAd = function(i) { if (confirm('Delete this ad?')) { appState.ads.splice(i, 1); localStorage.setItem('gk_ads', JSON.stringify(appState.ads)); renderMediaAds(); renderAdminAds(); } };
-        window.bookItem = function(id, name, price) { appState.currentItem = { id, name, price }; document.getElementById('book-modal-body').innerHTML = `<p><strong>${name}</strong></p><p>Price: $${price}</p><input type="text" id="book-name" class="input" placeholder="Your name"><input type="tel" id="book-phone" class="input" placeholder="WhatsApp number">`; openModal('book-modal'); };
-        window.submitBook = function() { let name = document.getElementById('book-name')?.value, phone = document.getElementById('book-phone')?.value.replace(/\D/g, ''); if (!name || !phone) { alert('Fill fields'); return; } appState.bookRequests.push({ id: Date.now(), item_name: appState.currentItem.name, user_name: name, whatsapp: phone }); localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests)); closeModal('book-modal'); showNotification('Booking submitted', 'We will contact you.'); };
-        window.buyItem = function(name, price) { appState.currentItem = { name, price }; document.getElementById('buy-modal-body').innerHTML = `<p><strong>${name}</strong> — $${price}</p><p>Send exact USDT (TRC20) to:</p><code style="display:block;background:#2a2a36;padding:1rem;border-radius:1rem;word-break:break-all">${appState.usdtAddress}</code><button class="action-btn" onclick="copyUsdt()">Copy Address</button>`; openModal('buy-modal'); };
+        
+        window.bookItem = function(id, name, price) { 
+            appState.currentItem = { id, name, price }; 
+            document.getElementById('book-modal-body').innerHTML = `<p><strong>${name}</strong></p><p>Price: $${price}</p><input type="text" id="book-name" class="input" placeholder="Your name"><input type="tel" id="book-phone" class="input" placeholder="WhatsApp number">`; 
+            openModal('book-modal'); 
+        };
+        
+        window.submitBook = function() { 
+            let name = document.getElementById('book-name')?.value, phone = document.getElementById('book-phone')?.value.replace(/\D/g, ''); 
+            if (!name || !phone) { alert('Fill fields'); return; } 
+            appState.bookRequests.push({ id: Date.now(), item_name: appState.currentItem.name, user_name: name, whatsapp: phone }); 
+            localStorage.setItem('gk_bookings', JSON.stringify(appState.bookRequests)); 
+            closeModal('book-modal'); 
+            showNotification('Booking submitted', 'We will contact you.'); 
+        };
+        
+        window.buyItem = function(name, price) { 
+            appState.currentItem = { name, price }; 
+            document.getElementById('buy-modal-body').innerHTML = `<p><strong>${name}</strong> — $${price}</p><p>Send exact USDT (TRC20) to:</p><code style="display:block;background:#2a2a36;padding:1rem;border-radius:1rem;word-break:break-all">${appState.usdtAddress}</code><button class="action-btn" onclick="copyUsdt()">Copy Address</button>`; 
+            openModal('buy-modal'); 
+        };
+        
         window.confirmBuyWhatsApp = function() { if (!appState.currentItem) return; window.open(`https://wa.me/93793066322?text=${encodeURIComponent(`I want to buy: ${appState.currentItem.name} for $${appState.currentItem.price}`)}`, '_blank'); closeModal('buy-modal'); };
         window.copyUsdt = function() { navigator.clipboard.writeText(appState.usdtAddress); alert('USDT address copied!'); };
         window.showInfo = function(title, desc, usd, afn) { document.getElementById('info-modal-body').innerHTML = `<p><strong>${title}</strong></p><p>${desc}</p><p>💰 $${usd} / ${afn} AFN</p>`; openModal('info-modal'); };
-        window.filterAccounts = function(tier) { appState.currentFilter = tier; document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active')); event.target.classList.add('active'); renderAccounts(); };
-        window.filterTools = function(cat) { appState.currentCategory = cat; document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active')); event.target.classList.add('active'); renderTools(); };
-        window.switchScreen = function(screen) { userStats.trackPageView(); document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screen + '-screen').classList.add('active'); document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active')); let id = { main: 'nav-main', accounts: 'nav-accounts', tools: 'nav-tools', contact: 'nav-contact', admin: 'nav-admin' }[screen]; if (id) document.getElementById(id).classList.add('active'); if (screen === 'accounts') renderAccounts(); if (screen === 'tools') renderTools(); if (screen === 'contact') renderContacts(); if (screen === 'admin' && appState.isAdminLoggedIn) { document.getElementById('admin-dashboard').classList.remove('hidden'); document.getElementById('admin-login-section').classList.add('hidden'); userStats.updateDisplay(); renderAll(); } else if (screen === 'admin' && !appState.isAdminLoggedIn) { document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('admin-login-section').classList.remove('hidden'); } };
-        window.adminLogin = function() { let pass = document.getElementById('admin-password').value; if (pass === 'admin123') { appState.isAdminLoggedIn = true; document.getElementById('admin-login-section').classList.add('hidden'); document.getElementById('admin-dashboard').classList.remove('hidden'); renderAll(); userStats.updateDisplay(); showNotification('Welcome Admin', 'Logged in successfully'); } else { document.getElementById('admin-error').innerText = 'Invalid password'; } };
-        window.logout = function() { appState.isAdminLoggedIn = false; document.getElementById('admin-login-section').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); switchScreen('main'); showNotification('Logged Out', 'See you soon!'); };
+        
+        window.filterAccounts = function(tier) { 
+            appState.currentFilter = tier; 
+            document.querySelectorAll('.tier-tab').forEach(btn => btn.classList.remove('active')); 
+            event.target.classList.add('active'); 
+            renderAccounts(); 
+        };
+        
+        window.filterTools = function(cat) { 
+            appState.currentCategory = cat; 
+            document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active')); 
+            event.target.classList.add('active'); 
+            renderTools(); 
+        };
+        
+        window.switchScreen = function(screen) { 
+            pageViews++; 
+            localStorage.setItem('gk_page_views', pageViews);
+            updateAnalyticsDisplay();
+            
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById(screen + '-screen').classList.add('active'); 
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active')); 
+            let id = { main: 'nav-main', accounts: 'nav-accounts', tools: 'nav-tools', contact: 'nav-contact', admin: 'nav-admin' }[screen]; 
+            if (id) document.getElementById(id).classList.add('active'); 
+            if (screen === 'accounts') renderAccounts(); 
+            if (screen === 'tools') renderTools(); 
+            if (screen === 'contact') renderContacts(); 
+            if (screen === 'admin' && appState.isAdminLoggedIn) { 
+                document.getElementById('admin-dashboard').classList.remove('hidden'); 
+                document.getElementById('admin-login-section').classList.add('hidden'); 
+                updateAnalyticsDisplay();
+                renderAll(); 
+            } else if (screen === 'admin' && !appState.isAdminLoggedIn) { 
+                document.getElementById('admin-dashboard').classList.add('hidden'); 
+                document.getElementById('admin-login-section').classList.remove('hidden'); 
+            } 
+        };
+        
+        window.adminLogin = function() { 
+            let pass = document.getElementById('admin-password').value; 
+            if (pass === 'admin123') { 
+                appState.isAdminLoggedIn = true; 
+                document.getElementById('admin-login-section').classList.add('hidden'); 
+                document.getElementById('admin-dashboard').classList.remove('hidden'); 
+                renderAll(); 
+                updateAnalyticsDisplay();
+                showNotification('Welcome Admin', 'Logged in successfully'); 
+            } else { 
+                document.getElementById('admin-error').innerText = 'Invalid password'; 
+            } 
+        };
+        
+        window.logout = function() { 
+            appState.isAdminLoggedIn = false; 
+            document.getElementById('admin-login-section').classList.remove('hidden'); 
+            document.getElementById('admin-dashboard').classList.add('hidden'); 
+            switchScreen('main'); 
+            showNotification('Logged Out', 'See you soon!'); 
+        };
+        
         window.showAddAccountModal = function() { openModal('add-account-modal'); };
         window.showAddToolModal = function() { openModal('add-tool-modal'); };
         window.showManageAccountsModal = function() { renderAdminAccounts(); openModal('manage-accounts-modal'); };
@@ -458,7 +594,17 @@
         window.showManageContactsModal = function() { renderAdminContacts(); openModal('manage-contacts-modal'); };
         window.showManageAdsModal = function() { renderAdminAds(); openModal('manage-ads-modal'); };
         window.showEditUsdtModal = function() { openModal('edit-usdt-modal'); };
-        window.saveUsdtAddress = function() { let addr = document.getElementById('new-usdt-address').value.trim(); if (addr) { appState.usdtAddress = addr; localStorage.setItem('gk_usdt_address', addr); document.getElementById('current-usdt-address').innerText = addr; closeModal('edit-usdt-modal'); showNotification('Success', 'USDT address updated'); } };
+        
+        window.saveUsdtAddress = function() { 
+            let addr = document.getElementById('new-usdt-address').value.trim(); 
+            if (addr) { 
+                appState.usdtAddress = addr; 
+                localStorage.setItem('gk_usdt_address', addr); 
+                document.getElementById('current-usdt-address').innerText = addr; 
+                closeModal('edit-usdt-modal'); 
+                showNotification('Success', 'USDT address updated'); 
+            } 
+        };
         
         let zoom = 1;
         window.openFullscreenImage = function(src) { let modal = document.getElementById('fullscreen-image-modal'); let img = document.getElementById('fullscreen-image'); if (modal && img) { img.src = src; modal.style.display = 'flex'; resetZoom(); } };
@@ -469,7 +615,7 @@
         let slideIndex = 0;
         window.goToSlide = function(index) { slideIndex = index; let wrapper = document.querySelector('.swipe-wrapper'); if (wrapper) wrapper.style.transform = `translateX(-${index * 100}%)`; document.querySelectorAll('.swipe-dot').forEach((dot, i) => { if (i === index) dot.classList.add('active'); else dot.classList.remove('active'); }); };
         
-        // PWA Installation - FIXED
+        // PWA Installation - FIXED for Android
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -486,11 +632,12 @@
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('User accepted the install prompt');
+                        showNotification('Installation', 'App is being installed');
                     }
                     deferredPrompt = null;
                 });
             } else {
-                alert('Tap the browser menu (3 dots) → Install app / Add to Home Screen');
+                showNotification('Install App', 'Tap browser menu (3 dots) → Install app / Add to Home Screen');
             }
         };
         
@@ -502,23 +649,20 @@
             navigator.serviceWorker.register('sw.js').then(() => console.log('SW registered')).catch(err => console.log('SW error:', err));
         }
         
-        // Random online count for demo (since real-time requires backend)
+        // Set random online count
+        document.getElementById('online-count-badge').innerText = Math.floor(Math.random() * 15) + 3;
         setInterval(() => {
-            let randomCount = Math.floor(Math.random() * 15) + 3;
-            document.getElementById('online-count-badge').innerText = randomCount;
+            document.getElementById('online-count-badge').innerText = Math.floor(Math.random() * 15) + 3;
             if (appState.isAdminLoggedIn) {
                 const adminOnline = document.getElementById('adminOnlineNow');
-                if (adminOnline) adminOnline.innerText = randomCount;
+                if (adminOnline) adminOnline.innerText = document.getElementById('online-count-badge').innerText;
             }
         }, 30000);
         
+        // Initialize
         applyTranslations();
         renderAll();
-        userStats.trackPageView();
         fixIOSVideos();
-        
-        // Set initial online count
-        document.getElementById('online-count-badge').innerText = Math.floor(Math.random() * 15) + 3;
     </script>
 </body>
 </html>
