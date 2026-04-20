@@ -65,69 +65,71 @@
             z-index: 1;
         }
         
-        /* NEWS TICKER - Single line rotating like news headline */
+        /* NEWS TICKER - Horizontal scrolling marquee */
         .news-ticker-container {
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             border-left: 4px solid #e74c3c;
             border-right: 4px solid #e74c3c;
-            padding: 12px 16px;
+            padding: 12px 0;
             margin: 15px 0;
             border-radius: 50px;
             backdrop-filter: blur(5px);
+            overflow: hidden;
+            position: relative;
         }
         
         .news-ticker {
             display: flex;
             align-items: center;
-            gap: 12px;
-            overflow: hidden;
+            white-space: nowrap;
+            animation: scrollTicker 20s linear infinite;
+            width: fit-content;
+        }
+        
+        .news-ticker:hover {
+            animation-play-state: paused;
         }
         
         .ticker-label {
             background: #e74c3c;
             color: #fff;
-            padding: 4px 12px;
+            padding: 4px 16px;
             border-radius: 30px;
             font-size: 12px;
             font-weight: bold;
-            white-space: nowrap;
-            flex-shrink: 0;
+            margin-right: 20px;
+            margin-left: 10px;
+            display: inline-block;
         }
         
-        .ticker-content {
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-            height: 24px;
-        }
-        
-        .ticker-item {
-            position: absolute;
-            width: 100%;
-            animation: tickerRotate 12s ease-in-out infinite;
-            opacity: 0;
-            transform: translateY(20px);
+        .ticker-message {
+            display: inline-block;
+            margin-right: 40px;
             font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            color: #fff;
         }
         
-        .ticker-item i {
+        .ticker-message i {
             margin-right: 8px;
         }
         
-        .ticker-item:nth-child(1) { animation-delay: 0s; }
-        .ticker-item:nth-child(2) { animation-delay: 4s; }
-        .ticker-item:nth-child(3) { animation-delay: 8s; }
-        
-        @keyframes tickerRotate {
-            0%, 5% { opacity: 0; transform: translateY(15px); }
-            10%, 30% { opacity: 1; transform: translateY(0); }
-            35%, 100% { opacity: 0; transform: translateY(-15px); }
+        .ticker-separator {
+            display: inline-block;
+            margin-right: 30px;
+            color: #e74c3c;
+            font-size: 14px;
         }
         
-        /* WhatsApp Link Button */
+        @keyframes scrollTicker {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+        
+        /* WhatsApp Link Card */
         .whatsapp-link-card {
             background: rgba(37, 211, 102, 0.9);
             padding: 12px 16px;
@@ -167,7 +169,7 @@
             justify-content: center;
         }
         
-        /* Contact Button */
+        /* Contact Button Card */
         .contact-link-card {
             background: rgba(52, 152, 219, 0.9);
             padding: 12px 16px;
@@ -320,23 +322,22 @@
                 </div>
                 <div class="sub-head">🔒 Secure · Instant delivery</div>
                 
-                <!-- NEWS HEADLINE TICKER - Single rotating banner like news headline -->
+                <!-- NEWS TICKER - All 3 messages in ONE LINE horizontally scrolling -->
                 <div class="news-ticker-container">
                     <div class="news-ticker">
-                        <div class="ticker-label">
-                            <i class="fas fa-bullhorn"></i> BREAKING
-                        </div>
-                        <div class="ticker-content">
-                            <div class="ticker-item">
-                                <i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll
-                            </div>
-                            <div class="ticker-item">
-                                <i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video
-                            </div>
-                            <div class="ticker-item">
-                                <i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser
-                            </div>
-                        </div>
+                        <span class="ticker-label"><i class="fas fa-bullhorn"></i> BREAKING</span>
+                        <span class="ticker-message"><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
+                        <span class="ticker-separator">✦</span>
+                        <span class="ticker-message"><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
+                        <span class="ticker-separator">✦</span>
+                        <span class="ticker-message"><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
+                        <span class="ticker-separator">✦</span>
+                        <!-- Duplicate for seamless loop -->
+                        <span class="ticker-message"><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
+                        <span class="ticker-separator">✦</span>
+                        <span class="ticker-message"><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
+                        <span class="ticker-separator">✦</span>
+                        <span class="ticker-message"><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
                     </div>
                 </div>
                 
@@ -363,112 +364,4 @@
                 </div>
                 
                 <button class="cta-button" onclick="switchScreen('accounts')"><i class="fa fa-gamepad fa-fw"></i> 🔥 PUBG Accounts <i class="fas fa-arrow-right"></i></button>
-                <button class="cta-button" style="margin-top:1rem" onclick="switchScreen('tools')"><i class="fa fa-store fa-fw"></i> ⚡ Shop Electronics <i class="fas fa-bolt"></i></button>
-                <div class="swipe-ads" id="ads-slider"></div>
-            </div>
-        </div>
-        <div id="accounts-screen" class="screen"><h2 style="margin-bottom:1rem">🔥 PUBG Accounts</h2><div class="tier-header" id="tierHeader"></div><div id="accounts-grid" class="accounts-grid"></div></div>
-        <div id="tools-screen" class="screen"><h2 style="margin-bottom:0.5rem">🛒 Electronics Shop</h2><div class="category-header" id="categoryHeader"></div><div id="tools-grid" class="tools-grid"></div></div>
-        <div id="contact-screen" class="screen"><h2 style="margin-bottom:1rem">Contact & Support</h2><div class="account-card" style="margin-bottom:1rem; padding:1rem; background:rgba(231,76,60,0.1); border-left:4px solid #e74c3c;"><i class="fas fa-map-pin" style="color:#e74c3c"></i> <strong>📍 Store Address:</strong> <span>Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span></div><div id="contacts-container" class="accounts-grid" style="grid-template-columns:1fr"></div></div>
-        <div id="admin-screen" class="screen"><h2 style="margin-bottom:1rem">Admin Panel</h2><div style="max-width:600px;margin:0 auto"><div id="admin-login-section" class="account-card" style="padding:1.5rem"><h3>Admin Login</h3><input type="password" id="admin-password" class="input" placeholder="Enter admin password"><button class="action-btn buy" style="width:100%" onclick="adminLogin()">Login</button><div id="admin-error" style="color:#ef4444;margin-top:0.5rem"></div><p style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem">Password: <strong>admin123</strong></p></div><div id="admin-dashboard" class="hidden"><div class="account-card" style="padding:1rem;margin-bottom:1rem"><h3>📊 Analytics</h3><div class="analytics-stats"><div class="stat-card"><div class="stat-number" id="analytics-pageviews">0</div><div class="stat-label">Page Views</div></div><div class="stat-card"><div class="stat-number" id="analytics-clicks">0</div><div class="stat-label">Clicks</div></div><div class="stat-card"><div class="stat-number" id="analytics-conversions">0</div><div class="stat-label">Sales</div></div></div><button class="backup-btn" onclick="exportLocalBackup()">Export Backup</button><button class="backup-btn" onclick="importLocalBackup()">Import Backup</button></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin:1rem 0"><div class="account-card" style="padding:1rem;text-align:center"><span id="admin-account-count">0</span> Accounts</div><div class="account-card" style="padding:1rem;text-align:center"><span id="admin-tools-count">0</span> Products</div><div class="account-card" style="padding:1rem;text-align:center"><span id="admin-bookings-count">0</span> Bookings</div></div><div class="account-card" style="padding:1rem"><h3>💳 USDT Address</h3><code id="current-usdt-address" style="display:block;background:#2a2a36;padding:0.8rem;border-radius:1rem">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code><button class="action-btn" style="margin-top:8px" onclick="showEditUsdtModal()">Edit</button></div><div style="display:flex;flex-direction:column;gap:0.8rem"><button class="action-btn buy" onclick="showAddAccountModal()">Add PUBG Account</button><button class="action-btn buy" onclick="showAddToolModal()">Add Product</button><button class="action-btn buy" onclick="showManageAccountsModal()">Manage Accounts</button><button class="action-btn buy" onclick="showManageToolsModal()">Manage Products</button><button class="action-btn buy" onclick="showManageContactsModal()">Manage Contacts</button><button class="action-btn buy" onclick="showManageAdsModal()">Manage Ads</button><button class="action-btn" onclick="logout()">Logout</button></div></div></div></div>
-    </div>
-    <div class="bottom-nav"><button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button><button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span>PUBG</span></button><button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span>Shop</span></button><button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button><button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button></div>
-
-    <!-- Modals -->
-    <div id="edit-usdt-modal" class="modal-overlay hidden"><div class="modal"><h3>Edit USDT</h3><input type="text" id="new-usdt-address" class="input"><button onclick="saveUsdtAddress()">Save</button><button onclick="closeModal('edit-usdt-modal')">Cancel</button></div></div>
-    <div id="add-account-modal" class="modal-overlay hidden"><div class="modal"><h3>Add PUBG Account</h3><select id="account-tier" class="input"><option value="">Tier</option><option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option></select><input id="account-title" placeholder="Title" class="input"><textarea id="account-description" class="input" rows="2"></textarea><input id="account-price-usd" placeholder="USD" class="input"><input id="account-price-afn" placeholder="AFN" class="input"><input type="file" id="account-media-file" accept="image/*,video/*" class="input"><button class="action-btn buy" onclick="uploadNewAccount()">Upload</button></div></div>
-    <div id="add-tool-modal" class="modal-overlay hidden"><div class="modal"><h3>Add Product</h3><select id="tool-category" class="input"><option value="">Category</option><option value="phone">Phone</option><option value="ipad">iPad</option><option value="computer">Computer</option><option value="tv">TV</option><option value="other">Other</option></select><input id="tool-name" placeholder="Name" class="input"><textarea id="tool-desc" class="input" rows="2"></textarea><input id="tool-price-usd" placeholder="USD" class="input"><input id="tool-price-afn" placeholder="AFN" class="input"><input type="file" id="tool-media-file" accept="image/*,video/*" class="input"><button class="action-btn buy" onclick="uploadNewTool()">Add</button></div></div>
-    <div id="manage-accounts-modal" class="modal-overlay hidden"><div class="modal"><div id="admin-accounts-list"></div></div></div>
-    <div id="manage-tools-modal" class="modal-overlay hidden"><div class="modal"><div id="admin-tools-list"></div></div></div>
-    <div id="manage-contacts-modal" class="modal-overlay hidden"><div class="modal"><input id="contact-name" placeholder="Name" class="input"><input id="contact-phone" placeholder="WhatsApp" class="input"><button class="action-btn buy" onclick="saveNewContact()">Save</button><div id="admin-contacts-list"></div></div></div>
-    <div id="manage-ads-modal" class="modal-overlay hidden"><div class="modal"><input type="file" id="ad-media-file" accept="image/*,video/*" class="input"><input id="ad-caption" placeholder="Caption" class="input"><button class="action-btn buy" onclick="saveNewAd()">Add Ad</button><div id="admin-ads-list"></div></div></div>
-    <div id="book-modal" class="modal-overlay hidden"><div class="modal"><div id="book-modal-body"></div><button class="action-btn buy" onclick="submitBook()">Confirm</button></div></div>
-    <div id="buy-modal" class="modal-overlay hidden"><div class="modal"><div id="buy-modal-body"></div><button class="action-btn buy" onclick="confirmBuyWhatsApp()">Confirm via WhatsApp</button></div></div>
-    <div id="language-modal" class="modal-overlay hidden"><div class="modal"><button onclick="setLanguage('en')">English</button><button onclick="setLanguage('ps')">پښتو</button><button onclick="setLanguage('fa')">فارسی</button></div></div>
-    <div id="fullscreen-image-modal" class="fullscreen-modal"><div class="fullscreen-content"><button class="close-btn" onclick="closeFullscreenImage()">&times;</button><img id="fullscreen-image" style="max-width:90%;max-height:90%"></div></div>
-
-    <script>
-        // Fix iOS video playback
-        function fixIOSVideos() {
-            document.querySelectorAll('video').forEach(video => {
-                video.setAttribute('playsinline', '');
-                video.setAttribute('webkit-playsinline', '');
-                video.setAttribute('preload', 'metadata');
-            });
-        }
-        
-        const observer = new MutationObserver(() => fixIOSVideos());
-        observer.observe(document.body, { childList: true, subtree: true });
-        
-        // Analytics & App State
-        let analyticsData={pageViews:{},productClicks:[],conversions:[],sessions:[],sessionStart:Date.now(),loadFromStorage(){try{const s=localStorage.getItem('gk_analytics');if(s){const p=JSON.parse(s);this.pageViews=p.pageViews||{};this.productClicks=p.productClicks||[];this.conversions=p.conversions||[];}}catch(e){}},saveToStorage(){localStorage.setItem('gk_analytics',JSON.stringify({pageViews:this.pageViews,productClicks:this.productClicks,conversions:this.conversions}));},trackPageView(p){this.pageViews[p]=(this.pageViews[p]||0)+1;this.saveToStorage();this.updateDisplay();},trackProductClick(n){this.productClicks.unshift({name:n,time:Date.now()});if(this.productClicks.length>100)this.productClicks.pop();this.saveToStorage();this.updateDisplay();},trackConversion(item,amt){this.conversions.unshift({item,amount:amt,date:new Date().toISOString()});this.saveToStorage();this.updateDisplay();showNotification('💰 Sale',`${item} - $${amt}`);},getTotalPageViews(){return Object.values(this.pageViews).reduce((a,b)=>a+b,0);},getTotalClicks(){return this.productClicks.length;},getTotalConversions(){return this.conversions.length;},updateDisplay(){const pv=document.getElementById('analytics-pageviews');if(pv)pv.innerText=this.getTotalPageViews();const cl=document.getElementById('analytics-clicks');if(cl)cl.innerText=this.getTotalClicks();const cv=document.getElementById('analytics-conversions');if(cv)cv.innerText=this.getTotalConversions();}};
-        analyticsData.loadFromStorage(); analyticsData.updateDisplay();
-        
-        let appState={accounts:[],tools:[],contacts:[],ads:[],bookRequests:[],onlineCount:0,currentFilter:'all',currentCategory:'all',isAdminLoggedIn:false,usdtAddress:'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY'};
-        try{ let a=localStorage.getItem('gk_accounts'); if(a)appState.accounts=JSON.parse(a); let t=localStorage.getItem('gk_tools'); if(t)appState.tools=JSON.parse(t); let c=localStorage.getItem('gk_contacts'); if(c)appState.contacts=JSON.parse(c); let ad=localStorage.getItem('gk_ads'); if(ad)appState.ads=JSON.parse(ad); let b=localStorage.getItem('gk_bookings'); if(b)appState.bookRequests=JSON.parse(b); let u=localStorage.getItem('gk_usdt_address'); if(u)appState.usdtAddress=u; }catch(e){}
-        if(appState.contacts.length===0)appState.contacts=[{id:'c1',name:'Support',phone:'93793066322',desc:'24/7 Support'}];
-        if(appState.accounts.length===0){appState.accounts=[{id:'a1',tier:'small',title:'Starter Account',desc:'Basic rare skins',price_usd:25,price_afn:1750,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',mediaType:'image'},{id:'a2',tier:'medium',title:'Pro Account',desc:'Multiple rare skins',price_usd:50,price_afn:3500,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',mediaType:'image'},{id:'a3',tier:'big',title:'Premium',desc:'Ultra rare',price_usd:100,price_afn:7000,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',mediaType:'image'}];localStorage.setItem('gk_accounts',JSON.stringify(appState.accounts));}
-        if(appState.tools.length===0){appState.tools=[{id:'t1',category:'phone',name:'iPhone 15 Pro',desc:'A17 chip',price_usd:999,price_afn:70000,media:'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&w=400',mediaType:'image'},{id:'t2',category:'computer',name:'Gaming Laptop',desc:'RTX 4060',price_usd:1299,price_afn:91000,media:'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&w=400',mediaType:'image'}];localStorage.setItem('gk_tools',JSON.stringify(appState.tools));}
-        
-        function showNotification(t,m){let c=document.getElementById('notification-center');if(!c)return;let n=document.createElement('div');n.className='notification';n.innerHTML=`<div class="notification-icon"><i class="fas fa-info-circle"></i></div><div><strong>${t}</strong><br>${m}</div>`;c.appendChild(n);setTimeout(()=>n.remove(),3000);}
-        function openModal(id){let m=document.getElementById(id);if(m)m.classList.remove('hidden');}
-        function closeModal(id){let m=document.getElementById(id);if(m)m.classList.add('hidden');}
-        
-        function renderAll(){renderAccounts();renderTools();renderContacts();renderMediaAds();renderTierTabs();renderCategoryTabs();if(appState.isAdminLoggedIn){document.getElementById('admin-account-count').innerText=appState.accounts.length;document.getElementById('admin-tools-count').innerText=appState.tools.length;document.getElementById('admin-bookings-count').innerText=appState.bookRequests.length;renderAdminAccounts();renderAdminTools();renderAdminContacts();renderAdminAds();}fixIOSVideos();}
-        function renderTierTabs(){let h=document.getElementById('tierHeader');if(h)h.innerHTML=`<button class="tier-tab active" onclick="filterAccounts('all')">All</button><button class="tier-tab" onclick="filterAccounts('small')">Small</button><button class="tier-tab" onclick="filterAccounts('medium')">Medium</button><button class="tier-tab" onclick="filterAccounts('big')">Big</button>`;}
-        function renderCategoryTabs(){let h=document.getElementById('categoryHeader');if(h)h.innerHTML=`<button class="category-tab active" onclick="filterTools('all')">All</button><button class="category-tab" onclick="filterTools('phone')">Phones</button><button class="category-tab" onclick="filterTools('ipad')">iPad</button><button class="category-tab" onclick="filterTools('computer')">Computer</button><button class="category-tab" onclick="filterTools('tv')">TV</button><button class="category-tab" onclick="filterTools('other')">Others</button>`;}
-        function renderAccounts(){let g=document.getElementById('accounts-grid');if(!g)return;let f=appState.accounts.filter(a=>appState.currentFilter==='all'||a.tier===appState.currentFilter);g.innerHTML=f.map(acc=>`<div class="account-card">${acc.mediaType==='video'?`<video class="card-media" controls playsinline webkit-playsinline preload="metadata"><source src="${acc.media}" type="video/mp4"></video>`:`<img src="${acc.media}" class="card-media" onclick="openFullscreenImage('${acc.media}')">`}<div class="card-content"><div><strong>${acc.title}</strong> <span style="background:var(--gradient-small);padding:2px 8px;border-radius:20px;font-size:10px">${acc.tier}</span></div><div>${acc.desc}</div><div class="price-row"><span>$${acc.price_usd}</span><span>${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})">Book</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})">Buy</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})">Info</button></div></div></div>`).join('');setTimeout(fixIOSVideos,100);}
-        function renderTools(){let g=document.getElementById('tools-grid');if(!g)return;let f=appState.tools.filter(t=>appState.currentCategory==='all'||t.category===appState.currentCategory);g.innerHTML=f.map(tool=>`<div class="tool-card">${tool.mediaType==='video'?`<video class="card-media" controls playsinline webkit-playsinline preload="metadata"><source src="${tool.media}" type="video/mp4"></video>`:`<img src="${tool.media}" class="card-media" onclick="openFullscreenImage('${tool.media}')">`}<div class="card-content"><div><strong>${tool.name}</strong></div><div>${tool.desc}</div><div class="price-row"><span>$${tool.price_usd}</span><span>${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})">Book</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})">Buy</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc}',${tool.price_usd},${tool.price_afn})">Info</button></div></div></div>`).join('');setTimeout(fixIOSVideos,100);}
-        function renderContacts(){let c=document.getElementById('contacts-container');if(c)c.innerHTML=appState.contacts.map(ct=>`<div class="account-card" style="padding:1rem"><h3>${ct.name}</h3><p>+${ct.phone}</p><button class="action-btn buy" onclick="window.open('https://wa.me/${ct.phone}','_blank')">Chat</button></div>`).join('');}
-        function renderMediaAds(){let c=document.getElementById('ads-slider');if(!c)return;if(appState.ads.length===0){c.innerHTML='<div style="padding:1rem;text-align:center">Promo Ads</div>';return;}c.innerHTML=`<div class="swipe-container"><div class="swipe-wrapper">${appState.ads.map(ad=>`<div class="swipe-slide">${ad.type==='video'?`<video src="${ad.data}" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>`:`<img src="${ad.data}">`}<div class="slide-caption">${ad.caption||''}</div></div>`).join('')}</div></div>`;setTimeout(fixIOSVideos,100);}
-        function renderAdminAccounts(){let l=document.getElementById('admin-accounts-list');if(l)l.innerHTML=appState.accounts.map(acc=>`<div>${acc.title} <button onclick="deleteAccount('${acc.id}')">Delete</button></div>`).join('');}
-        function renderAdminTools(){let l=document.getElementById('admin-tools-list');if(l)l.innerHTML=appState.tools.map(t=>`<div>${t.name} <button onclick="deleteTool('${t.id}')">Delete</button></div>`).join('');}
-        function renderAdminContacts(){let l=document.getElementById('admin-contacts-list');if(l)l.innerHTML=appState.contacts.map(c=>`<div>${c.name} <button onclick="deleteContact('${c.id}')">Delete</button></div>`).join('');}
-        function renderAdminAds(){let l=document.getElementById('admin-ads-list');if(l)l.innerHTML=appState.ads.map((ad,i)=>`<div>${ad.caption} <button onclick="deleteAd(${i})">Delete</button></div>`).join('');}
-        
-        window.uploadNewAccount=function(){let tier=document.getElementById('account-tier').value,title=document.getElementById('account-title').value,desc=document.getElementById('account-description').value,usd=parseFloat(document.getElementById('account-price-usd').value),afn=parseInt(document.getElementById('account-price-afn').value),file=document.getElementById('account-media-file').files[0];if(!tier||!title||!usd||!afn||!file){alert('Fill all');return;}let r=new FileReader();r.onload=e=>{let newAcc={id:Date.now().toString(),tier,title,desc,price_usd:usd,price_afn:afn,media:e.target.result,mediaType:file.type.startsWith('video/')?'video':'image'};appState.accounts.push(newAcc);localStorage.setItem('gk_accounts',JSON.stringify(appState.accounts));closeModal('add-account-modal');renderAll();showNotification('Success','Account added');};r.readAsDataURL(file);};
-        window.uploadNewTool=function(){let cat=document.getElementById('tool-category').value,name=document.getElementById('tool-name').value,desc=document.getElementById('tool-desc').value,usd=parseFloat(document.getElementById('tool-price-usd').value),afn=parseInt(document.getElementById('tool-price-afn').value),file=document.getElementById('tool-media-file').files[0];if(!cat||!name||!usd||!afn||!file){alert('Fill fields');return;}let r=new FileReader();r.onload=e=>{let newTool={id:Date.now().toString(),category:cat,name,desc,price_usd:usd,price_afn:afn,media:e.target.result,mediaType:file.type.startsWith('video/')?'video':'image'};appState.tools.push(newTool);localStorage.setItem('gk_tools',JSON.stringify(appState.tools));closeModal('add-tool-modal');renderAll();};r.readAsDataURL(file);};
-        window.deleteAccount=function(id){if(confirm('Delete?')){appState.accounts=appState.accounts.filter(a=>a.id!==id);localStorage.setItem('gk_accounts',JSON.stringify(appState.accounts));renderAll();}};
-        window.deleteTool=function(id){if(confirm('Delete?')){appState.tools=appState.tools.filter(t=>t.id!==id);localStorage.setItem('gk_tools',JSON.stringify(appState.tools));renderAll();}};
-        window.saveNewContact=function(){let name=document.getElementById('contact-name')?.value,phone=document.getElementById('contact-phone')?.value.replace(/\D/g,'');if(!name||!phone)return;appState.contacts.push({id:'c'+Date.now(),name,phone});localStorage.setItem('gk_contacts',JSON.stringify(appState.contacts));renderAll();closeModal('manage-contacts-modal');};
-        window.deleteContact=function(id){appState.contacts=appState.contacts.filter(c=>c.id!==id);localStorage.setItem('gk_contacts',JSON.stringify(appState.contacts));renderAll();};
-        window.saveNewAd=function(){let file=document.getElementById('ad-media-file').files[0];if(!file)return;let r=new FileReader();r.onload=e=>{appState.ads.push({type:file.type.startsWith('video/')?'video':'image',data:e.target.result,caption:document.getElementById('ad-caption')?.value||''});localStorage.setItem('gk_ads',JSON.stringify(appState.ads));renderMediaAds();renderAdminAds();closeModal('manage-ads-modal');};r.readAsDataURL(file);};
-        window.deleteAd=function(i){appState.ads.splice(i,1);localStorage.setItem('gk_ads',JSON.stringify(appState.ads));renderMediaAds();renderAdminAds();};
-        window.bookItem=function(id,name,price){appState.currentItem={id,name,price};document.getElementById('book-modal-body').innerHTML=`<p>${name} - $${price}</p><input id="book-name" placeholder="Name" class="input"><input id="book-phone" placeholder="WhatsApp" class="input">`;openModal('book-modal');};
-        window.submitBook=function(){let name=document.getElementById('book-name')?.value,phone=document.getElementById('book-phone')?.value.replace(/\D/g,'');if(!name||!phone)return;appState.bookRequests.push({id:Date.now(),item_name:appState.currentItem.name,user_name:name,whatsapp:phone});localStorage.setItem('gk_bookings',JSON.stringify(appState.bookRequests));closeModal('book-modal');showNotification('Booked','We will contact you');};
-        window.buyItem=function(name,price){analyticsData.trackConversion(name,price);document.getElementById('buy-modal-body').innerHTML=`<p>${name} - $${price}</p><p>Send USDT (TRC20) to:</p><code style="display:block;background:#2a2a36;padding:1rem;border-radius:1rem">${appState.usdtAddress}</code><button class="action-btn" onclick="copyUsdt()">Copy Address</button>`;openModal('buy-modal');};
-        window.confirmBuyWhatsApp=function(){if(appState.currentItem)window.open(`https://wa.me/93793066322?text=I want to buy ${appState.currentItem.name}`,'_blank');closeModal('buy-modal');};
-        window.copyUsdt=function(){navigator.clipboard.writeText(appState.usdtAddress);alert('Copied');};
-        window.showInfo=function(title,desc,usd,afn){alert(`${title}\n${desc}\n$${usd} / ${afn} AFN`);};
-        window.filterAccounts=function(tier){appState.currentFilter=tier;document.querySelectorAll('.tier-tab').forEach(btn=>btn.classList.remove('active'));event.target.classList.add('active');renderAccounts();};
-        window.filterTools=function(cat){appState.currentCategory=cat;document.querySelectorAll('.category-tab').forEach(btn=>btn.classList.remove('active'));event.target.classList.add('active');renderTools();};
-        window.switchScreen=function(screen){analyticsData.trackPageView(screen);document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(screen+'-screen').classList.add('active');if(screen==='accounts')renderAccounts();if(screen==='tools')renderTools();if(screen==='contact')renderContacts();if(screen==='admin'&&!appState.isAdminLoggedIn){document.getElementById('admin-dashboard').classList.add('hidden');document.getElementById('admin-login-section').classList.remove('hidden');}else if(screen==='admin'&&appState.isAdminLoggedIn){document.getElementById('admin-dashboard').classList.remove('hidden');document.getElementById('admin-login-section').classList.add('hidden');renderAll();}};
-        window.adminLogin=function(){let p=document.getElementById('admin-password').value;if(p==='admin123'){appState.isAdminLoggedIn=true;document.getElementById('admin-login-section').classList.add('hidden');document.getElementById('admin-dashboard').classList.remove('hidden');renderAll();}else alert('Wrong password');};
-        window.logout=function(){appState.isAdminLoggedIn=false;switchScreen('main');};
-        window.showAddAccountModal=function(){openModal('add-account-modal');};
-        window.showAddToolModal=function(){openModal('add-tool-modal');};
-        window.showManageAccountsModal=function(){renderAdminAccounts();openModal('manage-accounts-modal');};
-        window.showManageToolsModal=function(){renderAdminTools();openModal('manage-tools-modal');};
-        window.showManageContactsModal=function(){renderAdminContacts();openModal('manage-contacts-modal');};
-        window.showManageAdsModal=function(){renderAdminAds();openModal('manage-ads-modal');};
-        window.showEditUsdtModal=function(){openModal('edit-usdt-modal');};
-        window.saveUsdtAddress=function(){let addr=document.getElementById('new-usdt-address').value;if(addr){appState.usdtAddress=addr;localStorage.setItem('gk_usdt_address',addr);document.getElementById('current-usdt-address').innerText=addr;closeModal('edit-usdt-modal');}};
-        window.openFullscreenImage=function(src){let modal=document.getElementById('fullscreen-image-modal');let img=document.getElementById('fullscreen-image');if(modal&&img){img.src=src;modal.style.display='flex';}};
-        window.closeFullscreenImage=function(){document.getElementById('fullscreen-image-modal').style.display='none';};
-        window.exportLocalBackup=function(){let data=JSON.stringify({accounts:appState.accounts,tools:appState.tools,contacts:appState.contacts,ads:appState.ads,usdtAddress:appState.usdtAddress});let blob=new Blob([data],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gk_backup.json';a.click();};
-        window.importLocalBackup=function(){let input=document.createElement('input');input.type='file';input.accept='application/json';input.onchange=e=>{let file=e.target.files[0];let reader=new FileReader();reader.onload=ev=>{let data=JSON.parse(ev.target.result);appState.accounts=data.accounts||[];appState.tools=data.tools||[];appState.contacts=data.contacts||[];appState.ads=data.ads||[];appState.usdtAddress=data.usdtAddress||appState.usdtAddress;localStorage.setItem('gk_accounts',JSON.stringify(appState.accounts));localStorage.setItem('gk_tools',JSON.stringify(appState.tools));localStorage.setItem('gk_contacts',JSON.stringify(appState.contacts));localStorage.setItem('gk_ads',JSON.stringify(appState.ads));localStorage.setItem('gk_usdt_address',appState.usdtAddress);renderAll();showNotification('Backup','Restored');};reader.readAsText(file);};input.click();};
-        window.showNotificationCenter=function(){showNotification('GK Store','Welcome to GK Store!');};
-        window.setLanguage=function(lang){localStorage.setItem('gk_language',lang);closeModal('language-modal');showNotification('Language','Updated');};
-        window.openLanguageModal=function(){openModal('language-modal');};
-        
-        let deferredPrompt; window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-button').style.display='flex';document.getElementById('install-banner').style.display='flex';});
-        window.installApp=function(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});}else alert('Use browser menu → Install app');};
-        document.getElementById('bannerInstallBtn')?.addEventListener('click',()=>installApp());
-        document.getElementById('bannerCloseBtn')?.addEventListener('click',()=>document.getElementById('install-banner').style.display='none');
-        
-        if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(err=>console.log('SW error:',err));}
-        setInterval(()=>{let cnt=Math.floor(Math.random()*12)+3;document.getElementById('online-count-badge').innerText=cnt;},30000);
-        renderAll(); analyticsData.trackPageView('main'); fixIOSVideos();
-    </script>
-</body>
-</html>
+                <
