@@ -10,10 +10,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>GK Store · PUBG & Electronics</title>
     
-    <!-- PWA Manifest - IMPORTANT: must be in root folder -->
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- App Icons - using your GitHub icons -->
+    <!-- App Icons -->
     <link rel="apple-touch-icon" sizes="72x72" href="android-launchericon-72-72.png">
     <link rel="apple-touch-icon" sizes="96x96" href="android-launchericon-96-96.png">
     <link rel="apple-touch-icon" sizes="144x144" href="android-launchericon-144-144.png">
@@ -756,6 +756,13 @@
         
         function openLanguageModal() { openModal('languageModal'); }
         
+        // ========== DATA (DECLARED FIRST) ==========
+        let accounts = [], tools = [], contacts = [], ads = [], bookings = [];
+        let currentFilter = 'all', currentCategory = 'all';
+        let isAdmin = false;  // DECLARED BEFORE USE
+        let currentItem = null;
+        let usdtAddress = 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY';
+        
         // ========== USER TRACKING ==========
         let totalVisitors = parseInt(localStorage.getItem('totalVisitors') || '0');
         let pageViews = parseInt(localStorage.getItem('pageViews') || '0');
@@ -764,7 +771,10 @@
         function updateActiveUsers() {
             activeUsers = Math.floor(Math.random() * 25) + 8;
             document.getElementById('onlineCount').innerText = activeUsers;
-            if (isAdmin) document.getElementById('statOnline').innerText = activeUsers;
+            if (isAdmin) {
+                let statOnline = document.getElementById('statOnline');
+                if (statOnline) statOnline.innerText = activeUsers;
+            }
         }
         
         function trackPageView() {
@@ -778,9 +788,12 @@
             pageViews++;
             localStorage.setItem('pageViews', pageViews);
             if (isAdmin) {
-                document.getElementById('statVisitors').innerText = totalVisitors;
-                document.getElementById('statViews').innerText = pageViews;
-                document.getElementById('statAccounts').innerText = accounts.length;
+                let statVisitors = document.getElementById('statVisitors');
+                let statViews = document.getElementById('statViews');
+                let statAccounts = document.getElementById('statAccounts');
+                if (statVisitors) statVisitors.innerText = totalVisitors;
+                if (statViews) statViews.innerText = pageViews;
+                if (statAccounts) statAccounts.innerText = accounts.length;
             }
         }
         
@@ -791,8 +804,10 @@
                 localStorage.setItem('totalVisitors', '0');
                 localStorage.setItem('pageViews', '0');
                 if (isAdmin) {
-                    document.getElementById('statVisitors').innerText = totalVisitors;
-                    document.getElementById('statViews').innerText = pageViews;
+                    let statVisitors = document.getElementById('statVisitors');
+                    let statViews = document.getElementById('statViews');
+                    if (statVisitors) statVisitors.innerText = totalVisitors;
+                    if (statViews) statViews.innerText = pageViews;
                 }
                 showNotif('Reset', 'Analytics cleared');
             }
@@ -801,13 +816,7 @@
         setInterval(updateActiveUsers, 30000);
         updateActiveUsers();
         
-        // ========== DATA ==========
-        let accounts = [], tools = [], contacts = [], ads = [], bookings = [];
-        let currentFilter = 'all', currentCategory = 'all';
-        let isAdmin = false;
-        let currentItem = null;
-        let usdtAddress = 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY';
-        
+        // ========== LOAD DATA ==========
         function loadData() {
             try {
                 let a = localStorage.getItem('gk_accounts'); if (a) accounts = JSON.parse(a);
@@ -841,49 +850,62 @@
         function saveAds() { localStorage.setItem('gk_ads', JSON.stringify(ads)); }
         function saveBookings() { localStorage.setItem('gk_bookings', JSON.stringify(bookings)); }
         
+        // ========== RENDER FUNCTIONS ==========
         function renderTierTabs() {
             const t = translations[currentLang];
-            document.getElementById('tierHeader').innerHTML = `
-                <button class="tier-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="filterAccounts('all')">${t.all}</button>
-                <button class="tier-tab ${currentFilter === 'small' ? 'active' : ''}" onclick="filterAccounts('small')">${t.small}</button>
-                <button class="tier-tab ${currentFilter === 'medium' ? 'active' : ''}" onclick="filterAccounts('medium')">${t.medium}</button>
-                <button class="tier-tab ${currentFilter === 'big' ? 'active' : ''}" onclick="filterAccounts('big')">${t.big}</button>
-            `;
+            let header = document.getElementById('tierHeader');
+            if (header) {
+                header.innerHTML = `
+                    <button class="tier-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="filterAccounts('all')">${t.all}</button>
+                    <button class="tier-tab ${currentFilter === 'small' ? 'active' : ''}" onclick="filterAccounts('small')">${t.small}</button>
+                    <button class="tier-tab ${currentFilter === 'medium' ? 'active' : ''}" onclick="filterAccounts('medium')">${t.medium}</button>
+                    <button class="tier-tab ${currentFilter === 'big' ? 'active' : ''}" onclick="filterAccounts('big')">${t.big}</button>
+                `;
+            }
         }
         
         function renderCategoryTabs() {
             const t = translations[currentLang];
-            document.getElementById('categoryHeader').innerHTML = `
-                <button class="category-tab ${currentCategory === 'all' ? 'active' : ''}" onclick="filterTools('all')">${t.all}</button>
-                <button class="category-tab ${currentCategory === 'phone' ? 'active' : ''}" onclick="filterTools('phone')">${t.phones}</button>
-                <button class="category-tab ${currentCategory === 'ipad' ? 'active' : ''}" onclick="filterTools('ipad')">${t.ipad}</button>
-                <button class="category-tab ${currentCategory === 'computer' ? 'active' : ''}" onclick="filterTools('computer')">${t.computer}</button>
-                <button class="category-tab ${currentCategory === 'tv' ? 'active' : ''}" onclick="filterTools('tv')">${t.tv}</button>
-                <button class="category-tab ${currentCategory === 'other' ? 'active' : ''}" onclick="filterTools('other')">${t.other}</button>
-            `;
+            let header = document.getElementById('categoryHeader');
+            if (header) {
+                header.innerHTML = `
+                    <button class="category-tab ${currentCategory === 'all' ? 'active' : ''}" onclick="filterTools('all')">${t.all}</button>
+                    <button class="category-tab ${currentCategory === 'phone' ? 'active' : ''}" onclick="filterTools('phone')">${t.phones}</button>
+                    <button class="category-tab ${currentCategory === 'ipad' ? 'active' : ''}" onclick="filterTools('ipad')">${t.ipad}</button>
+                    <button class="category-tab ${currentCategory === 'computer' ? 'active' : ''}" onclick="filterTools('computer')">${t.computer}</button>
+                    <button class="category-tab ${currentCategory === 'tv' ? 'active' : ''}" onclick="filterTools('tv')">${t.tv}</button>
+                    <button class="category-tab ${currentCategory === 'other' ? 'active' : ''}" onclick="filterTools('other')">${t.other}</button>
+                `;
+            }
         }
         
         function renderAccounts() {
+            let grid = document.getElementById('accounts-grid');
+            if (!grid) return;
             let filtered = accounts.filter(a => currentFilter === 'all' || a.tier === currentFilter);
-            if (filtered.length === 0) { document.getElementById('accounts-grid').innerHTML = '<div style="text-align:center;padding:40px;">No accounts</div>'; return; }
+            if (filtered.length === 0) { grid.innerHTML = '<div style="text-align:center;padding:40px;">No accounts</div>'; return; }
             const t = translations[currentLang];
-            document.getElementById('accounts-grid').innerHTML = filtered.map(acc => `
+            grid.innerHTML = filtered.map(acc => `
                 <div class="account-card"><img src="${acc.media}" class="card-media" onclick="window.open('${acc.media}','_blank')"><div class="card-content"><div class="card-title"><span>${acc.title}</span><span class="tier-badge">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})"><i class="fa fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})"><i class="fa fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})"><i class="fa fa-info"></i> ${t.info}</button></div></div></div>
             `).join('');
         }
         
         function renderTools() {
+            let grid = document.getElementById('tools-grid');
+            if (!grid) return;
             let filtered = tools.filter(t => currentCategory === 'all' || t.category === currentCategory);
-            if (filtered.length === 0) { document.getElementById('tools-grid').innerHTML = '<div style="text-align:center;padding:40px;">No products</div>'; return; }
+            if (filtered.length === 0) { grid.innerHTML = '<div style="text-align:center;padding:40px;">No products</div>'; return; }
             const t = translations[currentLang];
-            document.getElementById('tools-grid').innerHTML = filtered.map(tool => `
+            grid.innerHTML = filtered.map(tool => `
                 <div class="tool-card"><img src="${tool.media}" class="card-media" onclick="window.open('${tool.media}','_blank')"><div class="card-content"><div class="card-title">${tool.name}</div><div class="card-desc">${tool.desc}</div><div class="price-row"><span class="usd-price">$${tool.price_usd}</span><span class="afn-price">${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})"><i class="fa fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})"><i class="fa fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc}',${tool.price_usd},${tool.price_afn})"><i class="fa fa-info"></i> ${t.info}</button></div></div></div>
             `).join('');
         }
         
         function renderContacts() {
+            let container = document.getElementById('contacts-container');
+            if (!container) return;
             const t = translations[currentLang];
-            document.getElementById('contacts-container').innerHTML = contacts.map(c => {
+            container.innerHTML = contacts.map(c => {
                 let phone = c.phone.replace(/\D/g, '');
                 if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone;
                 return `<div class="account-card" style="padding:15px;"><h3><i class="fab fa-whatsapp" style="color:#25D366"></i> ${c.name}</h3><p style="margin:10px 0;">+${phone}</p><button class="action-btn buy" onclick="window.open('https://wa.me/${phone}','_blank')"><i class="fab fa-whatsapp"></i> ${t.chat}</button></div>`;
@@ -928,7 +950,8 @@
         function showInfo(title, desc, usd, afn) { document.getElementById('infoBody').innerHTML = `<p><strong>${title}</strong></p><p>${desc}</p><p>💰 $${usd} / ${afn} AFN</p>`; openModal('infoModal'); }
         
         function adminLogin() {
-            if (document.getElementById('adminPassword').value === 'admin123') {
+            let pass = document.getElementById('adminPassword').value;
+            if (pass === 'admin123') {
                 isAdmin = true;
                 document.getElementById('admin-login').classList.add('hidden');
                 document.getElementById('admin-dashboard').classList.remove('hidden');
@@ -980,31 +1003,35 @@
         function switchScreen(screen) {
             trackPageView();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screen + '-screen').classList.add('active');
+            let targetScreen = document.getElementById(screen + '-screen');
+            if (targetScreen) targetScreen.classList.add('active');
             document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('nav-' + screen).classList.add('active');
+            let navBtn = document.getElementById('nav-' + screen);
+            if (navBtn) navBtn.classList.add('active');
             if (screen === 'accounts') renderAccounts();
             if (screen === 'tools') renderTools();
             if (screen === 'contact') renderContacts();
         }
         
         function showNotif(title, msg) { let n = document.createElement('div'); n.className = 'notification'; n.innerHTML = `<strong>${title}</strong><br>${msg}`; document.body.appendChild(n); setTimeout(() => n.remove(), 3000); }
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openModal(id) { let m = document.getElementById(id); if (m) m.classList.remove('hidden'); }
+        function closeModal(id) { let m = document.getElementById(id); if (m) m.classList.add('hidden'); }
         
-        // ========== PWA INSTALL - FIXED ==========
+        // ========== PWA INSTALL ==========
         let deferredPrompt;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('Install prompt detected');
-            document.getElementById('installBtn').style.display = 'flex';
+            let installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.style.display = 'flex';
         });
         
         window.addEventListener('appinstalled', () => {
             console.log('App installed successfully');
-            document.getElementById('installBtn').style.display = 'none';
+            let installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.style.display = 'none';
             deferredPrompt = null;
         });
         
@@ -1017,7 +1044,8 @@
                         showNotif('Installation', 'App is being installed');
                     }
                     deferredPrompt = null;
-                    document.getElementById('installBtn').style.display = 'none';
+                    let installBtn = document.getElementById('installBtn');
+                    if (installBtn) installBtn.style.display = 'none';
                 });
             } else {
                 showNotif('Install', 'Tap browser menu (3 dots) → Install app');
@@ -1040,8 +1068,8 @@
         // Show install button on page load if not installed
         setTimeout(() => {
             if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
-                document.getElementById('installBtn').style.display = 'flex';
-                document.getElementById('installBtn').innerHTML = '<i class="fas fa-download"></i> Install App';
+                let installBtn = document.getElementById('installBtn');
+                if (installBtn) installBtn.style.display = 'flex';
             }
         }, 2000);
     </script>
