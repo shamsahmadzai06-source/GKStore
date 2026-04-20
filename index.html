@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#e74c3c">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     <title>GK Store · PUBG & Electronics</title>
     
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
     <!-- App Icons -->
@@ -25,7 +24,6 @@
     <link rel="icon" type="image/png" sizes="192x192" href="android-launchericon-192-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="android-launchericon-512-512.png">
     
-    <!-- Critical CSS inline (no external CSS files) -->
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         :root{--primary:#e74c3c;--primary-dark:#c0392b;--secondary:#f39c12;--surface:#1a1a1a;--surface-light:#252525;--text:#fff;--text-secondary:#a0a0a0;--border:#333;--gradient-primary:linear-gradient(135deg,#e74c3c,#f39c12)}
@@ -101,6 +99,7 @@
         .notification{position:fixed;top:70px;right:16px;background:rgba(0,0,0,0.9);border-left:4px solid var(--primary);border-radius:12px;padding:12px;z-index:1000;animation:slideIn 0.3s ease}
         @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
         
+        /* INSTALL BUTTON - ALWAYS VISIBLE AND WORKING */
         .install-fixed{position:fixed;bottom:80px;right:16px;background:var(--primary);border:none;color:white;padding:12px 18px;border-radius:50px;cursor:pointer;display:flex;align-items:center;gap:8px;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.3);font-weight:bold;animation:pulse 1s infinite}
         
         .admin-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
@@ -108,10 +107,6 @@
         .admin-stat-number{font-size:24px;font-weight:bold;color:var(--secondary)}
         .admin-stat-label{font-size:11px;color:var(--text-secondary)}
     </style>
-    
-    <!-- Font Awesome loaded async (doesn't block rendering) -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
 </head>
 <body>
     <img class="bg-fixed" src="backr.png" alt="Background" onerror="this.style.display='none'">
@@ -125,7 +120,8 @@
         <button class="nav-btn" onclick="openLanguageModal()"><i class="fa fa-globe"></i> <span id="langBtn">Lang</span></button>
     </div>
     
-    <button class="install-fixed" id="installBtn" onclick="installApp()" style="display:flex"><i class="fas fa-download"></i> <span id="installText">Install App</span></button>
+    <!-- INSTALL BUTTON - Always visible, works immediately -->
+    <button class="install-fixed" id="installBtn" onclick="installApp()"><i class="fas fa-download"></i> <span id="installText">Install App</span></button>
     
     <div class="container">
         <div id="main-screen" class="screen active">
@@ -244,6 +240,25 @@
     <div id="languageModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Select Language</h3><button class="modal-close" onclick="closeModal('languageModal')">&times;</button></div><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('en')">🇬🇧 English</button><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('ps')">🇦🇫 پښتو</button><button class="action-btn" style="width:100%" onclick="setLanguage('fa')">🇮🇷 فارسی</button></div></div>
 
     <script>
+        // Font Awesome fallback icons
+        const icons = {
+            home: '<i class="fas fa-home"></i>',
+            gamepad: '<i class="fas fa-gamepad"></i>',
+            store: '<i class="fas fa-store"></i>',
+            whatsapp: '<i class="fab fa-whatsapp"></i>',
+            shield: '<i class="fas fa-user-shield"></i>',
+            globe: '<i class="fas fa-globe"></i>',
+            download: '<i class="fas fa-download"></i>',
+            video: '<i class="fas fa-video"></i>',
+            chrome: '<i class="fas fa-chrome"></i>',
+            info: '<i class="fas fa-info-circle"></i>',
+            arrow: '<i class="fas fa-arrow-right"></i>',
+            chevron: '<i class="fas fa-chevron-right"></i>',
+            bolt: '<i class="fas fa-bolt"></i>',
+            bookmark: '<i class="fa fa-bookmark"></i>',
+            map: '<i class="fas fa-map-pin"></i>'
+        };
+        
         // Translations
         const translations={en:{appName:"GK Store",langBtn:"Lang",marketplace:"GK Marketplace",online:"Online",secure:"🔒 Secure · Instant delivery",news1:"⚠️ Video not playing on iOS? Tap video → Download or save to camera roll",news2:"📱 iPhone/iPad: If video doesn't play, press and hold → Save Video",news3:"🔄 iOS video issue? Download file or use Chrome browser",guarantee:"✅ in all pubg account 30 days link wash guarantee",extraInfo:"ℹ️ if you want extra information contact us from contact button",pubgBtn:"🔥 PUBG Accounts",shopBtn:"⚡ Shop Electronics",pubgTitle:"🔥 PUBG Accounts",shopTitle:"🛒 Electronics Shop",contactTitle:"Contact & Support",adminTitle:"Admin Panel",addressLabel:"📍 Store Address:",addressText:"Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)",adminLogin:"Admin Login",loginBtn:"Login",totalVisitors:"Total Visitors",onlineNow:"Online Now",pageViews:"Page Views",accountsLabel:"Accounts",resetBtn:"Reset Analytics",usdtTitle:"💳 USDT Address",editBtn:"Edit Address",addAccountBtn:"➕ Add PUBG Account",addProductBtn:"➕ Add Product",manageAccountsBtn:"📋 Manage Accounts",manageProductsBtn:"📦 Manage Products",manageContactsBtn:"📞 Manage Contacts",manageAdsBtn:"🖼️ Manage Ads",logoutBtn:"🚪 Logout",navHome:"Home",navPubg:"PUBG",navShop:"Shop",navContact:"Contact",navAdmin:"Admin",installText:"Install App",all:"All",small:"Small",medium:"Medium",big:"Big",phones:"Phones",ipad:"iPad",computer:"Computer",tv:"TV",other:"Others",book:"Book",buy:"Buy",info:"Info",chat:"Chat"},ps:{appName:"جی کی سټور",langBtn:"ژبه",marketplace:"جی کی مارکیټ",online:"آنلاین",secure:"🔒 امن · سمدستي تحویل",news1:"⚠️ ویډیو په iOS کې نه غږیږي؟ ویډیو ټایپ کړئ → ډاونلوډ",news2:"📱 آیفون/آیپډ: که ویډیو نه غږیږي، نیولی ونیسئ → خوندي کړئ",news3:"🔄 د iOS ویډیو ستونزه؟ فایل ډاونلوډ کړئ یا کروم وکاروئ",guarantee:"✅ په ټولو پبجي اکاونټونو کې 30 ورځې ضمانت",extraInfo:"ℹ️ که اضافي معلومات غواړئ د تماس تڼۍ وکاروئ",pubgBtn:"🔥 پبجي اکاونټونه",shopBtn:"⚡ برقی توکي",pubgTitle:"🔥 پبجي اکاونټونه",shopTitle:"🛒 برقی توکي",contactTitle:"اړیکه او ملاتړ",adminTitle:"د مدیر پینل",addressLabel:"📍 د پلورنځي پته:",addressText:"کابل - ګل بهار مرکز، دریم پوړ، C130",adminLogin:"د مدیر ننوتل",loginBtn:"ننوتل",totalVisitors:"ټول لیدونکي",onlineNow:"اوس آنلاین",pageViews:"پاڼې کتل",accountsLabel:"اکاونټونه",resetBtn:"ری سیٹ",usdtTitle:"💳 USDT آدرس",editBtn:"سمول",addAccountBtn:"➕ اکاونټ اضافه کول",addProductBtn:"➕ محصول اضافه کول",manageAccountsBtn:"📋 اکاونټونه تنظیمول",manageProductsBtn:"📦 محصولات تنظیمول",manageContactsBtn:"📞 اړیکې تنظیمول",manageAdsBtn:"🖼️ اعلانونه تنظیمول",logoutBtn:"🚪 وتل",navHome:"کور",navPubg:"PUBG",navShop:"پلورنځی",navContact:"اړیکه",navAdmin:"مدیر",installText:"نصب",all:"ټول",small:"کوچنی",medium:"منځنی",big:"لوی",phones:"تلیفونونه",ipad:"آی پیډ",computer:"کمپیوټر",tv:"تلویزیون",other:"نور",book:"بک",buy:"پیرل",info:"مالومات",chat:"خبرې"},fa:{appName:"جی کی استور",langBtn:"زبان",marketplace:"بازار جی کی",online:"آنلاین",secure:"🔒 امن · تحویل فوری",news1:"⚠️ ویدیو در iOS پخش نمی‌شود؟ ضربه بزنید → دانلود",news2:"📱 آیفون/آیپد: اگر ویدیو پخش نشد، نگه دارید → ذخیره",news3:"🔄 مشکل ویدیو در iOS؟ فایل را دانلود کنید یا از کروم استفاده کنید",guarantee:"✅ در تمام اکانت‌های پابجی 30 روز گارانتی",extraInfo:"ℹ️ اگر اطلاعات اضافی می‌خواهید از دکمه تماس استفاده کنید",pubgBtn:"🔥 اکانت‌های پابجی",shopBtn:"⚡ فروشگاه الکترونیک",pubgTitle:"🔥 اکانت‌های پابجی",shopTitle:"🛒 فروشگاه الکترونیک",contactTitle:"تماس و پشتیبانی",adminTitle:"پنل ادمین",addressLabel:"📍 آدرس فروشگاه:",addressText:"کابل - مرکز گل بهار، طبقه سوم، C130",adminLogin:"ورود ادمین",loginBtn:"ورود",totalVisitors:"بازدیدکنندگان کل",onlineNow:"آنلاین الان",pageViews:"بازدید صفحات",accountsLabel:"اکانت‌ها",resetBtn:"بازنشانی",usdtTitle:"💳 آدرس USDT",editBtn:"ویرایش",addAccountBtn:"➕ افزودن اکانت",addProductBtn:"➕ افزودن محصول",manageAccountsBtn:"📋 مدیریت اکانت‌ها",manageProductsBtn:"📦 مدیریت محصولات",manageContactsBtn:"📞 مدیریت تماس‌ها",manageAdsBtn:"🖼️ مدیریت تبلیغات",logoutBtn:"🚪 خروج",navHome:"خانه",navPubg:"PUBG",navShop:"فروشگاه",navContact:"تماس",navAdmin:"ادمین",installText:"نصب",all:"همه",small:"کوچک",medium:"متوسط",big:"بزرگ",phones:"تلفن‌ها",ipad:"آیپد",computer:"کامپیوتر",tv:"تلویزیون",other:"سایر",book:"رزرو",buy:"خرید",info:"اطلاعات",chat:"چت"}};
         
@@ -336,11 +351,11 @@
         function renderTierTabs(){const t=translations[currentLang];let h=document.getElementById('tierHeader');if(h){h.innerHTML=`<button class="tier-tab ${currentFilter==='all'?'active':''}" onclick="filterAccounts('all')">${t.all}</button><button class="tier-tab ${currentFilter==='small'?'active':''}" onclick="filterAccounts('small')">${t.small}</button><button class="tier-tab ${currentFilter==='medium'?'active':''}" onclick="filterAccounts('medium')">${t.medium}</button><button class="tier-tab ${currentFilter==='big'?'active':''}" onclick="filterAccounts('big')">${t.big}</button>`;}}
         function renderCategoryTabs(){const t=translations[currentLang];let h=document.getElementById('categoryHeader');if(h){h.innerHTML=`<button class="category-tab ${currentCategory==='all'?'active':''}" onclick="filterTools('all')">${t.all}</button><button class="category-tab ${currentCategory==='phone'?'active':''}" onclick="filterTools('phone')">${t.phones}</button><button class="category-tab ${currentCategory==='ipad'?'active':''}" onclick="filterTools('ipad')">${t.ipad}</button><button class="category-tab ${currentCategory==='computer'?'active':''}" onclick="filterTools('computer')">${t.computer}</button><button class="category-tab ${currentCategory==='tv'?'active':''}" onclick="filterTools('tv')">${t.tv}</button><button class="category-tab ${currentCategory==='other'?'active':''}" onclick="filterTools('other')">${t.other}</button>`;}}
         
-        function renderAccounts(){let g=document.getElementById('accounts-grid');if(!g)return;let f=accounts.filter(a=>currentFilter==='all'||a.tier===currentFilter);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No accounts</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(acc=>`<div class="account-card"><img src="${acc.media}" class="card-media" onclick="window.open('${acc.media}','_blank')"><div class="card-content"><div class="card-title"><span>${acc.title}</span><span class="tier-badge">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})"><i class="fa fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})"><i class="fa fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})"><i class="fa fa-info"></i> ${t.info}</button></div></div></div>`).join('');}
+        function renderAccounts(){let g=document.getElementById('accounts-grid');if(!g)return;let f=accounts.filter(a=>currentFilter==='all'||a.tier===currentFilter);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No accounts</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(acc=>`<div class="account-card"><img src="${acc.media}" class="card-media" onclick="window.open('${acc.media}','_blank')"><div class="card-content"><div class="card-title"><span>${acc.title}</span><span class="tier-badge">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})">${icons.bookmark} ${t.book}</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})">${icons.bolt} ${t.buy}</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})">${icons.info} ${t.info}</button></div></div></div>`).join('');}
         
-        function renderTools(){let g=document.getElementById('tools-grid');if(!g)return;let f=tools.filter(t=>currentCategory==='all'||t.category===currentCategory);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No products</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(tool=>`<div class="tool-card"><img src="${tool.media}" class="card-media" onclick="window.open('${tool.media}','_blank')"><div class="card-content"><div class="card-title">${tool.name}</div><div class="card-desc">${tool.desc}</div><div class="price-row"><span class="usd-price">$${tool.price_usd}</span><span class="afn-price">${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})"><i class="fa fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})"><i class="fa fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc}',${tool.price_usd},${tool.price_afn})"><i class="fa fa-info"></i> ${t.info}</button></div></div></div>`).join('');}
+        function renderTools(){let g=document.getElementById('tools-grid');if(!g)return;let f=tools.filter(t=>currentCategory==='all'||t.category===currentCategory);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No products</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(tool=>`<div class="tool-card"><img src="${tool.media}" class="card-media" onclick="window.open('${tool.media}','_blank')"><div class="card-content"><div class="card-title">${tool.name}</div><div class="card-desc">${tool.desc}</div><div class="price-row"><span class="usd-price">$${tool.price_usd}</span><span class="afn-price">${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})">${icons.bookmark} ${t.book}</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})">${icons.bolt} ${t.buy}</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc}',${tool.price_usd},${tool.price_afn})">${icons.info} ${t.info}</button></div></div></div>`).join('');}
         
-        function renderContacts(){let c=document.getElementById('contacts-container');if(!c)return;const t=translations[currentLang];c.innerHTML=contacts.map(ct=>{let phone=ct.phone.replace(/\D/g,'');if(!phone.startsWith('93')&&phone.length<=9)phone='93'+phone;return `<div class="account-card" style="padding:15px;"><h3><i class="fab fa-whatsapp" style="color:#25D366"></i> ${ct.name}</h3><p style="margin:10px 0;">+${phone}</p><button class="action-btn buy" onclick="window.open('https://wa.me/${phone}','_blank')"><i class="fab fa-whatsapp"></i> ${t.chat}</button></div>`;}).join('');}
+        function renderContacts(){let c=document.getElementById('contacts-container');if(!c)return;const t=translations[currentLang];c.innerHTML=contacts.map(ct=>{let phone=ct.phone.replace(/\D/g,'');if(!phone.startsWith('93')&&phone.length<=9)phone='93'+phone;return `<div class="account-card" style="padding:15px;"><h3>${icons.whatsapp} ${ct.name}</h3><p style="margin:10px 0;">+${phone}</p><button class="action-btn buy" onclick="window.open('https://wa.me/${phone}','_blank')">${icons.whatsapp} ${t.chat}</button></div>`;}).join('');}
         
         function renderAds(){let c=document.getElementById('ads-slider');if(!c)return;if(ads.length===0){c.innerHTML='';return;}c.innerHTML=`<div style="background:rgba(0,0,0,0.7);border-radius:16px;overflow:hidden;margin-top:15px;">${ads.map(ad=>ad.type==='video'?`<video src="${ad.data}" style="width:100%;aspect-ratio:16/9;" autoplay muted loop playsinline></video>`:`<img src="${ad.data}" style="width:100%;aspect-ratio:16/9;object-fit:cover;">`)}</div>`;}
         
@@ -387,45 +402,60 @@
         function openModal(id){let m=document.getElementById(id);if(m)m.classList.remove('hidden');}
         function closeModal(id){let m=document.getElementById(id);if(m)m.classList.add('hidden');}
         
-        // PWA Install - Immediate button
+        // ========== INSTALL BUTTON - IMMEDIATE WORKING ==========
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt',(e)=>{
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            deferredPrompt=e;
-            console.log('Install ready');
-            let btn=document.getElementById('installBtn');
-            if(btn)btn.style.display='flex';
+            deferredPrompt = e;
+            console.log('Install prompt ready');
+            let btn = document.getElementById('installBtn');
+            if(btn) {
+                btn.style.display = 'flex';
+                btn.style.background = '#27ae60';
+                btn.innerHTML = '<i class="fas fa-download"></i> Install Now';
+            }
         });
         
-        window.addEventListener('appinstalled',()=>{
-            console.log('Installed');
-            let btn=document.getElementById('installBtn');
-            if(btn)btn.style.display='none';
-            deferredPrompt=null;
-            showNotif('Success','GK Store installed!');
-        });
-        
-        function installApp(){
-            if(deferredPrompt){
+        // Installation function - called immediately on button click
+        function installApp() {
+            if (deferredPrompt) {
+                // Show the install prompt
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((result)=>{
-                    if(result.outcome==='accepted')showNotif('Installing','Please wait...');
-                    deferredPrompt=null;
-                    let btn=document.getElementById('installBtn');
-                    if(btn)btn.style.display='none';
+                // Wait for user choice
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted install');
+                        showNotif('Installing', 'GK Store is being installed...');
+                    } else {
+                        console.log('User dismissed install');
+                    }
+                    deferredPrompt = null;
                 });
-            }else{
-                showNotif('Install','Tap browser menu → Install app');
+            } else {
+                // Fallback for browsers that don't support beforeinstallprompt
+                showNotif('Install', 'Tap the browser menu (3 dots) and select "Install app" or "Add to Home Screen"');
             }
         }
         
-        // Service Worker
-        if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW error:',e));}
+        // If already installed, hide button
+        window.addEventListener('appinstalled', () => {
+            console.log('App installed');
+            let btn = document.getElementById('installBtn');
+            if(btn) btn.style.display = 'none';
+            showNotif('Success', 'GK Store installed successfully!');
+        });
         
-        // Check if already installed
-        if(window.matchMedia('(display-mode: standalone)').matches){
-            let btn=document.getElementById('installBtn');
-            if(btn)btn.style.display='none';
+        // Check if already in standalone mode (already installed)
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            let btn = document.getElementById('installBtn');
+            if(btn) btn.style.display = 'none';
+        }
+        
+        // Service Worker
+        if('serviceWorker' in navigator){
+            navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW error:',e));
         }
         
         // Initialize
