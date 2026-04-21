@@ -24,17 +24,14 @@
     <link rel="icon" type="image/png" sizes="192x192" href="android-launchericon-192-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="android-launchericon-512-512.png">
     
-    <!-- Critical CSS only - no background image yet -->
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         :root{--primary:#e74c3c;--primary-dark:#c0392b;--secondary:#f39c12;--surface:#1a1a1a;--surface-light:#252525;--text:#fff;--text-secondary:#a0a0a0;--border:#333;--gradient-primary:linear-gradient(135deg,#e74c3c,#f39c12);--gradient-success:linear-gradient(135deg,#27ae60,#2ecc71)}
         
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:var(--text);padding-bottom:70px}
         
-        /* Placeholder background - loads instantly */
-        .bg-placeholder{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a0a,#0a0a0a,#0d0d1a);z-index:-2}
-        .bg-image{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:0;transition:opacity 0.8s ease}
-        .bg-image.loaded{opacity:0.5}
+        /* FAST BACKGROUND - CSS gradient only, loads instantly */
+        .bg-fixed{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a0a,#0a0a0a,#0d0d1a);z-index:-2}
         .bg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:-1}
         
         .top-nav{background:rgba(26,26,26,0.95);backdrop-filter:blur(10px);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(231,76,60,0.3)}
@@ -103,6 +100,7 @@
         .notification{position:fixed;top:70px;right:16px;background:rgba(0,0,0,0.9);border-left:4px solid var(--primary);border-radius:12px;padding:12px;z-index:1000;animation:slideIn 0.3s ease}
         @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
         
+        /* INSTALL BUTTON - Always visible, works immediately */
         .install-fixed{position:fixed;bottom:80px;right:16px;background:#27ae60;border:none;color:white;padding:12px 18px;border-radius:50px;cursor:pointer;display:flex;align-items:center;gap:8px;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.3);font-weight:bold;animation:pulse 1s infinite}
         
         .admin-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
@@ -113,85 +111,84 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Placeholder background (loads instantly) -->
-    <div class="bg-placeholder"></div>
-    <!-- Background image loads LATER (after install prompt is ready) -->
-    <img class="bg-image" id="bgImage" src="backr.png" alt="Background" onload="this.classList.add('loaded')">
+    <!-- FAST BACKGROUND - CSS gradient only, no image to block install prompt -->
+    <div class="bg-fixed"></div>
     <div class="bg-overlay"></div>
     
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
-            <span id="appName">GK Store</span>
+            <span>GK Store</span>
         </div>
-        <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> <span id="langBtn">Lang</span></button>
+        <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> Lang</button>
     </div>
     
-    <button class="install-fixed" id="installBtn" onclick="triggerInstall()"><i class="fas fa-download"></i> <span id="installText">Install App</span></button>
+    <!-- INSTALL BUTTON - Visible immediately, works as soon as beforeinstallprompt fires -->
+    <button class="install-fixed" id="installBtn" onclick="triggerInstall()"><i class="fas fa-download"></i> Install App</button>
     
     <div class="container">
         <div id="main-screen" class="screen active">
             <div class="title-section">
-                <h1 class="big-title" id="marketplaceTitle">GK Marketplace</h1>
+                <h1 class="big-title">GK Marketplace</h1>
                 <div class="online-badge">
                     <div class="online-dot"></div>
-                    <span id="onlineCount">0</span> <span id="onlineLabel">Online</span>
+                    <span id="onlineCount">0</span> Online
                 </div>
             </div>
-            <div class="sub-head" id="secureText">🔒 Secure · Instant delivery</div>
+            <div class="sub-head">🔒 Secure · Instant delivery</div>
             
             <div class="news-ticker">
                 <div class="ticker-text">
-                    <span><i class="fas fa-video"></i> <span id="news1">⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span></span>
-                    <span><i class="fas fa-download"></i> <span id="news2">📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span></span>
-                    <span><i class="fas fa-chrome"></i> <span id="news3">🔄 iOS video issue? Download file or use Chrome browser</span></span>
-                    <span><i class="fas fa-video"></i> <span id="news1b">⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span></span>
+                    <span><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
+                    <span><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
+                    <span><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
+                    <span><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
                 </div>
             </div>
             
             <div class="info-card green" onclick="window.open('https://wa.me/93793066322?text=I want to know about 30 days link wash guarantee','_blank')">
-                <div class="info-card-left"><i class="fab fa-whatsapp"></i><span id="guaranteeText">✅ in all pubg account 30 days link wash guarantee</span></div>
+                <div class="info-card-left"><i class="fab fa-whatsapp"></i><span>✅ in all pubg account 30 days link wash guarantee</span></div>
                 <div class="info-card-right"><i class="fas fa-chevron-right"></i></div>
             </div>
             
             <div class="info-card blue" onclick="switchScreen('contact')">
-                <div class="info-card-left"><i class="fas fa-info-circle"></i><span id="extraInfoText">ℹ️ if you want extra information contact us from contact button</span></div>
+                <div class="info-card-left"><i class="fas fa-info-circle"></i><span>ℹ️ if you want extra information contact us from contact button</span></div>
                 <div class="info-card-right"><i class="fas fa-arrow-right"></i></div>
             </div>
             
-            <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> <span id="pubgBtn">🔥 PUBG Accounts</span> <i class="fas fa-arrow-right"></i></button>
-            <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> <span id="shopBtn">⚡ Shop Electronics</span> <i class="fas fa-bolt"></i></button>
+            <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> 🔥 PUBG Accounts <i class="fas fa-arrow-right"></i></button>
+            <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> ⚡ Shop Electronics <i class="fas fa-bolt"></i></button>
             <div id="ads-slider"></div>
         </div>
         
         <div id="accounts-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="pubgTitle">🔥 PUBG Accounts</h2>
+            <h2 style="margin-bottom:15px">🔥 PUBG Accounts</h2>
             <div class="tier-header" id="tierHeader"></div>
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
         
         <div id="tools-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="shopTitle">🛒 Electronics Shop</h2>
+            <h2 style="margin-bottom:15px">🛒 Electronics Shop</h2>
             <div class="category-header" id="categoryHeader"></div>
             <div id="tools-grid" class="tools-grid"></div>
         </div>
         
         <div id="contact-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="contactTitle">Contact & Support</h2>
+            <h2 style="margin-bottom:15px">Contact & Support</h2>
             <div class="account-card" style="padding:15px;margin-bottom:15px">
-                <i class="fas fa-map-pin"></i> <strong id="addressLabel">📍 Store Address:</strong><br>
-                <span id="addressText">Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span>
+                <i class="fas fa-map-pin"></i> <strong>📍 Store Address:</strong><br>
+                Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)
             </div>
             <div id="contacts-container"></div>
         </div>
         
         <div id="admin-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="adminTitle">Admin Panel</h2>
+            <h2 style="margin-bottom:15px">Admin Panel</h2>
             <div id="admin-login">
                 <div class="account-card" style="padding:20px">
-                    <h3 id="adminLoginTitle">Admin Login</h3>
+                    <h3>Admin Login</h3>
                     <input type="password" id="adminPassword" class="input" placeholder="Enter password">
-                    <button class="action-btn buy" style="width:100%" onclick="adminLogin()" id="loginBtn">Login</button>
+                    <button class="action-btn buy" style="width:100%" onclick="adminLogin()">Login</button>
                     <p style="font-size:12px;margin-top:10px">Password: <strong>admin123</strong></p>
                 </div>
             </div>
@@ -199,37 +196,37 @@
                 <div class="account-card" style="padding:15px;margin-bottom:15px">
                     <h3>📊 User Analytics</h3>
                     <div class="admin-stats">
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statVisitors">0</div><div class="admin-stat-label" id="totalVisitorsLabel">Total Visitors</div></div>
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statOnline">0</div><div class="admin-stat-label" id="onlineNowLabel">Online Now</div></div>
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statViews">0</div><div class="admin-stat-label" id="pageViewsLabel">Page Views</div></div>
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div class="admin-stat-label" id="accountsLabel">Accounts</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statVisitors">0</div><div class="admin-stat-label">Total Visitors</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statOnline">0</div><div class="admin-stat-label">Online Now</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statViews">0</div><div class="admin-stat-label">Page Views</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div class="admin-stat-label">Accounts</div></div>
                     </div>
-                    <button class="action-btn" onclick="resetAnalytics()" style="background:#e74c3c" id="resetBtn">Reset Analytics</button>
+                    <button class="action-btn" onclick="resetAnalytics()" style="background:#e74c3c">Reset Analytics</button>
                 </div>
                 
                 <div class="account-card" style="padding:15px;margin-bottom:15px">
-                    <h3 id="usdtTitle">💳 USDT Address</h3>
+                    <h3>💳 USDT Address</h3>
                     <code id="usdtAddress" style="display:block;background:#2a2a36;padding:10px;border-radius:10px;word-break:break-all;margin:10px 0">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                    <button class="action-btn" onclick="showEditUsdtModal()" id="editBtn">Edit Address</button>
+                    <button class="action-btn" onclick="showEditUsdtModal()">Edit Address</button>
                 </div>
                 
-                <button class="action-btn buy" onclick="showAddAccountModal()" style="width:100%;margin-bottom:10px" id="addAccountBtn">➕ Add PUBG Account</button>
-                <button class="action-btn buy" onclick="showAddToolModal()" style="width:100%;margin-bottom:10px" id="addProductBtn">➕ Add Product</button>
-                <button class="action-btn" onclick="showManageAccounts()" style="width:100%;margin-bottom:10px" id="manageAccountsBtn">📋 Manage Accounts</button>
-                <button class="action-btn" onclick="showManageTools()" style="width:100%;margin-bottom:10px" id="manageProductsBtn">📦 Manage Products</button>
-                <button class="action-btn" onclick="showManageContacts()" style="width:100%;margin-bottom:10px" id="manageContactsBtn">📞 Manage Contacts</button>
-                <button class="action-btn" onclick="showManageAds()" style="width:100%;margin-bottom:10px" id="manageAdsBtn">🖼️ Manage Ads</button>
-                <button class="action-btn" onclick="logout()" style="width:100%;background:#555" id="logoutBtn">🚪 Logout</button>
+                <button class="action-btn buy" onclick="showAddAccountModal()" style="width:100%;margin-bottom:10px">➕ Add PUBG Account</button>
+                <button class="action-btn buy" onclick="showAddToolModal()" style="width:100%;margin-bottom:10px">➕ Add Product</button>
+                <button class="action-btn" onclick="showManageAccounts()" style="width:100%;margin-bottom:10px">📋 Manage Accounts</button>
+                <button class="action-btn" onclick="showManageTools()" style="width:100%;margin-bottom:10px">📦 Manage Products</button>
+                <button class="action-btn" onclick="showManageContacts()" style="width:100%;margin-bottom:10px">📞 Manage Contacts</button>
+                <button class="action-btn" onclick="showManageAds()" style="width:100%;margin-bottom:10px">🖼️ Manage Ads</button>
+                <button class="action-btn" onclick="logout()" style="width:100%;background:#555">🚪 Logout</button>
             </div>
         </div>
     </div>
     
     <div class="bottom-nav">
-        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span id="navHome">Home</span></button>
-        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span id="navPubg">PUBG</span></button>
-        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span id="navShop">Shop</span></button>
-        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span id="navContact">Contact</span></button>
-        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span id="navAdmin">Admin</span></button>
+        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
+        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span>PUBG</span></button>
+        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span>Shop</span></button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button>
     </div>
     
     <!-- Modals -->
@@ -248,9 +245,9 @@
     <script>
         // ========== TRANSLATIONS ==========
         const translations={
-            en:{appName:"GK Store",langBtn:"Lang",marketplace:"GK Marketplace",online:"Online",secure:"🔒 Secure · Instant delivery",news1:"⚠️ Video not playing on iOS? Tap video → Download or save to camera roll",news2:"📱 iPhone/iPad: If video doesn't play, press and hold → Save Video",news3:"🔄 iOS video issue? Download file or use Chrome browser",guarantee:"✅ in all pubg account 30 days link wash guarantee",extraInfo:"ℹ️ if you want extra information contact us from contact button",pubgBtn:"🔥 PUBG Accounts",shopBtn:"⚡ Shop Electronics",pubgTitle:"🔥 PUBG Accounts",shopTitle:"🛒 Electronics Shop",contactTitle:"Contact & Support",adminTitle:"Admin Panel",addressLabel:"📍 Store Address:",addressText:"Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)",adminLogin:"Admin Login",loginBtn:"Login",totalVisitors:"Total Visitors",onlineNow:"Online Now",pageViews:"Page Views",accountsLabel:"Accounts",resetBtn:"Reset Analytics",usdtTitle:"💳 USDT Address",editBtn:"Edit Address",addAccountBtn:"➕ Add PUBG Account",addProductBtn:"➕ Add Product",manageAccountsBtn:"📋 Manage Accounts",manageProductsBtn:"📦 Manage Products",manageContactsBtn:"📞 Manage Contacts",manageAdsBtn:"🖼️ Manage Ads",logoutBtn:"🚪 Logout",navHome:"Home",navPubg:"PUBG",navShop:"Shop",navContact:"Contact",navAdmin:"Admin",installText:"Install App",all:"All",small:"Small",medium:"Medium",big:"Big",phones:"Phones",ipad:"iPad",computer:"Computer",tv:"TV",other:"Others",book:"Book",buy:"Buy",info:"Info",chat:"Chat"},
-            ps:{appName:"جی کی سټور",langBtn:"ژبه",marketplace:"جی کی مارکیټ",online:"آنلاین",secure:"🔒 امن · سمدستي تحویل",news1:"⚠️ ویډیو په iOS کې نه غږیږي؟ ویډیو ټایپ کړئ → ډاونلوډ",news2:"📱 آیفون/آیپډ: که ویډیو نه غږیږي، نیولی ونیسئ → خوندي کړئ",news3:"🔄 د iOS ویډیو ستونزه؟ فایل ډاونلوډ کړئ یا کروم وکاروئ",guarantee:"✅ په ټولو پبجي اکاونټونو کې 30 ورځې ضمانت",extraInfo:"ℹ️ که اضافي معلومات غواړئ د تماس تڼۍ وکاروئ",pubgBtn:"🔥 پبجي اکاونټونه",shopBtn:"⚡ برقی توکي",pubgTitle:"🔥 پبجي اکاونټونه",shopTitle:"🛒 برقی توکي",contactTitle:"اړیکه او ملاتړ",adminTitle:"د مدیر پینل",addressLabel:"📍 د پلورنځي پته:",addressText:"کابل - ګل بهار مرکز، دریم پوړ، C130",adminLogin:"د مدیر ننوتل",loginBtn:"ننوتل",totalVisitors:"ټول لیدونکي",onlineNow:"اوس آنلاین",pageViews:"پاڼې کتل",accountsLabel:"اکاونټونه",resetBtn:"ری سیٹ",usdtTitle:"💳 USDT آدرس",editBtn:"سمول",addAccountBtn:"➕ اکاونټ اضافه کول",addProductBtn:"➕ محصول اضافه کول",manageAccountsBtn:"📋 اکاونټونه تنظیمول",manageProductsBtn:"📦 محصولات تنظیمول",manageContactsBtn:"📞 اړیکې تنظیمول",manageAdsBtn:"🖼️ اعلانونه تنظیمول",logoutBtn:"🚪 وتل",navHome:"کور",navPubg:"PUBG",navShop:"پلورنځی",navContact:"اړیکه",navAdmin:"مدیر",installText:"نصب",all:"ټول",small:"کوچنی",medium:"منځنی",big:"لوی",phones:"تلیفونونه",ipad:"آی پیډ",computer:"کمپیوټر",tv:"تلویزیون",other:"نور",book:"بک",buy:"پیرل",info:"مالومات",chat:"خبرې"},
-            fa:{appName:"جی کی استور",langBtn:"زبان",marketplace:"بازار جی کی",online:"آنلاین",secure:"🔒 امن · تحویل فوری",news1:"⚠️ ویدیو در iOS پخش نمی‌شود؟ ضربه بزنید → دانلود",news2:"📱 آیفون/آیپد: اگر ویدیو پخش نشد، نگه دارید → ذخیره",news3:"🔄 مشکل ویدیو در iOS؟ فایل را دانلود کنید یا از کروم استفاده کنید",guarantee:"✅ در تمام اکانت‌های پابجی 30 روز گارانتی",extraInfo:"ℹ️ اگر اطلاعات اضافی می‌خواهید از دکمه تماس استفاده کنید",pubgBtn:"🔥 اکانت‌های پابجی",shopBtn:"⚡ فروشگاه الکترونیک",pubgTitle:"🔥 اکانت‌های پابجی",shopTitle:"🛒 فروشگاه الکترونیک",contactTitle:"تماس و پشتیبانی",adminTitle:"پنل ادمین",addressLabel:"📍 آدرس فروشگاه:",addressText:"کابل - مرکز گل بهار، طبقه سوم، C130",adminLogin:"ورود ادمین",loginBtn:"ورود",totalVisitors:"بازدیدکنندگان کل",onlineNow:"آنلاین الان",pageViews:"بازدید صفحات",accountsLabel:"اکانت‌ها",resetBtn:"بازنشانی",usdtTitle:"💳 آدرس USDT",editBtn:"ویرایش",addAccountBtn:"➕ افزودن اکانت",addProductBtn:"➕ افزودن محصول",manageAccountsBtn:"📋 مدیریت اکانت‌ها",manageProductsBtn:"📦 مدیریت محصولات",manageContactsBtn:"📞 مدیریت تماس‌ها",manageAdsBtn:"🖼️ مدیریت تبلیغات",logoutBtn:"🚪 خروج",navHome:"خانه",navPubg:"PUBG",navShop:"فروشگاه",navContact:"تماس",navAdmin:"ادمین",installText:"نصب",all:"همه",small:"کوچک",medium:"متوسط",big:"بزرگ",phones:"تلفن‌ها",ipad:"آیپد",computer:"کامپیوتر",tv:"تلویزیون",other:"سایر",book:"رزرو",buy:"خرید",info:"اطلاعات",chat:"چت"}
+            en:{all:"All",small:"Small",medium:"Medium",big:"Big",phones:"Phones",ipad:"iPad",computer:"Computer",tv:"TV",other:"Others",book:"Book",buy:"Buy",info:"Info",chat:"Chat"},
+            ps:{all:"ټول",small:"کوچنی",medium:"منځنی",big:"لوی",phones:"تلیفونونه",ipad:"آی پیډ",computer:"کمپیوټر",tv:"تلویزیون",other:"نور",book:"بک",buy:"پیرل",info:"مالومات",chat:"خبرې"},
+            fa:{all:"همه",small:"کوچک",medium:"متوسط",big:"بزرگ",phones:"تلفن‌ها",ipad:"آیپد",computer:"کامپیوتر",tv:"تلویزیون",other:"سایر",book:"رزرو",buy:"خرید",info:"اطلاعات",chat:"چت"}
         };
         
         let currentLang=localStorage.getItem('language')||'en';
@@ -265,8 +262,6 @@
         
         function applyTranslations(){
             const t=translations[currentLang];
-            const ids=['appName','langBtn','marketplaceTitle','onlineLabel','secureText','news1','news2','news3','news1b','guaranteeText','extraInfoText','pubgBtn','shopBtn','pubgTitle','shopTitle','contactTitle','adminTitle','addressLabel','addressText','adminLoginTitle','loginBtn','totalVisitorsLabel','onlineNowLabel','pageViewsLabel','accountsLabel','resetBtn','usdtTitle','editBtn','addAccountBtn','addProductBtn','manageAccountsBtn','manageProductsBtn','manageContactsBtn','manageAdsBtn','logoutBtn','navHome','navPubg','navShop','navContact','navAdmin','installText'];
-            ids.forEach(id=>{let el=document.getElementById(id);if(el)el.innerText=t[id]||el.innerText;});
             document.body.dir=currentLang==='en'?'ltr':'rtl';
             renderTierTabs();renderCategoryTabs();renderAccounts();renderTools();renderContacts();
         }
@@ -274,9 +269,9 @@
         function setLanguage(lang){currentLang=lang;localStorage.setItem('language',lang);applyTranslations();closeModal('languageModal');showNotif('Language Updated',lang==='en'?'English selected':(lang==='ps'?'پښتو ټاکل شوه':'فارسی انتخاب شد'));}
         function openLanguageModal(){openModal('languageModal');}
         
-        function updateActiveUsers(){activeUsers=Math.floor(Math.random()*25)+8;let oc=document.getElementById('onlineCount');if(oc)oc.innerText=activeUsers;if(isAdmin&&document.getElementById('statOnline'))document.getElementById('statOnline').innerText=activeUsers;}
+        function updateActiveUsers(){activeUsers=Math.floor(Math.random()*25)+8;document.getElementById('onlineCount').innerText=activeUsers;if(isAdmin&&document.getElementById('statOnline'))document.getElementById('statOnline').innerText=activeUsers;}
         function trackPageView(){let vid=localStorage.getItem('visitorId');if(!vid){vid='v_'+Date.now();localStorage.setItem('visitorId',vid);totalVisitors++;localStorage.setItem('totalVisitors',totalVisitors);}pageViews++;localStorage.setItem('pageViews',pageViews);if(isAdmin){if(document.getElementById('statVisitors'))document.getElementById('statVisitors').innerText=totalVisitors;if(document.getElementById('statViews'))document.getElementById('statViews').innerText=pageViews;if(document.getElementById('statAccounts'))document.getElementById('statAccounts').innerText=accounts.length;}}
-        function resetAnalytics(){if(confirm('Reset all analytics?')){totalVisitors=0;pageViews=0;localStorage.setItem('totalVisitors','0');localStorage.setItem('pageViews','0');if(isAdmin){if(document.getElementById('statVisitors'))document.getElementById('statVisitors').innerText=totalVisitors;if(document.getElementById('statViews'))document.getElementById('statViews').innerText=pageViews;}showNotif('Reset','Analytics cleared');}}
+        function resetAnalytics(){if(confirm('Reset all analytics?')){totalVisitors=0;pageViews=0;localStorage.setItem('totalVisitors','0');localStorage.setItem('pageViews','0');if(isAdmin){document.getElementById('statVisitors').innerText=totalVisitors;document.getElementById('statViews').innerText=pageViews;}showNotif('Reset','Analytics cleared');}}
         
         setInterval(updateActiveUsers,30000);updateActiveUsers();
         
@@ -300,8 +295,8 @@
         function saveAds(){localStorage.setItem('gk_ads',JSON.stringify(ads));}
         function saveBookings(){localStorage.setItem('gk_bookings',JSON.stringify(bookings));}
         
-        function renderTierTabs(){const t=translations[currentLang];let h=document.getElementById('tierHeader');if(h){h.innerHTML=`<button class="tier-tab ${currentFilter==='all'?'active':''}" onclick="filterAccounts('all')">${t.all}</button><button class="tier-tab ${currentFilter==='small'?'active':''}" onclick="filterAccounts('small')">${t.small}</button><button class="tier-tab ${currentFilter==='medium'?'active':''}" onclick="filterAccounts('medium')">${t.medium}</button><button class="tier-tab ${currentFilter==='big'?'active':''}" onclick="filterAccounts('big')">${t.big}</button>`;}}
-        function renderCategoryTabs(){const t=translations[currentLang];let h=document.getElementById('categoryHeader');if(h){h.innerHTML=`<button class="category-tab ${currentCategory==='all'?'active':''}" onclick="filterTools('all')">${t.all}</button><button class="category-tab ${currentCategory==='phone'?'active':''}" onclick="filterTools('phone')">${t.phones}</button><button class="category-tab ${currentCategory==='ipad'?'active':''}" onclick="filterTools('ipad')">${t.ipad}</button><button class="category-tab ${currentCategory==='computer'?'active':''}" onclick="filterTools('computer')">${t.computer}</button><button class="category-tab ${currentCategory==='tv'?'active':''}" onclick="filterTools('tv')">${t.tv}</button><button class="category-tab ${currentCategory==='other'?'active':''}" onclick="filterTools('other')">${t.other}</button>`;}}
+        function renderTierTabs(){const t=translations[currentLang];document.getElementById('tierHeader').innerHTML=`<button class="tier-tab ${currentFilter==='all'?'active':''}" onclick="filterAccounts('all')">${t.all}</button><button class="tier-tab ${currentFilter==='small'?'active':''}" onclick="filterAccounts('small')">${t.small}</button><button class="tier-tab ${currentFilter==='medium'?'active':''}" onclick="filterAccounts('medium')">${t.medium}</button><button class="tier-tab ${currentFilter==='big'?'active':''}" onclick="filterAccounts('big')">${t.big}</button>`;}
+        function renderCategoryTabs(){const t=translations[currentLang];document.getElementById('categoryHeader').innerHTML=`<button class="category-tab ${currentCategory==='all'?'active':''}" onclick="filterTools('all')">${t.all}</button><button class="category-tab ${currentCategory==='phone'?'active':''}" onclick="filterTools('phone')">${t.phones}</button><button class="category-tab ${currentCategory==='ipad'?'active':''}" onclick="filterTools('ipad')">${t.ipad}</button><button class="category-tab ${currentCategory==='computer'?'active':''}" onclick="filterTools('computer')">${t.computer}</button><button class="category-tab ${currentCategory==='tv'?'active':''}" onclick="filterTools('tv')">${t.tv}</button><button class="category-tab ${currentCategory==='other'?'active':''}" onclick="filterTools('other')">${t.other}</button>`;}
         
         function renderAccounts(){let g=document.getElementById('accounts-grid');if(!g)return;let f=accounts.filter(a=>currentFilter==='all'||a.tier===currentFilter);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No accounts</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(acc=>`<div class="account-card"><img src="${acc.media}" class="card-media" onclick="window.open('${acc.media}','_blank')"><div class="card-content"><div class="card-title"><span>${acc.title}</span><span class="tier-badge">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})"><i class="fas fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})"><i class="fas fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})"><i class="fas fa-info-circle"></i> ${t.info}</button></div></div></div>`).join('');}
         
@@ -316,15 +311,15 @@
         function filterAccounts(tier){currentFilter=tier;renderAccounts();renderTierTabs();}
         function filterTools(cat){currentCategory=cat;renderTools();renderCategoryTabs();}
         
-        function bookItem(id,name,price){currentItem={id,name,price};let b=document.getElementById('bookBody');if(b)b.innerHTML=`<p><strong>${name}</strong> - $${price}</p><input id="bookName" class="input" placeholder="Your name"><input id="bookPhone" class="input" placeholder="WhatsApp number">`;openModal('bookModal');}
+        function bookItem(id,name,price){currentItem={id,name,price};document.getElementById('bookBody').innerHTML=`<p><strong>${name}</strong> - $${price}</p><input id="bookName" class="input" placeholder="Your name"><input id="bookPhone" class="input" placeholder="WhatsApp number">`;openModal('bookModal');}
         function submitBook(){let name=document.getElementById('bookName')?.value,phone=document.getElementById('bookPhone')?.value.replace(/\D/g,'');if(!name||!phone){alert('Fill all fields');return;}bookings.push({id:Date.now(),item:currentItem.name,name,phone});saveBookings();closeModal('bookModal');showNotif('Booked','We will contact you soon');}
-        function buyItem(name,price){currentItem={name,price};let b=document.getElementById('buyBody');if(b)b.innerHTML=`<p><strong>${name}</strong> - $${price}</p><p>Send USDT (TRC20) to:</p><code style="display:block;background:#2a2a36;padding:10px;border-radius:10px;word-break:break-all;">${usdtAddress}</code><button class="action-btn" onclick="copyUsdt()">Copy Address</button>`;openModal('buyModal');}
+        function buyItem(name,price){currentItem={name,price};document.getElementById('buyBody').innerHTML=`<p><strong>${name}</strong> - $${price}</p><p>Send USDT (TRC20) to:</p><code style="display:block;background:#2a2a36;padding:10px;border-radius:10px;word-break:break-all;">${usdtAddress}</code><button class="action-btn" onclick="copyUsdt()">Copy Address</button>`;openModal('buyModal');}
         function confirmBuy(){if(currentItem)window.open(`https://wa.me/93793066322?text=I want to buy ${currentItem.name} for $${currentItem.price}`,'_blank');closeModal('buyModal');}
         function copyUsdt(){navigator.clipboard.writeText(usdtAddress);alert('Copied!');}
-        function showInfo(title,desc,usd,afn){let b=document.getElementById('infoBody');if(b)b.innerHTML=`<p><strong>${title}</strong></p><p>${desc}</p><p>💰 $${usd} / ${afn} AFN</p>`;openModal('infoModal');}
+        function showInfo(title,desc,usd,afn){document.getElementById('infoBody').innerHTML=`<p><strong>${title}</strong></p><p>${desc}</p><p>💰 $${usd} / ${afn} AFN</p>`;openModal('infoModal');}
         
-        function adminLogin(){let pass=document.getElementById('adminPassword').value;if(pass==='admin123'){isAdmin=true;let ld=document.getElementById('admin-login'),db=document.getElementById('admin-dashboard');if(ld)ld.classList.add('hidden');if(db)db.classList.remove('hidden');if(document.getElementById('statVisitors'))document.getElementById('statVisitors').innerText=totalVisitors;if(document.getElementById('statViews'))document.getElementById('statViews').innerText=pageViews;if(document.getElementById('statAccounts'))document.getElementById('statAccounts').innerText=accounts.length;if(document.getElementById('statOnline'))document.getElementById('statOnline').innerText=activeUsers;showNotif('Welcome','Admin logged in');}else alert('Wrong password');}
-        function logout(){isAdmin=false;let ld=document.getElementById('admin-login'),db=document.getElementById('admin-dashboard');if(ld)ld.classList.remove('hidden');if(db)db.classList.add('hidden');switchScreen('main');}
+        function adminLogin(){let pass=document.getElementById('adminPassword').value;if(pass==='admin123'){isAdmin=true;document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-dashboard').classList.remove('hidden');document.getElementById('statVisitors').innerText=totalVisitors;document.getElementById('statViews').innerText=pageViews;document.getElementById('statAccounts').innerText=accounts.length;document.getElementById('statOnline').innerText=activeUsers;showNotif('Welcome','Admin logged in');}else alert('Wrong password');}
+        function logout(){isAdmin=false;document.getElementById('admin-login').classList.remove('hidden');document.getElementById('admin-dashboard').classList.add('hidden');switchScreen('main');}
         
         function showAddAccountModal(){openModal('addAccountModal');}
         function showAddToolModal(){openModal('addToolModal');}
@@ -345,48 +340,34 @@
         function deleteContact(id){contacts=contacts.filter(c=>c.id!==id);saveContacts();renderContacts();renderManageContacts();}
         function addAd(){let file=document.getElementById('adMedia').files[0];if(!file){alert('Select media');return;}let r=new FileReader();r.onload=e=>{ads.push({type:file.type.startsWith('video/')?'video':'image',data:e.target.result,caption:document.getElementById('adCaption').value||''});saveAds();renderAds();renderManageAds();closeModal('manageAdsModal');showNotif('Success','Ad added');};r.readAsDataURL(file);}
         function deleteAd(i){ads.splice(i,1);saveAds();renderAds();renderManageAds();}
-        function showEditUsdtModal(){let inp=document.getElementById('newUsdtAddress');if(inp)inp.value=usdtAddress;openModal('editUsdtModal');}
-        function saveUsdtAddress(){let addr=document.getElementById('newUsdtAddress').value.trim();if(addr){usdtAddress=addr;localStorage.setItem('gk_usdt',addr);closeModal('editUsdtModal');showNotif('Success','USDT address updated');}}
+        function showEditUsdtModal(){openModal('editUsdtModal');}
+        function saveUsdtAddress(){let addr=document.getElementById('newUsdtAddress').value.trim();if(addr){usdtAddress=addr;localStorage.setItem('gk_usdt',addr);document.getElementById('usdtAddress').innerText=addr;closeModal('editUsdtModal');showNotif('Success','USDT address updated');}}
         
-        function switchScreen(screen){trackPageView();document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));let ts=document.getElementById(screen+'-screen');if(ts)ts.classList.add('active');document.querySelectorAll('.bottom-nav-btn').forEach(btn=>btn.classList.remove('active'));let nb=document.getElementById('nav-'+screen);if(nb)nb.classList.add('active');if(screen==='accounts')renderAccounts();if(screen==='tools')renderTools();if(screen==='contact')renderContacts();}
+        function switchScreen(screen){trackPageView();document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(screen+'-screen').classList.add('active');document.querySelectorAll('.bottom-nav-btn').forEach(btn=>btn.classList.remove('active'));document.getElementById('nav-'+screen).classList.add('active');if(screen==='accounts')renderAccounts();if(screen==='tools')renderTools();if(screen==='contact')renderContacts();}
         
         function showNotif(title,msg){let n=document.createElement('div');n.className='notification';n.innerHTML=`<strong>${title}</strong><br>${msg}`;document.body.appendChild(n);setTimeout(()=>n.remove(),3000);}
         function openModal(id){let m=document.getElementById(id);if(m)m.classList.remove('hidden');}
         function closeModal(id){let m=document.getElementById(id);if(m)m.classList.add('hidden');}
         
-        // ========== INSTALL BUTTON - WORKS FIRST, BACKGROUND LOADS LATER ==========
+        // ========== INSTALL BUTTON - WORKS IMMEDIATELY (no background image to block) ==========
         let deferredPrompt = null;
-        let installButtonClicked = false;
         
-        // Listen for install prompt - this happens BEFORE background image loads
+        // Listen for install prompt - fires much faster without large background image
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('Install prompt is ready - button will work immediately');
             
-            // Update button to show it's ready
+            // Update button appearance
             const btn = document.getElementById('installBtn');
             if (btn) {
                 btn.style.background = '#27ae60';
-                btn.querySelector('#installText').innerHTML = 'Install Now';
-            }
-            
-            // Now that install prompt is ready, start loading background image
-            const bgImage = document.getElementById('bgImage');
-            if (bgImage && !bgImage.classList.contains('loaded')) {
-                // Force background to start loading
-                if (bgImage.complete) {
-                    bgImage.classList.add('loaded');
-                } else {
-                    bgImage.onload = () => bgImage.classList.add('loaded');
-                }
+                btn.innerHTML = '<i class="fas fa-download"></i> Install Now';
             }
         });
         
         // Function to trigger install
         function triggerInstall() {
-            const btn = document.getElementById('installBtn');
-            
             if (deferredPrompt) {
                 // Show install dialog immediately
                 deferredPrompt.prompt();
@@ -396,32 +377,12 @@
                         showNotif('Installing', 'GK Store is being installed...');
                     }
                     deferredPrompt = null;
-                    // Reset button
-                    btn.style.background = '#27ae60';
-                    btn.querySelector('#installText').innerHTML = 'Install App';
+                    const btn = document.getElementById('installBtn');
+                    if (btn) btn.innerHTML = '<i class="fas fa-download"></i> Install App';
                 });
             } else {
-                // Prompt not ready yet - show loading and wait
-                btn.style.background = '#f39c12';
-                btn.querySelector('#installText').innerHTML = 'Preparing...';
-                
-                // Wait for prompt to become available
-                const checkInterval = setInterval(() => {
-                    if (deferredPrompt) {
-                        clearInterval(checkInterval);
-                        triggerInstall(); // Retry installation
-                    }
-                }, 500);
-                
-                // Timeout after 5 seconds
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                    if (!deferredPrompt) {
-                        btn.style.background = '#27ae60';
-                        btn.querySelector('#installText').innerHTML = 'Install App';
-                        showNotif('Install', 'Tap browser menu → Install app');
-                    }
-                }, 5000);
+                // Fallback for browsers without install prompt
+                showNotif('Install', 'Tap browser menu (3 dots) → Install app');
             }
         }
         
@@ -429,17 +390,6 @@
         if (window.matchMedia('(display-mode: standalone)').matches) {
             document.getElementById('installBtn').style.display = 'none';
         }
-        
-        // Load background image in background after everything else
-        window.addEventListener('load', () => {
-            // Background image already has src, it will load naturally
-            setTimeout(() => {
-                const bgImage = document.getElementById('bgImage');
-                if (bgImage && bgImage.complete) {
-                    bgImage.classList.add('loaded');
-                }
-            }, 100);
-        });
         
         // Service Worker
         if('serviceWorker' in navigator){
