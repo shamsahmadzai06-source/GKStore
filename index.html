@@ -5,118 +5,725 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#e74c3c">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="GK Store - PUBG Accounts & Electronics Marketplace">
     <title>GK Store · PUBG & Electronics</title>
     
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
     <!-- App Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="android-launchericon-72-72.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="android-launchericon-72-72.png">
     <link rel="apple-touch-icon" sizes="72x72" href="android-launchericon-72-72.png">
-    <link rel="apple-touch-icon" sizes="96x96" href="android-launchericon-96-96.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="android-launchericon-96-96.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="android-launchericon-144-144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="android-launchericon-192-192.png">
     <link rel="apple-touch-icon" sizes="144x144" href="android-launchericon-144-144.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="android-launchericon-192-192.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="android-launchericon-512-512.png">
-    <link rel="icon" type="image/png" sizes="72x72" href="android-launchericon-72-72.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="android-launchericon-96-96.png">
-    <link rel="icon" type="image/png" sizes="144x144" href="android-launchericon-144-144.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="android-launchericon-192-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="android-launchericon-512-512.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="android-launchericon-192-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="android-launchericon-192-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="android-launchericon-72-72.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="android-launchericon-72-72.png">
+    <link rel="mask-icon" href="android-launchericon-192-192.png" color="#e74c3c">
+    <link rel="shortcut icon" href="android-launchericon-192-192.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        :root{--primary:#e74c3c;--primary-dark:#c0392b;--secondary:#f39c12;--surface:#1a1a1a;--surface-light:#252525;--text:#fff;--text-secondary:#a0a0a0;--border:#333;--gradient-primary:linear-gradient(135deg,#e74c3c,#f39c12)}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
         
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:var(--text);padding-bottom:70px}
+        :root {
+            --primary: #e74c3c;
+            --primary-dark: #c0392b;
+            --secondary: #f39c12;
+            --success: #27ae60;
+            --info: #3498db;
+            --surface: #1a1a1a;
+            --surface-light: #252525;
+            --surface-lighter: #2d2d2d;
+            --text: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border: #333333;
+            --gradient-primary: linear-gradient(135deg, #e74c3c, #f39c12);
+            --gradient-success: linear-gradient(135deg, #27ae60, #2ecc71);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 6px 25px rgba(0, 0, 0, 0.4);
+        }
         
-        .bg-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-2;background:linear-gradient(135deg,#1a0a0a,#0a0a0a,#0d0d1a)}
-        .bg-image{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:0;transition:opacity 0.5s ease}
-        .bg-image.loaded{opacity:0.5}
-        .bg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:-1}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0a0a0a;
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            position: relative;
+        }
         
-        .top-nav{background:rgba(26,26,26,0.95);backdrop-filter:blur(10px);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(231,76,60,0.3)}
-        .logo{display:flex;align-items:center;gap:10px;font-weight:bold;font-size:1.2rem;cursor:pointer}
-        .logo-icon{width:36px;height:36px;background:var(--gradient-primary);border-radius:10px;display:flex;align-items:center;justify-content:center}
-        .nav-btn{background:none;border:none;color:white;font-size:1rem;padding:8px 12px;border-radius:30px;cursor:pointer}
+        /* Background */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, #1a0a0a, #0a0a0a, #0d0d1a);
+        }
         
-        .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(26,26,26,0.95);backdrop-filter:blur(10px);display:flex;justify-content:space-around;padding:8px 16px;padding-bottom:max(8px,env(safe-area-inset-bottom));border-top:1px solid rgba(231,76,60,0.3);z-index:100}
-        .bottom-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--text-secondary);font-size:11px;padding:6px 12px;border-radius:30px;cursor:pointer}
-        .bottom-nav-btn i{font-size:20px}
-        .bottom-nav-btn.active{color:var(--primary);background:rgba(231,76,60,0.15)}
+        .bg-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
         
-        .container{max-width:600px;margin:0 auto;padding:16px;position:relative;z-index:10}
-        .screen{display:none}.screen.active{display:block}
+        .bg-image.loaded {
+            opacity: 0.4;
+        }
         
-        .title-section{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:5px}
-        .big-title{font-size:1.8rem;font-weight:800;background:var(--gradient-primary);-webkit-background-clip:text;background-clip:text;color:transparent}
-        .online-badge{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.7);padding:6px 14px;border-radius:40px;font-size:0.8rem}
-        .online-dot{width:10px;height:10px;background:#2ecc71;border-radius:50%;animation:pulse 1.5s infinite}
-        @keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.2)}100%{opacity:1;transform:scale(1)}}
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: -1;
+        }
         
-        .sub-head{color:var(--text-secondary);font-size:13px;margin-bottom:15px;padding-left:10px;border-left:3px solid var(--primary)}
+        /* Header */
+        .top-nav {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(231, 76, 60, 0.3);
+        }
         
-        .news-ticker{background:rgba(0,0,0,0.7);border-radius:50px;padding:10px 16px;margin:15px 0;overflow:hidden;white-space:nowrap}
-        .ticker-text{display:inline-block;animation:tickerScroll 20s linear infinite;font-size:13px}
-        .ticker-text span{margin-right:40px}
-        .ticker-text i{margin-right:5px;color:var(--primary)}
-        @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
         
-        .info-card{background:rgba(0,0,0,0.7);border-radius:50px;padding:12px 18px;margin:10px 0;display:flex;align-items:center;justify-content:space-between;cursor:pointer;backdrop-filter:blur(5px)}
-        .info-card.green{background:rgba(39,174,96,0.85)}
-        .info-card.blue{background:rgba(52,152,219,0.85)}
-        .info-card-left{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
-        .info-card-right{background:rgba(255,255,255,0.2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
         
-        .cta-button{background:var(--gradient-primary);border:none;color:white;font-size:1.2rem;font-weight:bold;padding:14px 20px;border-radius:60px;width:100%;margin:10px 0;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer}
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 0.9rem;
+            padding: 8px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
         
-        .accounts-grid,.tools-grid{display:grid;gap:15px;grid-template-columns:1fr}
-        @media (min-width:500px){.accounts-grid,.tools-grid{grid-template-columns:repeat(2,1fr)}}
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
         
-        .account-card,.tool-card{background:rgba(26,26,26,0.9);border-radius:16px;overflow:hidden;border:1px solid rgba(231,76,60,0.2)}
-        .card-media{width:100%;aspect-ratio:16/9;object-fit:cover;cursor:pointer}
-        .card-content{padding:12px}
-        .card-title{font-weight:bold;display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
-        .tier-badge{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--gradient-primary)}
-        .card-desc{font-size:12px;color:var(--text-secondary);margin:8px 0}
-        .price-row{display:flex;justify-content:space-between;background:rgba(255,255,255,0.1);padding:8px 12px;border-radius:30px;margin:10px 0}
-        .usd-price{color:var(--primary);font-weight:bold}
-        .afn-price{color:var(--secondary);font-weight:bold}
-        .action-buttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-        .action-btn{background:rgba(255,255,255,0.1);border:none;border-radius:30px;padding:6px 0;font-size:11px;font-weight:600;cursor:pointer;color:white;display:flex;align-items:center;justify-content:center;gap:5px}
-        .action-btn.buy{background:var(--gradient-primary)}
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 16px;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(231, 76, 60, 0.3);
+            z-index: 100;
+        }
         
-        .tier-header,.category-header{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
-        .tier-tab,.category-tab{background:rgba(26,26,26,0.9);border:1px solid var(--border);color:var(--text-secondary);padding:6px 16px;border-radius:40px;cursor:pointer;font-size:13px}
-        .tier-tab.active,.category-tab.active{background:var(--gradient-primary);color:white;border-color:transparent}
+        .bottom-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 8px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
         
-        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
-        .modal{background:var(--surface);border-radius:20px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:20px}
-        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-        .modal-close{background:none;border:none;color:white;font-size:24px;cursor:pointer}
-        .modal-footer{display:flex;gap:10px;margin-top:15px}
-        .input{width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;color:white;margin-bottom:10px}
-        .hidden{display:none !important}
+        .bottom-nav-btn i {
+            font-size: 20px;
+        }
         
-        .notification{position:fixed;top:70px;right:16px;background:rgba(0,0,0,0.9);border-left:4px solid var(--primary);border-radius:12px;padding:12px;z-index:1000;animation:slideIn 0.3s ease}
-        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        .bottom-nav-btn.active {
+            color: var(--primary);
+            background: rgba(231, 76, 60, 0.15);
+        }
         
-        /* INSTALL BUTTON - VISIBLE IMMEDIATELY */
-        .install-fixed{position:fixed;bottom:80px;right:16px;background:#27ae60;border:none;color:white;padding:12px 20px;border-radius:50px;cursor:pointer;display:flex;align-items:center;gap:10px;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.3);font-weight:bold;font-size:14px;animation:pulse 1s infinite}
+        /* Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Title Section */
+        .title-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .big-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .online-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #2ecc71;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .sub-head {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        /* News Ticker */
+        .news-ticker {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50px;
+            padding: 10px 16px;
+            margin: 15px 0;
+            overflow: hidden;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .ticker-text {
+            display: inline-block;
+            animation: tickerScroll 25s linear infinite;
+            font-size: 13px;
+        }
+        
+        .ticker-text span {
+            margin-right: 40px;
+        }
+        
+        .ticker-text i {
+            margin-right: 5px;
+            color: var(--primary);
+        }
+        
+        @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        /* Info Cards */
+        .info-card {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50px;
+            padding: 14px 18px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        
+        .info-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .info-card:active {
+            transform: scale(0.98);
+        }
+        
+        .info-card.green {
+            background: rgba(39, 174, 96, 0.85);
+        }
+        
+        .info-card.blue {
+            background: rgba(52, 152, 219, 0.85);
+        }
+        
+        .info-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .info-card-right {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* CTA Buttons */
+        .cta-button {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 14px 20px;
+            border-radius: 60px;
+            width: 100%;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: var(--shadow);
+        }
+        
+        .cta-button:active {
+            transform: scale(0.98);
+        }
+        
+        /* Grids */
+        .accounts-grid, .tools-grid {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 500px) {
+            .accounts-grid, .tools-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Cards */
+        .account-card, .tool-card {
+            background: rgba(26, 26, 26, 0.95);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .account-card:hover, .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .card-media {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        .card-content {
+            padding: 12px;
+        }
+        
+        .card-title {
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .tier-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: var(--gradient-primary);
+        }
+        
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 12px;
+            border-radius: 30px;
+            margin: 10px 0;
+        }
+        
+        .usd-price {
+            color: var(--primary);
+            font-weight: 700;
+        }
+        
+        .afn-price {
+            color: var(--secondary);
+            font-weight: 700;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            border-radius: 30px;
+            padding: 6px 0;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .action-btn.buy {
+            background: var(--gradient-primary);
+        }
+        
+        /* Tabs */
+        .tier-header, .category-header {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .tier-tab, .category-tab {
+            background: rgba(26, 26, 26, 0.9);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .tier-tab.active, .category-tab.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal {
+            background: var(--surface);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 24px;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        /* Input */
+        .input {
+            width: 100%;
+            padding: 12px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 70px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.95);
+            border-left: 4px solid var(--primary);
+            border-radius: 12px;
+            padding: 12px 16px;
+            z-index: 1500;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+            backdrop-filter: blur(8px);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Install Button - Premium Style */
+        .install-fixed {
+            position: fixed;
+            bottom: 80px;
+            right: 16px;
+            background: var(--gradient-success);
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            font-weight: 700;
+            font-size: 14px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .install-fixed:active {
+            transform: scale(0.96);
+        }
         
         /* Install Guide Modal */
-        .install-guide-modal .modal{max-width:350px;text-align:center}
-        .install-steps{text-align:left;margin:15px 0}
-        .install-step{display:flex;align-items:center;gap:15px;padding:10px 0;border-bottom:1px solid #333}
-        .step-number{width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
-        .step-text{flex:1}
+        .install-guide-modal .modal {
+            max-width: 380px;
+            text-align: center;
+        }
         
-        .admin-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
-        .admin-stat-card{background:var(--surface-light);border-radius:12px;padding:12px;text-align:center}
-        .admin-stat-number{font-size:24px;font-weight:bold;color:var(--secondary)}
-        .admin-stat-label{font-size:11px;color:var(--text-secondary)}
+        .install-steps {
+            text-align: left;
+            margin: 20px 0;
+        }
+        
+        .install-step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .step-text {
+            flex: 1;
+        }
+        
+        /* Admin Stats */
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .admin-stat-card {
+            background: var(--surface-light);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .admin-stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .admin-stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        /* Utilities */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* RTL Support */
+        body[dir="rtl"] {
+            direction: rtl;
+            text-align: right;
+        }
+        
+        body[dir="rtl"] .sub-head {
+            border-left: none;
+            border-right: 3px solid var(--primary);
+            padding-left: 0;
+            padding-right: 10px;
+        }
+        
+        body[dir="rtl"] .info-card:hover {
+            transform: translateX(-5px);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading i {
+            font-size: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="bg-container"></div>
@@ -126,118 +733,122 @@
     <div class="top-nav">
         <div class="logo" onclick="switchScreen('main')">
             <div class="logo-icon">GK</div>
-            <span id="appName">GK Store</span>
+            <span>GK Store</span>
         </div>
-        <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> <span id="langBtn">Lang</span></button>
+        <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> Lang</button>
     </div>
     
-    <!-- INSTALL BUTTON - Visible IMMEDIATELY, no delay -->
-    <button class="install-fixed" id="installBtn" onclick="showInstallGuide()"><i class="fas fa-download"></i> <span id="installText">Install App</span></button>
+    <button class="install-fixed" id="installBtn" onclick="showInstallGuide()"><i class="fas fa-download"></i> Install App</button>
     
     <div class="container">
+        <!-- Main Screen -->
         <div id="main-screen" class="screen active">
             <div class="title-section">
-                <h1 class="big-title" id="marketplaceTitle">GK Marketplace</h1>
+                <h1 class="big-title">GK Marketplace</h1>
                 <div class="online-badge">
                     <div class="online-dot"></div>
-                    <span id="onlineCount">0</span> <span id="onlineLabel">Online</span>
+                    <span id="onlineCount">0</span> Online
                 </div>
             </div>
-            <div class="sub-head" id="secureText">🔒 Secure · Instant delivery</div>
+            <div class="sub-head">🔒 Secure · Instant delivery</div>
             
             <div class="news-ticker">
                 <div class="ticker-text">
-                    <span><i class="fas fa-video"></i> <span id="news1">⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span></span>
-                    <span><i class="fas fa-download"></i> <span id="news2">📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span></span>
-                    <span><i class="fas fa-chrome"></i> <span id="news3">🔄 iOS video issue? Download file or use Chrome browser</span></span>
-                    <span><i class="fas fa-video"></i> <span id="news1b">⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span></span>
+                    <span><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
+                    <span><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
+                    <span><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
+                    <span><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
                 </div>
             </div>
             
             <div class="info-card green" onclick="window.open('https://wa.me/93793066322?text=I want to know about 30 days link wash guarantee','_blank')">
-                <div class="info-card-left"><i class="fab fa-whatsapp"></i><span id="guaranteeText">✅ in all pubg account 30 days link wash guarantee</span></div>
+                <div class="info-card-left"><i class="fab fa-whatsapp"></i><span>✅ in all pubg account 30 days link wash guarantee</span></div>
                 <div class="info-card-right"><i class="fas fa-chevron-right"></i></div>
             </div>
             
             <div class="info-card blue" onclick="switchScreen('contact')">
-                <div class="info-card-left"><i class="fas fa-info-circle"></i><span id="extraInfoText">ℹ️ if you want extra information contact us from contact button</span></div>
+                <div class="info-card-left"><i class="fas fa-info-circle"></i><span>ℹ️ if you want extra information contact us from contact button</span></div>
                 <div class="info-card-right"><i class="fas fa-arrow-right"></i></div>
             </div>
             
-            <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> <span id="pubgBtn">🔥 PUBG Accounts</span> <i class="fas fa-arrow-right"></i></button>
-            <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> <span id="shopBtn">⚡ Shop Electronics</span> <i class="fas fa-bolt"></i></button>
+            <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> 🔥 PUBG Accounts <i class="fas fa-arrow-right"></i></button>
+            <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> ⚡ Shop Electronics <i class="fas fa-bolt"></i></button>
             <div id="ads-slider"></div>
         </div>
         
+        <!-- Accounts Screen -->
         <div id="accounts-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="pubgTitle">🔥 PUBG Accounts</h2>
+            <h2 style="margin-bottom: 15px;">🔥 PUBG Accounts</h2>
             <div class="tier-header" id="tierHeader"></div>
             <div id="accounts-grid" class="accounts-grid"></div>
         </div>
         
+        <!-- Tools Screen -->
         <div id="tools-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="shopTitle">🛒 Electronics Shop</h2>
+            <h2 style="margin-bottom: 15px;">🛒 Electronics Shop</h2>
             <div class="category-header" id="categoryHeader"></div>
             <div id="tools-grid" class="tools-grid"></div>
         </div>
         
+        <!-- Contact Screen -->
         <div id="contact-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="contactTitle">Contact & Support</h2>
-            <div class="account-card" style="padding:15px;margin-bottom:15px">
-                <i class="fas fa-map-pin"></i> <strong id="addressLabel">📍 Store Address:</strong><br>
-                <span id="addressText">Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span>
+            <h2 style="margin-bottom: 15px;">Contact & Support</h2>
+            <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
+                <i class="fas fa-map-pin"></i> <strong>📍 Store Address:</strong><br>
+                Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)
             </div>
             <div id="contacts-container"></div>
         </div>
         
+        <!-- Admin Screen -->
         <div id="admin-screen" class="screen">
-            <h2 style="margin-bottom:15px" id="adminTitle">Admin Panel</h2>
+            <h2 style="margin-bottom: 15px;">Admin Panel</h2>
             <div id="admin-login">
-                <div class="account-card" style="padding:20px">
-                    <h3 id="adminLoginTitle">Admin Login</h3>
+                <div class="account-card" style="padding: 20px;">
+                    <h3>Admin Login</h3>
                     <input type="password" id="adminPassword" class="input" placeholder="Enter password">
-                    <button class="action-btn buy" style="width:100%" onclick="adminLogin()" id="loginBtn">Login</button>
-                    <p style="font-size:12px;margin-top:10px">Password: <strong>admin123</strong></p>
+                    <button class="action-btn buy" style="width: 100%;" onclick="adminLogin()">Login</button>
+                    <p style="font-size: 12px; margin-top: 10px;">Password: <strong>admin123</strong></p>
                 </div>
             </div>
             <div id="admin-dashboard" class="hidden">
-                <div class="account-card" style="padding:15px;margin-bottom:15px">
+                <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
                     <h3>📊 User Analytics</h3>
                     <div class="admin-stats">
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statVisitors">0</div><div class="admin-stat-label" id="totalVisitorsLabel">Total Visitors</div></div>
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statOnline">0</div><div class="admin-stat-label" id="onlineNowLabel">Online Now</div></div>
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statViews">0</div><div class="admin-stat-label" id="pageViewsLabel">Page Views</div></div>
-                        <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div class="admin-stat-label" id="accountsLabel">Accounts</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statVisitors">0</div><div class="admin-stat-label">Total Visitors</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statOnline">0</div><div class="admin-stat-label">Online Now</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statViews">0</div><div class="admin-stat-label">Page Views</div></div>
+                        <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div class="admin-stat-label">Accounts</div></div>
                     </div>
-                    <button class="action-btn" onclick="resetAnalytics()" style="background:#e74c3c" id="resetBtn">Reset Analytics</button>
+                    <button class="action-btn" onclick="resetAnalytics()" style="background: #e74c3c;">Reset Analytics</button>
                 </div>
                 
-                <div class="account-card" style="padding:15px;margin-bottom:15px">
-                    <h3 id="usdtTitle">💳 USDT Address</h3>
-                    <code id="usdtAddress" style="display:block;background:#2a2a36;padding:10px;border-radius:10px;word-break:break-all;margin:10px 0">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                    <button class="action-btn" onclick="showEditUsdtModal()" id="editBtn">Edit Address</button>
+                <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
+                    <h3>💳 USDT Address</h3>
+                    <code id="usdtAddress" style="display: block; background: #2a2a36; padding: 12px; border-radius: 12px; word-break: break-all; margin: 10px 0;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                    <button class="action-btn" onclick="showEditUsdtModal()">Edit Address</button>
                 </div>
                 
-                <button class="action-btn buy" onclick="showAddAccountModal()" style="width:100%;margin-bottom:10px" id="addAccountBtn">➕ Add PUBG Account</button>
-                <button class="action-btn buy" onclick="showAddToolModal()" style="width:100%;margin-bottom:10px" id="addProductBtn">➕ Add Product</button>
-                <button class="action-btn" onclick="showManageAccounts()" style="width:100%;margin-bottom:10px" id="manageAccountsBtn">📋 Manage Accounts</button>
-                <button class="action-btn" onclick="showManageTools()" style="width:100%;margin-bottom:10px" id="manageProductsBtn">📦 Manage Products</button>
-                <button class="action-btn" onclick="showManageContacts()" style="width:100%;margin-bottom:10px" id="manageContactsBtn">📞 Manage Contacts</button>
-                <button class="action-btn" onclick="showManageAds()" style="width:100%;margin-bottom:10px" id="manageAdsBtn">🖼️ Manage Ads</button>
-                <button class="action-btn" onclick="logout()" style="width:100%;background:#555" id="logoutBtn">🚪 Logout</button>
+                <button class="action-btn buy" onclick="showAddAccountModal()" style="width: 100%; margin-bottom: 10px;">➕ Add PUBG Account</button>
+                <button class="action-btn buy" onclick="showAddToolModal()" style="width: 100%; margin-bottom: 10px;">➕ Add Product</button>
+                <button class="action-btn" onclick="showManageAccounts()" style="width: 100%; margin-bottom: 10px;">📋 Manage Accounts</button>
+                <button class="action-btn" onclick="showManageTools()" style="width: 100%; margin-bottom: 10px;">📦 Manage Products</button>
+                <button class="action-btn" onclick="showManageContacts()" style="width: 100%; margin-bottom: 10px;">📞 Manage Contacts</button>
+                <button class="action-btn" onclick="showManageAds()" style="width: 100%; margin-bottom: 10px;">🖼️ Manage Ads</button>
+                <button class="action-btn" onclick="logout()" style="width: 100%; background: #555;">🚪 Logout</button>
             </div>
         </div>
     </div>
     
     <div class="bottom-nav">
-        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span id="navHome">Home</span></button>
-        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span id="navPubg">PUBG</span></button>
-        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span id="navShop">Shop</span></button>
-        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span id="navContact">Contact</span></button>
-        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span id="navAdmin">Admin</span></button>
+        <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
+        <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span>PUBG</span></button>
+        <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span>Shop</span></button>
+        <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
+        <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button>
     </div>
     
-    <!-- Install Guide Modal - Shows INSTANTLY when button clicked -->
+    <!-- Install Guide Modal -->
     <div id="installGuideModal" class="modal-overlay hidden">
         <div class="modal install-guide-modal">
             <div class="modal-header">
@@ -260,154 +871,638 @@
                         <div class="step-text">Tap <strong>"Install"</strong> to add GK Store to your home screen</div>
                     </div>
                 </div>
-                <button class="action-btn buy" style="width:100%;margin-top:10px" onclick="closeModal('installGuideModal')">Got it!</button>
+                <button class="action-btn buy" style="width: 100%; margin-top: 10px;" onclick="closeModal('installGuideModal')">Got it!</button>
             </div>
         </div>
     </div>
     
-    <!-- Modals -->
+    <!-- Other Modals -->
     <div id="editUsdtModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="closeModal('editUsdtModal')">&times;</button></div><input type="text" id="newUsdtAddress" class="input" placeholder="Enter USDT address"><div class="modal-footer"><button class="action-btn" onclick="closeModal('editUsdtModal')">Cancel</button><button class="action-btn buy" onclick="saveUsdtAddress()">Save</button></div></div></div>
     <div id="addAccountModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Add PUBG Account</h3><button class="modal-close" onclick="closeModal('addAccountModal')">&times;</button></div><select id="accTier" class="input"><option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option></select><input id="accTitle" class="input" placeholder="Title"><textarea id="accDesc" class="input" rows="2" placeholder="Description"></textarea><input id="accUsd" class="input" placeholder="USD Price"><input id="accAfn" class="input" placeholder="AFN Price"><input type="file" id="accMedia" class="input" accept="image/*,video/*"><button class="action-btn buy" onclick="addAccount()">Upload Account</button></div></div>
     <div id="addToolModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Add Product</h3><button class="modal-close" onclick="closeModal('addToolModal')">&times;</button></div><select id="toolCat" class="input"><option value="phone">Phone</option><option value="ipad">iPad</option><option value="computer">Computer</option><option value="tv">TV</option><option value="other">Other</option></select><input id="toolName" class="input" placeholder="Name"><textarea id="toolDesc" class="input" rows="2" placeholder="Description"></textarea><input id="toolUsd" class="input" placeholder="USD Price"><input id="toolAfn" class="input" placeholder="AFN Price"><input type="file" id="toolMedia" class="input" accept="image/*,video/*"><button class="action-btn buy" onclick="addProduct()">Add Product</button></div></div>
     <div id="manageAccountsModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="closeModal('manageAccountsModal')">&times;</button></div><div id="manageAccountsList"></div></div></div>
     <div id="manageToolsModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Manage Products</h3><button class="modal-close" onclick="closeModal('manageToolsModal')">&times;</button></div><div id="manageToolsList"></div></div></div>
-    <div id="manageContactsModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Manage Contacts</h3><button class="modal-close" onclick="closeModal('manageContactsModal')">&times;</button></div><input id="contactName" class="input" placeholder="Name"><input id="contactPhone" class="input" placeholder="WhatsApp Number"><button class="action-btn buy" onclick="addContact()">Add Contact</button><div id="manageContactsList" style="margin-top:15px"></div></div></div>
-    <div id="manageAdsModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Manage Ads</h3><button class="modal-close" onclick="closeModal('manageAdsModal')">&times;</button></div><input type="file" id="adMedia" class="input" accept="image/*,video/*"><input id="adCaption" class="input" placeholder="Caption"><button class="action-btn buy" onclick="addAd()">Add Ad</button><div id="manageAdsList" style="margin-top:15px"></div></div></div>
+    <div id="manageContactsModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Manage Contacts</h3><button class="modal-close" onclick="closeModal('manageContactsModal')">&times;</button></div><input id="contactName" class="input" placeholder="Name"><input id="contactPhone" class="input" placeholder="WhatsApp Number"><button class="action-btn buy" onclick="addContact()">Add Contact</button><div id="manageContactsList" style="margin-top: 15px;"></div></div></div>
+    <div id="manageAdsModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Manage Ads</h3><button class="modal-close" onclick="closeModal('manageAdsModal')">&times;</button></div><input type="file" id="adMedia" class="input" accept="image/*,video/*"><input id="adCaption" class="input" placeholder="Caption"><button class="action-btn buy" onclick="addAd()">Add Ad</button><div id="manageAdsList" style="margin-top: 15px;"></div></div></div>
     <div id="bookModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><div id="bookBody"></div><div class="modal-footer"><button class="action-btn" onclick="closeModal('bookModal')">Cancel</button><button class="action-btn buy" onclick="submitBook()">Confirm</button></div></div></div>
     <div id="buyModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Buy with USDT</h3><button class="modal-close" onclick="closeModal('buyModal')">&times;</button></div><div id="buyBody"></div><div class="modal-footer"><button class="action-btn" onclick="closeModal('buyModal')">Cancel</button><button class="action-btn buy" onclick="confirmBuy()">Confirm via WhatsApp</button></div></div></div>
     <div id="infoModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Details</h3><button class="modal-close" onclick="closeModal('infoModal')">&times;</button></div><div id="infoBody"></div></div></div>
-    <div id="languageModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Select Language</h3><button class="modal-close" onclick="closeModal('languageModal')">&times;</button></div><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('en')">🇬🇧 English</button><button class="action-btn" style="width:100%;margin-bottom:10px" onclick="setLanguage('ps')">🇦🇫 پښتو</button><button class="action-btn" style="width:100%" onclick="setLanguage('fa')">🇮🇷 فارسی</button></div></div>
+    <div id="languageModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>Select Language</h3><button class="modal-close" onclick="closeModal('languageModal')">&times;</button></div><button class="action-btn" style="width: 100%; margin-bottom: 10px;" onclick="setLanguage('en')">🇬🇧 English</button><button class="action-btn" style="width: 100%; margin-bottom: 10px;" onclick="setLanguage('ps')">🇦🇫 پښتو</button><button class="action-btn" style="width: 100%;" onclick="setLanguage('fa')">🇮🇷 فارسی</button></div></div>
 
     <script>
-        // Translations
-        const translations={
-            en:{appName:"GK Store",langBtn:"Lang",marketplace:"GK Marketplace",online:"Online",secure:"🔒 Secure · Instant delivery",news1:"⚠️ Video not playing on iOS? Tap video → Download or save to camera roll",news2:"📱 iPhone/iPad: If video doesn't play, press and hold → Save Video",news3:"🔄 iOS video issue? Download file or use Chrome browser",guarantee:"✅ in all pubg account 30 days link wash guarantee",extraInfo:"ℹ️ if you want extra information contact us from contact button",pubgBtn:"🔥 PUBG Accounts",shopBtn:"⚡ Shop Electronics",pubgTitle:"🔥 PUBG Accounts",shopTitle:"🛒 Electronics Shop",contactTitle:"Contact & Support",adminTitle:"Admin Panel",addressLabel:"📍 Store Address:",addressText:"Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)",adminLogin:"Admin Login",loginBtn:"Login",totalVisitors:"Total Visitors",onlineNow:"Online Now",pageViews:"Page Views",accountsLabel:"Accounts",resetBtn:"Reset Analytics",usdtTitle:"💳 USDT Address",editBtn:"Edit Address",addAccountBtn:"➕ Add PUBG Account",addProductBtn:"➕ Add Product",manageAccountsBtn:"📋 Manage Accounts",manageProductsBtn:"📦 Manage Products",manageContactsBtn:"📞 Manage Contacts",manageAdsBtn:"🖼️ Manage Ads",logoutBtn:"🚪 Logout",navHome:"Home",navPubg:"PUBG",navShop:"Shop",navContact:"Contact",navAdmin:"Admin",installText:"Install App",all:"All",small:"Small",medium:"Medium",big:"Big",phones:"Phones",ipad:"iPad",computer:"Computer",tv:"TV",other:"Others",book:"Book",buy:"Buy",info:"Info",chat:"Chat"},
-            ps:{appName:"جی کی سټور",langBtn:"ژبه",marketplace:"جی کی مارکیټ",online:"آنلاین",secure:"🔒 امن · سمدستي تحویل",news1:"⚠️ ویډیو په iOS کې نه غږیږي؟ ویډیو ټایپ کړئ → ډاونلوډ",news2:"📱 آیفون/آیپډ: که ویډیو نه غږیږي، نیولی ونیسئ → خوندي کړئ",news3:"🔄 د iOS ویډیو ستونزه؟ فایل ډاونلوډ کړئ یا کروم وکاروئ",guarantee:"✅ په ټولو پبجي اکاونټونو کې 30 ورځې ضمانت",extraInfo:"ℹ️ که اضافي معلومات غواړئ د تماس تڼۍ وکاروئ",pubgBtn:"🔥 پبجي اکاونټونه",shopBtn:"⚡ برقی توکي",pubgTitle:"🔥 پبجي اکاونټونه",shopTitle:"🛒 برقی توکي",contactTitle:"اړیکه او ملاتړ",adminTitle:"د مدیر پینل",addressLabel:"📍 د پلورنځي پته:",addressText:"کابل - ګل بهار مرکز، دریم پوړ، C130",adminLogin:"د مدیر ننوتل",loginBtn:"ننوتل",totalVisitors:"ټول لیدونکي",onlineNow:"اوس آنلاین",pageViews:"پاڼې کتل",accountsLabel:"اکاونټونه",resetBtn:"ری سیٹ",usdtTitle:"💳 USDT آدرس",editBtn:"سمول",addAccountBtn:"➕ اکاونټ اضافه کول",addProductBtn:"➕ محصول اضافه کول",manageAccountsBtn:"📋 اکاونټونه تنظیمول",manageProductsBtn:"📦 محصولات تنظیمول",manageContactsBtn:"📞 اړیکې تنظیمول",manageAdsBtn:"🖼️ اعلانونه تنظیمول",logoutBtn:"🚪 وتل",navHome:"کور",navPubg:"PUBG",navShop:"پلورنځی",navContact:"اړیکه",navAdmin:"مدیر",installText:"نصب",all:"ټول",small:"کوچنی",medium:"منځنی",big:"لوی",phones:"تلیفونونه",ipad:"آی پیډ",computer:"کمپیوټر",tv:"تلویزیون",other:"نور",book:"بک",buy:"پیرل",info:"مالومات",chat:"خبرې"},
-            fa:{appName:"جی کی استور",langBtn:"زبان",marketplace:"بازار جی کی",online:"آنلاین",secure:"🔒 امن · تحویل فوری",news1:"⚠️ ویدیو در iOS پخش نمی‌شود؟ ضربه بزنید → دانلود",news2:"📱 آیفون/آیپد: اگر ویدیو پخش نشد، نگه دارید → ذخیره",news3:"🔄 مشکل ویدیو در iOS؟ فایل را دانلود کنید یا از کروم استفاده کنید",guarantee:"✅ در تمام اکانت‌های پابجی 30 روز گارانتی",extraInfo:"ℹ️ اگر اطلاعات اضافی می‌خواهید از دکمه تماس استفاده کنید",pubgBtn:"🔥 اکانت‌های پابجی",shopBtn:"⚡ فروشگاه الکترونیک",pubgTitle:"🔥 اکانت‌های پابجی",shopTitle:"🛒 فروشگاه الکترونیک",contactTitle:"تماس و پشتیبانی",adminTitle:"پنل ادمین",addressLabel:"📍 آدرس فروشگاه:",addressText:"کابل - مرکز گل بهار، طبقه سوم، C130",adminLogin:"ورود ادمین",loginBtn:"ورود",totalVisitors:"بازدیدکنندگان کل",onlineNow:"آنلاین الان",pageViews:"بازدید صفحات",accountsLabel:"اکانت‌ها",resetBtn:"بازنشانی",usdtTitle:"💳 آدرس USDT",editBtn:"ویرایش",addAccountBtn:"➕ افزودن اکانت",addProductBtn:"➕ افزودن محصول",manageAccountsBtn:"📋 مدیریت اکانت‌ها",manageProductsBtn:"📦 مدیریت محصولات",manageContactsBtn:"📞 مدیریت تماس‌ها",manageAdsBtn:"🖼️ مدیریت تبلیغات",logoutBtn:"🚪 خروج",navHome:"خانه",navPubg:"PUBG",navShop:"فروشگاه",navContact:"تماس",navAdmin:"ادمین",installText:"نصب",all:"همه",small:"کوچک",medium:"متوسط",big:"بزرگ",phones:"تلفن‌ها",ipad:"آیپد",computer:"کامپیوتر",tv:"تلویزیون",other:"سایر",book:"رزرو",buy:"خرید",info:"اطلاعات",chat:"چت"}
+        // ========== TRANSLATIONS ==========
+        const translations = {
+            en: { home: "Home", pubg: "PUBG", shop: "Shop", contact: "Contact", admin: "Admin", online: "Online", secure: "🔒 Secure · Instant delivery", guarantee: "✅ in all pubg account 30 days link wash guarantee", extraInfo: "ℹ️ if you want extra information contact us from contact button", pubgBtn: "🔥 PUBG Accounts", shopBtn: "⚡ Shop Electronics", all: "All", small: "Small", medium: "Medium", big: "Big", phones: "Phones", ipad: "iPad", computer: "Computer", tv: "TV", other: "Others", book: "Book", buy: "Buy", info: "Info", chat: "Chat", login: "Login", addAccount: "Add PUBG Account", addProduct: "Add Product", manageAccounts: "Manage Accounts", manageProducts: "Manage Products", manageContacts: "Manage Contacts", manageAds: "Manage Ads", logout: "Logout", edit: "Edit" },
+            ps: { home: "کور", pubg: "PUBG", shop: "پلورنځی", contact: "اړیکه", admin: "مدیر", online: "آنلاین", secure: "🔒 امن · سمدستي تحویل", guarantee: "✅ په ټولو پبجي اکاونټونو کې 30 ورځې ضمانت", extraInfo: "ℹ️ که اضافي معلومات غواړئ د تماس تڼۍ وکاروئ", pubgBtn: "🔥 پبجي اکاونټونه", shopBtn: "⚡ برقی توکي", all: "ټول", small: "کوچنی", medium: "منځنی", big: "لوی", phones: "تلیفونونه", ipad: "آی پیډ", computer: "کمپیوټر", tv: "تلویزیون", other: "نور", book: "بک", buy: "پیرل", info: "مالومات", chat: "خبرې", login: "ننوتل", addAccount: "اکاونټ اضافه کول", addProduct: "محصول اضافه کول", manageAccounts: "اکاونټونه تنظیمول", manageProducts: "محصولات تنظیمول", manageContacts: "اړیکې تنظیمول", manageAds: "اعلانونه تنظیمول", logout: "وتل", edit: "سمول" },
+            fa: { home: "خانه", pubg: "PUBG", shop: "فروشگاه", contact: "تماس", admin: "ادمین", online: "آنلاین", secure: "🔒 امن · تحویل فوری", guarantee: "✅ در تمام اکانت‌های پابجی 30 روز گارانتی", extraInfo: "ℹ️ اگر اطلاعات اضافی می‌خواهید از دکمه تماس استفاده کنید", pubgBtn: "🔥 اکانت‌های پابجی", shopBtn: "⚡ فروشگاه الکترونیک", all: "همه", small: "کوچک", medium: "متوسط", big: "بزرگ", phones: "تلفن‌ها", ipad: "آیپد", computer: "کامپیوتر", tv: "تلویزیون", other: "سایر", book: "رزرو", buy: "خرید", info: "اطلاعات", chat: "چت", login: "ورود", addAccount: "افزودن اکانت", addProduct: "افزودن محصول", manageAccounts: "مدیریت اکانت‌ها", manageProducts: "مدیریت محصولات", manageContacts: "مدیریت تماس‌ها", manageAds: "مدیریت تبلیغات", logout: "خروج", edit: "ویرایش" }
         };
         
-        let currentLang=localStorage.getItem('language')||'en';
-        let accounts=[],tools=[],contacts=[],ads=[],bookings=[];
-        let currentFilter='all',currentCategory='all';
-        let isAdmin=false;
-        let currentItem=null;
-        let usdtAddress='TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY';
-        let totalVisitors=parseInt(localStorage.getItem('totalVisitors')||'0');
-        let pageViews=parseInt(localStorage.getItem('pageViews')||'0');
-        let activeUsers=Math.floor(Math.random()*20)+5;
+        let currentLang = localStorage.getItem('language') || 'en';
         
-        function applyTranslations(){
-            const t=translations[currentLang];
-            const ids=['appName','langBtn','marketplaceTitle','onlineLabel','secureText','news1','news2','news3','news1b','guaranteeText','extraInfoText','pubgBtn','shopBtn','pubgTitle','shopTitle','contactTitle','adminTitle','addressLabel','addressText','adminLoginTitle','loginBtn','totalVisitorsLabel','onlineNowLabel','pageViewsLabel','accountsLabel','resetBtn','usdtTitle','editBtn','addAccountBtn','addProductBtn','manageAccountsBtn','manageProductsBtn','manageContactsBtn','manageAdsBtn','logoutBtn','navHome','navPubg','navShop','navContact','navAdmin','installText'];
-            ids.forEach(id=>{let el=document.getElementById(id);if(el)el.innerText=t[id]||el.innerText;});
-            document.body.dir=currentLang==='en'?'ltr':'rtl';
-            renderTierTabs();renderCategoryTabs();renderAccounts();renderTools();renderContacts();
+        function applyTranslations() {
+            const t = translations[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerHTML = t[key];
+            });
+            document.body.dir = currentLang === 'en' ? 'ltr' : 'rtl';
+            renderTierTabs();
+            renderCategoryTabs();
         }
         
-        function setLanguage(lang){currentLang=lang;localStorage.setItem('language',lang);applyTranslations();closeModal('languageModal');showNotif('Language Updated',lang==='en'?'English selected':(lang==='ps'?'پښتو ټاکل شوه':'فارسی انتخاب شد'));}
-        function openLanguageModal(){openModal('languageModal');}
-        
-        function updateActiveUsers(){activeUsers=Math.floor(Math.random()*25)+8;let oc=document.getElementById('onlineCount');if(oc)oc.innerText=activeUsers;if(isAdmin&&document.getElementById('statOnline'))document.getElementById('statOnline').innerText=activeUsers;}
-        function trackPageView(){let vid=localStorage.getItem('visitorId');if(!vid){vid='v_'+Date.now();localStorage.setItem('visitorId',vid);totalVisitors++;localStorage.setItem('totalVisitors',totalVisitors);}pageViews++;localStorage.setItem('pageViews',pageViews);if(isAdmin){if(document.getElementById('statVisitors'))document.getElementById('statVisitors').innerText=totalVisitors;if(document.getElementById('statViews'))document.getElementById('statViews').innerText=pageViews;if(document.getElementById('statAccounts'))document.getElementById('statAccounts').innerText=accounts.length;}}
-        function resetAnalytics(){if(confirm('Reset all analytics?')){totalVisitors=0;pageViews=0;localStorage.setItem('totalVisitors','0');localStorage.setItem('pageViews','0');if(isAdmin){if(document.getElementById('statVisitors'))document.getElementById('statVisitors').innerText=totalVisitors;if(document.getElementById('statViews'))document.getElementById('statViews').innerText=pageViews;}showNotif('Reset','Analytics cleared');}}
-        
-        setInterval(updateActiveUsers,30000);updateActiveUsers();
-        
-        function loadData(){
-            try{
-                let a=localStorage.getItem('gk_accounts');if(a)accounts=JSON.parse(a);
-                let t=localStorage.getItem('gk_tools');if(t)tools=JSON.parse(t);
-                let c=localStorage.getItem('gk_contacts');if(c)contacts=JSON.parse(c);
-                let ad=localStorage.getItem('gk_ads');if(ad)ads=JSON.parse(ad);
-                let b=localStorage.getItem('gk_bookings');if(b)bookings=JSON.parse(b);
-                let u=localStorage.getItem('gk_usdt');if(u)usdtAddress=u;
-            }catch(e){}
-            if(contacts.length===0)contacts=[{id:'1',name:'Support',phone:'93793066322'}];
-            if(accounts.length===0){accounts=[{id:'a1',tier:'small',title:'Starter Account',desc:'Basic rare skins',price_usd:25,price_afn:1750,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',type:'image'},{id:'a2',tier:'medium',title:'Pro Account',desc:'Multiple rare skins',price_usd:50,price_afn:3500,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',type:'image'},{id:'a3',tier:'big',title:'Premium Account',desc:'Ultra rare skins',price_usd:100,price_afn:7000,media:'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400',type:'image'}];saveAccounts();}
-            if(tools.length===0){tools=[{id:'t1',category:'phone',name:'iPhone 15 Pro',desc:'Latest iPhone',price_usd:999,price_afn:70000,media:'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&w=400',type:'image'},{id:'t2',category:'computer',name:'Gaming Laptop',desc:'RTX 4060',price_usd:1299,price_afn:91000,media:'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&w=400',type:'image'}];saveTools();}
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('language', lang);
+            applyTranslations();
+            closeModal('languageModal');
+            showNotification('Language Updated', lang === 'en' ? 'English selected' : (lang === 'ps' ? 'پښتو ټاکل شوه' : 'فارسی انتخاب شد'));
         }
         
-        function saveAccounts(){localStorage.setItem('gk_accounts',JSON.stringify(accounts));}
-        function saveTools(){localStorage.setItem('gk_tools',JSON.stringify(tools));}
-        function saveContacts(){localStorage.setItem('gk_contacts',JSON.stringify(contacts));}
-        function saveAds(){localStorage.setItem('gk_ads',JSON.stringify(ads));}
-        function saveBookings(){localStorage.setItem('gk_bookings',JSON.stringify(bookings));}
+        function openLanguageModal() { openModal('languageModal'); }
         
-        function renderTierTabs(){const t=translations[currentLang];let h=document.getElementById('tierHeader');if(h){h.innerHTML=`<button class="tier-tab ${currentFilter==='all'?'active':''}" onclick="filterAccounts('all')">${t.all}</button><button class="tier-tab ${currentFilter==='small'?'active':''}" onclick="filterAccounts('small')">${t.small}</button><button class="tier-tab ${currentFilter==='medium'?'active':''}" onclick="filterAccounts('medium')">${t.medium}</button><button class="tier-tab ${currentFilter==='big'?'active':''}" onclick="filterAccounts('big')">${t.big}</button>`;}}
-        function renderCategoryTabs(){const t=translations[currentLang];let h=document.getElementById('categoryHeader');if(h){h.innerHTML=`<button class="category-tab ${currentCategory==='all'?'active':''}" onclick="filterTools('all')">${t.all}</button><button class="category-tab ${currentCategory==='phone'?'active':''}" onclick="filterTools('phone')">${t.phones}</button><button class="category-tab ${currentCategory==='ipad'?'active':''}" onclick="filterTools('ipad')">${t.ipad}</button><button class="category-tab ${currentCategory==='computer'?'active':''}" onclick="filterTools('computer')">${t.computer}</button><button class="category-tab ${currentCategory==='tv'?'active':''}" onclick="filterTools('tv')">${t.tv}</button><button class="category-tab ${currentCategory==='other'?'active':''}" onclick="filterTools('other')">${t.other}</button>`;}}
+        // ========== APP STATE ==========
+        let accounts = [];
+        let tools = [];
+        let contacts = [];
+        let ads = [];
+        let bookings = [];
+        let currentFilter = 'all';
+        let currentCategory = 'all';
+        let isAdmin = false;
+        let currentItem = null;
+        let usdtAddress = 'TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY';
         
-        function renderAccounts(){let g=document.getElementById('accounts-grid');if(!g)return;let f=accounts.filter(a=>currentFilter==='all'||a.tier===currentFilter);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No accounts</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(acc=>`<div class="account-card"><img src="${acc.media}" class="card-media" onclick="window.open('${acc.media}','_blank')"><div class="card-content"><div class="card-title"><span>${acc.title}</span><span class="tier-badge">${acc.tier}</span></div><div class="card-desc">${acc.desc}</div><div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${acc.id}','${acc.title}',${acc.price_usd})"><i class="fas fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${acc.title}',${acc.price_usd})"><i class="fas fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${acc.title}','${acc.desc}',${acc.price_usd},${acc.price_afn})"><i class="fas fa-info-circle"></i> ${t.info}</button></div></div></div>`).join('');}
+        // ========== STATS ==========
+        let totalVisitors = parseInt(localStorage.getItem('totalVisitors') || '0');
+        let pageViews = parseInt(localStorage.getItem('pageViews') || '0');
+        let activeUsers = Math.floor(Math.random() * 25) + 8;
         
-        function renderTools(){let g=document.getElementById('tools-grid');if(!g)return;let f=tools.filter(t=>currentCategory==='all'||t.category===currentCategory);if(f.length===0){g.innerHTML='<div style="text-align:center;padding:40px;">No products</div>';return;}const t=translations[currentLang];g.innerHTML=f.map(tool=>`<div class="tool-card"><img src="${tool.media}" class="card-media" onclick="window.open('${tool.media}','_blank')"><div class="card-content"><div class="card-title">${tool.name}</div><div class="card-desc">${tool.desc}</div><div class="price-row"><span class="usd-price">$${tool.price_usd}</span><span class="afn-price">${tool.price_afn} AFN</span></div><div class="action-buttons"><button class="action-btn" onclick="bookItem('${tool.id}','${tool.name}',${tool.price_usd})"><i class="fas fa-bookmark"></i> ${t.book}</button><button class="action-btn buy" onclick="buyItem('${tool.name}',${tool.price_usd})"><i class="fas fa-bolt"></i> ${t.buy}</button><button class="action-btn" onclick="showInfo('${tool.name}','${tool.desc}',${tool.price_usd},${tool.price_afn})"><i class="fas fa-info-circle"></i> ${t.info}</button></div></div></div>`).join('');}
+        function updateActiveUsers() {
+            activeUsers = Math.floor(Math.random() * 25) + 8;
+            document.getElementById('onlineCount').innerText = activeUsers;
+            if (isAdmin && document.getElementById('statOnline')) {
+                document.getElementById('statOnline').innerText = activeUsers;
+            }
+        }
         
-        function renderContacts(){let c=document.getElementById('contacts-container');if(!c)return;const t=translations[currentLang];c.innerHTML=contacts.map(ct=>{let phone=ct.phone.replace(/\D/g,'');if(!phone.startsWith('93')&&phone.length<=9)phone='93'+phone;return `<div class="account-card" style="padding:15px;"><h3><i class="fab fa-whatsapp"></i> ${ct.name}</h3><p style="margin:10px 0;">+${phone}</p><button class="action-btn buy" onclick="window.open('https://wa.me/${phone}','_blank')"><i class="fab fa-whatsapp"></i> ${t.chat}</button></div>`;}).join('');}
+        function trackPageView() {
+            let vid = localStorage.getItem('visitorId');
+            if (!vid) {
+                vid = 'v_' + Date.now();
+                localStorage.setItem('visitorId', vid);
+                totalVisitors++;
+                localStorage.setItem('totalVisitors', totalVisitors);
+            }
+            pageViews++;
+            localStorage.setItem('pageViews', pageViews);
+            if (isAdmin) {
+                if (document.getElementById('statVisitors')) document.getElementById('statVisitors').innerText = totalVisitors;
+                if (document.getElementById('statViews')) document.getElementById('statViews').innerText = pageViews;
+                if (document.getElementById('statAccounts')) document.getElementById('statAccounts').innerText = accounts.length;
+            }
+        }
         
-        function renderAds(){let c=document.getElementById('ads-slider');if(!c)return;if(ads.length===0){c.innerHTML='';return;}c.innerHTML=`<div style="background:rgba(0,0,0,0.7);border-radius:16px;overflow:hidden;margin-top:15px;">${ads.map(ad=>ad.type==='video'?`<video src="${ad.data}" style="width:100%;aspect-ratio:16/9;" autoplay muted loop playsinline></video>`:`<img src="${ad.data}" style="width:100%;aspect-ratio:16/9;object-fit:cover;">`)}</div>`;}
+        function resetAnalytics() {
+            if (confirm('Reset all analytics?')) {
+                totalVisitors = 0;
+                pageViews = 0;
+                localStorage.setItem('totalVisitors', '0');
+                localStorage.setItem('pageViews', '0');
+                if (isAdmin) {
+                    document.getElementById('statVisitors').innerText = totalVisitors;
+                    document.getElementById('statViews').innerText = pageViews;
+                }
+                showNotification('Reset', 'Analytics cleared');
+            }
+        }
         
-        function renderAll(){renderAccounts();renderTools();renderContacts();renderAds();renderTierTabs();renderCategoryTabs();trackPageView();}
+        setInterval(updateActiveUsers, 30000);
+        updateActiveUsers();
         
-        function filterAccounts(tier){currentFilter=tier;renderAccounts();renderTierTabs();}
-        function filterTools(cat){currentCategory=cat;renderTools();renderCategoryTabs();}
+        // ========== LOAD DATA ==========
+        function loadData() {
+            try {
+                let a = localStorage.getItem('gk_accounts');
+                if (a) accounts = JSON.parse(a);
+                let t = localStorage.getItem('gk_tools');
+                if (t) tools = JSON.parse(t);
+                let c = localStorage.getItem('gk_contacts');
+                if (c) contacts = JSON.parse(c);
+                let ad = localStorage.getItem('gk_ads');
+                if (ad) ads = JSON.parse(ad);
+                let b = localStorage.getItem('gk_bookings');
+                if (b) bookings = JSON.parse(b);
+                let u = localStorage.getItem('gk_usdt');
+                if (u) usdtAddress = u;
+            } catch(e) {}
+            
+            if (contacts.length === 0) contacts = [{ id: '1', name: 'Support', phone: '93793066322' }];
+            
+            if (accounts.length === 0) {
+                accounts = [
+                    { id: 'a1', tier: 'small', title: 'Starter Account', desc: 'Basic rare skins', price_usd: 25, price_afn: 1750, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', type: 'image' },
+                    { id: 'a2', tier: 'medium', title: 'Pro Account', desc: 'Multiple rare skins', price_usd: 50, price_afn: 3500, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', type: 'image' },
+                    { id: 'a3', tier: 'big', title: 'Premium Account', desc: 'Ultra rare skins', price_usd: 100, price_afn: 7000, media: 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&w=400', type: 'image' }
+                ];
+                saveAccounts();
+            }
+            
+            if (tools.length === 0) {
+                tools = [
+                    { id: 't1', category: 'phone', name: 'iPhone 15 Pro', desc: 'Latest iPhone', price_usd: 999, price_afn: 70000, media: 'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&w=400', type: 'image' },
+                    { id: 't2', category: 'computer', name: 'Gaming Laptop', desc: 'RTX 4060', price_usd: 1299, price_afn: 91000, media: 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&w=400', type: 'image' },
+                    { id: 't3', category: 'ipad', name: 'iPad Pro 12.9"', desc: 'M2 chip', price_usd: 1099, price_afn: 77000, media: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&w=400', type: 'image' },
+                    { id: 't4', category: 'tv', name: 'Samsung 65" 4K TV', desc: 'Crystal clear', price_usd: 699, price_afn: 49000, media: 'https://images.pexels.com/photos/6782530/pexels-photo-6782530.jpeg?auto=compress&w=400', type: 'image' }
+                ];
+                saveTools();
+            }
+        }
         
-        function bookItem(id,name,price){currentItem={id,name,price};let b=document.getElementById('bookBody');if(b)b.innerHTML=`<p><strong>${name}</strong> - $${price}</p><input id="bookName" class="input" placeholder="Your name"><input id="bookPhone" class="input" placeholder="WhatsApp number">`;openModal('bookModal');}
-        function submitBook(){let name=document.getElementById('bookName')?.value,phone=document.getElementById('bookPhone')?.value.replace(/\D/g,'');if(!name||!phone){alert('Fill all fields');return;}bookings.push({id:Date.now(),item:currentItem.name,name,phone});saveBookings();closeModal('bookModal');showNotif('Booked','We will contact you soon');}
-        function buyItem(name,price){currentItem={name,price};let b=document.getElementById('buyBody');if(b)b.innerHTML=`<p><strong>${name}</strong> - $${price}</p><p>Send USDT (TRC20) to:</p><code style="display:block;background:#2a2a36;padding:10px;border-radius:10px;word-break:break-all;">${usdtAddress}</code><button class="action-btn" onclick="copyUsdt()">Copy Address</button>`;openModal('buyModal');}
-        function confirmBuy(){if(currentItem)window.open(`https://wa.me/93793066322?text=I want to buy ${currentItem.name} for $${currentItem.price}`,'_blank');closeModal('buyModal');}
-        function copyUsdt(){navigator.clipboard.writeText(usdtAddress);alert('Copied!');}
-        function showInfo(title,desc,usd,afn){let b=document.getElementById('infoBody');if(b)b.innerHTML=`<p><strong>${title}</strong></p><p>${desc}</p><p>💰 $${usd} / ${afn} AFN</p>`;openModal('infoModal');}
+        function saveAccounts() { localStorage.setItem('gk_accounts', JSON.stringify(accounts)); }
+        function saveTools() { localStorage.setItem('gk_tools', JSON.stringify(tools)); }
+        function saveContacts() { localStorage.setItem('gk_contacts', JSON.stringify(contacts)); }
+        function saveAds() { localStorage.setItem('gk_ads', JSON.stringify(ads)); }
+        function saveBookings() { localStorage.setItem('gk_bookings', JSON.stringify(bookings)); }
         
-        function adminLogin(){let pass=document.getElementById('adminPassword').value;if(pass==='admin123'){isAdmin=true;let ld=document.getElementById('admin-login'),db=document.getElementById('admin-dashboard');if(ld)ld.classList.add('hidden');if(db)db.classList.remove('hidden');if(document.getElementById('statVisitors'))document.getElementById('statVisitors').innerText=totalVisitors;if(document.getElementById('statViews'))document.getElementById('statViews').innerText=pageViews;if(document.getElementById('statAccounts'))document.getElementById('statAccounts').innerText=accounts.length;if(document.getElementById('statOnline'))document.getElementById('statOnline').innerText=activeUsers;showNotif('Welcome','Admin logged in');}else alert('Wrong password');}
-        function logout(){isAdmin=false;let ld=document.getElementById('admin-login'),db=document.getElementById('admin-dashboard');if(ld)ld.classList.remove('hidden');if(db)db.classList.add('hidden');switchScreen('main');}
+        // ========== RENDER FUNCTIONS ==========
+        function renderTierTabs() {
+            const t = translations[currentLang];
+            document.getElementById('tierHeader').innerHTML = `
+                <button class="tier-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="filterAccounts('all')">${t.all}</button>
+                <button class="tier-tab ${currentFilter === 'small' ? 'active' : ''}" onclick="filterAccounts('small')">${t.small}</button>
+                <button class="tier-tab ${currentFilter === 'medium' ? 'active' : ''}" onclick="filterAccounts('medium')">${t.medium}</button>
+                <button class="tier-tab ${currentFilter === 'big' ? 'active' : ''}" onclick="filterAccounts('big')">${t.big}</button>
+            `;
+        }
         
-        function showAddAccountModal(){openModal('addAccountModal');}
-        function showAddToolModal(){openModal('addToolModal');}
+        function renderCategoryTabs() {
+            const t = translations[currentLang];
+            document.getElementById('categoryHeader').innerHTML = `
+                <button class="category-tab ${currentCategory === 'all' ? 'active' : ''}" onclick="filterTools('all')">${t.all}</button>
+                <button class="category-tab ${currentCategory === 'phone' ? 'active' : ''}" onclick="filterTools('phone')">${t.phones}</button>
+                <button class="category-tab ${currentCategory === 'ipad' ? 'active' : ''}" onclick="filterTools('ipad')">${t.ipad}</button>
+                <button class="category-tab ${currentCategory === 'computer' ? 'active' : ''}" onclick="filterTools('computer')">${t.computer}</button>
+                <button class="category-tab ${currentCategory === 'tv' ? 'active' : ''}" onclick="filterTools('tv')">${t.tv}</button>
+                <button class="category-tab ${currentCategory === 'other' ? 'active' : ''}" onclick="filterTools('other')">${t.other}</button>
+            `;
+        }
         
-        function addAccount(){let tier=document.getElementById('accTier').value,title=document.getElementById('accTitle').value,desc=document.getElementById('accDesc').value,usd=parseFloat(document.getElementById('accUsd').value),afn=parseInt(document.getElementById('accAfn').value),file=document.getElementById('accMedia').files[0];if(!title||!usd||!afn||!file){alert('Fill all fields');return;}let r=new FileReader();r.onload=e=>{accounts.push({id:Date.now().toString(),tier,title,desc,price_usd:usd,price_afn:afn,media:e.target.result,type:'image'});saveAccounts();closeModal('addAccountModal');renderAccounts();showNotif('Success','Account added');};r.readAsDataURL(file);}
-        function addProduct(){let cat=document.getElementById('toolCat').value,name=document.getElementById('toolName').value,desc=document.getElementById('toolDesc').value,usd=parseFloat(document.getElementById('toolUsd').value),afn=parseInt(document.getElementById('toolAfn').value),file=document.getElementById('toolMedia').files[0];if(!name||!usd||!afn||!file){alert('Fill all fields');return;}let r=new FileReader();r.onload=e=>{tools.push({id:Date.now().toString(),category:cat,name,desc,price_usd:usd,price_afn:afn,media:e.target.result,type:'image'});saveTools();closeModal('addToolModal');renderTools();showNotif('Success','Product added');};r.readAsDataURL(file);}
+        function renderAccounts() {
+            const grid = document.getElementById('accounts-grid');
+            if (!grid) return;
+            
+            const filtered = accounts.filter(a => currentFilter === 'all' || a.tier === currentFilter);
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading accounts...</div>';
+                return;
+            }
+            
+            const t = translations[currentLang];
+            grid.innerHTML = filtered.map(acc => `
+                <div class="account-card">
+                    <img src="${acc.media}" class="card-media" onclick="window.open('${acc.media}', '_blank')">
+                    <div class="card-content">
+                        <div class="card-title">
+                            <span>${acc.title}</span>
+                            <span class="tier-badge">${acc.tier}</span>
+                        </div>
+                        <div class="card-desc">${acc.desc}</div>
+                        <div class="price-row">
+                            <span class="usd-price">$${acc.price_usd}</span>
+                            <span class="afn-price">${acc.price_afn} AFN</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="bookItem('${acc.id}', '${acc.title}', ${acc.price_usd})"><i class="fas fa-bookmark"></i> ${t.book}</button>
+                            <button class="action-btn buy" onclick="buyItem('${acc.title}', ${acc.price_usd})"><i class="fas fa-bolt"></i> ${t.buy}</button>
+                            <button class="action-btn" onclick="showInfo('${acc.title}', '${acc.desc}', ${acc.price_usd}, ${acc.price_afn})"><i class="fas fa-info-circle"></i> ${t.info}</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
         
-        function showManageAccounts(){let l=document.getElementById('manageAccountsList');if(l)l.innerHTML=accounts.map(acc=>`<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #333;"><span>${acc.title}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteAccount('${acc.id}')">Delete</button></div>`).join('');openModal('manageAccountsModal');}
-        function showManageTools(){let l=document.getElementById('manageToolsList');if(l)l.innerHTML=tools.map(t=>`<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #333;"><span>${t.name}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteTool('${t.id}')">Delete</button></div>`).join('');openModal('manageToolsModal');}
-        function showManageContacts(){renderManageContacts();openModal('manageContactsModal');}
-        function renderManageContacts(){let l=document.getElementById('manageContactsList');if(l)l.innerHTML=contacts.map(c=>`<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #333;"><span>${c.name} (+${c.phone})</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteContact('${c.id}')">Delete</button></div>`).join('');}
-        function showManageAds(){renderManageAds();openModal('manageAdsModal');}
-        function renderManageAds(){let l=document.getElementById('manageAdsList');if(l)l.innerHTML=ads.map((ad,i)=>`<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #333;"><span>${ad.caption||'Ad'}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteAd(${i})">Delete</button></div>`).join('');}
+        function renderTools() {
+            const grid = document.getElementById('tools-grid');
+            if (!grid) return;
+            
+            const filtered = tools.filter(t => currentCategory === 'all' || t.category === currentCategory);
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading products...</div>';
+                return;
+            }
+            
+            const t = translations[currentLang];
+            grid.innerHTML = filtered.map(tool => `
+                <div class="tool-card">
+                    <img src="${tool.media}" class="card-media" onclick="window.open('${tool.media}', '_blank')">
+                    <div class="card-content">
+                        <div class="card-title">${tool.name}</div>
+                        <div class="card-desc">${tool.desc}</div>
+                        <div class="price-row">
+                            <span class="usd-price">$${tool.price_usd}</span>
+                            <span class="afn-price">${tool.price_afn} AFN</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="bookItem('${tool.id}', '${tool.name}', ${tool.price_usd})"><i class="fas fa-bookmark"></i> ${t.book}</button>
+                            <button class="action-btn buy" onclick="buyItem('${tool.name}', ${tool.price_usd})"><i class="fas fa-bolt"></i> ${t.buy}</button>
+                            <button class="action-btn" onclick="showInfo('${tool.name}', '${tool.desc}', ${tool.price_usd}, ${tool.price_afn})"><i class="fas fa-info-circle"></i> ${t.info}</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
         
-        function deleteAccount(id){accounts=accounts.filter(a=>a.id!==id);saveAccounts();renderAccounts();showManageAccounts();showNotif('Deleted','Account removed');}
-        function deleteTool(id){tools=tools.filter(t=>t.id!==id);saveTools();renderTools();showManageTools();showNotif('Deleted','Product removed');}
-        function addContact(){let name=document.getElementById('contactName').value,phone=document.getElementById('contactPhone').value.replace(/\D/g,'');if(!name||!phone){alert('Enter name and phone');return;}if(!phone.startsWith('93')&&phone.length<=9)phone='93'+phone;contacts.push({id:Date.now().toString(),name,phone});saveContacts();renderContacts();renderManageContacts();document.getElementById('contactName').value='';document.getElementById('contactPhone').value='';showNotif('Success','Contact added');}
-        function deleteContact(id){contacts=contacts.filter(c=>c.id!==id);saveContacts();renderContacts();renderManageContacts();}
-        function addAd(){let file=document.getElementById('adMedia').files[0];if(!file){alert('Select media');return;}let r=new FileReader();r.onload=e=>{ads.push({type:file.type.startsWith('video/')?'video':'image',data:e.target.result,caption:document.getElementById('adCaption').value||''});saveAds();renderAds();renderManageAds();closeModal('manageAdsModal');showNotif('Success','Ad added');};r.readAsDataURL(file);}
-        function deleteAd(i){ads.splice(i,1);saveAds();renderAds();renderManageAds();}
-        function showEditUsdtModal(){let inp=document.getElementById('newUsdtAddress');if(inp)inp.value=usdtAddress;openModal('editUsdtModal');}
-        function saveUsdtAddress(){let addr=document.getElementById('newUsdtAddress').value.trim();if(addr){usdtAddress=addr;localStorage.setItem('gk_usdt',addr);closeModal('editUsdtModal');showNotif('Success','USDT address updated');}}
+        function renderContacts() {
+            const container = document.getElementById('contacts-container');
+            if (!container) return;
+            
+            container.innerHTML = contacts.map(c => {
+                let phone = c.phone.replace(/\D/g, '');
+                if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone;
+                return `
+                    <div class="account-card" style="padding: 15px;">
+                        <h3><i class="fab fa-whatsapp" style="color: #25D366"></i> ${c.name}</h3>
+                        <p style="margin: 10px 0;">+${phone}</p>
+                        <button class="action-btn buy" onclick="window.open('https://wa.me/${phone}', '_blank')"><i class="fab fa-whatsapp"></i> Chat</button>
+                    </div>
+                `;
+            }).join('');
+        }
         
-        function switchScreen(screen){trackPageView();document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));let ts=document.getElementById(screen+'-screen');if(ts)ts.classList.add('active');document.querySelectorAll('.bottom-nav-btn').forEach(btn=>btn.classList.remove('active'));let nb=document.getElementById('nav-'+screen);if(nb)nb.classList.add('active');if(screen==='accounts')renderAccounts();if(screen==='tools')renderTools();if(screen==='contact')renderContacts();}
+        function renderAds() {
+            const container = document.getElementById('ads-slider');
+            if (!container) return;
+            if (ads.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = `
+                <div style="background: rgba(0,0,0,0.6); border-radius: 16px; overflow: hidden; margin-top: 15px;">
+                    ${ads.map(ad => ad.type === 'video' ? 
+                        `<video src="${ad.data}" style="width: 100%; aspect-ratio: 16/9;" autoplay muted loop playsinline></video>` : 
+                        `<img src="${ad.data}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover;">`
+                    ).join('')}
+                </div>
+            `;
+        }
         
-        function showNotif(title,msg){let n=document.createElement('div');n.className='notification';n.innerHTML=`<strong>${title}</strong><br>${msg}`;document.body.appendChild(n);setTimeout(()=>n.remove(),3000);}
-        function openModal(id){let m=document.getElementById(id);if(m)m.classList.remove('hidden');}
-        function closeModal(id){let m=document.getElementById(id);if(m)m.classList.add('hidden');}
+        function renderManageAccounts() {
+            const list = document.getElementById('manageAccountsList');
+            if (list) {
+                list.innerHTML = accounts.map(acc => `
+                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333;">
+                        <span>${acc.title}</span>
+                        <button class="action-btn" style="background: #e74c3c;" onclick="deleteAccount('${acc.id}')">Delete</button>
+                    </div>
+                `).join('');
+            }
+        }
         
-        // ========== INSTALL GUIDE - SHOWS IMMEDIATELY ==========
+        function renderManageTools() {
+            const list = document.getElementById('manageToolsList');
+            if (list) {
+                list.innerHTML = tools.map(t => `
+                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333;">
+                        <span>${t.name}</span>
+                        <button class="action-btn" style="background: #e74c3c;" onclick="deleteTool('${t.id}')">Delete</button>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function renderManageContacts() {
+            const list = document.getElementById('manageContactsList');
+            if (list) {
+                list.innerHTML = contacts.map(c => `
+                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333;">
+                        <span>${c.name} (+${c.phone})</span>
+                        <button class="action-btn" style="background: #e74c3c;" onclick="deleteContact('${c.id}')">Delete</button>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function renderManageAds() {
+            const list = document.getElementById('manageAdsList');
+            if (list) {
+                list.innerHTML = ads.map((ad, i) => `
+                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333;">
+                        <span>${ad.caption || 'Ad'}</span>
+                        <button class="action-btn" style="background: #e74c3c;" onclick="deleteAd(${i})">Delete</button>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function renderAll() {
+            renderAccounts();
+            renderTools();
+            renderContacts();
+            renderAds();
+            renderTierTabs();
+            renderCategoryTabs();
+            trackPageView();
+        }
+        
+        // ========== ACTIONS ==========
+        function filterAccounts(tier) {
+            currentFilter = tier;
+            renderAccounts();
+            renderTierTabs();
+        }
+        
+        function filterTools(cat) {
+            currentCategory = cat;
+            renderTools();
+            renderCategoryTabs();
+        }
+        
+        function bookItem(id, name, price) {
+            currentItem = { id, name, price };
+            document.getElementById('bookBody').innerHTML = `
+                <p><strong>${name}</strong> - $${price}</p>
+                <input id="bookName" class="input" placeholder="Your name">
+                <input id="bookPhone" class="input" placeholder="WhatsApp number">
+            `;
+            openModal('bookModal');
+        }
+        
+        function submitBook() {
+            const name = document.getElementById('bookName')?.value;
+            const phone = document.getElementById('bookPhone')?.value.replace(/\D/g, '');
+            if (!name || !phone) {
+                alert('Fill all fields');
+                return;
+            }
+            bookings.push({ id: Date.now(), item: currentItem.name, name, phone });
+            saveBookings();
+            closeModal('bookModal');
+            showNotification('Booked', 'We will contact you soon');
+        }
+        
+        function buyItem(name, price) {
+            currentItem = { name, price };
+            document.getElementById('buyBody').innerHTML = `
+                <p><strong>${name}</strong> - $${price}</p>
+                <p>Send USDT (TRC20) to:</p>
+                <code style="display: block; background: #2a2a36; padding: 12px; border-radius: 12px; word-break: break-all;">${usdtAddress}</code>
+                <button class="action-btn" onclick="copyUsdt()">Copy Address</button>
+            `;
+            openModal('buyModal');
+        }
+        
+        function confirmBuy() {
+            if (currentItem) {
+                window.open(`https://wa.me/93793066322?text=I want to buy ${currentItem.name} for $${currentItem.price}`, '_blank');
+            }
+            closeModal('buyModal');
+        }
+        
+        function copyUsdt() {
+            navigator.clipboard.writeText(usdtAddress);
+            alert('Copied!');
+        }
+        
+        function showInfo(title, desc, usd, afn) {
+            document.getElementById('infoBody').innerHTML = `
+                <p><strong>${title}</strong></p>
+                <p>${desc}</p>
+                <p>💰 $${usd} / ${afn} AFN</p>
+            `;
+            openModal('infoModal');
+        }
+        
+        // ========== ADMIN FUNCTIONS ==========
+        function adminLogin() {
+            const pass = document.getElementById('adminPassword').value;
+            if (pass === 'admin123') {
+                isAdmin = true;
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('statVisitors').innerText = totalVisitors;
+                document.getElementById('statViews').innerText = pageViews;
+                document.getElementById('statAccounts').innerText = accounts.length;
+                document.getElementById('statOnline').innerText = activeUsers;
+                showNotification('Welcome', 'Admin logged in');
+            } else {
+                alert('Wrong password');
+            }
+        }
+        
+        function logout() {
+            isAdmin = false;
+            document.getElementById('admin-login').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            switchScreen('main');
+        }
+        
+        function showAddAccountModal() { openModal('addAccountModal'); }
+        function showAddToolModal() { openModal('addToolModal'); }
+        function showManageAccounts() { renderManageAccounts(); openModal('manageAccountsModal'); }
+        function showManageTools() { renderManageTools(); openModal('manageToolsModal'); }
+        function showManageContacts() { renderManageContacts(); openModal('manageContactsModal'); }
+        function showManageAds() { renderManageAds(); openModal('manageAdsModal'); }
+        function showEditUsdtModal() { openModal('editUsdtModal'); }
+        
+        function addAccount() {
+            const tier = document.getElementById('accTier').value;
+            const title = document.getElementById('accTitle').value;
+            const desc = document.getElementById('accDesc').value;
+            const usd = parseFloat(document.getElementById('accUsd').value);
+            const afn = parseInt(document.getElementById('accAfn').value);
+            const file = document.getElementById('accMedia').files[0];
+            
+            if (!title || !usd || !afn || !file) {
+                alert('Fill all fields');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = e => {
+                accounts.push({
+                    id: Date.now().toString(),
+                    tier, title, desc,
+                    price_usd: usd,
+                    price_afn: afn,
+                    media: e.target.result,
+                    type: 'image'
+                });
+                saveAccounts();
+                closeModal('addAccountModal');
+                renderAccounts();
+                showNotification('Success', 'Account added');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function addProduct() {
+            const cat = document.getElementById('toolCat').value;
+            const name = document.getElementById('toolName').value;
+            const desc = document.getElementById('toolDesc').value;
+            const usd = parseFloat(document.getElementById('toolUsd').value);
+            const afn = parseInt(document.getElementById('toolAfn').value);
+            const file = document.getElementById('toolMedia').files[0];
+            
+            if (!name || !usd || !afn || !file) {
+                alert('Fill all fields');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = e => {
+                tools.push({
+                    id: Date.now().toString(),
+                    category: cat, name, desc,
+                    price_usd: usd,
+                    price_afn: afn,
+                    media: e.target.result,
+                    type: 'image'
+                });
+                saveTools();
+                closeModal('addToolModal');
+                renderTools();
+                showNotification('Success', 'Product added');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function deleteAccount(id) {
+            if (confirm('Delete this account?')) {
+                accounts = accounts.filter(a => a.id !== id);
+                saveAccounts();
+                renderAccounts();
+                renderManageAccounts();
+                showNotification('Deleted', 'Account removed');
+            }
+        }
+        
+        function deleteTool(id) {
+            if (confirm('Delete this product?')) {
+                tools = tools.filter(t => t.id !== id);
+                saveTools();
+                renderTools();
+                renderManageTools();
+                showNotification('Deleted', 'Product removed');
+            }
+        }
+        
+        function addContact() {
+            let name = document.getElementById('contactName').value;
+            let phone = document.getElementById('contactPhone').value.replace(/\D/g, '');
+            if (!name || !phone) {
+                alert('Enter name and phone');
+                return;
+            }
+            if (!phone.startsWith('93') && phone.length <= 9) phone = '93' + phone;
+            contacts.push({ id: Date.now().toString(), name, phone });
+            saveContacts();
+            renderContacts();
+            renderManageContacts();
+            document.getElementById('contactName').value = '';
+            document.getElementById('contactPhone').value = '';
+            showNotification('Success', 'Contact added');
+        }
+        
+        function deleteContact(id) {
+            contacts = contacts.filter(c => c.id !== id);
+            saveContacts();
+            renderContacts();
+            renderManageContacts();
+        }
+        
+        function addAd() {
+            const file = document.getElementById('adMedia').files[0];
+            if (!file) {
+                alert('Select media');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = e => {
+                ads.push({
+                    type: file.type.startsWith('video/') ? 'video' : 'image',
+                    data: e.target.result,
+                    caption: document.getElementById('adCaption').value || ''
+                });
+                saveAds();
+                renderAds();
+                renderManageAds();
+                closeModal('manageAdsModal');
+                showNotification('Success', 'Ad added');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function deleteAd(i) {
+            ads.splice(i, 1);
+            saveAds();
+            renderAds();
+            renderManageAds();
+        }
+        
+        function saveUsdtAddress() {
+            const addr = document.getElementById('newUsdtAddress').value.trim();
+            if (addr) {
+                usdtAddress = addr;
+                localStorage.setItem('gk_usdt', addr);
+                document.getElementById('usdtAddress').innerText = addr;
+                closeModal('editUsdtModal');
+                showNotification('Success', 'USDT address updated');
+            }
+        }
+        
+        // ========== NAVIGATION ==========
+        function switchScreen(screen) {
+            trackPageView();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screen + '-screen').classList.add('active');
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('nav-' + screen).classList.add('active');
+            
+            if (screen === 'accounts') renderAccounts();
+            if (screen === 'tools') renderTools();
+            if (screen === 'contact') renderContacts();
+        }
+        
+        // ========== HELPERS ==========
+        function showNotification(title, message) {
+            const n = document.createElement('div');
+            n.className = 'notification';
+            n.innerHTML = `<strong>${title}</strong><br>${message}`;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 3000);
+        }
+        
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.remove('hidden');
+        }
+        
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('hidden');
+        }
+        
         function showInstallGuide() {
             openModal('installGuideModal');
         }
         
-        // Check if already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            let btn = document.getElementById('installBtn');
-            if(btn) btn.style.display = 'none';
+        // ========== SERVICE WORKER ==========
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registered:', reg))
+                .catch(err => console.log('Service Worker error:', err));
         }
         
-        // Service Worker
-        if('serviceWorker' in navigator){
-            navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW error:',e));
-        }
-        
-        // Initialize
+        // ========== INITIALIZE ==========
         loadData();
         applyTranslations();
         renderAll();
         updateActiveUsers();
+        
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('installBtn').style.display = 'none';
+        }
     </script>
 </body>
 </html>
