@@ -24,18 +24,17 @@
     <link rel="icon" type="image/png" sizes="192x192" href="android-launchericon-192-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="android-launchericon-512-512.png">
     
-    <!-- Preload critical resources -->
-    <link rel="preload" as="image" href="backr.png">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    
+    <!-- Critical CSS only - no background image yet -->
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         :root{--primary:#e74c3c;--primary-dark:#c0392b;--secondary:#f39c12;--surface:#1a1a1a;--surface-light:#252525;--text:#fff;--text-secondary:#a0a0a0;--border:#333;--gradient-primary:linear-gradient(135deg,#e74c3c,#f39c12);--gradient-success:linear-gradient(135deg,#27ae60,#2ecc71)}
         
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:var(--text);padding-bottom:70px}
         
-        /* Background - loads immediately */
-        .bg-fixed{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+        /* Placeholder background - loads instantly */
+        .bg-placeholder{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a0a,#0a0a0a,#0d0d1a);z-index:-2}
+        .bg-image{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:0;transition:opacity 0.8s ease}
+        .bg-image.loaded{opacity:0.5}
         .bg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:-1}
         
         .top-nav{background:rgba(26,26,26,0.95);backdrop-filter:blur(10px);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(231,76,60,0.3)}
@@ -104,15 +103,7 @@
         .notification{position:fixed;top:70px;right:16px;background:rgba(0,0,0,0.9);border-left:4px solid var(--primary);border-radius:12px;padding:12px;z-index:1000;animation:slideIn 0.3s ease}
         @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
         
-        /* INSTALL BUTTON */
         .install-fixed{position:fixed;bottom:80px;right:16px;background:#27ae60;border:none;color:white;padding:12px 18px;border-radius:50px;cursor:pointer;display:flex;align-items:center;gap:8px;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.3);font-weight:bold;animation:pulse 1s infinite}
-        
-        /* Install Guide Modal */
-        .install-guide-modal .modal{max-width:350px;text-align:center}
-        .install-steps{text-align:left;margin:15px 0}
-        .install-step{display:flex;align-items:center;gap:15px;padding:10px 0;border-bottom:1px solid #333}
-        .step-number{width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
-        .step-text{flex:1}
         
         .admin-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
         .admin-stat-card{background:var(--surface-light);border-radius:12px;padding:12px;text-align:center}
@@ -122,8 +113,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Background loads immediately -->
-    <img class="bg-fixed" src="backr.png" alt="Background">
+    <!-- Placeholder background (loads instantly) -->
+    <div class="bg-placeholder"></div>
+    <!-- Background image loads LATER (after install prompt is ready) -->
+    <img class="bg-image" id="bgImage" src="backr.png" alt="Background" onload="this.classList.add('loaded')">
     <div class="bg-overlay"></div>
     
     <div class="top-nav">
@@ -134,8 +127,7 @@
         <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> <span id="langBtn">Lang</span></button>
     </div>
     
-    <!-- INSTALL BUTTON - Direct install guide, no waiting -->
-    <button class="install-fixed" id="installBtn" onclick="showInstallGuide()"><i class="fas fa-download"></i> <span id="installText">Install App</span></button>
+    <button class="install-fixed" id="installBtn" onclick="triggerInstall()"><i class="fas fa-download"></i> <span id="installText">Install App</span></button>
     
     <div class="container">
         <div id="main-screen" class="screen active">
@@ -238,34 +230,6 @@
         <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span id="navShop">Shop</span></button>
         <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span id="navContact">Contact</span></button>
         <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span id="navAdmin">Admin</span></button>
-    </div>
-    
-    <!-- Install Guide Modal -->
-    <div id="installGuideModal" class="modal-overlay hidden">
-        <div class="modal install-guide-modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-download"></i> Install GK Store</h3>
-                <button class="modal-close" onclick="closeModal('installGuideModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Follow these steps to install GK Store on your phone:</p>
-                <div class="install-steps">
-                    <div class="install-step">
-                        <div class="step-number">1</div>
-                        <div class="step-text">Tap the <strong>3 dots menu</strong> <i class="fas fa-ellipsis-v"></i> in your browser</div>
-                    </div>
-                    <div class="install-step">
-                        <div class="step-number">2</div>
-                        <div class="step-text">Select <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></div>
-                    </div>
-                    <div class="install-step">
-                        <div class="step-number">3</div>
-                        <div class="step-text">Tap <strong>"Install"</strong> to add GK Store to your home screen</div>
-                    </div>
-                </div>
-                <button class="action-btn buy" style="width:100%;margin-top:10px" onclick="closeModal('installGuideModal')">Got it!</button>
-            </div>
-        </div>
     </div>
     
     <!-- Modals -->
@@ -390,16 +354,92 @@
         function openModal(id){let m=document.getElementById(id);if(m)m.classList.remove('hidden');}
         function closeModal(id){let m=document.getElementById(id);if(m)m.classList.add('hidden');}
         
-        // ========== INSTALL GUIDE - WORKS IMMEDIATELY ==========
-        function showInstallGuide() {
-            openModal('installGuideModal');
+        // ========== INSTALL BUTTON - WORKS FIRST, BACKGROUND LOADS LATER ==========
+        let deferredPrompt = null;
+        let installButtonClicked = false;
+        
+        // Listen for install prompt - this happens BEFORE background image loads
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Install prompt is ready - button will work immediately');
+            
+            // Update button to show it's ready
+            const btn = document.getElementById('installBtn');
+            if (btn) {
+                btn.style.background = '#27ae60';
+                btn.querySelector('#installText').innerHTML = 'Install Now';
+            }
+            
+            // Now that install prompt is ready, start loading background image
+            const bgImage = document.getElementById('bgImage');
+            if (bgImage && !bgImage.classList.contains('loaded')) {
+                // Force background to start loading
+                if (bgImage.complete) {
+                    bgImage.classList.add('loaded');
+                } else {
+                    bgImage.onload = () => bgImage.classList.add('loaded');
+                }
+            }
+        });
+        
+        // Function to trigger install
+        function triggerInstall() {
+            const btn = document.getElementById('installBtn');
+            
+            if (deferredPrompt) {
+                // Show install dialog immediately
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted install');
+                        showNotif('Installing', 'GK Store is being installed...');
+                    }
+                    deferredPrompt = null;
+                    // Reset button
+                    btn.style.background = '#27ae60';
+                    btn.querySelector('#installText').innerHTML = 'Install App';
+                });
+            } else {
+                // Prompt not ready yet - show loading and wait
+                btn.style.background = '#f39c12';
+                btn.querySelector('#installText').innerHTML = 'Preparing...';
+                
+                // Wait for prompt to become available
+                const checkInterval = setInterval(() => {
+                    if (deferredPrompt) {
+                        clearInterval(checkInterval);
+                        triggerInstall(); // Retry installation
+                    }
+                }, 500);
+                
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    if (!deferredPrompt) {
+                        btn.style.background = '#27ae60';
+                        btn.querySelector('#installText').innerHTML = 'Install App';
+                        showNotif('Install', 'Tap browser menu → Install app');
+                    }
+                }, 5000);
+            }
         }
         
         // Check if already installed
         if (window.matchMedia('(display-mode: standalone)').matches) {
-            let btn = document.getElementById('installBtn');
-            if(btn) btn.style.display = 'none';
+            document.getElementById('installBtn').style.display = 'none';
         }
+        
+        // Load background image in background after everything else
+        window.addEventListener('load', () => {
+            // Background image already has src, it will load naturally
+            setTimeout(() => {
+                const bgImage = document.getElementById('bgImage');
+                if (bgImage && bgImage.complete) {
+                    bgImage.classList.add('loaded');
+                }
+            }, 100);
+        });
         
         // Service Worker
         if('serviceWorker' in navigator){
