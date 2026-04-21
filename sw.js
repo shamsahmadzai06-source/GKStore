@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gk-store-v7';
+const CACHE_NAME = 'gk-store-v8';
 const urlsToCache = [
   '.', 'index.html', 'manifest.json',
   'android-launchericon-72-72.png', 'android-launchericon-96-96.png',
