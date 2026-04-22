@@ -182,6 +182,7 @@
             object-fit: contain;
             background: #000;
             display: block;
+            cursor: pointer;
         }
         .card-content { padding: 12px; }
         .card-title { font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 5px; }
@@ -315,6 +316,46 @@
         .binance-box { background: #0b0e11; border: 1px solid #f0b90b; border-radius: 16px; padding: 15px; margin-top: 15px; }
         .binance-box h4 { color: #f0b90b; margin-bottom: 10px; }
         video, img { max-width: 100%; display: block; }
+        
+        /* Full Screen Viewer */
+        .fullscreen-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .fullscreen-viewer video, .fullscreen-viewer img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+        }
+        .fullscreen-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+        .fullscreen-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -341,9 +382,9 @@
         <div class="sub-head">🔒 Secure · Instant delivery</div>
         <div class="news-ticker">
             <div class="ticker-text">
-                <span><i class="fas fa-video"></i> ⚠️ Video not playing on iOS? Tap video → Download or save to camera roll</span>
-                <span><i class="fas fa-download"></i> 📱 iPhone/iPad: If video doesn't play, press and hold → Save Video</span>
-                <span><i class="fas fa-chrome"></i> 🔄 iOS video issue? Download file or use Chrome browser</span>
+                <span><i class="fas fa-video"></i> ⚠️ Tap on any image or video to view full screen</span>
+                <span><i class="fas fa-download"></i> 📱 Press and hold to save images/videos</span>
+                <span><i class="fas fa-chrome"></i> 🔄 Full screen viewer works on all devices</span>
             </div>
         </div>
         <div class="info-card green" onclick="window.open('https://wa.me/93793066322?text=I want to know about 30 days link wash guarantee','_blank')">
@@ -428,6 +469,12 @@
     <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span>Shop</span></button>
     <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
     <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button>
+</div>
+
+<!-- Full Screen Viewer -->
+<div id="fullscreenViewer" class="fullscreen-viewer hidden" onclick="closeFullscreen()">
+    <button class="fullscreen-close" onclick="closeFullscreen()">✕</button>
+    <div id="fullscreenContent"></div>
 </div>
 
 <!-- Modals -->
@@ -532,6 +579,33 @@
 </div>
 
 <script>
+    // ==================== FULL SCREEN VIEWER ====================
+    function openFullscreen(mediaUrl, isVideo) {
+        const viewer = document.getElementById('fullscreenViewer');
+        const content = document.getElementById('fullscreenContent');
+        
+        if (isVideo) {
+            content.innerHTML = `<video controls autoplay playsinline style="max-width:95%; max-height:95%;"><source src="${mediaUrl}" type="video/mp4">Video not supported</video>`;
+        } else {
+            content.innerHTML = `<img src="${mediaUrl}" style="max-width:95%; max-height:95%;" alt="Full screen view">`;
+        }
+        viewer.classList.remove('hidden');
+    }
+    
+    function closeFullscreen() {
+        const viewer = document.getElementById('fullscreenViewer');
+        const content = document.getElementById('fullscreenContent');
+        viewer.classList.add('hidden');
+        content.innerHTML = '';
+    }
+    
+    // Close on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeFullscreen();
+        }
+    });
+
     // ==================== DATA STORAGE ====================
     let accounts = [];
     let products = [];
@@ -610,11 +684,11 @@
         grid.innerHTML = filtered.map(acc => `
             <div class="account-card">
                 ${acc.type === 'video' ? 
-                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;">
+                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreen('${acc.media}', true)">
                         <source src="${acc.media}" type="video/mp4">
                         Video not supported
                     </video>` : 
-                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000;" loading="lazy" alt="${acc.title}" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
+                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" alt="${acc.title}" onclick="openFullscreen('${acc.media}', false)" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title"><span>${escapeHtml(acc.title)}</span><span class="tier-badge">${acc.tier}</span></div>
                     <div class="card-desc">${escapeHtml(acc.desc)}</div>
@@ -638,11 +712,11 @@
         grid.innerHTML = filtered.map(prod => `
             <div class="tool-card">
                 ${prod.type === 'video' ? 
-                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;">
+                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreen('${prod.media}', true)">
                         <source src="${prod.media}" type="video/mp4">
                         Video not supported
                     </video>` : 
-                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000;" loading="lazy" alt="${prod.name}" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
+                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" alt="${prod.name}" onclick="openFullscreen('${prod.media}', false)" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title">${escapeHtml(prod.name)}</div>
                     <div class="card-desc">${escapeHtml(prod.desc)}</div>
