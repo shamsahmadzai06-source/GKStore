@@ -208,7 +208,9 @@
             background: #000;
             display: block;
             cursor: pointer;
+            transition: transform 0.2s;
         }
+        .card-media:active { transform: scale(0.98); }
         .card-content { padding: 12px; }
         .card-title { font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 5px; }
         .tier-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; background: linear-gradient(135deg, #e74c3c, #f39c12); }
@@ -332,6 +334,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         body[dir="rtl"] .install-fixed {
             right: auto;
@@ -400,8 +403,8 @@
             flex: 1;
         }
         
-        /* Full Screen Viewer */
-        .fullscreen-viewer {
+        /* Full Screen Zoom Viewer - Like Facebook */
+        .fullscreen-zoom-viewer {
             position: fixed;
             top: 0;
             left: 0;
@@ -413,31 +416,67 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
         }
-        .fullscreen-viewer video, .fullscreen-viewer img {
+        .fullscreen-zoom-viewer .zoom-container {
             max-width: 95%;
             max-height: 95%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fullscreen-zoom-viewer img {
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
+            cursor: zoom-in;
+            transition: transform 0.2s ease;
+        }
+        .fullscreen-zoom-viewer img.zoomed {
+            cursor: zoom-out;
+            transform: scale(2);
+        }
+        .fullscreen-zoom-viewer video {
+            max-width: 95%;
+            max-height: 95%;
+            cursor: pointer;
         }
         .fullscreen-close {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.7);
             border: none;
             color: white;
-            font-size: 30px;
-            width: 50px;
-            height: 50px;
+            font-size: 28px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10001;
+            backdrop-filter: blur(5px);
         }
-        .fullscreen-close:hover { background: rgba(255,255,255,0.3); }
+        .fullscreen-close:hover { background: rgba(0,0,0,0.9); }
         body[dir="rtl"] .fullscreen-close { right: auto; left: 20px; }
+        
+        .zoom-instruction {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 10001;
+            white-space: nowrap;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -466,9 +505,9 @@
         
         <div class="news-ticker">
             <div class="ticker-text">
-                <span><i class="fas fa-video"></i> <span data-i18n="news1">⚠️ Tap on any image or video to view full screen</span></span>
-                <span><i class="fas fa-download"></i> <span data-i18n="news2">📱 Press and hold to save images/videos</span></span>
-                <span><i class="fas fa-chrome"></i> <span data-i18n="news3">🔄 Full screen viewer works on all devices</span></span>
+                <span><i class="fas fa-video"></i> <span data-i18n="news1">⚠️ Tap on any image or video to view full screen with zoom</span></span>
+                <span><i class="fas fa-download"></i> <span data-i18n="news2">📱 Pinch to zoom on images | Double tap to zoom</span></span>
+                <span><i class="fas fa-chrome"></i> <span data-i18n="news3">🔄 Full screen zoom viewer works on all devices</span></span>
             </div>
         </div>
         
@@ -487,14 +526,12 @@
         
         <div id="ads-slider"></div>
         
-        <!-- USDT Box - Below the buttons -->
         <div class="usdt-box">
             <h4><i class="fab fa-bitcoin"></i> <span data-i18n="usdt_title">💳 USDT Address (TRC20/BEP20)</span></h4>
             <code id="homeUsdtAddress" class="payment-code">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
             <button class="copy-btn" onclick="copyToClipboard('homeUsdtAddress', 'USDT')"><i class="fas fa-copy"></i> <span data-i18n="copy_usdt">Copy USDT Address</span></button>
         </div>
         
-        <!-- Binance Box - Below USDT -->
         <div class="binance-box">
             <h4><i class="fab fa-binance"></i> <span data-i18n="binance_title">Binance Pay ID</span></h4>
             <code id="homeBinanceId" class="payment-code">GKStore@binance</code>
@@ -578,13 +615,14 @@
     <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="nav_admin">Admin</span></button>
 </div>
 
-<!-- Full Screen Viewer -->
-<div id="fullscreenViewer" class="fullscreen-viewer hidden" onclick="closeFullscreen()">
-    <button class="fullscreen-close" onclick="closeFullscreen()">✕</button>
-    <div id="fullscreenContent"></div>
+<!-- Full Screen Zoom Viewer - Like Facebook -->
+<div id="fullscreenZoomViewer" class="fullscreen-zoom-viewer hidden" onclick="closeFullscreenZoom()">
+    <button class="fullscreen-close" onclick="closeFullscreenZoom()">✕</button>
+    <div id="zoomContent" class="zoom-container"></div>
+    <div class="zoom-instruction">Tap image to zoom • Double tap to reset</div>
 </div>
 
-<!-- Modals -->
+<!-- Modals (same as before, keeping them) -->
 <div id="addAccountModal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header"><h3>➕ Add PUBG Account</h3><button class="modal-close" onclick="closeModal('addAccountModal')">&times;</button></div>
@@ -687,6 +725,55 @@
 </div>
 
 <script>
+    // ==================== FULL SCREEN ZOOM VIEWER (Like Facebook) ====================
+    let currentZoomImage = null;
+    let zoomLevel = 1;
+    
+    function openFullscreenZoom(mediaUrl, isVideo) {
+        const viewer = document.getElementById('fullscreenZoomViewer');
+        const content = document.getElementById('zoomContent');
+        
+        if (isVideo) {
+            content.innerHTML = `<video controls autoplay playsinline style="max-width:95%; max-height:95%;"><source src="${mediaUrl}" type="video/mp4">Video not supported</video>`;
+            viewer.classList.remove('hidden');
+        } else {
+            content.innerHTML = `<img id="zoomableImage" src="${mediaUrl}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in;" alt="Full screen view" ondblclick="toggleZoom()" onclick="toggleZoom()">`;
+            viewer.classList.remove('hidden');
+            currentZoomImage = document.getElementById('zoomableImage');
+            zoomLevel = 1;
+            if (currentZoomImage) {
+                currentZoomImage.style.transform = 'scale(1)';
+                currentZoomImage.style.cursor = 'zoom-in';
+            }
+        }
+    }
+    
+    function toggleZoom() {
+        if (!currentZoomImage) return;
+        if (zoomLevel === 1) {
+            zoomLevel = 2;
+            currentZoomImage.style.transform = `scale(${zoomLevel})`;
+            currentZoomImage.style.cursor = 'zoom-out';
+        } else {
+            zoomLevel = 1;
+            currentZoomImage.style.transform = `scale(1)`;
+            currentZoomImage.style.cursor = 'zoom-in';
+        }
+    }
+    
+    function closeFullscreenZoom() {
+        const viewer = document.getElementById('fullscreenZoomViewer');
+        const content = document.getElementById('zoomContent');
+        viewer.classList.add('hidden');
+        content.innerHTML = '';
+        currentZoomImage = null;
+        zoomLevel = 1;
+    }
+    
+    document.addEventListener('keydown', function(e) { 
+        if (e.key === 'Escape') closeFullscreenZoom(); 
+    });
+
     // ==================== 200+ COUNTRY CODES ====================
     const countryCodes = [
         "93,AF,🇦🇫", "1,US,🇺🇸", "7,RU,🇷🇺", "20,EG,🇪🇬", "27,ZA,🇿🇦", "30,GR,🇬🇷", "31,NL,🇳🇱", "32,BE,🇧🇪", "33,FR,🇫🇷", "34,ES,🇪🇸", "36,HU,🇭🇺", "39,IT,🇮🇹", "40,RO,🇷🇴", "41,CH,🇨🇭", "43,AT,🇦🇹", "44,GB,🇬🇧", "45,DK,🇩🇰", "46,SE,🇸🇪", "47,NO,🇳🇴", "48,PL,🇵🇱", "49,DE,🇩🇪", "51,PE,🇵🇪", "52,MX,🇲🇽", "53,CU,🇨🇺", "54,AR,🇦🇷", "55,BR,🇧🇷", "56,CL,🇨🇱", "57,CO,🇨🇴", "58,VE,🇻🇪", "60,MY,🇲🇾", "61,AU,🇦🇺", "62,ID,🇮🇩", "63,PH,🇵🇭", "64,NZ,🇳🇿", "65,SG,🇸🇬", "66,TH,🇹🇭", "81,JP,🇯🇵", "82,KR,🇰🇷", "84,VN,🇻🇳", "86,CN,🇨🇳", "90,TR,🇹🇷", "91,IN,🇮🇳", "92,PK,🇵🇰", "94,LK,🇱🇰", "95,MM,🇲🇲", "98,IR,🇮🇷", "211,SS,🇸🇸", "212,MA,🇲🇦", "213,DZ,🇩🇿", "216,TN,🇹🇳", "218,LY,🇱🇾", "220,GM,🇬🇲", "221,SN,🇸🇳", "222,MR,🇲🇷", "223,ML,🇲🇱", "224,GN,🇬🇳", "225,CI,🇨🇮", "226,BF,🇧🇫", "227,NE,🇳🇪", "228,TG,🇹🇬", "229,BJ,🇧🇯", "230,MU,🇲🇺", "231,LR,🇱🇷", "232,SL,🇸🇱", "233,GH,🇬🇭", "234,NG,🇳🇬", "235,TD,🇹🇩", "236,CF,🇨🇫", "237,CM,🇨🇲", "238,CV,🇨🇻", "239,ST,🇸🇹", "240,GQ,🇬🇶", "241,GA,🇬🇦", "242,CG,🇨🇬", "243,CD,🇨🇩", "244,AO,🇦🇴", "245,GW,🇬🇼", "248,SC,🇸🇨", "249,SD,🇸🇩", "250,RW,🇷🇼", "251,ET,🇪🇹", "252,SO,🇸🇴", "253,DJ,🇩🇯", "254,KE,🇰🇪", "255,TZ,🇹🇿", "256,UG,🇺🇬", "257,BI,🇧🇮", "258,MZ,🇲🇿", "260,ZM,🇿🇲", "261,MG,🇲🇬", "262,RE,🇷🇪", "263,ZW,🇿🇼", "264,NA,🇳🇦", "265,MW,🇲🇼", "266,LS,🇱🇸", "267,BW,🇧🇼", "268,SZ,🇸🇿", "269,KM,🇰🇲", "290,SH,🇸🇭", "291,ER,🇪🇷", "297,AW,🇦🇼", "298,FO,🇫🇴", "299,GL,🇬🇱", "350,GI,🇬🇮", "351,PT,🇵🇹", "352,LU,🇱🇺", "353,IE,🇮🇪", "354,IS,🇮🇸", "355,AL,🇦🇱", "356,MT,🇲🇹", "357,CY,🇨🇾", "358,FI,🇫🇮", "359,BG,🇧🇬", "370,LT,🇱🇹", "371,LV,🇱🇻", "372,EE,🇪🇪", "373,MD,🇲🇩", "374,AM,🇦🇲", "375,BY,🇧🇾", "376,AD,🇦🇩", "377,MC,🇲🇨", "378,SM,🇸🇲", "380,UA,🇺🇦", "381,RS,🇷🇸", "382,ME,🇲🇪", "383,XK,🇽🇰", "385,HR,🇭🇷", "386,SI,🇸🇮", "387,BA,🇧🇦", "389,MK,🇲🇰", "420,CZ,🇨🇿", "421,SK,🇸🇰", "423,LI,🇱🇮", "500,FK,🇫🇰", "501,BZ,🇧🇿", "502,GT,🇬🇹", "503,SV,🇸🇻", "504,HN,🇭🇳", "505,NI,🇳🇮", "506,CR,🇨🇷", "507,PA,🇵🇦", "508,PM,🇵🇲", "509,HT,🇭🇹", "590,GP,🇬🇵", "591,BO,🇧🇴", "592,GY,🇬🇾", "593,EC,🇪🇨", "594,GF,🇬🇫", "595,PY,🇵🇾", "596,MQ,🇲🇶", "597,SR,🇸🇷", "598,UY,🇺🇾", "599,BQ,🇧🇶", "670,TL,🇹🇱", "672,AQ,🇦🇶", "673,BN,🇧🇳", "674,NR,🇳🇷", "675,PG,🇵🇬", "676,TO,🇹🇴", "677,SB,🇸🇧", "678,VU,🇻🇺", "679,FJ,🇫🇯", "680,PW,🇵🇼", "681,WF,🇼🇫", "682,CK,🇨🇰", "683,NU,🇳🇺", "684,AS,🇦🇸", "685,WS,🇼🇸", "686,KI,🇰🇮", "687,NC,🇳🇨", "688,TV,🇹🇻", "689,PF,🇵🇫", "690,TK,🇹🇰", "691,FM,🇫🇲", "692,MH,🇲🇭", "850,KP,🇰🇵", "852,HK,🇭🇰", "853,MO,🇲🇴", "855,KH,🇰🇭", "856,LA,🇱🇦", "880,BD,🇧🇩", "886,TW,🇹🇼", "960,MV,🇲🇻", "961,LB,🇱🇧", "962,JO,🇯🇴", "963,SY,🇸🇾", "964,IQ,🇮🇶", "965,KW,🇰🇼", "966,SA,🇸🇦", "967,YE,🇾🇪", "968,OM,🇴🇲", "970,PS,🇵🇸", "971,AE,🇦🇪", "972,IL,🇮🇱", "973,BH,🇧🇭", "974,QA,🇶🇦", "975,BT,🇧🇹", "976,MN,🇲🇳", "977,NP,🇳🇵", "992,TJ,🇹🇯", "993,TM,🇹🇲", "994,AZ,🇦🇿", "995,GE,🇬🇪", "996,KG,🇰🇬", "998,UZ,🇺🇿"
@@ -705,27 +792,6 @@
         });
     }
 
-    // ==================== FULL SCREEN VIEWER ====================
-    function openFullscreen(mediaUrl, isVideo) {
-        const viewer = document.getElementById('fullscreenViewer');
-        const content = document.getElementById('fullscreenContent');
-        if (isVideo) {
-            content.innerHTML = `<video controls autoplay playsinline style="max-width:95%; max-height:95%;"><source src="${mediaUrl}" type="video/mp4">Video not supported</video>`;
-        } else {
-            content.innerHTML = `<img src="${mediaUrl}" style="max-width:95%; max-height:95%;" alt="Full screen view">`;
-        }
-        viewer.classList.remove('hidden');
-    }
-    
-    function closeFullscreen() {
-        const viewer = document.getElementById('fullscreenViewer');
-        const content = document.getElementById('fullscreenContent');
-        viewer.classList.add('hidden');
-        content.innerHTML = '';
-    }
-    
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeFullscreen(); });
-
     // ==================== COPY FUNCTION ====================
     function copyToClipboard(elementId, name) {
         const element = document.getElementById(elementId);
@@ -738,8 +804,8 @@
     const translations = {
         en: {
             app_name: "GK Store", lang_btn: "Lang", marketplace: "GK Marketplace", online: "Online",
-            secure: "🔒 Secure · Instant delivery", news1: "⚠️ Tap on any image or video to view full screen",
-            news2: "📱 Press and hold to save images/videos", news3: "🔄 Full screen viewer works on all devices",
+            secure: "🔒 Secure · Instant delivery", news1: "⚠️ Tap on any image or video to view full screen with zoom",
+            news2: "📱 Pinch to zoom on images | Double tap to zoom", news3: "🔄 Full screen zoom viewer works on all devices",
             guarantee: "✅ in all pubg account 30 days link wash guarantee",
             extra_info: "ℹ️ if you want extra information contact us from contact button",
             usdt_title: "💳 USDT Address (TRC20/BEP20)", binance_title: "Binance Pay ID",
@@ -760,7 +826,7 @@
         ps: {
             app_name: "جی کی سټور", lang_btn: "ژبه", marketplace: "جی کی مارکیټ", online: "آنلاین",
             secure: "🔒 امن · سمدستي تحویل", news1: "⚠️ په انځور یا ویډیو باندې کلیک وکړئ",
-            news2: "📱 نیولی ونیسئ او خوندي کړئ", news3: "🔄 بشپړ سکرین په ټولو وسیلو کار کوي",
+            news2: "📱 زوم کولو لپاره دوه ځله ټایپ کړئ", news3: "🔄 بشپړ سکرین زوم په ټولو وسیلو کار کوي",
             guarantee: "✅ په ټولو پبجي اکاونټونو کې ۳۰ ورځې ضمانت",
             extra_info: "ℹ️ اضافي معلوماتو لپاره موږ سره اړیکه ونیسئ",
             usdt_title: "💳 USDT آدرس", binance_title: "بایننس پې آئی ډي",
@@ -781,7 +847,7 @@
         fa: {
             app_name: "جی کی استور", lang_btn: "زبان", marketplace: "بازار جی کی", online: "آنلاین",
             secure: "🔒 امن · تحویل فوری", news1: "⚠️ برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید",
-            news2: "📱 نگه دارید و ذخیره کنید", news3: "🔄 نمایش تمام صفحه در همه دستگاه‌ها",
+            news2: "📱 برای زوم دو بار ضربه بزنید", news3: "🔄 نمایش تمام صفحه با زوم در همه دستگاه‌ها",
             guarantee: "✅ ضمانت ۳۰ روزه برای تمام اکانت‌های پابجی",
             extra_info: "ℹ️ برای اطلاعات بیشتر با ما تماس بگیرید",
             usdt_title: "💳 آدرس USDT", binance_title: "آیدی بیننس پی",
@@ -808,7 +874,6 @@
         applyTranslations(); 
         closeModal('languageModal'); 
         showToast('Language updated');
-        // Set RTL for Pashto and Persian
         if (lang === 'ps' || lang === 'fa') {
             document.body.dir = 'rtl';
         } else {
@@ -886,10 +951,10 @@
         grid.innerHTML = filtered.map(acc => `
             <div class="account-card">
                 ${acc.type === 'video' ? 
-                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreen('${acc.media}', true)">
+                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreenZoom('${acc.media}', true)">
                         <source src="${acc.media}" type="video/mp4">
                     </video>` : 
-                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" onclick="openFullscreen('${acc.media}', false)" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
+                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" onclick="openFullscreenZoom('${acc.media}', false)" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title"><span>${escapeHtml(acc.title)}</span><span class="tier-badge">${acc.tier}</span></div>
                     <div class="card-desc">${escapeHtml(acc.desc)}</div>
@@ -912,10 +977,10 @@
         grid.innerHTML = filtered.map(prod => `
             <div class="tool-card">
                 ${prod.type === 'video' ? 
-                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreen('${prod.media}', true)">
+                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreenZoom('${prod.media}', true)">
                         <source src="${prod.media}" type="video/mp4">
                     </video>` : 
-                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" onclick="openFullscreen('${prod.media}', false)" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
+                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" onclick="openFullscreenZoom('${prod.media}', false)" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title">${escapeHtml(prod.name)}</div>
                     <div class="card-desc">${escapeHtml(prod.desc)}</div>
@@ -1205,13 +1270,18 @@
     function openManageContacts() { renderManageContacts(); openModal('manageContactsModal'); }
     function openManageAds() { renderManageAds(); openModal('manageAdsModal'); }
     
-    // ==================== PWA INSTALLATION ====================
+    // ==================== PWA INSTALLATION (FIXED) ====================
     let deferredPrompt;
+    
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
         const installBtn = document.getElementById('installBtn');
-        if (installBtn) installBtn.style.display = 'flex';
+        if (installBtn) {
+            installBtn.style.display = 'flex';
+            installBtn.style.animation = 'pulse 0.5s';
+        }
+        console.log('beforeinstallprompt event fired');
     });
     
     function triggerInstall() {
@@ -1220,25 +1290,31 @@
             deferredPrompt.userChoice.then((result) => {
                 if (result.outcome === 'accepted') {
                     console.log('User accepted the install prompt');
+                    showToast('✅ App installing...');
+                } else {
+                    console.log('User dismissed the install prompt');
                 }
                 deferredPrompt = null;
                 const installBtn = document.getElementById('installBtn');
                 if (installBtn) installBtn.style.display = 'none';
             });
         } else {
-            showToast('Tap browser menu → Install app');
+            showToast('📱 Tap browser menu (3 dots) → Install app');
         }
     }
     
     // Create install button if not exists
-    let installBtn = document.createElement('button');
-    installBtn.id = 'installBtn';
-    installBtn.className = 'install-fixed';
-    installBtn.innerHTML = '<i class="fas fa-download"></i> <span data-i18n="install_btn">Install App</span>';
-    installBtn.onclick = triggerInstall;
-    installBtn.style.display = 'none';
-    if (!document.getElementById('installBtn')) document.body.appendChild(installBtn);
+    if (!document.getElementById('installBtn')) {
+        let installBtnElement = document.createElement('button');
+        installBtnElement.id = 'installBtn';
+        installBtnElement.className = 'install-fixed';
+        installBtnElement.innerHTML = '<i class="fas fa-download"></i> <span data-i18n="install_btn">Install App</span>';
+        installBtnElement.onclick = triggerInstall;
+        installBtnElement.style.display = 'none';
+        document.body.appendChild(installBtnElement);
+    }
     
+    // Hide install button if already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches) {
         const btn = document.getElementById('installBtn');
         if (btn) btn.style.display = 'none';
@@ -1270,6 +1346,14 @@
     let savedLang = localStorage.getItem('language');
     if (savedLang) setLanguage(savedLang);
     else setLanguage('en');
+    
+    // Show install button if app is installable (after a short delay)
+    setTimeout(() => {
+        if (deferredPrompt) {
+            const btn = document.getElementById('installBtn');
+            if (btn) btn.style.display = 'flex';
+        }
+    }, 2000);
 </script>
 </body>
 </html>
