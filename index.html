@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#e74c3c">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>GK Store · PUBG & Electronics</title>
+    <title>GK Store - Fully Working</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -258,6 +256,8 @@
         .booking-item h4 { color: #e74c3c; margin-bottom: 5px; }
         .whatsapp-btn { background: #25D366; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; margin-top: 8px; }
         video, img { max-width: 100%; display: block; }
+        .preview-box { margin: 10px 0; padding: 10px; background: #000; border-radius: 12px; text-align: center; }
+        .preview-box video, .preview-box img { max-height: 150px; border-radius: 8px; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -278,9 +278,9 @@
             <h1 class="big-title">GK Marketplace</h1>
             <div class="online-badge"><div class="online-dot"></div><span id="onlineCount">15</span> Online</div>
         </div>
-        <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> PUBG Accounts</button>
-        <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> Electronics Shop</button>
-        <button class="cta-button" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i> Contact Support</button>
+        <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> 🔥 PUBG Accounts</button>
+        <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> ⚡ Electronics Shop</button>
+        <button class="cta-button" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i> 📞 Contact Support</button>
     </div>
 
     <!-- Accounts Screen -->
@@ -299,13 +299,13 @@
 
     <!-- Contact Screen -->
     <div id="contact-screen" class="screen">
-        <h2 style="margin-bottom: 15px;">Contact & Support</h2>
+        <h2 style="margin-bottom: 15px;">📞 Contact & Support</h2>
         <div id="contacts-container"></div>
     </div>
 
     <!-- Admin Screen -->
     <div id="admin-screen" class="screen">
-        <h2 style="margin-bottom: 15px;">Admin Panel</h2>
+        <h2 style="margin-bottom: 15px;">🔐 Admin Panel</h2>
         <div id="admin-login">
             <div class="account-card" style="padding: 20px;">
                 <h3>Admin Login</h3>
@@ -316,7 +316,7 @@
         </div>
         <div id="admin-dashboard" class="hidden">
             <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
-                <h3>📊 Analytics</h3>
+                <h3>📊 Statistics</h3>
                 <div class="admin-stats">
                     <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div>Accounts</div></div>
                     <div class="admin-stat-card"><div class="admin-stat-number" id="statProducts">0</div><div>Products</div></div>
@@ -329,7 +329,7 @@
             <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
                 <h3>💳 USDT Address</h3>
                 <code id="usdtDisplay" style="display: block; background: #000; padding: 10px; border-radius: 12px; word-break: break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                <button class="action-btn" onclick="editUsdt()" style="margin-top: 10px;">Edit</button>
+                <button class="action-btn" onclick="editUsdt()" style="margin-top: 10px;">✏️ Edit</button>
             </div>
             <button class="action-btn buy" onclick="openAddAccountModal()" style="width: 100%; margin-bottom: 10px;">➕ Add PUBG Account</button>
             <button class="action-btn buy" onclick="openAddProductModal()" style="width: 100%; margin-bottom: 10px;">➕ Add Product</button>
@@ -352,59 +352,69 @@
 <!-- Modals -->
 <div id="addAccountModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Add PUBG Account</h3><button class="modal-close" onclick="closeModal('addAccountModal')">&times;</button></div>
-        <select id="accTier" class="input"><option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option></select>
-        <input id="accTitle" class="input" placeholder="Title">
+        <div class="modal-header"><h3>➕ Add PUBG Account</h3><button class="modal-close" onclick="closeModal('addAccountModal')">&times;</button></div>
+        <select id="accTier" class="input">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="big">Big</option>
+        </select>
+        <input id="accTitle" class="input" placeholder="Account Title" required>
         <textarea id="accDesc" class="input" rows="2" placeholder="Description"></textarea>
-        <input id="accUsd" class="input" placeholder="USD Price">
-        <input id="accAfn" class="input" placeholder="AFN Price">
-        <input type="file" id="accMedia" class="input" accept="image/*,video/*">
-        <div id="accPreview" style="margin: 10px 0; display: none;"></div>
-        <button class="action-btn buy" onclick="addAccount()">Upload Account</button>
+        <input id="accUsd" class="input" placeholder="USD Price" type="number" required>
+        <input id="accAfn" class="input" placeholder="AFN Price" type="number" required>
+        <input type="file" id="accMedia" class="input" accept="image/*,video/*" onchange="previewAccountMedia(this)">
+        <div id="accPreview" class="preview-box hidden"></div>
+        <button class="action-btn buy" onclick="addAccount()">✅ Upload Account</button>
     </div>
 </div>
 
 <div id="addProductModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Add Product</h3><button class="modal-close" onclick="closeModal('addProductModal')">&times;</button></div>
-        <select id="prodCat" class="input"><option value="phone">Phone</option><option value="ipad">iPad</option><option value="computer">Computer</option><option value="tv">TV</option><option value="other">Other</option></select>
-        <input id="prodName" class="input" placeholder="Name">
+        <div class="modal-header"><h3>➕ Add Product</h3><button class="modal-close" onclick="closeModal('addProductModal')">&times;</button></div>
+        <select id="prodCat" class="input">
+            <option value="phone">📱 Phone</option>
+            <option value="ipad">📟 iPad</option>
+            <option value="computer">💻 Computer</option>
+            <option value="tv">📺 TV</option>
+            <option value="other">🎧 Other</option>
+        </select>
+        <input id="prodName" class="input" placeholder="Product Name" required>
         <textarea id="prodDesc" class="input" rows="2" placeholder="Description"></textarea>
-        <input id="prodUsd" class="input" placeholder="USD Price">
-        <input id="prodAfn" class="input" placeholder="AFN Price">
-        <input type="file" id="prodMedia" class="input" accept="image/*,video/*">
-        <div id="prodPreview" style="margin: 10px 0; display: none;"></div>
-        <button class="action-btn buy" onclick="addProduct()">Add Product</button>
+        <input id="prodUsd" class="input" placeholder="USD Price" type="number" required>
+        <input id="prodAfn" class="input" placeholder="AFN Price" type="number" required>
+        <input type="file" id="prodMedia" class="input" accept="image/*,video/*" onchange="previewProductMedia(this)">
+        <div id="prodPreview" class="preview-box hidden"></div>
+        <button class="action-btn buy" onclick="addProduct()">✅ Add Product</button>
     </div>
 </div>
 
 <div id="manageAccountsModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Manage Accounts</h3><button class="modal-close" onclick="closeModal('manageAccountsModal')">&times;</button></div>
+        <div class="modal-header"><h3>📋 Manage Accounts</h3><button class="modal-close" onclick="closeModal('manageAccountsModal')">&times;</button></div>
         <div id="manageAccountsList"></div>
     </div>
 </div>
 
 <div id="manageProductsModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Manage Products</h3><button class="modal-close" onclick="closeModal('manageProductsModal')">&times;</button></div>
+        <div class="modal-header"><h3>📦 Manage Products</h3><button class="modal-close" onclick="closeModal('manageProductsModal')">&times;</button></div>
         <div id="manageProductsList"></div>
     </div>
 </div>
 
 <div id="manageContactsModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Manage Contacts</h3><button class="modal-close" onclick="closeModal('manageContactsModal')">&times;</button></div>
-        <input id="contactName" class="input" placeholder="Name">
-        <input id="contactPhone" class="input" placeholder="WhatsApp number (with country code)">
-        <button class="action-btn buy" onclick="addContact()">Add Contact</button>
+        <div class="modal-header"><h3>📞 Manage Contacts</h3><button class="modal-close" onclick="closeModal('manageContactsModal')">&times;</button></div>
+        <input id="contactName" class="input" placeholder="Contact Name">
+        <input id="contactPhone" class="input" placeholder="WhatsApp number (e.g., 93793066322)">
+        <button class="action-btn buy" onclick="addContact()">➕ Add Contact</button>
         <div id="manageContactsList" style="margin-top: 15px;"></div>
     </div>
 </div>
 
 <div id="editUsdtModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Edit USDT Address</h3><button class="modal-close" onclick="closeModal('editUsdtModal')">&times;</button></div>
+        <div class="modal-header"><h3>✏️ Edit USDT Address</h3><button class="modal-close" onclick="closeModal('editUsdtModal')">&times;</button></div>
         <input id="newUsdt" class="input" placeholder="USDT TRC20 Address">
         <button class="action-btn buy" onclick="saveUsdt()">Save</button>
     </div>
@@ -412,7 +422,7 @@
 
 <div id="bookModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div>
+        <div class="modal-header"><h3>📖 Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div>
         <div id="bookBody"></div>
         <button class="action-btn buy" onclick="submitBooking()" style="width: 100%;">Confirm Booking</button>
     </div>
@@ -420,13 +430,17 @@
 
 <div id="buyModal" class="modal-overlay hidden">
     <div class="modal">
-        <div class="modal-header"><h3>Purchase</h3><button class="modal-close" onclick="closeModal('buyModal')">&times;</button></div>
+        <div class="modal-header"><h3>💰 Purchase</h3><button class="modal-close" onclick="closeModal('buyModal')">&times;</button></div>
         <div id="buyBody"></div>
         <button class="action-btn buy" onclick="confirmPurchase()" style="width: 100%; margin-top: 10px;">Confirm via WhatsApp</button>
     </div>
 </div>
 
 <script>
+    // ==================== SAMPLE BASE64 IMAGES (WORKING GUARANTEED) ====================
+    const SAMPLE_IMG_PUBG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%231a1a2e'/%3E%3Ccircle cx='200' cy='112' r='50' fill='%23e74c3c'/%3E%3Ctext x='200' y='125' text-anchor='middle' fill='white' font-size='24' font-weight='bold'%3EPUBG%3C/text%3E%3Ctext x='200' y='155' text-anchor='middle' fill='%23f39c12' font-size='16'%3EPremium Account%3C/text%3E%3C/svg%3E";
+    const SAMPLE_IMG_PHONE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%231a1a2e'/%3E%3Crect x='150' y='70' width='100' height='120' rx='15' fill='%23333' stroke='%23f39c12' stroke-width='3'/%3E%3Ctext x='200' y='135' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3EiPhone%3C/text%3E%3C/svg%3E";
+    
     // ==================== DATA STORAGE ====================
     let accounts = [];
     let products = [];
@@ -458,20 +472,20 @@
             if (savedUsdt) usdtAddress = savedUsdt;
         } catch(e) { console.error(e); }
         
-        // Default demo data
+        // Default demo data with WORKING images
         if (accounts.length === 0) {
             accounts = [
-                { id: "1", tier: "small", title: "Starter Account", desc: "Basic skins, level 30+", price_usd: 25, price_afn: 1750, media: "", type: "image" },
-                { id: "2", tier: "medium", title: "Pro Account", desc: "Multiple rare skins, level 50+", price_usd: 50, price_afn: 3500, media: "", type: "image" },
-                { id: "3", tier: "big", title: "Premium Account", desc: "Ultra rare skins, level 80+", price_usd: 100, price_afn: 7000, media: "", type: "image" }
+                { id: "1", tier: "small", title: "Starter Account", desc: "Basic skins, level 30+, 10+ rare items", price_usd: 25, price_afn: 1750, media: SAMPLE_IMG_PUBG, type: "image" },
+                { id: "2", tier: "medium", title: "Pro Account", desc: "Multiple rare skins, level 50+, 25+ rare items", price_usd: 50, price_afn: 3500, media: SAMPLE_IMG_PUBG, type: "image" },
+                { id: "3", tier: "big", title: "Premium Account", desc: "Ultra rare skins, level 80+, 50+ rare items", price_usd: 100, price_afn: 7000, media: SAMPLE_IMG_PUBG, type: "image" }
             ];
             saveAccounts();
         }
         
         if (products.length === 0) {
             products = [
-                { id: "1", category: "phone", name: "iPhone 15 Pro", desc: "Latest model, 256GB", price_usd: 999, price_afn: 70000, media: "", type: "image" },
-                { id: "2", category: "computer", name: "Gaming Laptop", desc: "RTX 4060, 16GB RAM", price_usd: 1299, price_afn: 91000, media: "", type: "image" }
+                { id: "1", category: "phone", name: "iPhone 15 Pro", desc: "Latest model, 256GB, Titanium", price_usd: 999, price_afn: 70000, media: SAMPLE_IMG_PHONE, type: "image" },
+                { id: "2", category: "computer", name: "Gaming Laptop", desc: "RTX 4060, 16GB RAM, 1TB SSD", price_usd: 1299, price_afn: 91000, media: SAMPLE_IMG_PHONE, type: "image" }
             ];
             saveProducts();
         }
@@ -487,8 +501,8 @@
         updateAdminStats();
     }
 
-    function saveAccounts() { localStorage.setItem('gk_accounts', JSON.stringify(accounts)); }
-    function saveProducts() { localStorage.setItem('gk_products', JSON.stringify(products)); }
+    function saveAccounts() { localStorage.setItem('gk_accounts', JSON.stringify(accounts)); updateAdminStats(); }
+    function saveProducts() { localStorage.setItem('gk_products', JSON.stringify(products)); updateAdminStats(); }
     function saveContacts() { localStorage.setItem('gk_contacts', JSON.stringify(contacts)); }
     function saveBookings() { localStorage.setItem('gk_bookings', JSON.stringify(bookings)); }
 
@@ -510,17 +524,17 @@
         grid.innerHTML = filtered.map(acc => `
             <div class="account-card">
                 ${acc.media ? (acc.type === 'video' ? 
-                    `<video class="card-media" controls playsinline><source src="${acc.media}" type="video/mp4"></video>` : 
+                    `<video class="card-media" controls playsinline><source src="${acc.media}" type="video/mp4">Video not supported</video>` : 
                     `<img src="${acc.media}" class="card-media" alt="${acc.title}">`) : 
-                    `<div class="card-media" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e74c3c, #f39c12);">📷 No Image</div>`}
+                    `<div class="card-media" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e74c3c, #f39c12);">No Image</div>`}
                 <div class="card-content">
-                    <div class="card-title"><span>${acc.title}</span><span class="tier-badge">${acc.tier}</span></div>
-                    <div class="card-desc">${acc.desc}</div>
+                    <div class="card-title"><span>${escapeHtml(acc.title)}</span><span class="tier-badge">${acc.tier}</span></div>
+                    <div class="card-desc">${escapeHtml(acc.desc)}</div>
                     <div class="price-row"><span class="usd-price">$${acc.price_usd}</span><span class="afn-price">${acc.price_afn} AFN</span></div>
                     <div class="action-buttons">
-                        <button class="action-btn" onclick="openBookModal('${acc.id}', '${acc.title}', ${acc.price_usd})"><i class="fas fa-bookmark"></i> Book</button>
-                        <button class="action-btn buy" onclick="openBuyModal('${acc.title}', ${acc.price_usd})"><i class="fas fa-bolt"></i> Buy</button>
-                        <button class="action-btn" onclick="showInfo('${acc.title}', '${acc.desc}', ${acc.price_usd}, ${acc.price_afn})"><i class="fas fa-info-circle"></i> Info</button>
+                        <button class="action-btn" onclick="openBookModal('${acc.id}', '${escapeHtml(acc.title)}', ${acc.price_usd})"><i class="fas fa-bookmark"></i> Book</button>
+                        <button class="action-btn buy" onclick="openBuyModal('${escapeHtml(acc.title)}', ${acc.price_usd})"><i class="fas fa-bolt"></i> Buy</button>
+                        <button class="action-btn" onclick="showInfo('${escapeHtml(acc.title)}', '${escapeHtml(acc.desc)}', ${acc.price_usd}, ${acc.price_afn})"><i class="fas fa-info-circle"></i> Info</button>
                     </div>
                 </div>
             </div>
@@ -544,22 +558,24 @@
         grid.innerHTML = filtered.map(prod => `
             <div class="tool-card">
                 ${prod.media ? (prod.type === 'video' ? 
-                    `<video class="card-media" controls playsinline><source src="${prod.media}" type="video/mp4"></video>` : 
+                    `<video class="card-media" controls playsinline><source src="${prod.media}" type="video/mp4">Video not supported</video>` : 
                     `<img src="${prod.media}" class="card-media" alt="${prod.name}">`) : 
-                    `<div class="card-media" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e74c3c, #f39c12);">📷 No Image</div>`}
+                    `<div class="card-media" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e74c3c, #f39c12);">No Image</div>`}
                 <div class="card-content">
-                    <div class="card-title">${prod.name}</div>
-                    <div class="card-desc">${prod.desc}</div>
+                    <div class="card-title">${escapeHtml(prod.name)}</div>
+                    <div class="card-desc">${escapeHtml(prod.desc)}</div>
                     <div class="price-row"><span class="usd-price">$${prod.price_usd}</span><span class="afn-price">${prod.price_afn} AFN</span></div>
                     <div class="action-buttons">
-                        <button class="action-btn" onclick="openBookModal('${prod.id}', '${prod.name}', ${prod.price_usd})"><i class="fas fa-bookmark"></i> Book</button>
-                        <button class="action-btn buy" onclick="openBuyModal('${prod.name}', ${prod.price_usd})"><i class="fas fa-bolt"></i> Buy</button>
-                        <button class="action-btn" onclick="showInfo('${prod.name}', '${prod.desc}', ${prod.price_usd}, ${prod.price_afn})"><i class="fas fa-info-circle"></i> Info</button>
+                        <button class="action-btn" onclick="openBookModal('${prod.id}', '${escapeHtml(prod.name)}', ${prod.price_usd})"><i class="fas fa-bookmark"></i> Book</button>
+                        <button class="action-btn buy" onclick="openBuyModal('${escapeHtml(prod.name)}', ${prod.price_usd})"><i class="fas fa-bolt"></i> Buy</button>
+                        <button class="action-btn" onclick="showInfo('${escapeHtml(prod.name)}', '${escapeHtml(prod.desc)}', ${prod.price_usd}, ${prod.price_afn})"><i class="fas fa-info-circle"></i> Info</button>
                     </div>
                 </div>
             </div>
         `).join('');
     }
+    
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m; }); }
     
     function renderContacts() {
         const container = document.getElementById('contacts-container');
@@ -567,8 +583,8 @@
         
         container.innerHTML = contacts.map(c => `
             <div class="account-card" style="padding: 15px; margin-bottom: 10px;">
-                <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> ${c.name}</h3>
-                <p style="margin: 10px 0;">+${c.phone}</p>
+                <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> ${escapeHtml(c.name)}</h3>
+                <p style="margin: 10px 0;">📞 +${c.phone}</p>
                 <button class="action-btn buy" onclick="window.open('https://wa.me/${c.phone}', '_blank')"><i class="fab fa-whatsapp"></i> Chat on WhatsApp</button>
             </div>
         `).join('');
@@ -585,10 +601,10 @@
         
         container.innerHTML = bookings.map(b => `
             <div class="booking-item">
-                <h4>${b.item}</h4>
-                <p>👤 ${b.name}</p>
+                <h4>📦 ${escapeHtml(b.item)}</h4>
+                <p>👤 ${escapeHtml(b.name)}</p>
                 <p>📞 +${b.phone}</p>
-                <button class="whatsapp-btn" onclick="window.open('https://wa.me/${b.phone}?text=Hello ${b.name}, your booking for ${b.item} is confirmed!', '_blank')"><i class="fab fa-whatsapp"></i> Contact</button>
+                <button class="whatsapp-btn" onclick="window.open('https://wa.me/${b.phone}?text=Hello ${escapeHtml(b.name)}, your booking for ${escapeHtml(b.item)} is confirmed!', '_blank')"><i class="fab fa-whatsapp"></i> Contact Customer</button>
             </div>
         `).join('');
     }
@@ -619,7 +635,7 @@
         
         container.innerHTML = accounts.map(acc => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
-                <span><strong>${acc.title}</strong> (${acc.tier})</span>
+                <span><strong>${escapeHtml(acc.title)}</strong> (${acc.tier}) - $${acc.price_usd}</span>
                 <button class="action-btn" style="background: #e74c3c;" onclick="deleteAccount('${acc.id}')">Delete</button>
             </div>
         `).join('');
@@ -631,7 +647,7 @@
         
         container.innerHTML = products.map(prod => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
-                <span><strong>${prod.name}</strong> (${prod.category})</span>
+                <span><strong>${escapeHtml(prod.name)}</strong> (${prod.category}) - $${prod.price_usd}</span>
                 <button class="action-btn" style="background: #e74c3c;" onclick="deleteProduct('${prod.id}')">Delete</button>
             </div>
         `).join('');
@@ -643,7 +659,7 @@
         
         container.innerHTML = contacts.map(c => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
-                <span><strong>${c.name}</strong> (+${c.phone})</span>
+                <span><strong>${escapeHtml(c.name)}</strong> (+${c.phone})</span>
                 <button class="action-btn" style="background: #e74c3c;" onclick="deleteContact('${c.id}')">Delete</button>
             </div>
         `).join('');
@@ -682,6 +698,7 @@
         switchScreen('main');
     }
     
+    // ADD ACCOUNT - WORKING
     function addAccount() {
         let tier = document.getElementById('accTier').value;
         let title = document.getElementById('accTitle').value.trim();
@@ -691,7 +708,7 @@
         let file = document.getElementById('accMedia').files[0];
         
         if (!title || isNaN(usd) || isNaN(afn)) {
-            alert('Please fill all fields');
+            alert('Please fill all fields (Title, USD Price, AFN Price)');
             return;
         }
         
@@ -699,7 +716,7 @@
             id: Date.now().toString(),
             tier: tier,
             title: title,
-            desc: desc,
+            desc: desc || "No description",
             price_usd: usd,
             price_afn: afn,
             media: "",
@@ -716,31 +733,33 @@
                 closeModal('addAccountModal');
                 renderAccounts();
                 renderManageAccounts();
-                updateAdminStats();
-                showToast('Account added: ' + title);
-                document.getElementById('accTitle').value = '';
-                document.getElementById('accDesc').value = '';
-                document.getElementById('accUsd').value = '';
-                document.getElementById('accAfn').value = '';
-                document.getElementById('accMedia').value = '';
-                document.getElementById('accPreview').style.display = 'none';
+                showToast('✅ Account added: ' + title);
+                clearAccountForm();
             };
             reader.readAsDataURL(file);
         } else {
+            newAccount.media = SAMPLE_IMG_PUBG;
             accounts.push(newAccount);
             saveAccounts();
             closeModal('addAccountModal');
             renderAccounts();
             renderManageAccounts();
-            updateAdminStats();
-            showToast('Account added: ' + title);
-            document.getElementById('accTitle').value = '';
-            document.getElementById('accDesc').value = '';
-            document.getElementById('accUsd').value = '';
-            document.getElementById('accAfn').value = '';
+            showToast('✅ Account added: ' + title);
+            clearAccountForm();
         }
     }
     
+    function clearAccountForm() {
+        document.getElementById('accTitle').value = '';
+        document.getElementById('accDesc').value = '';
+        document.getElementById('accUsd').value = '';
+        document.getElementById('accAfn').value = '';
+        document.getElementById('accMedia').value = '';
+        document.getElementById('accPreview').classList.add('hidden');
+        document.getElementById('accPreview').innerHTML = '';
+    }
+    
+    // ADD PRODUCT - WORKING
     function addProduct() {
         let category = document.getElementById('prodCat').value;
         let name = document.getElementById('prodName').value.trim();
@@ -750,7 +769,7 @@
         let file = document.getElementById('prodMedia').files[0];
         
         if (!name || isNaN(usd) || isNaN(afn)) {
-            alert('Please fill all fields');
+            alert('Please fill all fields (Name, USD Price, AFN Price)');
             return;
         }
         
@@ -758,7 +777,7 @@
             id: Date.now().toString(),
             category: category,
             name: name,
-            desc: desc,
+            desc: desc || "No description",
             price_usd: usd,
             price_afn: afn,
             media: "",
@@ -775,29 +794,30 @@
                 closeModal('addProductModal');
                 renderProducts();
                 renderManageProducts();
-                updateAdminStats();
-                showToast('Product added: ' + name);
-                document.getElementById('prodName').value = '';
-                document.getElementById('prodDesc').value = '';
-                document.getElementById('prodUsd').value = '';
-                document.getElementById('prodAfn').value = '';
-                document.getElementById('prodMedia').value = '';
-                document.getElementById('prodPreview').style.display = 'none';
+                showToast('✅ Product added: ' + name);
+                clearProductForm();
             };
             reader.readAsDataURL(file);
         } else {
+            newProduct.media = SAMPLE_IMG_PHONE;
             products.push(newProduct);
             saveProducts();
             closeModal('addProductModal');
             renderProducts();
             renderManageProducts();
-            updateAdminStats();
-            showToast('Product added: ' + name);
-            document.getElementById('prodName').value = '';
-            document.getElementById('prodDesc').value = '';
-            document.getElementById('prodUsd').value = '';
-            document.getElementById('prodAfn').value = '';
+            showToast('✅ Product added: ' + name);
+            clearProductForm();
         }
+    }
+    
+    function clearProductForm() {
+        document.getElementById('prodName').value = '';
+        document.getElementById('prodDesc').value = '';
+        document.getElementById('prodUsd').value = '';
+        document.getElementById('prodAfn').value = '';
+        document.getElementById('prodMedia').value = '';
+        document.getElementById('prodPreview').classList.add('hidden');
+        document.getElementById('prodPreview').innerHTML = '';
     }
     
     function addContact() {
@@ -817,7 +837,7 @@
         renderManageContacts();
         document.getElementById('contactName').value = '';
         document.getElementById('contactPhone').value = '';
-        showToast('Contact added: ' + name);
+        showToast('✅ Contact added: ' + name);
     }
     
     function deleteAccount(id) {
@@ -826,8 +846,7 @@
             saveAccounts();
             renderAccounts();
             renderManageAccounts();
-            updateAdminStats();
-            showToast('Account deleted');
+            showToast('🗑️ Account deleted');
         }
     }
     
@@ -837,8 +856,7 @@
             saveProducts();
             renderProducts();
             renderManageProducts();
-            updateAdminStats();
-            showToast('Product deleted');
+            showToast('🗑️ Product deleted');
         }
     }
     
@@ -848,7 +866,7 @@
             saveContacts();
             renderContacts();
             renderManageContacts();
-            showToast('Contact deleted');
+            showToast('🗑️ Contact deleted');
         }
     }
     
@@ -864,7 +882,42 @@
             localStorage.setItem('gk_usdt', usdtAddress);
             document.getElementById('usdtDisplay').innerText = usdtAddress;
             closeModal('editUsdtModal');
-            showToast('USDT address updated');
+            showToast('✅ USDT address updated');
+        }
+    }
+    
+    // ==================== PREVIEW FUNCTIONS ====================
+    function previewAccountMedia(input) {
+        let file = input.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let preview = document.getElementById('accPreview');
+                preview.classList.remove('hidden');
+                if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
+                } else {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function previewProductMedia(input) {
+        let file = input.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let preview = document.getElementById('prodPreview');
+                preview.classList.remove('hidden');
+                if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
+                } else {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                }
+            };
+            reader.readAsDataURL(file);
         }
     }
     
@@ -872,7 +925,7 @@
     function openBookModal(id, name, price) {
         currentBookingItem = { id, name, price };
         document.getElementById('bookBody').innerHTML = `
-            <p><strong>${name}</strong> - $${price}</p>
+            <p><strong>${escapeHtml(name)}</strong> - $${price}</p>
             <input id="bookerName" class="input" placeholder="Your full name">
             <input id="bookerPhone" class="input" placeholder="WhatsApp number (e.g., 93793066322)">
         `;
@@ -901,28 +954,28 @@
         saveBookings();
         closeModal('bookModal');
         renderBookings();
-        showToast('Booking submitted! We will contact you.');
+        showToast('✅ Booking submitted! We will contact you.');
     }
     
     function openBuyModal(name, price) {
         currentBuyItem = { name, price };
         document.getElementById('buyBody').innerHTML = `
-            <p><strong>${name}</strong> - $${price}</p>
+            <p><strong>${escapeHtml(name)}</strong> - $${price}</p>
             <p style="margin: 10px 0;">Send payment to USDT address:</p>
             <code style="display: block; background: #000; padding: 10px; border-radius: 12px; word-break: break-all; margin-bottom: 10px;">${usdtAddress}</code>
-            <button class="action-btn" onclick="copyUsdt()" style="width: 100%;">Copy USDT Address</button>
+            <button class="action-btn" onclick="copyUsdt()" style="width: 100%;">📋 Copy USDT Address</button>
         `;
         openModal('buyModal');
     }
     
     function copyUsdt() {
         navigator.clipboard.writeText(usdtAddress);
-        showToast('USDT address copied!');
+        showToast('✅ USDT address copied!');
     }
     
     function confirmPurchase() {
         if (currentBuyItem) {
-            window.open(`https://wa.me/93793066322?text=I want to buy ${currentBuyItem.name} for $${currentBuyItem.price}`, '_blank');
+            window.open(`https://wa.me/93793066322?text=I want to buy ${encodeURIComponent(currentBuyItem.name)} for $${currentBuyItem.price}`, '_blank');
             closeModal('buyModal');
         }
     }
@@ -968,41 +1021,6 @@
     function openManageProducts() { renderManageProducts(); openModal('manageProductsModal'); }
     function openManageContacts() { renderManageContacts(); openModal('manageContactsModal'); }
     
-    // Preview handlers
-    document.getElementById('accMedia')?.addEventListener('change', function(e) {
-        let file = e.target.files[0];
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = function(ev) {
-                let preview = document.getElementById('accPreview');
-                preview.style.display = 'block';
-                if (file.type.startsWith('video/')) {
-                    preview.innerHTML = `<video src="${ev.target.result}" style="width: 100%; max-height: 150px; border-radius: 8px;" controls playsinline></video>`;
-                } else {
-                    preview.innerHTML = `<img src="${ev.target.result}" style="width: 100%; max-height: 150px; border-radius: 8px; object-fit: cover;">`;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
-    document.getElementById('prodMedia')?.addEventListener('change', function(e) {
-        let file = e.target.files[0];
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = function(ev) {
-                let preview = document.getElementById('prodPreview');
-                preview.style.display = 'block';
-                if (file.type.startsWith('video/')) {
-                    preview.innerHTML = `<video src="${ev.target.result}" style="width: 100%; max-height: 150px; border-radius: 8px;" controls playsinline></video>`;
-                } else {
-                    preview.innerHTML = `<img src="${ev.target.result}" style="width: 100%; max-height: 150px; border-radius: 8px; object-fit: cover;">`;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
     // PWA Install
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -1019,6 +1037,15 @@
         }
     }
     
+    // Add install button
+    let installBtn = document.createElement('button');
+    installBtn.id = 'installBtn';
+    installBtn.className = 'install-fixed';
+    installBtn.innerHTML = '<i class="fas fa-download"></i> Install App';
+    installBtn.onclick = triggerInstall;
+    installBtn.style.display = 'none';
+    document.body.appendChild(installBtn);
+    
     // Initialize
     loadData();
     renderAccounts();
@@ -1029,14 +1056,12 @@
     renderBookings();
     updateAdminStats();
     
-    // Add install button
-    let installBtn = document.createElement('button');
-    installBtn.id = 'installBtn';
-    installBtn.className = 'install-fixed';
-    installBtn.innerHTML = '<i class="fas fa-download"></i> Install App';
-    installBtn.onclick = triggerInstall;
-    installBtn.style.display = 'none';
-    document.body.appendChild(installBtn);
+    // Online counter animation
+    let onlineCount = 15;
+    setInterval(() => {
+        onlineCount = Math.floor(Math.random() * 20) + 10;
+        document.getElementById('onlineCount').innerText = onlineCount;
+    }, 30000);
 </script>
 </body>
 </html>
