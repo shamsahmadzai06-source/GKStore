@@ -38,6 +38,14 @@
             color: white;
             padding-bottom: 70px;
         }
+        body[dir="rtl"] {
+            direction: rtl;
+            text-align: right;
+        }
+        body[dir="ltr"] {
+            direction: ltr;
+            text-align: left;
+        }
         .bg-fixed {
             position: fixed;
             top: 0;
@@ -129,6 +137,7 @@
         .online-dot { width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
         .sub-head { color: #a0a0a0; font-size: 13px; margin-bottom: 15px; border-left: 3px solid #e74c3c; padding-left: 10px; }
+        body[dir="rtl"] .sub-head { border-left: none; border-right: 3px solid #e74c3c; padding-left: 0; padding-right: 10px; }
         .news-ticker {
             background: rgba(0,0,0,0.7);
             border-radius: 50px;
@@ -324,6 +333,10 @@
             align-items: center;
             gap: 8px;
         }
+        body[dir="rtl"] .install-fixed {
+            right: auto;
+            left: 16px;
+        }
         .admin-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 15px; }
         .admin-stat-card { background: #252525; border-radius: 16px; padding: 15px; text-align: center; }
         .admin-stat-number { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #e74c3c, #f39c12); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -368,6 +381,24 @@
             margin: 10px 0;
         }
         video, img { max-width: 100%; display: block; }
+        .phone-input-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .country-code {
+            width: 130px;
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 12px;
+            color: white;
+            padding: 12px;
+            font-size: 12px;
+        }
+        .phone-number {
+            flex: 1;
+        }
         
         /* Full Screen Viewer */
         .fullscreen-viewer {
@@ -406,6 +437,7 @@
             z-index: 10001;
         }
         .fullscreen-close:hover { background: rgba(255,255,255,0.3); }
+        body[dir="rtl"] .fullscreen-close { right: auto; left: 20px; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -592,8 +624,11 @@
 <div id="manageContactsModal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header"><h3>📞 Manage Contacts</h3><button class="modal-close" onclick="closeModal('manageContactsModal')">&times;</button></div>
+        <div class="phone-input-wrapper">
+            <select id="contactCode" class="country-code"></select>
+            <input id="contactPhone" class="input phone-number" placeholder="Phone number">
+        </div>
         <input id="contactName" class="input" placeholder="Contact Name">
-        <input id="contactPhone" class="input" placeholder="WhatsApp number (e.g., 93793066322)">
         <button class="action-btn buy" onclick="addContact()">➕ Add Contact</button>
         <div id="manageContactsList" style="margin-top: 15px;"></div>
     </div>
@@ -652,6 +687,24 @@
 </div>
 
 <script>
+    // ==================== 200+ COUNTRY CODES ====================
+    const countryCodes = [
+        "93,AF,🇦🇫", "1,US,🇺🇸", "7,RU,🇷🇺", "20,EG,🇪🇬", "27,ZA,🇿🇦", "30,GR,🇬🇷", "31,NL,🇳🇱", "32,BE,🇧🇪", "33,FR,🇫🇷", "34,ES,🇪🇸", "36,HU,🇭🇺", "39,IT,🇮🇹", "40,RO,🇷🇴", "41,CH,🇨🇭", "43,AT,🇦🇹", "44,GB,🇬🇧", "45,DK,🇩🇰", "46,SE,🇸🇪", "47,NO,🇳🇴", "48,PL,🇵🇱", "49,DE,🇩🇪", "51,PE,🇵🇪", "52,MX,🇲🇽", "53,CU,🇨🇺", "54,AR,🇦🇷", "55,BR,🇧🇷", "56,CL,🇨🇱", "57,CO,🇨🇴", "58,VE,🇻🇪", "60,MY,🇲🇾", "61,AU,🇦🇺", "62,ID,🇮🇩", "63,PH,🇵🇭", "64,NZ,🇳🇿", "65,SG,🇸🇬", "66,TH,🇹🇭", "81,JP,🇯🇵", "82,KR,🇰🇷", "84,VN,🇻🇳", "86,CN,🇨🇳", "90,TR,🇹🇷", "91,IN,🇮🇳", "92,PK,🇵🇰", "94,LK,🇱🇰", "95,MM,🇲🇲", "98,IR,🇮🇷", "211,SS,🇸🇸", "212,MA,🇲🇦", "213,DZ,🇩🇿", "216,TN,🇹🇳", "218,LY,🇱🇾", "220,GM,🇬🇲", "221,SN,🇸🇳", "222,MR,🇲🇷", "223,ML,🇲🇱", "224,GN,🇬🇳", "225,CI,🇨🇮", "226,BF,🇧🇫", "227,NE,🇳🇪", "228,TG,🇹🇬", "229,BJ,🇧🇯", "230,MU,🇲🇺", "231,LR,🇱🇷", "232,SL,🇸🇱", "233,GH,🇬🇭", "234,NG,🇳🇬", "235,TD,🇹🇩", "236,CF,🇨🇫", "237,CM,🇨🇲", "238,CV,🇨🇻", "239,ST,🇸🇹", "240,GQ,🇬🇶", "241,GA,🇬🇦", "242,CG,🇨🇬", "243,CD,🇨🇩", "244,AO,🇦🇴", "245,GW,🇬🇼", "248,SC,🇸🇨", "249,SD,🇸🇩", "250,RW,🇷🇼", "251,ET,🇪🇹", "252,SO,🇸🇴", "253,DJ,🇩🇯", "254,KE,🇰🇪", "255,TZ,🇹🇿", "256,UG,🇺🇬", "257,BI,🇧🇮", "258,MZ,🇲🇿", "260,ZM,🇿🇲", "261,MG,🇲🇬", "262,RE,🇷🇪", "263,ZW,🇿🇼", "264,NA,🇳🇦", "265,MW,🇲🇼", "266,LS,🇱🇸", "267,BW,🇧🇼", "268,SZ,🇸🇿", "269,KM,🇰🇲", "290,SH,🇸🇭", "291,ER,🇪🇷", "297,AW,🇦🇼", "298,FO,🇫🇴", "299,GL,🇬🇱", "350,GI,🇬🇮", "351,PT,🇵🇹", "352,LU,🇱🇺", "353,IE,🇮🇪", "354,IS,🇮🇸", "355,AL,🇦🇱", "356,MT,🇲🇹", "357,CY,🇨🇾", "358,FI,🇫🇮", "359,BG,🇧🇬", "370,LT,🇱🇹", "371,LV,🇱🇻", "372,EE,🇪🇪", "373,MD,🇲🇩", "374,AM,🇦🇲", "375,BY,🇧🇾", "376,AD,🇦🇩", "377,MC,🇲🇨", "378,SM,🇸🇲", "380,UA,🇺🇦", "381,RS,🇷🇸", "382,ME,🇲🇪", "383,XK,🇽🇰", "385,HR,🇭🇷", "386,SI,🇸🇮", "387,BA,🇧🇦", "389,MK,🇲🇰", "420,CZ,🇨🇿", "421,SK,🇸🇰", "423,LI,🇱🇮", "500,FK,🇫🇰", "501,BZ,🇧🇿", "502,GT,🇬🇹", "503,SV,🇸🇻", "504,HN,🇭🇳", "505,NI,🇳🇮", "506,CR,🇨🇷", "507,PA,🇵🇦", "508,PM,🇵🇲", "509,HT,🇭🇹", "590,GP,🇬🇵", "591,BO,🇧🇴", "592,GY,🇬🇾", "593,EC,🇪🇨", "594,GF,🇬🇫", "595,PY,🇵🇾", "596,MQ,🇲🇶", "597,SR,🇸🇷", "598,UY,🇺🇾", "599,BQ,🇧🇶", "670,TL,🇹🇱", "672,AQ,🇦🇶", "673,BN,🇧🇳", "674,NR,🇳🇷", "675,PG,🇵🇬", "676,TO,🇹🇴", "677,SB,🇸🇧", "678,VU,🇻🇺", "679,FJ,🇫🇯", "680,PW,🇵🇼", "681,WF,🇼🇫", "682,CK,🇨🇰", "683,NU,🇳🇺", "684,AS,🇦🇸", "685,WS,🇼🇸", "686,KI,🇰🇮", "687,NC,🇳🇨", "688,TV,🇹🇻", "689,PF,🇵🇫", "690,TK,🇹🇰", "691,FM,🇫🇲", "692,MH,🇲🇭", "850,KP,🇰🇵", "852,HK,🇭🇰", "853,MO,🇲🇴", "855,KH,🇰🇭", "856,LA,🇱🇦", "880,BD,🇧🇩", "886,TW,🇹🇼", "960,MV,🇲🇻", "961,LB,🇱🇧", "962,JO,🇯🇴", "963,SY,🇸🇾", "964,IQ,🇮🇶", "965,KW,🇰🇼", "966,SA,🇸🇦", "967,YE,🇾🇪", "968,OM,🇴🇲", "970,PS,🇵🇸", "971,AE,🇦🇪", "972,IL,🇮🇱", "973,BH,🇧🇭", "974,QA,🇶🇦", "975,BT,🇧🇹", "976,MN,🇲🇳", "977,NP,🇳🇵", "992,TJ,🇹🇯", "993,TM,🇹🇲", "994,AZ,🇦🇿", "995,GE,🇬🇪", "996,KG,🇰🇬", "998,UZ,🇺🇿"
+    ];
+
+    function populateCountryCodes() {
+        const selects = document.querySelectorAll('#contactCode, #bookCode');
+        selects.forEach(select => {
+            if (select && !select.dataset.populated) {
+                select.innerHTML = countryCodes.map(c => {
+                    let parts = c.split(',');
+                    return `<option value="${parts[0]}">${parts[2]} +${parts[0]}</option>`;
+                }).join('');
+                select.dataset.populated = "true";
+            }
+        });
+    }
+
     // ==================== FULL SCREEN VIEWER ====================
     function openFullscreen(mediaUrl, isVideo) {
         const viewer = document.getElementById('fullscreenViewer');
@@ -700,7 +753,9 @@
             manage_accounts_btn: "📋 Manage Accounts", manage_products_btn: "📦 Manage Products",
             manage_contacts_btn: "📞 Manage Contacts", manage_ads_btn: "🖼️ Manage Ads",
             logout_btn: "🚪 Logout", nav_home: "Home", nav_pubg: "PUBG", nav_shop: "Shop",
-            nav_contact: "Contact", nav_admin: "Admin", install_btn: "Install App"
+            nav_contact: "Contact", nav_admin: "Admin", install_btn: "Install App",
+            all: "All", small: "Small", medium: "Medium", big: "Big",
+            phones: "Phones", ipad: "iPad", computer: "Computer", tv: "TV", other: "Other"
         },
         ps: {
             app_name: "جی کی سټور", lang_btn: "ژبه", marketplace: "جی کی مارکیټ", online: "آنلاین",
@@ -719,7 +774,9 @@
             manage_accounts_btn: "📋 اکاونټونه تنظیم کړئ", manage_products_btn: "📦 محصولات تنظیم کړئ",
             manage_contacts_btn: "📞 اړیکې تنظیم کړئ", manage_ads_btn: "🖼️ اعلانونه تنظیم کړئ",
             logout_btn: "🚪 وتل", nav_home: "کور", nav_pubg: "PUBG", nav_shop: "پلورنځی",
-            nav_contact: "اړیکه", nav_admin: "مدیر", install_btn: "نصب"
+            nav_contact: "اړیکه", nav_admin: "مدیر", install_btn: "نصب",
+            all: "ټول", small: "کوچنی", medium: "منځنی", big: "لوی",
+            phones: "تلیفونونه", ipad: "آی پیډ", computer: "کمپیوټر", tv: "تلویزیون", other: "نور"
         },
         fa: {
             app_name: "جی کی استور", lang_btn: "زبان", marketplace: "بازار جی کی", online: "آنلاین",
@@ -738,13 +795,35 @@
             manage_accounts_btn: "📋 مدیریت اکانت‌ها", manage_products_btn: "📦 مدیریت محصولات",
             manage_contacts_btn: "📞 مدیریت تماس‌ها", manage_ads_btn: "🖼️ مدیریت تبلیغات",
             logout_btn: "🚪 خروج", nav_home: "خانه", nav_pubg: "PUBG", nav_shop: "فروشگاه",
-            nav_contact: "تماس", nav_admin: "ادمین", install_btn: "نصب"
+            nav_contact: "تماس", nav_admin: "ادمین", install_btn: "نصب",
+            all: "همه", small: "کوچک", medium: "متوسط", big: "بزرگ",
+            phones: "تلفن‌ها", ipad: "آیپد", computer: "کامپیوتر", tv: "تلویزیون", other: "سایر"
         }
     };
 
     let currentLang = localStorage.getItem('language') || 'en';
-    function setLanguage(lang) { currentLang = lang; localStorage.setItem('language', lang); applyTranslations(); closeModal('languageModal'); showToast('Language updated'); }
-    function applyTranslations() { const t = translations[currentLang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerHTML = t[key]; }); document.body.dir = currentLang === 'en' ? 'ltr' : 'rtl'; renderTierTabs(); renderCategoryTabs(); }
+    function setLanguage(lang) { 
+        currentLang = lang; 
+        localStorage.setItem('language', lang); 
+        applyTranslations(); 
+        closeModal('languageModal'); 
+        showToast('Language updated');
+        // Set RTL for Pashto and Persian
+        if (lang === 'ps' || lang === 'fa') {
+            document.body.dir = 'rtl';
+        } else {
+            document.body.dir = 'ltr';
+        }
+    }
+    function applyTranslations() { 
+        const t = translations[currentLang]; 
+        document.querySelectorAll('[data-i18n]').forEach(el => { 
+            const key = el.getAttribute('data-i18n'); 
+            if(t[key]) el.innerHTML = t[key]; 
+        }); 
+        renderTierTabs(); 
+        renderCategoryTabs(); 
+    }
     function openLanguageModal() { openModal('languageModal'); }
 
     // ==================== DATA STORAGE ====================
@@ -782,6 +861,7 @@
         
         updateDisplayValues();
         updateAdminStats();
+        populateCountryCodes();
     }
 
     function updateDisplayValues() {
@@ -995,9 +1075,10 @@
     
     function addContact() {
         let name = document.getElementById('contactName').value.trim();
+        let code = document.getElementById('contactCode').value;
         let phone = document.getElementById('contactPhone').value.trim().replace(/\D/g, '');
         if (!name || !phone) { alert('Please enter name and phone number'); return; }
-        contacts.push({ id: Date.now().toString(), name, phone });
+        contacts.push({ id: Date.now().toString(), name, phone: code + phone });
         saveContacts(); renderContacts(); renderManageContacts();
         document.getElementById('contactName').value = ''; document.getElementById('contactPhone').value = '';
         showToast('✅ Contact added: ' + name);
@@ -1068,22 +1149,33 @@
     // ==================== USER FUNCTIONS ====================
     function openBookModal(id, name, price) {
         currentBookingItem = { id, name, price };
-        document.getElementById('bookBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p><input id="bookerName" class="input" placeholder="Your full name"><input id="bookerPhone" class="input" placeholder="WhatsApp number (e.g., 93793066322)">`;
+        document.getElementById('bookBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p>
+            <input id="bookerName" class="input" placeholder="Your full name">
+            <div class="phone-input-wrapper">
+                <select id="bookCode" class="country-code"></select>
+                <input id="bookerPhone" class="input phone-number" placeholder="WhatsApp number">
+            </div>`;
+        populateCountryCodes();
         openModal('bookModal');
     }
     
     function submitBooking() {
         let name = document.getElementById('bookerName')?.value.trim();
+        let code = document.getElementById('bookCode')?.value;
         let phone = document.getElementById('bookerPhone')?.value.trim().replace(/\D/g, '');
         if (!name || !phone) { alert('Please enter your name and phone number'); return; }
-        bookings.push({ id: Date.now().toString(), item: currentBookingItem.name, name, phone, date: new Date().toLocaleString() });
+        bookings.push({ id: Date.now().toString(), item: currentBookingItem.name, name, phone: code + phone, date: new Date().toLocaleString() });
         saveBookings(); closeModal('bookModal'); renderBookings();
         showToast('✅ Booking submitted! We will contact you.');
     }
     
     function openBuyModal(name, price) {
         currentBuyItem = { name, price };
-        document.getElementById('buyBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p><p>Send payment to USDT address:</p><code style="display: block; background: #000; padding: 10px; border-radius: 12px; margin: 10px 0;">${usdtAddress}</code><p>Binance Pay ID: <strong>${binanceId}</strong></p><button class="action-btn" onclick="copyToClipboard('homeUsdtAddress', 'USDT')" style="width: 100%;">📋 Copy USDT Address</button>`;
+        document.getElementById('buyBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p>
+            <p>Send payment to USDT address:</p>
+            <code style="display: block; background: #000; padding: 10px; border-radius: 12px; margin: 10px 0;">${usdtAddress}</code>
+            <p>Binance Pay ID: <strong>${binanceId}</strong></p>
+            <button class="action-btn" onclick="copyToClipboard('homeUsdtAddress', 'USDT')" style="width: 100%;">📋 Copy USDT Address</button>`;
         openModal('buyModal');
     }
     
@@ -1113,20 +1205,49 @@
     function openManageContacts() { renderManageContacts(); openModal('manageContactsModal'); }
     function openManageAds() { renderManageAds(); openModal('manageAdsModal'); }
     
-    // ==================== PWA INSTALL ====================
+    // ==================== PWA INSTALLATION ====================
     let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').style.display = 'flex'; });
-    function triggerInstall() { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('installBtn').style.display = 'none'; }); } else { showToast('Tap browser menu → Install app'); } }
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('installBtn');
+        if (installBtn) installBtn.style.display = 'flex';
+    });
     
+    function triggerInstall() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((result) => {
+                if (result.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                const installBtn = document.getElementById('installBtn');
+                if (installBtn) installBtn.style.display = 'none';
+            });
+        } else {
+            showToast('Tap browser menu → Install app');
+        }
+    }
+    
+    // Create install button if not exists
     let installBtn = document.createElement('button');
     installBtn.id = 'installBtn';
     installBtn.className = 'install-fixed';
     installBtn.innerHTML = '<i class="fas fa-download"></i> <span data-i18n="install_btn">Install App</span>';
     installBtn.onclick = triggerInstall;
     installBtn.style.display = 'none';
-    document.body.appendChild(installBtn);
+    if (!document.getElementById('installBtn')) document.body.appendChild(installBtn);
     
-    if (window.matchMedia('(display-mode: standalone)').matches) document.getElementById('installBtn').style.display = 'none';
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        const btn = document.getElementById('installBtn');
+        if (btn) btn.style.display = 'none';
+    }
+    
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('Service worker registration failed:', err));
+    }
     
     // Online counter
     let onlineCount = 18;
@@ -1143,9 +1264,12 @@
     renderBookings();
     updateAdminStats();
     applyTranslations();
+    populateCountryCodes();
     
+    // Set initial direction based on saved language
     let savedLang = localStorage.getItem('language');
     if (savedLang) setLanguage(savedLang);
+    else setLanguage('en');
 </script>
 </body>
 </html>
