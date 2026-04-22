@@ -9,6 +9,22 @@
     <meta name="apple-mobile-web-app-title" content="GK Store">
     <meta name="mobile-web-app-capable" content="yes">
     <title>GK Store · PUBG & Electronics</title>
+    
+    <!-- Manifest for PWA -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        \"name\": \"GK Store\",
+        \"short_name\": \"GK Store\",
+        \"description\": \"PUBG Accounts & Electronics Marketplace\",
+        \"start_url\": \".\",
+        \"display\": \"standalone\",
+        \"theme_color\": \"#e74c3c\",
+        \"background_color\": \"#0a0a0a\",
+        \"orientation\": \"portrait\",
+        \"icons\": [
+            {\"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e74c3c'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white'%3EGK%3C/text%3E%3C/svg%3E\", \"sizes\": \"any\", \"type\": \"image/svg+xml\"}
+        ]
+    }">
+    
     <style>
         * {
             margin: 0;
@@ -304,6 +320,9 @@
             cursor: pointer;
             z-index: 100;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .admin-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 15px; }
         .admin-stat-card { background: #252525; border-radius: 16px; padding: 15px; text-align: center; }
@@ -313,8 +332,41 @@
         .whatsapp-btn { background: #25D366; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; margin-top: 8px; }
         .preview-box { margin: 10px 0; padding: 10px; background: #000; border-radius: 12px; text-align: center; }
         .preview-box video, .preview-box img { max-height: 150px; border-radius: 8px; max-width: 100%; }
-        .binance-box { background: #0b0e11; border: 1px solid #f0b90b; border-radius: 16px; padding: 15px; margin-top: 15px; }
-        .binance-box h4 { color: #f0b90b; margin-bottom: 10px; }
+        .binance-box, .usdt-box {
+            background: #0b0e11;
+            border: 1px solid #f0b90b;
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .usdt-box { border-color: #e74c3c; }
+        .binance-box h4, .usdt-box h4 { margin-bottom: 10px; }
+        .binance-box h4 { color: #f0b90b; }
+        .usdt-box h4 { color: #e74c3c; }
+        .copy-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .copy-btn:hover { background: rgba(255,255,255,0.2); }
+        .payment-code {
+            display: block;
+            background: #000;
+            padding: 12px;
+            border-radius: 12px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
         video, img { max-width: 100%; display: block; }
         
         /* Full Screen Viewer */
@@ -353,9 +405,7 @@
             justify-content: center;
             z-index: 10001;
         }
-        .fullscreen-close:hover {
-            background: rgba(255,255,255,0.3);
-        }
+        .fullscreen-close:hover { background: rgba(255,255,255,0.3); }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -365,73 +415,93 @@
 <div class="top-nav">
     <div class="logo" onclick="switchScreen('main')">
         <div class="logo-icon">GK</div>
-        <span>GK Store</span>
+        <span data-i18n="app_name">GK Store</span>
     </div>
     <div style="display: flex; gap: 10px;">
-        <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> Lang</button>
+        <button class="nav-btn" onclick="openLanguageModal()"><i class="fas fa-globe"></i> <span data-i18n="lang_btn">Lang</span></button>
         <button class="nav-btn" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i></button>
     </div>
 </div>
 
 <div class="container">
+    <!-- Main Screen -->
     <div id="main-screen" class="screen active">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <h1 class="big-title">GK Marketplace</h1>
-            <div class="online-badge"><div class="online-dot"></div><span id="onlineCount">18</span> Online</div>
+            <h1 class="big-title" data-i18n="marketplace">GK Marketplace</h1>
+            <div class="online-badge"><div class="online-dot"></div><span id="onlineCount">18</span> <span data-i18n="online">Online</span></div>
         </div>
-        <div class="sub-head">🔒 Secure · Instant delivery</div>
+        <div class="sub-head" data-i18n="secure">🔒 Secure · Instant delivery</div>
+        
         <div class="news-ticker">
             <div class="ticker-text">
-                <span><i class="fas fa-video"></i> ⚠️ Tap on any image or video to view full screen</span>
-                <span><i class="fas fa-download"></i> 📱 Press and hold to save images/videos</span>
-                <span><i class="fas fa-chrome"></i> 🔄 Full screen viewer works on all devices</span>
+                <span><i class="fas fa-video"></i> <span data-i18n="news1">⚠️ Tap on any image or video to view full screen</span></span>
+                <span><i class="fas fa-download"></i> <span data-i18n="news2">📱 Press and hold to save images/videos</span></span>
+                <span><i class="fas fa-chrome"></i> <span data-i18n="news3">🔄 Full screen viewer works on all devices</span></span>
             </div>
         </div>
+        
         <div class="info-card green" onclick="window.open('https://wa.me/93793066322?text=I want to know about 30 days link wash guarantee','_blank')">
-            <div class="info-card-left"><i class="fab fa-whatsapp"></i><span>✅ in all pubg account 30 days link wash guarantee</span></div>
+            <div class="info-card-left"><i class="fab fa-whatsapp"></i><span data-i18n="guarantee">✅ in all pubg account 30 days link wash guarantee</span></div>
             <div class="info-card-right"><i class="fas fa-chevron-right"></i></div>
         </div>
+        
         <div class="info-card blue" onclick="switchScreen('contact')">
-            <div class="info-card-left"><i class="fas fa-info-circle"></i><span>ℹ️ if you want extra information contact us from contact button</span></div>
+            <div class="info-card-left"><i class="fas fa-info-circle"></i><span data-i18n="extra_info">ℹ️ if you want extra information contact us from contact button</span></div>
             <div class="info-card-right"><i class="fas fa-arrow-right"></i></div>
         </div>
-        <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> 🔥 PUBG Accounts <i class="fas fa-arrow-right"></i></button>
-        <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> ⚡ Shop Electronics <i class="fas fa-bolt"></i></button>
-        <div id="ads-slider"></div>
-        <div class="binance-box">
-            <h4><i class="fab fa-bitcoin"></i> Binance Pay / USDT Accepted</h4>
-            <p>Send USDT (TRC20/BEP20) to the address shown in checkout.</p>
+        
+        <!-- USDT Box on Home Screen -->
+        <div class="usdt-box">
+            <h4><i class="fab fa-bitcoin"></i> <span data-i18n="usdt_title">💳 USDT Address (TRC20/BEP20)</span></h4>
+            <code id="homeUsdtAddress" class="payment-code">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+            <button class="copy-btn" onclick="copyToClipboard('homeUsdtAddress', 'USDT')"><i class="fas fa-copy"></i> <span data-i18n="copy_usdt">Copy USDT Address</span></button>
         </div>
+        
+        <!-- Binance Box on Home Screen -->
+        <div class="binance-box">
+            <h4><i class="fab fa-binance"></i> <span data-i18n="binance_title">Binance Pay ID</span></h4>
+            <code id="homeBinanceId" class="payment-code">GKStore@binance</code>
+            <button class="copy-btn" onclick="copyToClipboard('homeBinanceId', 'Binance')"><i class="fas fa-copy"></i> <span data-i18n="copy_binance">Copy Binance ID</span></button>
+        </div>
+        
+        <button class="cta-button" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i> <span data-i18n="pubg_btn">🔥 PUBG Accounts</span> <i class="fas fa-arrow-right"></i></button>
+        <button class="cta-button" onclick="switchScreen('tools')"><i class="fas fa-store"></i> <span data-i18n="shop_btn">⚡ Shop Electronics</span> <i class="fas fa-bolt"></i></button>
+        
+        <div id="ads-slider"></div>
     </div>
 
+    <!-- Accounts Screen -->
     <div id="accounts-screen" class="screen">
-        <h2 style="margin-bottom: 15px;">🔥 PUBG Accounts</h2>
+        <h2 style="margin-bottom: 15px;" data-i18n="pubg_title">🔥 PUBG Accounts</h2>
         <div class="tier-header" id="tierHeader"></div>
         <div id="accounts-grid" class="accounts-grid"></div>
     </div>
 
+    <!-- Tools Screen -->
     <div id="tools-screen" class="screen">
-        <h2 style="margin-bottom: 15px;">🛒 Electronics Shop</h2>
+        <h2 style="margin-bottom: 15px;" data-i18n="shop_title">🛒 Electronics Shop</h2>
         <div class="category-header" id="categoryHeader"></div>
         <div id="tools-grid" class="tools-grid"></div>
     </div>
 
+    <!-- Contact Screen -->
     <div id="contact-screen" class="screen">
-        <h2 style="margin-bottom: 15px;">Contact & Support</h2>
+        <h2 style="margin-bottom: 15px;" data-i18n="contact_title">Contact & Support</h2>
         <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
-            <i class="fas fa-map-pin"></i> <strong>📍 Store Address:</strong><br>
-            Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)
+            <i class="fas fa-map-pin"></i> <strong data-i18n="address_label">📍 Store Address:</strong><br>
+            <span data-i18n="address_text">Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)</span>
         </div>
         <div id="contacts-container"></div>
     </div>
 
+    <!-- Admin Screen -->
     <div id="admin-screen" class="screen">
-        <h2 style="margin-bottom: 15px;">Admin Panel</h2>
+        <h2 style="margin-bottom: 15px;" data-i18n="admin_title">Admin Panel</h2>
         <div id="admin-login">
             <div class="account-card" style="padding: 20px;">
-                <h3>Admin Login</h3>
+                <h3 data-i18n="admin_login">Admin Login</h3>
                 <input type="password" id="adminPassword" class="input" placeholder="Enter password">
-                <button class="action-btn buy" style="width: 100%;" onclick="adminLogin()">Login</button>
+                <button class="action-btn buy" style="width: 100%;" onclick="adminLogin()" data-i18n="login_btn">Login</button>
                 <p style="font-size: 12px; margin-top: 10px;">Password: <strong>admin123</strong></p>
             </div>
         </div>
@@ -439,8 +509,8 @@
             <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
                 <h3>📊 Statistics</h3>
                 <div class="admin-stats">
-                    <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div>Accounts</div></div>
-                    <div class="admin-stat-card"><div class="admin-stat-number" id="statProducts">0</div><div>Products</div></div>
+                    <div class="admin-stat-card"><div class="admin-stat-number" id="statAccounts">0</div><div data-i18n="accounts_count">Accounts</div></div>
+                    <div class="admin-stat-card"><div class="admin-stat-number" id="statProducts">0</div><div data-i18n="products_count">Products</div></div>
                 </div>
             </div>
             <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
@@ -448,27 +518,32 @@
                 <div id="bookingsList"></div>
             </div>
             <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
-                <h3>💳 USDT Address</h3>
-                <code id="usdtDisplay" style="display: block; background: #000; padding: 10px; border-radius: 12px; word-break: break-all;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
-                <button class="action-btn" onclick="editUsdt()" style="margin-top: 10px;">✏️ Edit</button>
+                <h3 data-i18n="usdt_title">💳 USDT Address</h3>
+                <code id="adminUsdtAddress" style="display: block; background: #000; padding: 10px; border-radius: 12px; word-break: break-all; margin: 10px 0;">TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY</code>
+                <button class="action-btn" onclick="editUsdt()" data-i18n="edit_btn">✏️ Edit</button>
             </div>
-            <button class="action-btn buy" onclick="openAddAccountModal()" style="width: 100%; margin-bottom: 10px;">➕ Add PUBG Account</button>
-            <button class="action-btn buy" onclick="openAddProductModal()" style="width: 100%; margin-bottom: 10px;">➕ Add Product</button>
-            <button class="action-btn" onclick="openManageAccounts()" style="width: 100%; margin-bottom: 10px;">📋 Manage Accounts</button>
-            <button class="action-btn" onclick="openManageProducts()" style="width: 100%; margin-bottom: 10px;">📦 Manage Products</button>
-            <button class="action-btn" onclick="openManageContacts()" style="width: 100%; margin-bottom: 10px;">📞 Manage Contacts</button>
-            <button class="action-btn" onclick="openManageAds()" style="width: 100%; margin-bottom: 10px;">🖼️ Manage Ads</button>
-            <button class="action-btn" onclick="logout()" style="width: 100%; background: #555;">🚪 Logout</button>
+            <div class="account-card" style="padding: 15px; margin-bottom: 15px;">
+                <h3><i class="fab fa-binance"></i> Binance Pay ID</h3>
+                <code id="adminBinanceId" style="display: block; background: #000; padding: 10px; border-radius: 12px; word-break: break-all; margin: 10px 0;">GKStore@binance</code>
+                <button class="action-btn" onclick="editBinance()" data-i18n="edit_btn">✏️ Edit</button>
+            </div>
+            <button class="action-btn buy" onclick="openAddAccountModal()" style="width: 100%; margin-bottom: 10px;" data-i18n="add_account_btn">➕ Add PUBG Account</button>
+            <button class="action-btn buy" onclick="openAddProductModal()" style="width: 100%; margin-bottom: 10px;" data-i18n="add_product_btn">➕ Add Product</button>
+            <button class="action-btn" onclick="openManageAccounts()" style="width: 100%; margin-bottom: 10px;" data-i18n="manage_accounts_btn">📋 Manage Accounts</button>
+            <button class="action-btn" onclick="openManageProducts()" style="width: 100%; margin-bottom: 10px;" data-i18n="manage_products_btn">📦 Manage Products</button>
+            <button class="action-btn" onclick="openManageContacts()" style="width: 100%; margin-bottom: 10px;" data-i18n="manage_contacts_btn">📞 Manage Contacts</button>
+            <button class="action-btn" onclick="openManageAds()" style="width: 100%; margin-bottom: 10px;" data-i18n="manage_ads_btn">🖼️ Manage Ads</button>
+            <button class="action-btn" onclick="logout()" style="width: 100%; background: #555;" data-i18n="logout_btn">🚪 Logout</button>
         </div>
     </div>
 </div>
 
 <div class="bottom-nav">
-    <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span>Home</span></button>
-    <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span>PUBG</span></button>
-    <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span>Shop</span></button>
-    <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span>Contact</span></button>
-    <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></button>
+    <button class="bottom-nav-btn" id="nav-main" onclick="switchScreen('main')"><i class="fas fa-home"></i><span data-i18n="nav_home">Home</span></button>
+    <button class="bottom-nav-btn" id="nav-accounts" onclick="switchScreen('accounts')"><i class="fas fa-gamepad"></i><span data-i18n="nav_pubg">PUBG</span></button>
+    <button class="bottom-nav-btn" id="nav-tools" onclick="switchScreen('tools')"><i class="fas fa-store"></i><span data-i18n="nav_shop">Shop</span></button>
+    <button class="bottom-nav-btn" id="nav-contact" onclick="switchScreen('contact')"><i class="fab fa-whatsapp"></i><span data-i18n="nav_contact">Contact</span></button>
+    <button class="bottom-nav-btn" id="nav-admin" onclick="switchScreen('admin')"><i class="fas fa-user-shield"></i><span data-i18n="nav_admin">Admin</span></button>
 </div>
 
 <!-- Full Screen Viewer -->
@@ -481,11 +556,7 @@
 <div id="addAccountModal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header"><h3>➕ Add PUBG Account</h3><button class="modal-close" onclick="closeModal('addAccountModal')">&times;</button></div>
-        <select id="accTier" class="input">
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="big">Big</option>
-        </select>
+        <select id="accTier" class="input"><option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option></select>
         <input id="accTitle" class="input" placeholder="Account Title" required>
         <textarea id="accDesc" class="input" rows="2" placeholder="Description"></textarea>
         <input id="accUsd" class="input" placeholder="USD Price" type="number" required>
@@ -499,13 +570,7 @@
 <div id="addProductModal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header"><h3>➕ Add Product</h3><button class="modal-close" onclick="closeModal('addProductModal')">&times;</button></div>
-        <select id="prodCat" class="input">
-            <option value="phone">📱 Phone</option>
-            <option value="ipad">📟 iPad</option>
-            <option value="computer">💻 Computer</option>
-            <option value="tv">📺 TV</option>
-            <option value="other">🎧 Other</option>
-        </select>
+        <select id="prodCat" class="input"><option value="phone">📱 Phone</option><option value="ipad">📟 iPad</option><option value="computer">💻 Computer</option><option value="tv">📺 TV</option><option value="other">🎧 Other</option></select>
         <input id="prodName" class="input" placeholder="Product Name" required>
         <textarea id="prodDesc" class="input" rows="2" placeholder="Description"></textarea>
         <input id="prodUsd" class="input" placeholder="USD Price" type="number" required>
@@ -553,6 +618,14 @@
     </div>
 </div>
 
+<div id="editBinanceModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header"><h3>✏️ Edit Binance ID</h3><button class="modal-close" onclick="closeModal('editBinanceModal')">&times;</button></div>
+        <input id="newBinance" class="input" placeholder="Binance Pay ID">
+        <button class="action-btn buy" onclick="saveBinance()">Save</button>
+    </div>
+</div>
+
 <div id="bookModal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header"><h3>📖 Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div>
@@ -583,7 +656,6 @@
     function openFullscreen(mediaUrl, isVideo) {
         const viewer = document.getElementById('fullscreenViewer');
         const content = document.getElementById('fullscreenContent');
-        
         if (isVideo) {
             content.innerHTML = `<video controls autoplay playsinline style="max-width:95%; max-height:95%;"><source src="${mediaUrl}" type="video/mp4">Video not supported</video>`;
         } else {
@@ -599,73 +671,124 @@
         content.innerHTML = '';
     }
     
-    // Close on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeFullscreen();
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeFullscreen(); });
+
+    // ==================== COPY FUNCTION ====================
+    function copyToClipboard(elementId, name) {
+        const element = document.getElementById(elementId);
+        const text = element.innerText;
+        navigator.clipboard.writeText(text);
+        showToast(`✅ ${name} address copied!`);
+    }
+
+    // ==================== TRANSLATIONS ====================
+    const translations = {
+        en: {
+            app_name: "GK Store", lang_btn: "Lang", marketplace: "GK Marketplace", online: "Online",
+            secure: "🔒 Secure · Instant delivery", news1: "⚠️ Tap on any image or video to view full screen",
+            news2: "📱 Press and hold to save images/videos", news3: "🔄 Full screen viewer works on all devices",
+            guarantee: "✅ in all pubg account 30 days link wash guarantee",
+            extra_info: "ℹ️ if you want extra information contact us from contact button",
+            usdt_title: "💳 USDT Address (TRC20/BEP20)", binance_title: "Binance Pay ID",
+            copy_usdt: "Copy USDT Address", copy_binance: "Copy Binance ID",
+            pubg_btn: "🔥 PUBG Accounts", shop_btn: "⚡ Shop Electronics",
+            pubg_title: "🔥 PUBG Accounts", shop_title: "🛒 Electronics Shop",
+            contact_title: "Contact & Support", admin_title: "Admin Panel",
+            address_label: "📍 Store Address:", address_text: "Kabul - Gul Bahar center, 3rd floor, shop number C130 (VIP Mobile)",
+            admin_login: "Admin Login", login_btn: "Login", accounts_count: "Accounts", products_count: "Products",
+            edit_btn: "✏️ Edit", add_account_btn: "➕ Add PUBG Account", add_product_btn: "➕ Add Product",
+            manage_accounts_btn: "📋 Manage Accounts", manage_products_btn: "📦 Manage Products",
+            manage_contacts_btn: "📞 Manage Contacts", manage_ads_btn: "🖼️ Manage Ads",
+            logout_btn: "🚪 Logout", nav_home: "Home", nav_pubg: "PUBG", nav_shop: "Shop",
+            nav_contact: "Contact", nav_admin: "Admin", install_btn: "Install App"
+        },
+        ps: {
+            app_name: "جی کی سټور", lang_btn: "ژبه", marketplace: "جی کی مارکیټ", online: "آنلاین",
+            secure: "🔒 امن · سمدستي تحویل", news1: "⚠️ په انځور یا ویډیو باندې کلیک وکړئ",
+            news2: "📱 نیولی ونیسئ او خوندي کړئ", news3: "🔄 بشپړ سکرین په ټولو وسیلو کار کوي",
+            guarantee: "✅ په ټولو پبجي اکاونټونو کې ۳۰ ورځې ضمانت",
+            extra_info: "ℹ️ اضافي معلوماتو لپاره موږ سره اړیکه ونیسئ",
+            usdt_title: "💳 USDT آدرس", binance_title: "بایننس پې آئی ډي",
+            copy_usdt: "USDT آدرس کاپي کړئ", copy_binance: "بایننس آئی ډي کاپي کړئ",
+            pubg_btn: "🔥 پبجي اکاونټونه", shop_btn: "⚡ برقی توکي",
+            pubg_title: "🔥 پبجي اکاونټونه", shop_title: "🛒 برقی توکي",
+            contact_title: "اړیکه او ملاتړ", admin_title: "د مدیر پینل",
+            address_label: "📍 د پلورنځي پته:", address_text: "کابل - ګل بهار مرکز، دریم پوړ، C130",
+            admin_login: "د مدیر ننوتل", login_btn: "ننوتل", accounts_count: "اکاونټونه", products_count: "محصولات",
+            edit_btn: "✏️ سمول", add_account_btn: "➕ اکاونټ اضافه کړئ", add_product_btn: "➕ محصول اضافه کړئ",
+            manage_accounts_btn: "📋 اکاونټونه تنظیم کړئ", manage_products_btn: "📦 محصولات تنظیم کړئ",
+            manage_contacts_btn: "📞 اړیکې تنظیم کړئ", manage_ads_btn: "🖼️ اعلانونه تنظیم کړئ",
+            logout_btn: "🚪 وتل", nav_home: "کور", nav_pubg: "PUBG", nav_shop: "پلورنځی",
+            nav_contact: "اړیکه", nav_admin: "مدیر", install_btn: "نصب"
+        },
+        fa: {
+            app_name: "جی کی استور", lang_btn: "زبان", marketplace: "بازار جی کی", online: "آنلاین",
+            secure: "🔒 امن · تحویل فوری", news1: "⚠️ برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید",
+            news2: "📱 نگه دارید و ذخیره کنید", news3: "🔄 نمایش تمام صفحه در همه دستگاه‌ها",
+            guarantee: "✅ ضمانت ۳۰ روزه برای تمام اکانت‌های پابجی",
+            extra_info: "ℹ️ برای اطلاعات بیشتر با ما تماس بگیرید",
+            usdt_title: "💳 آدرس USDT", binance_title: "آیدی بیننس پی",
+            copy_usdt: "کپی آدرس USDT", copy_binance: "کپی آیدی بیننس",
+            pubg_btn: "🔥 اکانت‌های پابجی", shop_btn: "⚡ فروشگاه الکترونیک",
+            pubg_title: "🔥 اکانت‌های پابجی", shop_title: "🛒 فروشگاه الکترونیک",
+            contact_title: "تماس و پشتیبانی", admin_title: "پنل ادمین",
+            address_label: "📍 آدرس فروشگاه:", address_text: "کابل - مرکز گل بهار، طبقه سوم، C130",
+            admin_login: "ورود ادمین", login_btn: "ورود", accounts_count: "اکانت‌ها", products_count: "محصولات",
+            edit_btn: "✏️ ویرایش", add_account_btn: "➕ افزودن اکانت", add_product_btn: "➕ افزودن محصول",
+            manage_accounts_btn: "📋 مدیریت اکانت‌ها", manage_products_btn: "📦 مدیریت محصولات",
+            manage_contacts_btn: "📞 مدیریت تماس‌ها", manage_ads_btn: "🖼️ مدیریت تبلیغات",
+            logout_btn: "🚪 خروج", nav_home: "خانه", nav_pubg: "PUBG", nav_shop: "فروشگاه",
+            nav_contact: "تماس", nav_admin: "ادمین", install_btn: "نصب"
         }
-    });
+    };
+
+    let currentLang = localStorage.getItem('language') || 'en';
+    function setLanguage(lang) { currentLang = lang; localStorage.setItem('language', lang); applyTranslations(); closeModal('languageModal'); showToast('Language updated'); }
+    function applyTranslations() { const t = translations[currentLang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerHTML = t[key]; }); document.body.dir = currentLang === 'en' ? 'ltr' : 'rtl'; renderTierTabs(); renderCategoryTabs(); }
+    function openLanguageModal() { openModal('languageModal'); }
 
     // ==================== DATA STORAGE ====================
-    let accounts = [];
-    let products = [];
-    let contacts = [];
-    let ads = [];
-    let bookings = [];
+    let accounts = [], products = [], contacts = [], ads = [], bookings = [];
     let usdtAddress = "TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY";
+    let binanceId = "GKStore@binance";
     let isAdmin = false;
-    let currentBookingItem = null;
-    let currentBuyItem = null;
-    let currentFilter = "all";
-    let currentCategory = "all";
-    let currentLang = "en";
+    let currentBookingItem = null, currentBuyItem = null;
+    let currentFilter = "all", currentCategory = "all";
 
-    // Default images
-    const DEFAULT_PUBG_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%232c3e50'/%3E%3Ctext x='200' y='120' text-anchor='middle' fill='%23e74c3c' font-size='28' font-weight='bold'%3EPUBG%3C/text%3E%3Ctext x='200' y='150' text-anchor='middle' fill='%23f39c12' font-size='16'%3EPremium Account%3C/text%3E%3C/svg%3E";
-    const DEFAULT_PHONE_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%232c3e50'/%3E%3Crect x='150' y='65' width='100' height='120' rx='15' fill='%23333' stroke='%23f39c12' stroke-width='3'/%3E%3Ctext x='200' y='135' text-anchor='middle' fill='white' font-size='18' font-weight='bold'%3EPhone%3C/text%3E%3C/svg%3E";
+    const DEFAULT_PUBG_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%232c3e50'/%3E%3Ctext x='200' y='120' text-anchor='middle' fill='%23e74c3c' font-size='28' font-weight='bold'%3EPUBG%3C/text%3E%3C/svg%3E";
+    const DEFAULT_PHONE_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%232c3e50'/%3E%3Crect x='150' y='65' width='100' height='120' rx='15' fill='%23333' stroke='%23f39c12' stroke-width='3'/%3E%3Ctext x='200' y='135' text-anchor='middle' fill='white' font-size='18'%3EPhone%3C/text%3E%3C/svg%3E";
 
     function loadData() {
         try {
-            let savedAccounts = localStorage.getItem('gk_accounts');
-            if (savedAccounts) accounts = JSON.parse(savedAccounts);
-            let savedProducts = localStorage.getItem('gk_products');
-            if (savedProducts) products = JSON.parse(savedProducts);
-            let savedContacts = localStorage.getItem('gk_contacts');
-            if (savedContacts) contacts = JSON.parse(savedContacts);
-            let savedAds = localStorage.getItem('gk_ads');
-            if (savedAds) ads = JSON.parse(savedAds);
-            let savedBookings = localStorage.getItem('gk_bookings');
-            if (savedBookings) bookings = JSON.parse(savedBookings);
-            let savedUsdt = localStorage.getItem('gk_usdt');
-            if (savedUsdt) usdtAddress = savedUsdt;
-        } catch(e) { console.error(e); }
+            accounts = JSON.parse(localStorage.getItem('gk_accounts') || '[]');
+            products = JSON.parse(localStorage.getItem('gk_products') || '[]');
+            contacts = JSON.parse(localStorage.getItem('gk_contacts') || '[]');
+            ads = JSON.parse(localStorage.getItem('gk_ads') || '[]');
+            bookings = JSON.parse(localStorage.getItem('gk_bookings') || '[]');
+            usdtAddress = localStorage.getItem('gk_usdt') || usdtAddress;
+            binanceId = localStorage.getItem('gk_binance') || binanceId;
+        } catch(e) {}
         
-        if (accounts.length === 0) {
-            accounts = [
-                { id: "1", tier: "small", title: "Starter Account", desc: "Basic skins, level 30+", price_usd: 25, price_afn: 1750, media: DEFAULT_PUBG_IMG, type: "image" },
-                { id: "2", tier: "medium", title: "Pro Account", desc: "Multiple rare skins, level 50+", price_usd: 50, price_afn: 3500, media: DEFAULT_PUBG_IMG, type: "image" },
-                { id: "3", tier: "big", title: "Premium Account", desc: "Ultra rare skins, level 80+", price_usd: 100, price_afn: 7000, media: DEFAULT_PUBG_IMG, type: "image" }
-            ];
-            saveAccounts();
-        }
+        if (accounts.length === 0) accounts = [
+            { id: "1", tier: "small", title: "Starter Account", desc: "Basic skins", price_usd: 25, price_afn: 1750, media: DEFAULT_PUBG_IMG, type: "image" },
+            { id: "2", tier: "medium", title: "Pro Account", desc: "Rare skins", price_usd: 50, price_afn: 3500, media: DEFAULT_PUBG_IMG, type: "image" },
+            { id: "3", tier: "big", title: "Premium Account", desc: "Ultra rare", price_usd: 100, price_afn: 7000, media: DEFAULT_PUBG_IMG, type: "image" }
+        ];
+        if (products.length === 0) products = [
+            { id: "1", category: "phone", name: "iPhone 15 Pro", desc: "Latest model", price_usd: 999, price_afn: 70000, media: DEFAULT_PHONE_IMG, type: "image" },
+            { id: "2", category: "computer", name: "Gaming Laptop", desc: "RTX 4060", price_usd: 1299, price_afn: 91000, media: DEFAULT_PHONE_IMG, type: "image" }
+        ];
+        if (contacts.length === 0) contacts = [{ id: "1", name: "Store Manager", phone: "93793066322" }];
         
-        if (products.length === 0) {
-            products = [
-                { id: "1", category: "phone", name: "iPhone 15 Pro", desc: "Latest model, 256GB", price_usd: 999, price_afn: 70000, media: DEFAULT_PHONE_IMG, type: "image" },
-                { id: "2", category: "computer", name: "Gaming Laptop", desc: "RTX 4060, 16GB RAM", price_usd: 1299, price_afn: 91000, media: DEFAULT_PHONE_IMG, type: "image" }
-            ];
-            saveProducts();
-        }
-        
-        if (contacts.length === 0) {
-            contacts = [
-                { id: "1", name: "Store Manager", phone: "93793066322" },
-                { id: "2", name: "Support Team", phone: "93793066322" }
-            ];
-            saveContacts();
-        }
-        
+        updateDisplayValues();
         updateAdminStats();
+    }
+
+    function updateDisplayValues() {
+        document.getElementById('homeUsdtAddress').innerText = usdtAddress;
+        document.getElementById('homeBinanceId').innerText = binanceId;
+        document.getElementById('adminUsdtAddress').innerText = usdtAddress;
+        document.getElementById('adminBinanceId').innerText = binanceId;
     }
 
     function saveAccounts() { localStorage.setItem('gk_accounts', JSON.stringify(accounts)); updateAdminStats(); renderAccounts(); }
@@ -680,15 +803,13 @@
         if (!grid) return;
         let filtered = currentFilter === 'all' ? accounts : accounts.filter(a => a.tier === currentFilter);
         if (filtered.length === 0) { grid.innerHTML = '<div class="loading">No accounts available</div>'; return; }
-        
         grid.innerHTML = filtered.map(acc => `
             <div class="account-card">
                 ${acc.type === 'video' ? 
                     `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreen('${acc.media}', true)">
                         <source src="${acc.media}" type="video/mp4">
-                        Video not supported
                     </video>` : 
-                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" alt="${acc.title}" onclick="openFullscreen('${acc.media}', false)" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
+                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" onclick="openFullscreen('${acc.media}', false)" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title"><span>${escapeHtml(acc.title)}</span><span class="tier-badge">${acc.tier}</span></div>
                     <div class="card-desc">${escapeHtml(acc.desc)}</div>
@@ -708,15 +829,13 @@
         if (!grid) return;
         let filtered = currentCategory === 'all' ? products : products.filter(p => p.category === currentCategory);
         if (filtered.length === 0) { grid.innerHTML = '<div class="loading">No products available</div>'; return; }
-        
         grid.innerHTML = filtered.map(prod => `
             <div class="tool-card">
                 ${prod.type === 'video' ? 
                     `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:contain;" onclick="event.stopPropagation(); openFullscreen('${prod.media}', true)">
                         <source src="${prod.media}" type="video/mp4">
-                        Video not supported
                     </video>` : 
-                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" alt="${prod.name}" onclick="openFullscreen('${prod.media}', false)" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
+                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; cursor:pointer;" loading="lazy" onclick="openFullscreen('${prod.media}', false)" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title">${escapeHtml(prod.name)}</div>
                     <div class="card-desc">${escapeHtml(prod.desc)}</div>
@@ -738,7 +857,7 @@
             <div class="account-card" style="padding: 15px; margin-bottom: 10px;">
                 <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> ${escapeHtml(c.name)}</h3>
                 <p style="margin: 10px 0;">📞 +${c.phone}</p>
-                <button class="action-btn buy" onclick="window.open('https://wa.me/${c.phone}', '_blank')"><i class="fab fa-whatsapp"></i> Chat on WhatsApp</button>
+                <button class="action-btn buy" onclick="window.open('https://wa.me/${c.phone}', '_blank')"><i class="fab fa-whatsapp"></i> Chat</button>
             </div>
         `).join('');
     }
@@ -765,22 +884,24 @@
     }
     
     function renderTierTabs() {
+        const t = translations[currentLang];
         document.getElementById('tierHeader').innerHTML = `
-            <button class="tier-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All</button>
-            <button class="tier-tab ${currentFilter === 'small' ? 'active' : ''}" onclick="setFilter('small')">Small</button>
-            <button class="tier-tab ${currentFilter === 'medium' ? 'active' : ''}" onclick="setFilter('medium')">Medium</button>
-            <button class="tier-tab ${currentFilter === 'big' ? 'active' : ''}" onclick="setFilter('big')">Big</button>
+            <button class="tier-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">${t.all || 'All'}</button>
+            <button class="tier-tab ${currentFilter === 'small' ? 'active' : ''}" onclick="setFilter('small')">${t.small || 'Small'}</button>
+            <button class="tier-tab ${currentFilter === 'medium' ? 'active' : ''}" onclick="setFilter('medium')">${t.medium || 'Medium'}</button>
+            <button class="tier-tab ${currentFilter === 'big' ? 'active' : ''}" onclick="setFilter('big')">${t.big || 'Big'}</button>
         `;
     }
     
     function renderCategoryTabs() {
+        const t = translations[currentLang];
         document.getElementById('categoryHeader').innerHTML = `
-            <button class="category-tab ${currentCategory === 'all' ? 'active' : ''}" onclick="setCategory('all')">All</button>
-            <button class="category-tab ${currentCategory === 'phone' ? 'active' : ''}" onclick="setCategory('phone')">Phones</button>
-            <button class="category-tab ${currentCategory === 'ipad' ? 'active' : ''}" onclick="setCategory('ipad')">iPad</button>
-            <button class="category-tab ${currentCategory === 'computer' ? 'active' : ''}" onclick="setCategory('computer')">Computer</button>
-            <button class="category-tab ${currentCategory === 'tv' ? 'active' : ''}" onclick="setCategory('tv')">TV</button>
-            <button class="category-tab ${currentCategory === 'other' ? 'active' : ''}" onclick="setCategory('other')">Other</button>
+            <button class="category-tab ${currentCategory === 'all' ? 'active' : ''}" onclick="setCategory('all')">${t.all || 'All'}</button>
+            <button class="category-tab ${currentCategory === 'phone' ? 'active' : ''}" onclick="setCategory('phone')">${t.phones || 'Phones'}</button>
+            <button class="category-tab ${currentCategory === 'ipad' ? 'active' : ''}" onclick="setCategory('ipad')">${t.ipad || 'iPad'}</button>
+            <button class="category-tab ${currentCategory === 'computer' ? 'active' : ''}" onclick="setCategory('computer')">${t.computer || 'Computer'}</button>
+            <button class="category-tab ${currentCategory === 'tv' ? 'active' : ''}" onclick="setCategory('tv')">${t.tv || 'TV'}</button>
+            <button class="category-tab ${currentCategory === 'other' ? 'active' : ''}" onclick="setCategory('other')">${t.other || 'Other'}</button>
         `;
     }
     
@@ -807,12 +928,11 @@
     function updateAdminStats() {
         document.getElementById('statAccounts').innerText = accounts.length;
         document.getElementById('statProducts').innerText = products.length;
-        document.getElementById('usdtDisplay').innerText = usdtAddress;
     }
     
     function setFilter(tier) { currentFilter = tier; renderAccounts(); renderTierTabs(); }
     function setCategory(cat) { currentCategory = cat; renderProducts(); renderCategoryTabs(); }
-    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m; }); }
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     
     // ==================== ADMIN FUNCTIONS ====================
     function adminLogin() {
@@ -821,11 +941,7 @@
             isAdmin = true;
             document.getElementById('admin-login').classList.add('hidden');
             document.getElementById('admin-dashboard').classList.remove('hidden');
-            renderManageAccounts();
-            renderManageProducts();
-            renderManageContacts();
-            renderManageAds();
-            renderBookings();
+            renderManageAccounts(); renderManageProducts(); renderManageContacts(); renderManageAds(); renderBookings();
             showToast('Welcome Admin!');
         } else { alert('Wrong password! Use: admin123'); }
     }
@@ -838,99 +954,41 @@
     }
     
     function addAccount() {
-        let tier = document.getElementById('accTier').value;
-        let title = document.getElementById('accTitle').value.trim();
-        let desc = document.getElementById('accDesc').value.trim();
-        let usd = parseFloat(document.getElementById('accUsd').value);
-        let afn = parseInt(document.getElementById('accAfn').value);
-        let file = document.getElementById('accMedia').files[0];
-        
+        let tier = document.getElementById('accTier').value, title = document.getElementById('accTitle').value.trim();
+        let desc = document.getElementById('accDesc').value.trim(), usd = parseFloat(document.getElementById('accUsd').value);
+        let afn = parseInt(document.getElementById('accAfn').value), file = document.getElementById('accMedia').files[0];
         if (!title || isNaN(usd) || isNaN(afn)) { alert('Please fill all fields'); return; }
-        
-        let processAccount = (media, type) => {
-            let newAccount = { 
-                id: Date.now().toString(), 
-                tier: tier, 
-                title: title, 
-                desc: desc || "No description", 
-                price_usd: usd, 
-                price_afn: afn, 
-                media: media, 
-                type: type 
-            };
-            accounts.push(newAccount);
-            saveAccounts();
-            closeModal('addAccountModal');
-            renderAccounts();
-            renderManageAccounts();
-            showToast('✅ Account added: ' + title);
-            clearAccountForm();
+        let process = (media, type) => {
+            accounts.push({ id: Date.now().toString(), tier, title, desc: desc || "No description", price_usd: usd, price_afn: afn, media, type });
+            saveAccounts(); closeModal('addAccountModal'); renderAccounts(); renderManageAccounts();
+            showToast('✅ Account added: ' + title); clearAccountForm();
         };
-        
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = (e) => processAccount(e.target.result, file.type.startsWith('video/') ? 'video' : 'image');
-            reader.readAsDataURL(file);
-        } else {
-            processAccount(DEFAULT_PUBG_IMG, 'image');
-        }
+        if (file) { let reader = new FileReader(); reader.onload = e => process(e.target.result, file.type.startsWith('video/') ? 'video' : 'image'); reader.readAsDataURL(file); }
+        else process(DEFAULT_PUBG_IMG, 'image');
     }
     
     function clearAccountForm() {
-        document.getElementById('accTitle').value = '';
-        document.getElementById('accDesc').value = '';
-        document.getElementById('accUsd').value = '';
-        document.getElementById('accAfn').value = '';
-        document.getElementById('accMedia').value = '';
+        ['accTitle', 'accDesc', 'accUsd', 'accAfn', 'accMedia'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('accPreview').classList.add('hidden');
         document.getElementById('accPreview').innerHTML = '';
     }
     
     function addProduct() {
-        let category = document.getElementById('prodCat').value;
-        let name = document.getElementById('prodName').value.trim();
-        let desc = document.getElementById('prodDesc').value.trim();
-        let usd = parseFloat(document.getElementById('prodUsd').value);
-        let afn = parseInt(document.getElementById('prodAfn').value);
-        let file = document.getElementById('prodMedia').files[0];
-        
+        let category = document.getElementById('prodCat').value, name = document.getElementById('prodName').value.trim();
+        let desc = document.getElementById('prodDesc').value.trim(), usd = parseFloat(document.getElementById('prodUsd').value);
+        let afn = parseInt(document.getElementById('prodAfn').value), file = document.getElementById('prodMedia').files[0];
         if (!name || isNaN(usd) || isNaN(afn)) { alert('Please fill all fields'); return; }
-        
-        let processProduct = (media, type) => {
-            let newProduct = { 
-                id: Date.now().toString(), 
-                category: category, 
-                name: name, 
-                desc: desc || "No description", 
-                price_usd: usd, 
-                price_afn: afn, 
-                media: media, 
-                type: type 
-            };
-            products.push(newProduct);
-            saveProducts();
-            closeModal('addProductModal');
-            renderProducts();
-            renderManageProducts();
-            showToast('✅ Product added: ' + name);
-            clearProductForm();
+        let process = (media, type) => {
+            products.push({ id: Date.now().toString(), category, name, desc: desc || "No description", price_usd: usd, price_afn: afn, media, type });
+            saveProducts(); closeModal('addProductModal'); renderProducts(); renderManageProducts();
+            showToast('✅ Product added: ' + name); clearProductForm();
         };
-        
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = (e) => processProduct(e.target.result, file.type.startsWith('video/') ? 'video' : 'image');
-            reader.readAsDataURL(file);
-        } else {
-            processProduct(DEFAULT_PHONE_IMG, 'image');
-        }
+        if (file) { let reader = new FileReader(); reader.onload = e => process(e.target.result, file.type.startsWith('video/') ? 'video' : 'image'); reader.readAsDataURL(file); }
+        else process(DEFAULT_PHONE_IMG, 'image');
     }
     
     function clearProductForm() {
-        document.getElementById('prodName').value = '';
-        document.getElementById('prodDesc').value = '';
-        document.getElementById('prodUsd').value = '';
-        document.getElementById('prodAfn').value = '';
-        document.getElementById('prodMedia').value = '';
+        ['prodName', 'prodDesc', 'prodUsd', 'prodAfn', 'prodMedia'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('prodPreview').classList.add('hidden');
         document.getElementById('prodPreview').innerHTML = '';
     }
@@ -940,11 +998,8 @@
         let phone = document.getElementById('contactPhone').value.trim().replace(/\D/g, '');
         if (!name || !phone) { alert('Please enter name and phone number'); return; }
         contacts.push({ id: Date.now().toString(), name, phone });
-        saveContacts();
-        renderContacts();
-        renderManageContacts();
-        document.getElementById('contactName').value = '';
-        document.getElementById('contactPhone').value = '';
+        saveContacts(); renderContacts(); renderManageContacts();
+        document.getElementById('contactName').value = ''; document.getElementById('contactPhone').value = '';
         showToast('✅ Contact added: ' + name);
     }
     
@@ -952,12 +1007,9 @@
         let file = document.getElementById('adMedia').files[0];
         if (!file) { alert('Select media'); return; }
         let reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
             ads.push({ type: file.type.startsWith('video/') ? 'video' : 'image', data: e.target.result, caption: document.getElementById('adCaption').value || '' });
-            saveAds();
-            renderAds();
-            renderManageAds();
-            closeModal('manageAdsModal');
+            saveAds(); renderAds(); renderManageAds(); closeModal('manageAdsModal');
             showToast('✅ Ad added');
         };
         reader.readAsDataURL(file);
@@ -969,21 +1021,19 @@
     function deleteAd(i) { if (confirm('Delete this ad?')) { ads.splice(i, 1); saveAds(); renderAds(); renderManageAds(); showToast('🗑️ Ad deleted'); } }
     
     function editUsdt() { document.getElementById('newUsdt').value = usdtAddress; openModal('editUsdtModal'); }
-    function saveUsdt() { let addr = document.getElementById('newUsdt').value.trim(); if (addr) { usdtAddress = addr; localStorage.setItem('gk_usdt', usdtAddress); document.getElementById('usdtDisplay').innerText = usdtAddress; closeModal('editUsdtModal'); showToast('✅ USDT address updated'); } }
+    function saveUsdt() { let addr = document.getElementById('newUsdt').value.trim(); if (addr) { usdtAddress = addr; localStorage.setItem('gk_usdt', usdtAddress); updateDisplayValues(); closeModal('editUsdtModal'); showToast('✅ USDT address updated'); } }
+    function editBinance() { document.getElementById('newBinance').value = binanceId; openModal('editBinanceModal'); }
+    function saveBinance() { let id = document.getElementById('newBinance').value.trim(); if (id) { binanceId = id; localStorage.setItem('gk_binance', binanceId); updateDisplayValues(); closeModal('editBinanceModal'); showToast('✅ Binance ID updated'); } }
     
     // ==================== PREVIEW FUNCTIONS ====================
     function previewAccountMedia(input) {
         let file = input.files[0];
         if (file) {
             let reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = e => {
                 let preview = document.getElementById('accPreview');
                 preview.classList.remove('hidden');
-                if (file.type.startsWith('video/')) {
-                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
-                } else {
-                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
-                }
+                preview.innerHTML = file.type.startsWith('video/') ? `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>` : `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
             };
             reader.readAsDataURL(file);
         }
@@ -993,14 +1043,10 @@
         let file = input.files[0];
         if (file) {
             let reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = e => {
                 let preview = document.getElementById('prodPreview');
                 preview.classList.remove('hidden');
-                if (file.type.startsWith('video/')) {
-                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
-                } else {
-                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
-                }
+                preview.innerHTML = file.type.startsWith('video/') ? `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>` : `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
             };
             reader.readAsDataURL(file);
         }
@@ -1010,14 +1056,10 @@
         let file = input.files[0];
         if (file) {
             let reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = e => {
                 let preview = document.getElementById('adPreview');
                 preview.classList.remove('hidden');
-                if (file.type.startsWith('video/')) {
-                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
-                } else {
-                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
-                }
+                preview.innerHTML = file.type.startsWith('video/') ? `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>` : `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
             };
             reader.readAsDataURL(file);
         }
@@ -1035,41 +1077,21 @@
         let phone = document.getElementById('bookerPhone')?.value.trim().replace(/\D/g, '');
         if (!name || !phone) { alert('Please enter your name and phone number'); return; }
         bookings.push({ id: Date.now().toString(), item: currentBookingItem.name, name, phone, date: new Date().toLocaleString() });
-        saveBookings();
-        closeModal('bookModal');
-        renderBookings();
+        saveBookings(); closeModal('bookModal'); renderBookings();
         showToast('✅ Booking submitted! We will contact you.');
     }
     
     function openBuyModal(name, price) {
         currentBuyItem = { name, price };
-        document.getElementById('buyBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p><p style="margin: 10px 0;">Send payment to USDT address:</p><code style="display: block; background: #000; padding: 10px; border-radius: 12px; word-break: break-all; margin-bottom: 10px;">${usdtAddress}</code><button class="action-btn" onclick="copyUsdt()" style="width: 100%;">📋 Copy USDT Address</button>`;
+        document.getElementById('buyBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p><p>Send payment to USDT address:</p><code style="display: block; background: #000; padding: 10px; border-radius: 12px; margin: 10px 0;">${usdtAddress}</code><p>Binance Pay ID: <strong>${binanceId}</strong></p><button class="action-btn" onclick="copyToClipboard('homeUsdtAddress', 'USDT')" style="width: 100%;">📋 Copy USDT Address</button>`;
         openModal('buyModal');
     }
     
-    function copyUsdt() { navigator.clipboard.writeText(usdtAddress); showToast('✅ USDT address copied!'); }
     function confirmPurchase() { if (currentBuyItem) { window.open(`https://wa.me/93793066322?text=I want to buy ${encodeURIComponent(currentBuyItem.name)} for $${currentBuyItem.price}`, '_blank'); closeModal('buyModal'); } }
     function showInfo(title, desc, usd, afn) { alert(`${title}\n\n${desc}\n\n💰 $${usd} / ${afn} AFN`); }
-    
-    // ==================== LANGUAGE ====================
-    const translations = {
-        en: { app_name: "GK Store", marketplace: "GK Marketplace", online: "Online", secure: "🔒 Secure · Instant delivery" },
-        ps: { app_name: "جی کی سټور", marketplace: "جی کی مارکیټ", online: "آنلاین", secure: "🔒 امن · سمدستي تحویل" },
-        fa: { app_name: "جی کی استور", marketplace: "بازار جی کی", online: "آنلاین", secure: "🔒 امن · تحویل فوری" }
-    };
-    function setLanguage(lang) { currentLang = lang; localStorage.setItem('language', lang); applyLanguage(); closeModal('languageModal'); showToast('Language updated'); }
-    function applyLanguage() { const t = translations[currentLang] || translations.en; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerHTML = t[key]; }); }
-    function openLanguageModal() { openModal('languageModal'); }
+    function showToast(msg) { let toast = document.createElement('div'); toast.className = 'toast'; toast.innerHTML = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2000); }
     
     // ==================== UTILITIES ====================
-    function showToast(msg) {
-        let toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-    }
-    
     function switchScreen(screen) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screen + '-screen').classList.add('active');
@@ -1091,18 +1113,20 @@
     function openManageContacts() { renderManageContacts(); openModal('manageContactsModal'); }
     function openManageAds() { renderManageAds(); openModal('manageAdsModal'); }
     
-    // PWA Install
+    // ==================== PWA INSTALL ====================
     let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; let btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'flex'; });
-    function triggerInstall() { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; }); } else { showToast('Tap browser menu → Install app'); } }
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').style.display = 'flex'; });
+    function triggerInstall() { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('installBtn').style.display = 'none'; }); } else { showToast('Tap browser menu → Install app'); } }
     
     let installBtn = document.createElement('button');
     installBtn.id = 'installBtn';
     installBtn.className = 'install-fixed';
-    installBtn.innerHTML = '<i class="fas fa-download"></i> Install App';
+    installBtn.innerHTML = '<i class="fas fa-download"></i> <span data-i18n="install_btn">Install App</span>';
     installBtn.onclick = triggerInstall;
     installBtn.style.display = 'none';
     document.body.appendChild(installBtn);
+    
+    if (window.matchMedia('(display-mode: standalone)').matches) document.getElementById('installBtn').style.display = 'none';
     
     // Online counter
     let onlineCount = 18;
@@ -1118,7 +1142,7 @@
     renderCategoryTabs();
     renderBookings();
     updateAdminStats();
-    applyLanguage();
+    applyTranslations();
     
     let savedLang = localStorage.getItem('language');
     if (savedLang) setLanguage(savedLang);
