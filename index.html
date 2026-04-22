@@ -182,6 +182,7 @@
             object-fit: cover;
             background: linear-gradient(135deg, #2c3e50, #1a1a2e);
             display: block;
+            cursor: pointer;
         }
         .card-content { padding: 12px; }
         .card-title { font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 5px; }
@@ -310,21 +311,11 @@
         .booking-item { background: #252525; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
         .booking-item h4 { color: #e74c3c; margin-bottom: 5px; }
         .whatsapp-btn { background: #25D366; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; margin-top: 8px; }
-        video, img { max-width: 100%; display: block; }
         .preview-box { margin: 10px 0; padding: 10px; background: #000; border-radius: 12px; text-align: center; }
-        .preview-box video, .preview-box img { max-height: 150px; border-radius: 8px; }
+        .preview-box video, .preview-box img { max-height: 150px; border-radius: 8px; max-width: 100%; }
         .binance-box { background: #0b0e11; border: 1px solid #f0b90b; border-radius: 16px; padding: 15px; margin-top: 15px; }
         .binance-box h4 { color: #f0b90b; margin-bottom: 10px; }
-        .no-image-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #2c3e50, #1a1a2e);
-            color: white;
-            font-size: 14px;
-        }
+        video, img { max-width: 100%; display: block; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -576,6 +567,11 @@
     let currentCategory = "all";
     let currentLang = "en";
 
+    // Working image URLs that definitely display
+    const DEFAULT_PUBG_IMG = "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=338&fit=crop";
+    const DEFAULT_PHONE_IMG = "https://images.unsplash.com/photo-1592899677977-9e10ca5889e8?w=600&h=338&fit=crop";
+    const DEFAULT_LAPTOP_IMG = "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600&h=338&fit=crop";
+
     // Translations
     const translations = {
         en: { app_name: "GK Store", marketplace: "GK Marketplace", online: "Online", secure: "🔒 Secure · Instant delivery" },
@@ -586,15 +582,6 @@
     function setLanguage(lang) { currentLang = lang; localStorage.setItem('language', lang); applyLanguage(); closeModal('languageModal'); showToast('Language updated'); }
     function applyLanguage() { const t = translations[currentLang] || translations.en; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerHTML = t[key]; }); }
     function openLanguageModal() { openModal('languageModal'); }
-
-    // Function to get default image placeholder
-    function getDefaultImage(type) {
-        if (type === 'pubg') {
-            return "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop";
-        } else {
-            return "https://images.unsplash.com/photo-1592899677977-9e10ca5889e8?w=400&h=225&fit=crop";
-        }
-    }
 
     function loadData() {
         try {
@@ -614,20 +601,19 @@
             if (savedBinance) binanceId = savedBinance;
         } catch(e) { console.error(e); }
         
-        // Default demo data with working Unsplash images
         if (accounts.length === 0) {
             accounts = [
-                { id: "1", tier: "small", title: "Starter Account", desc: "Basic skins, level 30+, 10+ rare items", price_usd: 25, price_afn: 1750, media: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop", type: "image" },
-                { id: "2", tier: "medium", title: "Pro Account", desc: "Multiple rare skins, level 50+, 25+ rare items", price_usd: 50, price_afn: 3500, media: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop", type: "image" },
-                { id: "3", tier: "big", title: "Premium Account", desc: "Ultra rare skins, level 80+, 50+ rare items", price_usd: 100, price_afn: 7000, media: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop", type: "image" }
+                { id: "1", tier: "small", title: "Starter Account", desc: "Basic skins, level 30+, 10+ rare items", price_usd: 25, price_afn: 1750, media: DEFAULT_PUBG_IMG, type: "image" },
+                { id: "2", tier: "medium", title: "Pro Account", desc: "Multiple rare skins, level 50+, 25+ rare items", price_usd: 50, price_afn: 3500, media: DEFAULT_PUBG_IMG, type: "image" },
+                { id: "3", tier: "big", title: "Premium Account", desc: "Ultra rare skins, level 80+, 50+ rare items", price_usd: 100, price_afn: 7000, media: DEFAULT_PUBG_IMG, type: "image" }
             ];
             saveAccounts();
         }
         
         if (products.length === 0) {
             products = [
-                { id: "1", category: "phone", name: "iPhone 15 Pro", desc: "Latest model, 256GB, Titanium", price_usd: 999, price_afn: 70000, media: "https://images.unsplash.com/photo-1592899677977-9e10ca5889e8?w=400&h=225&fit=crop", type: "image" },
-                { id: "2", category: "computer", name: "Gaming Laptop", desc: "RTX 4060, 16GB RAM, 1TB SSD", price_usd: 1299, price_afn: 91000, media: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=225&fit=crop", type: "image" }
+                { id: "1", category: "phone", name: "iPhone 15 Pro", desc: "Latest model, 256GB, Titanium", price_usd: 999, price_afn: 70000, media: DEFAULT_PHONE_IMG, type: "image" },
+                { id: "2", category: "computer", name: "Gaming Laptop", desc: "RTX 4060, 16GB RAM, 1TB SSD", price_usd: 1299, price_afn: 91000, media: DEFAULT_LAPTOP_IMG, type: "image" }
             ];
             saveProducts();
         }
@@ -651,7 +637,7 @@
     function saveAds() { localStorage.setItem('gk_ads', JSON.stringify(ads)); renderAds(); }
     function saveBookings() { localStorage.setItem('gk_bookings', JSON.stringify(bookings)); renderBookings(); }
 
-    // ==================== RENDER FUNCTIONS ====================
+    // ==================== RENDER FUNCTIONS - FIXED MEDIA PLAYBACK ====================
     function renderAccounts() {
         const grid = document.getElementById('accounts-grid');
         if (!grid) return;
@@ -661,8 +647,11 @@
         grid.innerHTML = filtered.map(acc => `
             <div class="account-card">
                 ${acc.type === 'video' ? 
-                    `<video class="card-media" controls playsinline preload="metadata"><source src="${acc.media}" type="video/mp4">Video not supported</video>` : 
-                    `<img src="${acc.media}" class="card-media" loading="lazy" alt="${acc.title}" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop'">`}
+                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:cover;">
+                        <source src="${acc.media}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>` : 
+                    `<img src="${acc.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:cover; background:#000;" loading="lazy" alt="${acc.title}" onerror="this.src='${DEFAULT_PUBG_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title"><span>${escapeHtml(acc.title)}</span><span class="tier-badge">${acc.tier}</span></div>
                     <div class="card-desc">${escapeHtml(acc.desc)}</div>
@@ -686,8 +675,11 @@
         grid.innerHTML = filtered.map(prod => `
             <div class="tool-card">
                 ${prod.type === 'video' ? 
-                    `<video class="card-media" controls playsinline preload="metadata"><source src="${prod.media}" type="video/mp4">Video not supported</video>` : 
-                    `<img src="${prod.media}" class="card-media" loading="lazy" alt="${prod.name}" onerror="this.src='https://images.unsplash.com/photo-1592899677977-9e10ca5889e8?w=400&h=225&fit=crop'">`}
+                    `<video class="card-media" controls playsinline preload="metadata" style="width:100%; aspect-ratio:16/9; background:#000; object-fit:cover;">
+                        <source src="${prod.media}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>` : 
+                    `<img src="${prod.media}" class="card-media" style="width:100%; aspect-ratio:16/9; object-fit:cover; background:#000;" loading="lazy" alt="${prod.name}" onerror="this.src='${DEFAULT_PHONE_IMG}'">`}
                 <div class="card-content">
                     <div class="card-title">${escapeHtml(prod.name)}</div>
                     <div class="card-desc">${escapeHtml(prod.desc)}</div>
@@ -833,7 +825,7 @@
             reader.onload = (e) => processAccount(e.target.result, file.type.startsWith('video/') ? 'video' : 'image');
             reader.readAsDataURL(file);
         } else {
-            processAccount("https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop", 'image');
+            processAccount(DEFAULT_PUBG_IMG, 'image');
         }
     }
     
@@ -844,6 +836,7 @@
         document.getElementById('accAfn').value = '';
         document.getElementById('accMedia').value = '';
         document.getElementById('accPreview').classList.add('hidden');
+        document.getElementById('accPreview').innerHTML = '';
     }
     
     function addProduct() {
@@ -871,7 +864,7 @@
             reader.onload = (e) => processProduct(e.target.result, file.type.startsWith('video/') ? 'video' : 'image');
             reader.readAsDataURL(file);
         } else {
-            processProduct("https://images.unsplash.com/photo-1592899677977-9e10ca5889e8?w=400&h=225&fit=crop", 'image');
+            processProduct(category === 'phone' ? DEFAULT_PHONE_IMG : DEFAULT_LAPTOP_IMG, 'image');
         }
     }
     
@@ -882,6 +875,7 @@
         document.getElementById('prodAfn').value = '';
         document.getElementById('prodMedia').value = '';
         document.getElementById('prodPreview').classList.add('hidden');
+        document.getElementById('prodPreview').innerHTML = '';
     }
     
     function addContact() {
@@ -930,7 +924,11 @@
             reader.onload = (e) => {
                 let preview = document.getElementById('accPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = file.type.startsWith('video/') ? `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>` : `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
+                } else {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -943,7 +941,11 @@
             reader.onload = (e) => {
                 let preview = document.getElementById('prodPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = file.type.startsWith('video/') ? `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>` : `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
+                } else {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -956,7 +958,11 @@
             reader.onload = (e) => {
                 let preview = document.getElementById('adPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = file.type.startsWith('video/') ? `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>` : `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${e.target.result}" controls playsinline style="width:100%; max-height:150px; border-radius:8px;"></video>`;
+                } else {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; max-height:150px; border-radius:8px; object-fit:cover;">`;
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -1049,7 +1055,6 @@
     updateAdminStats();
     applyLanguage();
     
-    // Restore language
     let savedLang = localStorage.getItem('language');
     if (savedLang) setLanguage(savedLang);
 </script>
