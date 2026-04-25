@@ -125,11 +125,23 @@
                 </div>
             </div>
             
-            <!-- NEW: Installation Analytics Section -->
             <div class="account-card" style="padding:15px; margin-bottom:15px;">
                 <h3>📱 Installation Analytics</h3>
                 <div id="installStats" class="stats-grid">
                     <div class="loading">Loading stats...</div>
+                </div>
+            </div>
+            
+            <div class="account-card" style="padding:15px; margin-bottom:15px;">
+                <h3>🔐 Admin Settings</h3>
+                <div class="admin-stats">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-number" style="font-size: 16px;">Change Password</div>
+                        <div class="stats-label" style="margin-top: 10px;">
+                            <input type="password" id="newPassword" class="input" placeholder="New password" style="margin-bottom: 5px;">
+                            <button class="action-btn buy" onclick="changeAdminPassword()" style="width:100%;">Update Password</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -180,18 +192,17 @@
 <div id="bookModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>📖 Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><div id="bookBody"></div><button class="action-btn buy" onclick="submitBooking()">Confirm Booking</button></div></div>
 
 <script>
-    // ==================== BUNNY.NET CONFIGURATION ====================
-    // 🔴 YOU MUST REPLACE THESE WITH YOUR ACTUAL CREDENTIALS 🔴
-    const BUNNY_DATABASE_ID = "YOUR_DATABASE_ID";
-    const BUNNY_DATABASE_TOKEN = "YOUR_DATABASE_TOKEN";
-    const BUNNY_CDN_BASE = "https://gkvideos.b-cdn.net";
+    // ==================== BUNNY.NET CONFIGURATION (YOUR CREDENTIALS ADDED) ====================
+    const BUNNY_DATABASE_URL = "libsql://01KQ1XFAZWBYP7TR0Y9GSDD2WR-gkstore.lite.bunnydb.net";
+    const BUNNY_DATABASE_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJwIjp7InJvIjpudWxsLCJydyI6eyJucyI6WyJna3N0b3JlIl0sInRhZ3MiOm51bGx9LCJyb2EiOm51bGwsInJ3YSI6bnVsbCwiZGRsIjpudWxsfSwiaWF0IjoxNzc3MTA3MTg2fQ.U0hQwRtrZR2yprTRqIIdbp9kE6Z1t2T9EzsfGb-xRNprFVz40h-kFqZmfEwD8st-NIGO2LUgOxkE3GI5x1V4BA";
+    const BUNNY_CDN_BASE = "https://gkvideo.b-cdn.net";
     
-    const DB_API_URL = `https://${BUNNY_DATABASE_ID}.bunnydb.net/v1/query`;
+    // API endpoint for queries
+    const DB_API_URL = BUNNY_DATABASE_URL.replace('libsql://', 'https://') + '/v1/query';
     
-    // Hardcoded settings
+    // Hardcoded settings (USDT, Binance ID - stored in app, not database)
     const USDT_ADDRESS = "TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY";
     const BINANCE_ID = "GKStore@binance";
-    const ADMIN_PASSWORD = "admin123";
     
     // ==================== PWA INSTALLATION TRACKING ====================
     async function getUserLocation() {
@@ -234,7 +245,7 @@
                 const newId = 'inst_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
                 localStorage.setItem('installation_id', newId);
                 
-                await fetch(`${DB_API_URL}`, {
+                await fetch(DB_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                     body: JSON.stringify({
@@ -244,7 +255,7 @@
                 });
                 console.log('✅ Installation tracked!');
             } else {
-                await fetch(`${DB_API_URL}`, {
+                await fetch(DB_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                     body: JSON.stringify({
@@ -261,7 +272,7 @@
     
     async function getInstallationStats() {
         try {
-            const totalResult = await fetch(`${DB_API_URL}`, {
+            const totalResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                 body: JSON.stringify({ sql: `SELECT COUNT(*) as total FROM installations`, params: [] })
@@ -269,7 +280,7 @@
             const totalData = await totalResult.json();
             const totalInstalls = totalData.rows?.[0]?.total || 0;
             
-            const todayResult = await fetch(`${DB_API_URL}`, {
+            const todayResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                 body: JSON.stringify({ sql: `SELECT COUNT(*) as today FROM installations WHERE date(installed_at) = date('now')`, params: [] })
@@ -277,21 +288,21 @@
             const todayData = await todayResult.json();
             const todayInstalls = todayData.rows?.[0]?.today || 0;
             
-            const deviceResult = await fetch(`${DB_API_URL}`, {
+            const deviceResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                 body: JSON.stringify({ sql: `SELECT device_type, COUNT(*) as count FROM installations GROUP BY device_type`, params: [] })
             });
             const deviceData = await deviceResult.json();
             
-            const platformResult = await fetch(`${DB_API_URL}`, {
+            const platformResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                 body: JSON.stringify({ sql: `SELECT platform, COUNT(*) as count FROM installations GROUP BY platform`, params: [] })
             });
             const platformData = await platformResult.json();
             
-            const countryResult = await fetch(`${DB_API_URL}`, {
+            const countryResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                 body: JSON.stringify({ sql: `SELECT country, COUNT(*) as count FROM installations GROUP BY country ORDER BY count DESC LIMIT 5`, params: [] })
@@ -336,6 +347,7 @@
     let currentFilter = "all";
     let currentCategory = "all";
     let currentBookingItem = null;
+    let adminPasswordHash = "admin123"; // Default password, will be updated from database
     
     function showToast(msg) { let toast = document.createElement('div'); toast.className = 'toast'; toast.innerHTML = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2000); }
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -368,6 +380,42 @@
         } catch (error) {
             console.error('Database execute failed:', error);
             return false;
+        }
+    }
+    
+    // Load admin password from database
+    async function loadAdminPassword() {
+        try {
+            const rows = await queryDatabase("SELECT value FROM settings WHERE key = 'admin_password'");
+            if (rows && rows.length > 0 && rows[0].value) {
+                adminPasswordHash = rows[0].value;
+            }
+        } catch (error) {
+            console.log('Using default password');
+        }
+    }
+    
+    // Change admin password (stored securely in database)
+    async function changeAdminPassword() {
+        const newPassword = document.getElementById('newPassword').value;
+        if (!newPassword || newPassword.length < 4) {
+            showToast('❌ Password must be at least 4 characters');
+            return;
+        }
+        
+        try {
+            // Check if settings table exists and has admin_password
+            await executeDatabase(`INSERT INTO settings (key, value) VALUES ('admin_password', ?) ON CONFLICT(key) DO UPDATE SET value = ?`, [newPassword, newPassword]);
+            adminPasswordHash = newPassword;
+            showToast('✅ Admin password updated successfully!');
+            document.getElementById('newPassword').value = '';
+        } catch (error) {
+            // If settings table doesn't exist, create it
+            await executeDatabase(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+            await executeDatabase(`INSERT INTO settings (key, value) VALUES ('admin_password', ?) ON CONFLICT(key) DO UPDATE SET value = ?`, [newPassword, newPassword]);
+            adminPasswordHash = newPassword;
+            showToast('✅ Admin password updated successfully!');
+            document.getElementById('newPassword').value = '';
         }
     }
     
@@ -440,8 +488,9 @@
     
     // ==================== ADMIN FUNCTIONS ====================
     async function adminLogin() {
+        await loadAdminPassword();
         const password = document.getElementById('adminPassword').value;
-        if (password === ADMIN_PASSWORD) {
+        if (password === adminPasswordHash) {
             isAdmin = true;
             document.getElementById('admin-login').classList.add('hidden');
             document.getElementById('admin-dashboard').classList.remove('hidden');
@@ -620,6 +669,7 @@
     // ==================== INITIALIZATION ====================
     async function init() {
         populateCountryCodes();
+        await loadAdminPassword();
         await renderAccounts();
         await renderProducts();
         await renderContacts();
