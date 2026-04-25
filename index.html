@@ -179,168 +179,19 @@
 <div id="bookModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>📖 Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><div id="bookBody"></div><button class="action-btn buy" onclick="submitBooking()">Confirm Booking</button></div></div>
 
 <script>
-    // ==================== BUNNY.NET CONFIGURATION (FIXED CONNECTION) ====================
-    const BUNNY_DATABASE_URL = "libsql://01KQ1XFAZWBYP7TR0Y9GSDD2WR-gkstore.lite.bunnydb.net";
-    const BUNNY_DATABASE_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJwIjp7InJvIjpudWxsLCJydyI6eyJucyI6WyJna3N0b3JlIl0sInRhZ3MiOm51bGx9LCJyb2EiOm51bGwsInJ3YSI6bnVsbCwiZGRsIjpudWxsfSwiaWF0IjoxNzc3MTA3MTg2fQ.U0hQwRtrZR2yprTRqIIdbp9kE6Z1t2T9EzsfGb-xRNprFVz40h-kFqZmfEwD8st-NIGO2LUgOxkE3GI5x1V4BA";
-    const BUNNY_CDN_BASE = "https://gkvideo.b-cdn.net";
+    // ==================== BUNNY.NET DATABASE CONNECTION (DIRECT SQL API) ====================
     
-    // Bunny Database API endpoint (libSQL compatible)
-    const DB_API_URL = "https://api.bunny.net/db/query";
+    // Your Bunny Database SQL API endpoint
+    const DB_API_URL = "https://01kq1xfazwbYP7TR0Y9GSDD2WR-gkstore.lite.bunnydb.net/v2/pipeline";
+    const DB_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJwIjp7InJvIjpudWxsLCJydyI6eyJucyI6WyJna3N0b3JlIl0sInRhZ3MiOm51bGx9LCJyb2EiOm51bGwsInJ3YSI6bnVsbCwiZGRsIjpudWxsfSwiaWF0IjoxNzc3MTA3MTg2fQ.U0hQwRtrZR2yprTRqIIdbp9kE6Z1t2T9EzsfGb-xRNprFVz40h-kFqZmfEwD8st-NIGO2LUgOxkE3GI5x1V4BA";
+    
+    // CDN base URL for images/videos
+    const BUNNY_CDN_BASE = "https://gkvideo.b-cdn.net";
     
     // Hardcoded settings
     const USDT_ADDRESS = "TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY";
     const BINANCE_ID = "GKStore@binance";
     const ADMIN_PASSWORD = "admin123";
-    
-    // ==================== PWA INSTALLATION TRACKING ====================
-    async function getUserLocation() {
-        try {
-            const response = await fetch('https://ipapi.co/json/');
-            const data = await response.json();
-            return { country: data.country_name || 'Unknown', city: data.city || 'Unknown' };
-        } catch (error) {
-            return { country: 'Unknown', city: 'Unknown' };
-        }
-    }
-    
-    function getDeviceInfo() {
-        const userAgent = navigator.userAgent;
-        let deviceType = 'Unknown';
-        let platform = 'Unknown';
-        
-        if (/Mobi|Android|iPhone|iPad|iPod/i.test(userAgent)) deviceType = 'Mobile';
-        else if (/Tablet|iPad/i.test(userAgent)) deviceType = 'Tablet';
-        else deviceType = 'Desktop';
-        
-        if (/Android/i.test(userAgent)) platform = 'Android';
-        else if (/iPhone|iPad|iPod/i.test(userAgent)) platform = 'iOS';
-        else if (/Windows/i.test(userAgent)) platform = 'Windows';
-        else if (/Mac/i.test(userAgent)) platform = 'macOS';
-        else if (/Linux/i.test(userAgent)) platform = 'Linux';
-        
-        return { userAgent, deviceType, platform };
-    }
-    
-    async function trackInstallation() {
-        if (sessionStorage.getItem('tracked')) return;
-        
-        try {
-            const deviceInfo = getDeviceInfo();
-            const location = await getUserLocation();
-            const installationId = localStorage.getItem('installation_id');
-            
-            if (!installationId) {
-                const newId = 'inst_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-                localStorage.setItem('installation_id', newId);
-                
-                await fetch(DB_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                    body: JSON.stringify({ 
-                        database: BUNNY_DATABASE_URL,
-                        query: `INSERT INTO installations (id, user_agent, device_type, platform, country, city) VALUES ('${newId}', '${deviceInfo.userAgent}', '${deviceInfo.deviceType}', '${deviceInfo.platform}', '${location.country}', '${location.city}')`
-                    })
-                });
-                console.log('✅ Installation tracked!');
-            } else {
-                await fetch(DB_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                    body: JSON.stringify({ 
-                        database: BUNNY_DATABASE_URL,
-                        query: `UPDATE installations SET last_active = CURRENT_TIMESTAMP, visit_count = visit_count + 1 WHERE id = '${installationId}'`
-                    })
-                });
-            }
-            sessionStorage.setItem('tracked', 'true');
-        } catch (error) {
-            console.error('Tracking failed:', error);
-        }
-    }
-    
-    async function getInstallationStats() {
-        try {
-            const totalResult = await fetch(DB_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT COUNT(*) as total FROM installations" })
-            });
-            const totalData = await totalResult.json();
-            const totalInstalls = totalData.results?.[0]?.total || 0;
-            
-            const todayResult = await fetch(DB_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT COUNT(*) as today FROM installations WHERE date(installed_at) = date('now')" })
-            });
-            const todayData = await todayResult.json();
-            const todayInstalls = todayData.results?.[0]?.today || 0;
-            
-            const deviceResult = await fetch(DB_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT device_type, COUNT(*) as count FROM installations GROUP BY device_type" })
-            });
-            const deviceData = await deviceResult.json();
-            
-            const platformResult = await fetch(DB_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT platform, COUNT(*) as count FROM installations GROUP BY platform" })
-            });
-            const platformData = await platformResult.json();
-            
-            const countryResult = await fetch(DB_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT country, COUNT(*) as count FROM installations GROUP BY country ORDER BY count DESC LIMIT 5" })
-            });
-            const countryData = await countryResult.json();
-            
-            return { total: totalInstalls, today: todayInstalls, byDevice: deviceData.results || [], byPlatform: platformData.results || [], byCountry: countryData.results || [] };
-        } catch (error) {
-            console.error('Failed to get stats:', error);
-            return { total: 0, today: 0, byDevice: [], byPlatform: [], byCountry: [] };
-        }
-    }
-    
-    async function displayInstallStats() {
-        const stats = await getInstallationStats();
-        let deviceHtml = '<div class="stats-card"><div class="stats-number">Devices</div>';
-        if (stats.byDevice && stats.byDevice.length > 0) {
-            stats.byDevice.forEach(d => { deviceHtml += `<div class="stats-label">${d.device_type}: ${d.count}</div>`; });
-        } else {
-            deviceHtml += `<div class="stats-label">No data yet</div>`;
-        }
-        deviceHtml += '</div>';
-        
-        let platformHtml = '<div class="stats-card"><div class="stats-number">Platforms</div>';
-        if (stats.byPlatform && stats.byPlatform.length > 0) {
-            stats.byPlatform.forEach(p => { platformHtml += `<div class="stats-label">${p.platform}: ${p.count}</div>`; });
-        } else {
-            platformHtml += `<div class="stats-label">No data yet</div>`;
-        }
-        platformHtml += '</div>';
-        
-        let countryHtml = '<div class="stats-card"><div class="stats-number">Top Countries</div>';
-        if (stats.byCountry && stats.byCountry.length > 0) {
-            stats.byCountry.forEach(c => { countryHtml += `<div class="stats-label">${c.country}: ${c.count}</div>`; });
-        } else {
-            countryHtml += `<div class="stats-label">No data yet</div>`;
-        }
-        countryHtml += '</div>';
-        
-        const statsContainer = document.getElementById('installStats');
-        if (statsContainer) {
-            statsContainer.innerHTML = `
-                <div class="stats-card"><div class="stats-number">${stats.total}</div><div class="stats-label">Total Installs</div></div>
-                <div class="stats-card"><div class="stats-number">${stats.today}</div><div class="stats-label">Installs Today</div></div>
-                ${deviceHtml}
-                ${platformHtml}
-                ${countryHtml}
-            `;
-        }
-    }
     
     // ==================== HELPER FUNCTIONS ====================
     let isAdmin = false;
@@ -352,19 +203,36 @@
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     
+    // Database query function using Bunny SQL API
     async function queryDatabase(sql) {
         try {
             const response = await fetch(DB_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: sql })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${DB_TOKEN}`
+                },
+                body: JSON.stringify({
+                    requests: [
+                        {
+                            type: "execute",
+                            stmt: { sql: sql }
+                        },
+                        {
+                            type: "close"
+                        }
+                    ]
+                })
             });
+            
             if (!response.ok) {
                 console.error('Database error:', response.status);
                 return [];
             }
+            
             const data = await response.json();
-            return data.results || [];
+            const result = data.results?.[0]?.response?.result;
+            return result?.rows || [];
         } catch (error) {
             console.error('Database query failed:', error);
             return [];
@@ -375,8 +243,21 @@
         try {
             const response = await fetch(DB_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: sql })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${DB_TOKEN}`
+                },
+                body: JSON.stringify({
+                    requests: [
+                        {
+                            type: "execute",
+                            stmt: { sql: sql }
+                        },
+                        {
+                            type: "close"
+                        }
+                    ]
+                })
             });
             return response.ok;
         } catch (error) {
@@ -385,7 +266,7 @@
         }
     }
     
-    // ==================== LOAD DATA FROM BUNNY DATABASE ====================
+    // ==================== LOAD DATA FROM DATABASE ====================
     async function loadAccounts() { 
         const results = await queryDatabase("SELECT * FROM accounts ORDER BY created_at DESC");
         return results;
@@ -476,7 +357,6 @@
             document.getElementById('admin-login').classList.add('hidden');
             document.getElementById('admin-dashboard').classList.remove('hidden');
             await updateAdminStats();
-            await displayInstallStats();
             await renderManageAccounts();
             await renderManageProducts();
             await renderManageContacts();
@@ -618,7 +498,7 @@
     function openFullscreenZoom(url) { const viewer = document.getElementById('fullscreenZoomViewer'); const content = document.getElementById('zoomContent'); content.innerHTML = `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain;">`; viewer.classList.remove('hidden'); }
     function closeFullscreenZoom() { document.getElementById('fullscreenZoomViewer').classList.add('hidden'); document.getElementById('zoomContent').innerHTML = ''; }
     
-    function switchScreen(screen) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screen + '-screen').classList.add('active'); document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active')); if (screen === 'accounts') renderAccounts(); if (screen === 'tools') renderProducts(); if (screen === 'contact') renderContacts(); if (screen === 'admin' && isAdmin) { updateAdminStats(); displayInstallStats(); renderManageAccounts(); renderManageProducts(); renderManageContacts(); renderManageAds(); renderBookings(); } }
+    function switchScreen(screen) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screen + '-screen').classList.add('active'); document.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active')); if (screen === 'accounts') renderAccounts(); if (screen === 'tools') renderProducts(); if (screen === 'contact') renderContacts(); if (screen === 'admin' && isAdmin) { updateAdminStats(); renderManageAccounts(); renderManageProducts(); renderManageContacts(); renderManageAds(); renderBookings(); } }
     
     function setFilter(tier) { currentFilter = tier; renderAccounts(); document.querySelectorAll('.tier-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); }
     function setCategory(cat) { currentCategory = cat; renderProducts(); document.querySelectorAll('.category-tab').forEach(c => c.classList.remove('active')); event.target.classList.add('active'); }
@@ -642,7 +522,7 @@
     // PWA Installation
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; const installBtn = document.getElementById('installBtn'); if(installBtn) installBtn.style.display = 'flex'; });
-    window.addEventListener('appinstalled', () => { trackInstallation(); const installBtn = document.getElementById('installBtn'); if(installBtn) installBtn.style.display = 'none'; showToast('🎉 Thank you for installing GK Store!'); });
+    window.addEventListener('appinstalled', () => { const installBtn = document.getElementById('installBtn'); if(installBtn) installBtn.style.display = 'none'; showToast('🎉 Thank you for installing GK Store!'); });
     function triggerInstall() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((result) => { deferredPrompt = null; const installBtn = document.getElementById('installBtn'); if(installBtn) installBtn.style.display = 'none'; }); } else { showToast('📱 Tap the install icon in the address bar or menu'); } }
     if(!document.getElementById('installBtn')) { let installBtnElement = document.createElement('button'); installBtnElement.id = 'installBtn'; installBtnElement.className = 'install-fixed'; installBtnElement.innerHTML = '<i class="fas fa-download"></i> Install App'; installBtnElement.onclick = triggerInstall; installBtnElement.style.display = 'none'; document.body.appendChild(installBtnElement); }
     if(window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches) { const btn = document.getElementById('installBtn'); if(btn) btn.style.display = 'none'; }
@@ -658,7 +538,6 @@
         await renderProducts();
         await renderContacts();
         await renderAds();
-        trackInstallation();
         document.getElementById('tierHeader').innerHTML = `<button class="tier-tab active" onclick="setFilter('all')">All</button><button class="tier-tab" onclick="setFilter('small')">Small</button><button class="tier-tab" onclick="setFilter('medium')">Medium</button><button class="tier-tab" onclick="setFilter('big')">Big</button>`;
         document.getElementById('categoryHeader').innerHTML = `<button class="category-tab active" onclick="setCategory('all')">All</button><button class="category-tab" onclick="setCategory('phone')">Phones</button><button class="category-tab" onclick="setCategory('ipad')">iPad</button><button class="category-tab" onclick="setCategory('computer')">Computer</button><button class="category-tab" onclick="setCategory('tv')">TV</button><button class="category-tab" onclick="setCategory('other')">Other</button>`;
     }
