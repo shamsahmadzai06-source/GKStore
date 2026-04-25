@@ -125,7 +125,6 @@
                 </div>
             </div>
             
-            <!-- NEW: Installation Analytics Section -->
             <div class="account-card" style="padding:15px; margin-bottom:15px;">
                 <h3>📱 Installation Analytics</h3>
                 <div id="installStats" class="stats-grid">
@@ -180,14 +179,13 @@
 <div id="bookModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>📖 Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><div id="bookBody"></div><button class="action-btn buy" onclick="submitBooking()">Confirm Booking</button></div></div>
 
 <script>
-    // ==================== BUNNY.NET CONFIGURATION (CONNECTED) ====================
-    // Your Live Bunny.net Database Credentials
-    const BUNNY_DATABASE_ID = "01KQ1XFAZWBYP7TR0Y9GSDD2WR-gkstore";
+    // ==================== BUNNY.NET CONFIGURATION (FIXED CONNECTION) ====================
+    const BUNNY_DATABASE_URL = "libsql://01KQ1XFAZWBYP7TR0Y9GSDD2WR-gkstore.lite.bunnydb.net";
     const BUNNY_DATABASE_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJwIjp7InJvIjpudWxsLCJydyI6eyJucyI6WyJna3N0b3JlIl0sInRhZ3MiOm51bGx9LCJyb2EiOm51bGwsInJ3YSI6bnVsbCwiZGRsIjpudWxsfSwiaWF0IjoxNzc3MTA3MTg2fQ.U0hQwRtrZR2yprTRqIIdbp9kE6Z1t2T9EzsfGb-xRNprFVz40h-kFqZmfEwD8st-NIGO2LUgOxkE3GI5x1V4BA";
     const BUNNY_CDN_BASE = "https://gkvideo.b-cdn.net";
     
-    // Bunny Database API endpoint
-    const DB_API_URL = `https://api.bunny.net/database/${BUNNY_DATABASE_ID}/query`;
+    // Bunny Database API endpoint (libSQL compatible)
+    const DB_API_URL = "https://api.bunny.net/db/query";
     
     // Hardcoded settings
     const USDT_ADDRESS = "TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY";
@@ -235,19 +233,21 @@
                 const newId = 'inst_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
                 localStorage.setItem('installation_id', newId);
                 
-                await fetch(`${DB_API_URL}`, {
+                await fetch(DB_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                    body: JSON.stringify({
+                    body: JSON.stringify({ 
+                        database: BUNNY_DATABASE_URL,
                         query: `INSERT INTO installations (id, user_agent, device_type, platform, country, city) VALUES ('${newId}', '${deviceInfo.userAgent}', '${deviceInfo.deviceType}', '${deviceInfo.platform}', '${location.country}', '${location.city}')`
                     })
                 });
                 console.log('✅ Installation tracked!');
             } else {
-                await fetch(`${DB_API_URL}`, {
+                await fetch(DB_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                    body: JSON.stringify({
+                    body: JSON.stringify({ 
+                        database: BUNNY_DATABASE_URL,
                         query: `UPDATE installations SET last_active = CURRENT_TIMESTAMP, visit_count = visit_count + 1 WHERE id = '${installationId}'`
                     })
                 });
@@ -260,40 +260,40 @@
     
     async function getInstallationStats() {
         try {
-            const totalResult = await fetch(`${DB_API_URL}`, {
+            const totalResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: `SELECT COUNT(*) as total FROM installations` })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT COUNT(*) as total FROM installations" })
             });
             const totalData = await totalResult.json();
             const totalInstalls = totalData.results?.[0]?.total || 0;
             
-            const todayResult = await fetch(`${DB_API_URL}`, {
+            const todayResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: `SELECT COUNT(*) as today FROM installations WHERE date(installed_at) = date('now')` })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT COUNT(*) as today FROM installations WHERE date(installed_at) = date('now')" })
             });
             const todayData = await todayResult.json();
             const todayInstalls = todayData.results?.[0]?.today || 0;
             
-            const deviceResult = await fetch(`${DB_API_URL}`, {
+            const deviceResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: `SELECT device_type, COUNT(*) as count FROM installations GROUP BY device_type` })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT device_type, COUNT(*) as count FROM installations GROUP BY device_type" })
             });
             const deviceData = await deviceResult.json();
             
-            const platformResult = await fetch(`${DB_API_URL}`, {
+            const platformResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: `SELECT platform, COUNT(*) as count FROM installations GROUP BY platform` })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT platform, COUNT(*) as count FROM installations GROUP BY platform" })
             });
             const platformData = await platformResult.json();
             
-            const countryResult = await fetch(`${DB_API_URL}`, {
+            const countryResult = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: `SELECT country, COUNT(*) as count FROM installations GROUP BY country ORDER BY count DESC LIMIT 5` })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: "SELECT country, COUNT(*) as count FROM installations GROUP BY country ORDER BY count DESC LIMIT 5" })
             });
             const countryData = await countryResult.json();
             
@@ -357,9 +357,12 @@
             const response = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: sql })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: sql })
             });
-            if (!response.ok) throw new Error(`Database error: ${response.status}`);
+            if (!response.ok) {
+                console.error('Database error:', response.status);
+                return [];
+            }
             const data = await response.json();
             return data.results || [];
         } catch (error) {
@@ -373,7 +376,7 @@
             const response = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ query: sql })
+                body: JSON.stringify({ database: BUNNY_DATABASE_URL, query: sql })
             });
             return response.ok;
         } catch (error) {
