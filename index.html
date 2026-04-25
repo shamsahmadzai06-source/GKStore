@@ -125,23 +125,11 @@
                 </div>
             </div>
             
+            <!-- NEW: Installation Analytics Section -->
             <div class="account-card" style="padding:15px; margin-bottom:15px;">
                 <h3>📱 Installation Analytics</h3>
                 <div id="installStats" class="stats-grid">
                     <div class="loading">Loading stats...</div>
-                </div>
-            </div>
-            
-            <div class="account-card" style="padding:15px; margin-bottom:15px;">
-                <h3>🔐 Admin Settings</h3>
-                <div class="admin-stats">
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-number" style="font-size: 16px;">Change Password</div>
-                        <div class="stats-label" style="margin-top: 10px;">
-                            <input type="password" id="newPassword" class="input" placeholder="New password" style="margin-bottom: 5px;">
-                            <button class="action-btn buy" onclick="changeAdminPassword()" style="width:100%;">Update Password</button>
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -192,17 +180,19 @@
 <div id="bookModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><h3>📖 Book Item</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><div id="bookBody"></div><button class="action-btn buy" onclick="submitBooking()">Confirm Booking</button></div></div>
 
 <script>
-    // ==================== BUNNY.NET CONFIGURATION (YOUR CREDENTIALS ADDED) ====================
-    const BUNNY_DATABASE_URL = "libsql://01KQ1XFAZWBYP7TR0Y9GSDD2WR-gkstore.lite.bunnydb.net";
+    // ==================== BUNNY.NET CONFIGURATION (CONNECTED) ====================
+    // Your Live Bunny.net Database Credentials
+    const BUNNY_DATABASE_ID = "01KQ1XFAZWBYP7TR0Y9GSDD2WR-gkstore";
     const BUNNY_DATABASE_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJwIjp7InJvIjpudWxsLCJydyI6eyJucyI6WyJna3N0b3JlIl0sInRhZ3MiOm51bGx9LCJyb2EiOm51bGwsInJ3YSI6bnVsbCwiZGRsIjpudWxsfSwiaWF0IjoxNzc3MTA3MTg2fQ.U0hQwRtrZR2yprTRqIIdbp9kE6Z1t2T9EzsfGb-xRNprFVz40h-kFqZmfEwD8st-NIGO2LUgOxkE3GI5x1V4BA";
     const BUNNY_CDN_BASE = "https://gkvideo.b-cdn.net";
     
-    // API endpoint for queries
-    const DB_API_URL = BUNNY_DATABASE_URL.replace('libsql://', 'https://') + '/v1/query';
+    // Bunny Database API endpoint
+    const DB_API_URL = `https://api.bunny.net/database/${BUNNY_DATABASE_ID}/query`;
     
-    // Hardcoded settings (USDT, Binance ID - stored in app, not database)
+    // Hardcoded settings
     const USDT_ADDRESS = "TYpeauzqbVusejMAhJPnXuSb7wY6p69ZoY";
     const BINANCE_ID = "GKStore@binance";
+    const ADMIN_PASSWORD = "admin123";
     
     // ==================== PWA INSTALLATION TRACKING ====================
     async function getUserLocation() {
@@ -245,22 +235,20 @@
                 const newId = 'inst_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
                 localStorage.setItem('installation_id', newId);
                 
-                await fetch(DB_API_URL, {
+                await fetch(`${DB_API_URL}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                     body: JSON.stringify({
-                        sql: `INSERT INTO installations (id, user_agent, device_type, platform, country, city) VALUES (?, ?, ?, ?, ?, ?)`,
-                        params: [newId, deviceInfo.userAgent, deviceInfo.deviceType, deviceInfo.platform, location.country, location.city]
+                        query: `INSERT INTO installations (id, user_agent, device_type, platform, country, city) VALUES ('${newId}', '${deviceInfo.userAgent}', '${deviceInfo.deviceType}', '${deviceInfo.platform}', '${location.country}', '${location.city}')`
                     })
                 });
                 console.log('✅ Installation tracked!');
             } else {
-                await fetch(DB_API_URL, {
+                await fetch(`${DB_API_URL}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
                     body: JSON.stringify({
-                        sql: `UPDATE installations SET last_active = CURRENT_TIMESTAMP, visit_count = visit_count + 1 WHERE id = ?`,
-                        params: [installationId]
+                        query: `UPDATE installations SET last_active = CURRENT_TIMESTAMP, visit_count = visit_count + 1 WHERE id = '${installationId}'`
                     })
                 });
             }
@@ -272,44 +260,44 @@
     
     async function getInstallationStats() {
         try {
-            const totalResult = await fetch(DB_API_URL, {
+            const totalResult = await fetch(`${DB_API_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql: `SELECT COUNT(*) as total FROM installations`, params: [] })
+                body: JSON.stringify({ query: `SELECT COUNT(*) as total FROM installations` })
             });
             const totalData = await totalResult.json();
-            const totalInstalls = totalData.rows?.[0]?.total || 0;
+            const totalInstalls = totalData.results?.[0]?.total || 0;
             
-            const todayResult = await fetch(DB_API_URL, {
+            const todayResult = await fetch(`${DB_API_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql: `SELECT COUNT(*) as today FROM installations WHERE date(installed_at) = date('now')`, params: [] })
+                body: JSON.stringify({ query: `SELECT COUNT(*) as today FROM installations WHERE date(installed_at) = date('now')` })
             });
             const todayData = await todayResult.json();
-            const todayInstalls = todayData.rows?.[0]?.today || 0;
+            const todayInstalls = todayData.results?.[0]?.today || 0;
             
-            const deviceResult = await fetch(DB_API_URL, {
+            const deviceResult = await fetch(`${DB_API_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql: `SELECT device_type, COUNT(*) as count FROM installations GROUP BY device_type`, params: [] })
+                body: JSON.stringify({ query: `SELECT device_type, COUNT(*) as count FROM installations GROUP BY device_type` })
             });
             const deviceData = await deviceResult.json();
             
-            const platformResult = await fetch(DB_API_URL, {
+            const platformResult = await fetch(`${DB_API_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql: `SELECT platform, COUNT(*) as count FROM installations GROUP BY platform`, params: [] })
+                body: JSON.stringify({ query: `SELECT platform, COUNT(*) as count FROM installations GROUP BY platform` })
             });
             const platformData = await platformResult.json();
             
-            const countryResult = await fetch(DB_API_URL, {
+            const countryResult = await fetch(`${DB_API_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql: `SELECT country, COUNT(*) as count FROM installations GROUP BY country ORDER BY count DESC LIMIT 5`, params: [] })
+                body: JSON.stringify({ query: `SELECT country, COUNT(*) as count FROM installations GROUP BY country ORDER BY count DESC LIMIT 5` })
             });
             const countryData = await countryResult.json();
             
-            return { total: totalInstalls, today: todayInstalls, byDevice: deviceData.rows || [], byPlatform: platformData.rows || [], byCountry: countryData.rows || [] };
+            return { total: totalInstalls, today: todayInstalls, byDevice: deviceData.results || [], byPlatform: platformData.results || [], byCountry: countryData.results || [] };
         } catch (error) {
             console.error('Failed to get stats:', error);
             return { total: 0, today: 0, byDevice: [], byPlatform: [], byCountry: [] };
@@ -319,15 +307,27 @@
     async function displayInstallStats() {
         const stats = await getInstallationStats();
         let deviceHtml = '<div class="stats-card"><div class="stats-number">Devices</div>';
-        stats.byDevice.forEach(d => { deviceHtml += `<div class="stats-label">${d.device_type}: ${d.count}</div>`; });
+        if (stats.byDevice && stats.byDevice.length > 0) {
+            stats.byDevice.forEach(d => { deviceHtml += `<div class="stats-label">${d.device_type}: ${d.count}</div>`; });
+        } else {
+            deviceHtml += `<div class="stats-label">No data yet</div>`;
+        }
         deviceHtml += '</div>';
         
         let platformHtml = '<div class="stats-card"><div class="stats-number">Platforms</div>';
-        stats.byPlatform.forEach(p => { platformHtml += `<div class="stats-label">${p.platform}: ${p.count}</div>`; });
+        if (stats.byPlatform && stats.byPlatform.length > 0) {
+            stats.byPlatform.forEach(p => { platformHtml += `<div class="stats-label">${p.platform}: ${p.count}</div>`; });
+        } else {
+            platformHtml += `<div class="stats-label">No data yet</div>`;
+        }
         platformHtml += '</div>';
         
         let countryHtml = '<div class="stats-card"><div class="stats-number">Top Countries</div>';
-        stats.byCountry.forEach(c => { countryHtml += `<div class="stats-label">${c.country}: ${c.count}</div>`; });
+        if (stats.byCountry && stats.byCountry.length > 0) {
+            stats.byCountry.forEach(c => { countryHtml += `<div class="stats-label">${c.country}: ${c.count}</div>`; });
+        } else {
+            countryHtml += `<div class="stats-label">No data yet</div>`;
+        }
         countryHtml += '</div>';
         
         const statsContainer = document.getElementById('installStats');
@@ -347,34 +347,33 @@
     let currentFilter = "all";
     let currentCategory = "all";
     let currentBookingItem = null;
-    let adminPasswordHash = "admin123"; // Default password, will be updated from database
     
     function showToast(msg) { let toast = document.createElement('div'); toast.className = 'toast'; toast.innerHTML = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2000); }
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     
-    async function queryDatabase(sql, params = []) {
+    async function queryDatabase(sql) {
         try {
             const response = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql, params })
+                body: JSON.stringify({ query: sql })
             });
             if (!response.ok) throw new Error(`Database error: ${response.status}`);
             const data = await response.json();
-            return data.rows || [];
+            return data.results || [];
         } catch (error) {
             console.error('Database query failed:', error);
             return [];
         }
     }
     
-    async function executeDatabase(sql, params = []) {
+    async function executeDatabase(sql) {
         try {
             const response = await fetch(DB_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BUNNY_DATABASE_TOKEN}` },
-                body: JSON.stringify({ sql, params })
+                body: JSON.stringify({ query: sql })
             });
             return response.ok;
         } catch (error) {
@@ -383,48 +382,27 @@
         }
     }
     
-    // Load admin password from database
-    async function loadAdminPassword() {
-        try {
-            const rows = await queryDatabase("SELECT value FROM settings WHERE key = 'admin_password'");
-            if (rows && rows.length > 0 && rows[0].value) {
-                adminPasswordHash = rows[0].value;
-            }
-        } catch (error) {
-            console.log('Using default password');
-        }
-    }
-    
-    // Change admin password (stored securely in database)
-    async function changeAdminPassword() {
-        const newPassword = document.getElementById('newPassword').value;
-        if (!newPassword || newPassword.length < 4) {
-            showToast('❌ Password must be at least 4 characters');
-            return;
-        }
-        
-        try {
-            // Check if settings table exists and has admin_password
-            await executeDatabase(`INSERT INTO settings (key, value) VALUES ('admin_password', ?) ON CONFLICT(key) DO UPDATE SET value = ?`, [newPassword, newPassword]);
-            adminPasswordHash = newPassword;
-            showToast('✅ Admin password updated successfully!');
-            document.getElementById('newPassword').value = '';
-        } catch (error) {
-            // If settings table doesn't exist, create it
-            await executeDatabase(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
-            await executeDatabase(`INSERT INTO settings (key, value) VALUES ('admin_password', ?) ON CONFLICT(key) DO UPDATE SET value = ?`, [newPassword, newPassword]);
-            adminPasswordHash = newPassword;
-            showToast('✅ Admin password updated successfully!');
-            document.getElementById('newPassword').value = '';
-        }
-    }
-    
     // ==================== LOAD DATA FROM BUNNY DATABASE ====================
-    async function loadAccounts() { return await queryDatabase("SELECT * FROM accounts ORDER BY created_at DESC"); }
-    async function loadProducts() { return await queryDatabase("SELECT * FROM products ORDER BY created_at DESC"); }
-    async function loadContacts() { return await queryDatabase("SELECT * FROM contacts ORDER BY created_at DESC"); }
-    async function loadAds() { return await queryDatabase("SELECT * FROM ads ORDER BY created_at DESC"); }
-    async function loadBookings() { return await queryDatabase("SELECT * FROM bookings ORDER BY created_at DESC"); }
+    async function loadAccounts() { 
+        const results = await queryDatabase("SELECT * FROM accounts ORDER BY created_at DESC");
+        return results;
+    }
+    async function loadProducts() { 
+        const results = await queryDatabase("SELECT * FROM products ORDER BY created_at DESC");
+        return results;
+    }
+    async function loadContacts() { 
+        const results = await queryDatabase("SELECT * FROM contacts ORDER BY created_at DESC");
+        return results;
+    }
+    async function loadAds() { 
+        const results = await queryDatabase("SELECT * FROM ads ORDER BY created_at DESC");
+        return results;
+    }
+    async function loadBookings() { 
+        const results = await queryDatabase("SELECT * FROM bookings ORDER BY created_at DESC");
+        return results;
+    }
     
     // ==================== RENDER FUNCTIONS ====================
     async function renderAccounts() {
@@ -455,6 +433,7 @@
         const container = document.getElementById('contacts-container');
         if (!container) return;
         const contacts = await loadContacts();
+        if (contacts.length === 0) { container.innerHTML = '<div class="loading">No contacts available</div>'; return; }
         container.innerHTML = contacts.map(c => `<div class="account-card" style="padding:15px; margin-bottom:10px;"><h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${escapeHtml(c.name)}</h3><p>📞 +${c.phone}</p><button class="action-btn buy" onclick="window.open('https://wa.me/${c.phone}', '_blank')"><i class="fab fa-whatsapp"></i> Chat</button></div>`).join('');
     }
     
@@ -488,9 +467,8 @@
     
     // ==================== ADMIN FUNCTIONS ====================
     async function adminLogin() {
-        await loadAdminPassword();
         const password = document.getElementById('adminPassword').value;
-        if (password === adminPasswordHash) {
+        if (password === ADMIN_PASSWORD) {
             isAdmin = true;
             document.getElementById('admin-login').classList.add('hidden');
             document.getElementById('admin-dashboard').classList.remove('hidden');
@@ -525,7 +503,7 @@
         }
         
         const id = Date.now().toString();
-        await executeDatabase(`INSERT INTO accounts (id, tier, title, description, price_usd, price_afn, media) VALUES (?, ?, ?, ?, ?, ?, ?)`, [id, tier, title, desc, usd, afn, mediaFilename]);
+        await executeDatabase(`INSERT INTO accounts (id, tier, title, description, price_usd, price_afn, media) VALUES ('${id}', '${tier}', '${title.replace(/'/g, "''")}', '${desc.replace(/'/g, "''")}', ${usd}, ${afn}, '${mediaFilename}')`);
         closeModal('addAccountModal');
         await renderAccounts();
         await updateAdminStats();
@@ -557,7 +535,7 @@
         }
         
         const id = Date.now().toString();
-        await executeDatabase(`INSERT INTO products (id, category, name, description, price_usd, price_afn, media) VALUES (?, ?, ?, ?, ?, ?, ?)`, [id, category, name, desc, usd, afn, mediaFilename]);
+        await executeDatabase(`INSERT INTO products (id, category, name, description, price_usd, price_afn, media) VALUES ('${id}', '${category}', '${name.replace(/'/g, "''")}', '${desc.replace(/'/g, "''")}', ${usd}, ${afn}, '${mediaFilename}')`);
         closeModal('addProductModal');
         await renderProducts();
         await updateAdminStats();
@@ -571,7 +549,7 @@
         let phone = document.getElementById('contactPhone').value.trim().replace(/\D/g, '');
         if (!name || !phone) { alert('Please enter name and phone'); return; }
         const id = Date.now().toString();
-        await executeDatabase(`INSERT INTO contacts (id, name, phone) VALUES (?, ?, ?)`, [id, name, code + phone]);
+        await executeDatabase(`INSERT INTO contacts (id, name, phone) VALUES ('${id}', '${name.replace(/'/g, "''")}', '${code + phone}')`);
         closeModal('manageContactsModal');
         await renderContacts();
         await renderManageContacts();
@@ -585,49 +563,53 @@
         let filename = `ad-${Date.now()}.${ext}`;
         let caption = document.getElementById('adCaption').value || '';
         const id = Date.now().toString();
-        await executeDatabase(`INSERT INTO ads (id, media, caption) VALUES (?, ?, ?)`, [id, filename, caption]);
+        await executeDatabase(`INSERT INTO ads (id, media, caption) VALUES ('${id}', '${filename}', '${caption.replace(/'/g, "''")}')`);
         closeModal('manageAdsModal');
         await renderAds();
         await renderManageAds();
         showToast(`✅ Ad added! Upload "${filename}" to Bunny Storage /ads/ folder`);
     }
     
-    async function deleteAccount(id) { if (confirm('Delete this account?')) { await executeDatabase(`DELETE FROM accounts WHERE id = ?`, [id]); await renderAccounts(); await updateAdminStats(); await renderManageAccounts(); showToast('Deleted'); } }
-    async function deleteProduct(id) { if (confirm('Delete this product?')) { await executeDatabase(`DELETE FROM products WHERE id = ?`, [id]); await renderProducts(); await updateAdminStats(); await renderManageProducts(); showToast('Deleted'); } }
-    async function deleteContact(id) { if (confirm('Delete this contact?')) { await executeDatabase(`DELETE FROM contacts WHERE id = ?`, [id]); await renderContacts(); await renderManageContacts(); showToast('Deleted'); } }
-    async function deleteAd(id) { if (confirm('Delete this ad?')) { await executeDatabase(`DELETE FROM ads WHERE id = ?`, [id]); await renderAds(); await renderManageAds(); showToast('Deleted'); } }
+    async function deleteAccount(id) { if (confirm('Delete this account?')) { await executeDatabase(`DELETE FROM accounts WHERE id = '${id}'`); await renderAccounts(); await updateAdminStats(); await renderManageAccounts(); showToast('Deleted'); } }
+    async function deleteProduct(id) { if (confirm('Delete this product?')) { await executeDatabase(`DELETE FROM products WHERE id = '${id}'`); await renderProducts(); await updateAdminStats(); await renderManageProducts(); showToast('Deleted'); } }
+    async function deleteContact(id) { if (confirm('Delete this contact?')) { await executeDatabase(`DELETE FROM contacts WHERE id = '${id}'`); await renderContacts(); await renderManageContacts(); showToast('Deleted'); } }
+    async function deleteAd(id) { if (confirm('Delete this ad?')) { await executeDatabase(`DELETE FROM ads WHERE id = '${id}'`); await renderAds(); await renderManageAds(); showToast('Deleted'); } }
     
     async function renderManageAccounts() {
         const container = document.getElementById('manageAccountsList');
         if (!container) return;
         const accounts = await loadAccounts();
-        container.innerHTML = accounts.map(acc => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;"><span><strong>${escapeHtml(acc.title)}</strong> (${acc.tier}) - $${acc.price_usd}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteAccount('${acc.id}')">Delete</button></div>`).join('');
+        if (accounts.length === 0) { container.innerHTML = '<div class="loading">No accounts yet</div>'; return; }
+        container.innerHTML = accounts.map(acc => `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333;"><span><strong>${escapeHtml(acc.title)}</strong> (${acc.tier}) - $${acc.price_usd}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteAccount('${acc.id}')">Delete</button></div>`).join('');
     }
     
     async function renderManageProducts() {
         const container = document.getElementById('manageProductsList');
         if (!container) return;
         const products = await loadProducts();
-        container.innerHTML = products.map(prod => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;"><span><strong>${escapeHtml(prod.name)}</strong> (${prod.category}) - $${prod.price_usd}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteProduct('${prod.id}')">Delete</button></div>`).join('');
+        if (products.length === 0) { container.innerHTML = '<div class="loading">No products yet</div>'; return; }
+        container.innerHTML = products.map(prod => `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333;"><span><strong>${escapeHtml(prod.name)}</strong> (${prod.category}) - $${prod.price_usd}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteProduct('${prod.id}')">Delete</button></div>`).join('');
     }
     
     async function renderManageContacts() {
         const container = document.getElementById('manageContactsList');
         if (!container) return;
         const contacts = await loadContacts();
-        container.innerHTML = contacts.map(c => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;"><span><strong>${escapeHtml(c.name)}</strong> (+${c.phone})</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteContact('${c.id}')">Delete</button></div>`).join('');
+        if (contacts.length === 0) { container.innerHTML = '<div class="loading">No contacts yet</div>'; return; }
+        container.innerHTML = contacts.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333;"><span><strong>${escapeHtml(c.name)}</strong> (+${c.phone})</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteContact('${c.id}')">Delete</button></div>`).join('');
     }
     
     async function renderManageAds() {
         const container = document.getElementById('manageAdsList');
         if (!container) return;
         const ads = await loadAds();
-        container.innerHTML = ads.map(ad => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;"><span>${ad.caption || 'Ad'}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteAd('${ad.id}')">Delete</button></div>`).join('');
+        if (ads.length === 0) { container.innerHTML = '<div class="loading">No ads yet</div>'; return; }
+        container.innerHTML = ads.map(ad => `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333;"><span>${ad.caption || 'Ad'}</span><button class="action-btn" style="background:#e74c3c;" onclick="deleteAd('${ad.id}')">Delete</button></div>`).join('');
     }
     
     // ==================== USER FUNCTIONS ====================
     function openBookModal(name, price) { currentBookingItem = { name, price }; document.getElementById('bookBody').innerHTML = `<p><strong>${escapeHtml(name)}</strong> - $${price}</p><input id="bookerName" class="input" placeholder="Your full name"><div class="phone-input-wrapper"><select id="bookCode" class="country-code"></select><input id="bookerPhone" class="input phone-number" placeholder="WhatsApp number"></div>`; populateCountryCodes(); openModal('bookModal'); }
-    async function submitBooking() { let name = document.getElementById('bookerName')?.value.trim(); let code = document.getElementById('bookCode')?.value; let phone = document.getElementById('bookerPhone')?.value.trim().replace(/\D/g, ''); if (!name || !phone) { alert('Please enter your name and phone'); return; } const id = Date.now().toString(); await executeDatabase(`INSERT INTO bookings (id, item_name, customer_name, customer_phone) VALUES (?, ?, ?, ?)`, [id, currentBookingItem.name, name, code + phone]); closeModal('bookModal'); await renderBookings(); showToast('✅ Booking submitted!'); }
+    async function submitBooking() { let name = document.getElementById('bookerName')?.value.trim(); let code = document.getElementById('bookCode')?.value; let phone = document.getElementById('bookerPhone')?.value.trim().replace(/\D/g, ''); if (!name || !phone) { alert('Please enter your name and phone'); return; } const id = Date.now().toString(); await executeDatabase(`INSERT INTO bookings (id, item_name, customer_name, customer_phone) VALUES ('${id}', '${currentBookingItem.name.replace(/'/g, "''")}', '${name.replace(/'/g, "''")}', '${code + phone}')`); closeModal('bookModal'); await renderBookings(); showToast('✅ Booking submitted!'); }
     function openBuyModal(name, price) { showToast(`Please contact us on WhatsApp to purchase ${name} for $${price}`); window.open('https://wa.me/93793066322', '_blank'); }
     
     function openFullscreenZoom(url) { const viewer = document.getElementById('fullscreenZoomViewer'); const content = document.getElementById('zoomContent'); content.innerHTML = `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain;">`; viewer.classList.remove('hidden'); }
@@ -669,7 +651,6 @@
     // ==================== INITIALIZATION ====================
     async function init() {
         populateCountryCodes();
-        await loadAdminPassword();
         await renderAccounts();
         await renderProducts();
         await renderContacts();
